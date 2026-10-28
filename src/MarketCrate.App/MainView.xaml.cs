@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using MarketCrate.Core;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -12,6 +13,7 @@ public partial class MainView : UserControl
     public MainView()
     {
         InitializeComponent();
+        WorkspaceTabs.SelectionChanged+=(_,args)=>{if(args.OriginalSource==WorkspaceTabs)DiagnosticHub.Emit(DiagnosticEvent.UiPage,DiagnosticArea.UI,requirement:"G08",count:WorkspaceTabs.SelectedIndex);};
         ReviewOverlay.MouseDown += (_, e) =>
         {
             if (e.OriginalSource == ReviewOverlay && DataContext is MainViewModel vm && vm.CloseReview.CanExecute(null)) vm.CloseReview.Execute(null);
@@ -26,7 +28,7 @@ public partial class MainView : UserControl
     }
     private void InputError(object? sender, ValidationErrorEventArgs e)
     {
-        if (e.Action == ValidationErrorEventAction.Added) invalidInputs.Add(e.OriginalSource); else invalidInputs.Remove(e.OriginalSource);
+        if (e.Action == ValidationErrorEventAction.Added) {DiagnosticHub.Emit(DiagnosticEvent.UiFailure,DiagnosticArea.UI,DiagnosticOutcome.Failed,LogLevel.Warning,DiagnosticError.Validation,reason:"InputRejected");invalidInputs.Add(e.OriginalSource);} else invalidInputs.Remove(e.OriginalSource);
         if (DataContext is MainViewModel vm) vm.HasInputErrors = invalidInputs.Count > 0;
     }
     private void ReviewChanged(object? sender, PropertyChangedEventArgs e)

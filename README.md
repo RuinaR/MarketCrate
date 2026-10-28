@@ -6,6 +6,8 @@ Windows 10/11 · C# / .NET 10 / WPF / MVVM 기반 Steam 보관함·판매 계획
 
 **필수 최종 목표:** 최종 검토의 `전체 판매등록` 한 번 승인으로 선택 전 품목·수량·개별 가격을 실제 Steam 장터에 제출합니다. 현재 읽기는 **Experimental / 실계정 미검증**, 등록·취소·재가격은 **IntegrationBlocked** 기본값입니다. 합성 성공을 실제 판매 완료로 표현하지 않습니다.
 
+6차는 최초 요구 **75개 추적 감사**와 **로컬 구조화 진단/오류 검색/검토 후 ZIP**을 추가했습니다. 현재 판정은 로컬/합성 범위 COMPLETE44·PARTIAL16·MISSING1·BLOCKED5·UNVERIFIED9이며 실계정은 전부 미검증입니다. 실험 화면 필터/선택 보존, 가격 이상 경고, 확정 취소 후 새 재가격 승인도 보완했습니다. **이미지·계정 게임 자동 발견·정확한 live 평균가/실계정 계약 검증은 남았습니다.** [요구사항 추적](docs/REQUIREMENTS-TRACEABILITY.md) · [QA](docs/QA-MATRIX.md) · [진단 사용법](docs/DIAGNOSTICS.md). Steam DB v3는 기존 의도를 보존하며 구 앱의 폐기 승인 재개를 막습니다.
+
 ## 현재 기능
 
 - 게임별 합성 보관함, 검색·정렬, marketable/tradable/보류, 전체 선택·수량 편집. 카드와 목록 모두 가상화하며 대량 합성 10,000개 모드를 제공합니다.

@@ -1,5 +1,15 @@
 # MarketCrate — 누적 작업 로그
 
+## 2026-10-28 KST — 6차 요구사항 감사 및 실사용 진단
+
+- origin/main `33cd152` fetch/clean 기준, AGENTS/정의/설계/기록/QA/실연동 자료와 관련 코드 경로를 대조했다. 75개 ID 추적표를 작성했고 COMPLETE44/PARTIAL16/MISSING1/BLOCKED5/UNVERIFIED9(로컬/합성 범위)을 분리했다. 실계정/실제 응답 수집은 전부 미실행이다.
+- 실제 결함: 실험 화면 검색·필터·정렬/선택 해제·게임별 판매 필터 누락, 갱신/게임 변경 시 선택 소실, MainWindow 닫기에서 Steam.Busy 누락, stale 재가격의 검증 순서가 취소 이후였음. 관련 코드/UI/수량 상한 복원을 수정했다. 자동 발견/이미지/실평균가는 별도 미완성으로 명시했다.
+- 고정 코드/건수 진단을 재사용·연결하면서 중앙 구조화 JSONL 시스템을 추가했다. operation/correlation/batch/item, UTC/버전/commit, 고정 EventId/RequirementId, HTTP·저장소 오류/상태·가격/재시도, 정제 stack/inner 위치와 사용자 진단/로컬 ZIP UI. 읽는 중 writer 파일 공유 오류를 첫 주입 검사에서 찾아 ReadWrite 공유로 수정했다.
+- 보안 설계: 자유 텍스트/URL/원문/인증/계정·자산 식별자는 생성 지점부터 제외, sink/export 재정제. 예외 message/path/전체 객체 금지. bounded async writer와 누락/실패 health, 보존 한도, 검토 후 원자 ZIP 저장. 로그 실패로 재판매/취소하지 않는 것을 검증했다. 기존 거래 저널은 별도 유지한다.
+- 새 재가격 승인은 원 intent를 변경하지 않고 확정 취소 proof를 새 intent에 연결/원자 Superseded 처리. 이전 앱이 새 상태를 오해하지 않도록 Steam schema v3 마이그레이션, 구 내용/요청/예약 보존. 미확정 취소/이미 전송한 replacement는 revision 불가.
+- QA는 합성 handler, 격리 SQLite, 자체 STA/RenderTargetBitmap만 사용. 디스크 full은 writer 예외와 in-memory SQLite page 상한으로 주입(실제 사용자 디스크를 채우지 않음). 비밀 marker/위조 파일/ZIP 재정제, 작업 ID/commit, 부분 실패/저널 실패/호출 횟수/재시작을 assert했다. 최종 전체 Debug **139/139** 및 비표시 WPF **23/23 PASS**, FAIL0, 경고0/오류0. Steam v3 변경 후 회귀도 통과. 최종 App startup의 app-local default binding listener 제거는 정적 보안 점검/Release 컴파일로 확인하고 실제 startup 실행은 하지 않는다. Release/커밋 결과는 마감 기록에 추가한다.
+- 공개 약관 Automation/Enforcement 본문을 재확인했다. support confirmations 링크는 이번 도구 응답이 이미지 한 줄이라 본문 재확인 실패로 기록했다. 새로운 API live 호환성/정책 허용을 추정하지 않았다. 다른 앱/프로세스/입력/화면/실계정 접근 없음, 새 SDK/패키지/경쟁 코드 도입 없음.
+
 ## 2026-10-28 — 5차 사용자 연결·KRW·스택·대조/재가격
 
 - 시작 HEAD/origin/main `73ad542`, 작업 트리 clean. AGENTS·현황·정의·QA·아키텍처·판매 계약·실연동 조사를 읽고 fetch했다. 실제 계정/거래·외부 앱·입력·화면 접근은 하지 않고 현재 저장소를 이어 수정했다.

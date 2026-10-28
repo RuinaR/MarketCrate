@@ -72,9 +72,9 @@
       </StackPanel>
       <StackPanel Grid.Column="1" Margin="16,0">
         <TextBlock Text="보관함에서, 최종 검토까지." FontSize="22" />
-        <TextBlock><TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource MutedText}"><Setter Property="Text" Value="MOCK WORKSPACE · 합성 데이터 · 실제 Steam 계정 연결 없음"/><Style.Triggers><DataTrigger Binding="{Binding SelectedIndex,ElementName=WorkspaceTabs}" Value="4"><Setter Property="Text" Value="STEAM EXPERIMENTAL · 사용자 시작 읽기 연결 · 실제 거래 기본 차단"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
+        <TextBlock><TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource MutedText}"><Setter Property="Text" Value="MOCK WORKSPACE · 합성 데이터 · 실제 Steam 계정 연결 없음"/><Style.Triggers><DataTrigger Binding="{Binding SelectedIndex,ElementName=WorkspaceTabs}" Value="4"><Setter Property="Text" Value="STEAM EXPERIMENTAL · 사용자 시작 읽기 연결 · 실제 거래 기본 차단"/></DataTrigger><DataTrigger Binding="{Binding SelectedIndex,ElementName=WorkspaceTabs}" Value="5"><Setter Property="Text" Value="DIAGNOSTICS · 앱 자체 작업만 기록 · 로그와 거래 저널은 별도"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
       </StackPanel>
-      <Button Grid.Column="2" Content="Mock 데이터 갱신" Command="{Binding Refresh}"><Button.Style><Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"><Style.Triggers><DataTrigger Binding="{Binding SelectedIndex,ElementName=WorkspaceTabs}" Value="4"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Button.Style></Button>
+      <Button Grid.Column="2" Content="Mock 데이터 갱신" Command="{Binding Refresh}"><Button.Style><Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}"><Style.Triggers><DataTrigger Binding="{Binding SelectedIndex,ElementName=WorkspaceTabs}" Value="4"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger><DataTrigger Binding="{Binding SelectedIndex,ElementName=WorkspaceTabs}" Value="5"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Button.Style></Button>
     </Grid>
     <Grid Grid.Row="1" x:Name="WorkspaceBody">
       <Grid.ColumnDefinitions>
@@ -85,7 +85,7 @@
         <ColumnDefinition Width="270" />
       </Grid.ColumnDefinitions>
       <Border>
-        <Border.Style><Style TargetType="Border" BasedOn="{StaticResource PanelStyle}"><Style.Triggers><DataTrigger Binding="{Binding SelectedIndex,ElementName=WorkspaceTabs}" Value="4"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Border.Style>
+        <Border.Style><Style TargetType="Border" BasedOn="{StaticResource PanelStyle}"><Style.Triggers><DataTrigger Binding="{Binding SelectedIndex,ElementName=WorkspaceTabs}" Value="4"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger><DataTrigger Binding="{Binding SelectedIndex,ElementName=WorkspaceTabs}" Value="5"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Border.Style>
         <DockPanel>
           <StackPanel DockPanel.Dock="Bottom">
             <TextBlock Text="실등록 연동 차단" Foreground="{StaticResource Warning}" FontWeight="Bold" />
@@ -101,7 +101,7 @@
         </DockPanel>
       </Border>
       <TabControl x:Name="WorkspaceTabs" AutomationProperties.Name="작업 화면">
-        <TabControl.Style><Style TargetType="TabControl" BasedOn="{StaticResource {x:Type TabControl}}"><Setter Property="Grid.Column" Value="2"/><Style.Triggers><Trigger Property="SelectedIndex" Value="4"><Setter Property="Grid.Column" Value="0"/><Setter Property="Grid.ColumnSpan" Value="5"/></Trigger></Style.Triggers></Style></TabControl.Style>
+        <TabControl.Style><Style TargetType="TabControl" BasedOn="{StaticResource {x:Type TabControl}}"><Setter Property="Grid.Column" Value="2"/><Style.Triggers><Trigger Property="SelectedIndex" Value="4"><Setter Property="Grid.Column" Value="0"/><Setter Property="Grid.ColumnSpan" Value="5"/></Trigger><Trigger Property="SelectedIndex" Value="5"><Setter Property="Grid.Column" Value="0"/><Setter Property="Grid.ColumnSpan" Value="5"/></Trigger></Style.Triggers></Style></TabControl.Style>
         <TabItem Header="보관함">
           <Grid>
             <Grid.RowDefinitions>
@@ -242,9 +242,10 @@
           </ScrollViewer>
         </TabItem>
         <TabItem Header="Steam 실험 연동"><local:SteamWorkspaceView DataContext="{Binding Steam}" /></TabItem>
+        <TabItem Header="진단 / 로그"><local:DiagnosticsView DataContext="{Binding Diagnostics}"/></TabItem>
       </TabControl>
       <Border Grid.Column="4">
-        <Border.Style><Style TargetType="Border" BasedOn="{StaticResource PanelStyle}"><Style.Triggers><DataTrigger Binding="{Binding SelectedIndex,ElementName=WorkspaceTabs}" Value="4"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Border.Style>
+        <Border.Style><Style TargetType="Border" BasedOn="{StaticResource PanelStyle}"><Style.Triggers><DataTrigger Binding="{Binding SelectedIndex,ElementName=WorkspaceTabs}" Value="4"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger><DataTrigger Binding="{Binding SelectedIndex,ElementName=WorkspaceTabs}" Value="5"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Border.Style>
         <DockPanel>
           <StackPanel DockPanel.Dock="Bottom">
             <Button x:Name="ReviewButton" Content="선택 가격 검토" Command="{Binding Review}" Style="{StaticResource Primary}" />
@@ -266,7 +267,7 @@
       </Border>
     </Grid>
     <Border Grid.Row="2" Style="{StaticResource Toast}" Margin="0,14,0,0" AutomationProperties.LiveSetting="Polite">
-      <TextBlock Foreground="{StaticResource Warning}"><TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}"><Setter Property="Text" Value="{Binding Status}"/><Style.Triggers><DataTrigger Binding="{Binding SelectedIndex,ElementName=WorkspaceTabs}" Value="4"><Setter Property="Text" Value="{Binding Steam.Status}"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
+      <TextBlock Foreground="{StaticResource Warning}"><TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}"><Setter Property="Text" Value="{Binding Status}"/><Style.Triggers><DataTrigger Binding="{Binding SelectedIndex,ElementName=WorkspaceTabs}" Value="4"><Setter Property="Text" Value="{Binding Steam.Status}"/></DataTrigger><DataTrigger Binding="{Binding SelectedIndex,ElementName=WorkspaceTabs}" Value="5"><Setter Property="Text" Value="{Binding Diagnostics.Status}"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
     </Border>
     <Grid Grid.RowSpan="3" Background="#C00A0E16" Visibility="{Binding IsReviewOpen,Converter={StaticResource BoolVisibility}}" x:Name="ReviewOverlay" KeyboardNavigation.TabNavigation="Cycle" PreviewKeyDown="ReviewKeyDown">
       <Border Style="{StaticResource Dialog}" Margin="30" MaxWidth="1100" AutomationProperties.Name="최종 Mock 가격 검토">

@@ -16,9 +16,10 @@ public static class SteamContract
 {
     public static T Parse<T>(string json, Func<JsonElement, T> parse)
     {
-        try { using var document = SteamHttp.Json(json); return parse(document.RootElement); }
+        try { using var document = SteamHttp.Json(json); var result=parse(document.RootElement);DiagnosticHub.Emit(DiagnosticEvent.ResponseParsed,DiagnosticArea.Data,level:LogLevel.Debug); return result; }
+        catch(SteamException error){SteamDiagnostics.Failure(error);throw;}
         catch (Exception error) when (error is JsonException or InvalidOperationException or KeyNotFoundException or FormatException or OverflowException or ArgumentException)
-        { throw new SteamException(SteamFailure.ContractChanged); }
+        { DiagnosticHub.Emit(DiagnosticEvent.ResponseParsed,DiagnosticArea.Data,DiagnosticOutcome.Failed,LogLevel.Error,DiagnosticError.Schema,exception:error); throw new SteamException(SteamFailure.ContractChanged); }
     }
     public static string Id(JsonElement value)
     {

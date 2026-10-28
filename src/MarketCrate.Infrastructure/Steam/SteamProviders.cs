@@ -11,6 +11,7 @@ public sealed class SteamInventoryProvider(SteamHttp http, SteamQrAuthentication
     public Capability Capability => auth.Connected ? Capability.Experimental : Capability.IntegrationBlocked;
     public async Task<IReadOnlyList<InventoryAsset>> GetAsync(CancellationToken cancellationToken)
     {
+        using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.InventoryLoaded,DiagnosticArea.Data,"C01");
         if (!auth.Connected || appId < 1 || !ulong.TryParse(contextId, out var context) || context == 0) throw new SteamException(SteamFailure.Authentication);
         var all = new List<InventoryAsset>(); var fees = new Dictionary<AssetKey, int>(); var keys = new HashSet<AssetKey>(); var cursors = new HashSet<string>(); string? next = null;
         for (var page = 0; page < 100; page++)
@@ -24,6 +25,7 @@ public sealed class SteamInventoryProvider(SteamHttp http, SteamQrAuthentication
             catch (SteamException error) { http.Stop(error.Code); throw; }
             foreach (var asset in result.Assets)
                 if (!keys.Add(asset.Key)) { http.Stop(SteamFailure.ContractChanged); throw new SteamException(SteamFailure.ContractChanged); } else all.Add(asset);
+            DiagnosticHub.Emit(DiagnosticEvent.InventoryPage,DiagnosticArea.Data,count:result.Assets.Length,requirement:"C01");
             next = result.Next;
             if (result.PublisherFees is { } pageFees) foreach (var fee in pageFees) fees.Add(fee.Key, fee.Value);
             if (next is null) { PublisherFees.Clear(); foreach (var fee in fees) PublisherFees.Add(fee.Key, fee.Value); return all; }
@@ -38,10 +40,14 @@ public sealed class SteamMarketDataProvider(SteamHttp http, SteamQrAuthenticatio
     private readonly Dictionary<(int App, string Hash), PriceSnapshot> cache = [];
     public Capability Capability => http.Access.ResearchRiskAccepted && http.Halted is null ? Capability.Experimental : Capability.IntegrationBlocked;
     // Synchronous domain interface is cache-only; network is always explicit and asynchronous.
-    public PriceSnapshot Get(InventoryAsset asset) => cache.TryGetValue((asset.Key.AppId, asset.MarketHashName), out var value) ? value :
-        throw new SteamException(SteamFailure.Restricted);
+    public PriceSnapshot Get(InventoryAsset asset)
+    {
+        if(!cache.TryGetValue((asset.Key.AppId,asset.MarketHashName),out var value)){DiagnosticHub.Emit(DiagnosticEvent.CacheRead,DiagnosticArea.Data,DiagnosticOutcome.CacheExpired);throw new SteamException(SteamFailure.Restricted);}
+        DiagnosticHub.Emit(DiagnosticEvent.CacheRead,DiagnosticArea.Data,DateTimeOffset.UtcNow-value.CapturedAt>TimeSpan.FromMinutes(5)?DiagnosticOutcome.CacheExpired:DiagnosticOutcome.CacheHit,level:LogLevel.Debug);return value;
+    }
     public async Task<PriceSnapshot> RefreshAsync(InventoryAsset asset, CancellationToken token = default)
     {
+        using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.PriceLoaded,DiagnosticArea.Data,"D07");
         var query = Uri.EscapeDataString(JsonSerializer.Serialize(new object[] { asset.Key.AppId, asset.MarketHashName }));
         using var request = new HttpRequestMessage(HttpMethod.Get, "https://steamcommunity.com/market/orderbook?q=Load&qp=" + query);
         var body = await http.SendAsync(request, token);
@@ -58,6 +64,7 @@ public sealed class SteamMarketDataProvider(SteamHttp http, SteamQrAuthenticatio
     }
     public async Task<ImmutableArray<SteamHistoryPoint>> GetMedianHistoryAsync(InventoryAsset asset, CancellationToken token = default)
     {
+        using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.HistoryLoaded,DiagnosticArea.Data,"D01");
         if (!auth.Connected) throw new SteamException(SteamFailure.Authentication);
         using var request = new HttpRequestMessage(HttpMethod.Get, $"https://steamcommunity.com/market/pricehistory/?appid={asset.Key.AppId}&market_hash_name={Uri.EscapeDataString(asset.MarketHashName)}");
         var body = await http.SendAsync(request, token);
@@ -72,6 +79,7 @@ public sealed class SteamOrdersProvider(SteamHttp http, SteamQrAuthentication au
     public IReadOnlyList<LineResult> GetOrders() => cache.Select(x => new LineResult(x.ListingId, x.State, "Steam 목록 관측; 자동 갱신 없음")).ToArray();
     public async Task<ImmutableArray<SteamListing>> RefreshAsync(CancellationToken token = default)
     {
+        using var operation=DiagnosticHub.Operation(DiagnosticEvent.ListingsLoaded,DiagnosticArea.Data,"B01");
         if (!auth.Connected) throw new SteamException(SteamFailure.Authentication);
         var all = new Dictionary<string, SteamListing>(); int? total = null; var active = 0;
         for (var start = 0; start < 10000; start += 100)

@@ -1,3 +1,4 @@
+using MarketCrate.Core;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -20,6 +21,7 @@ public sealed class SteamQrAuthentication(SteamHttp http, TimeProvider? timeProv
     public Task<Uri> BeginAsync(CancellationToken token = default) => GuardAsync(() => BeginCoreAsync(token));
     private async Task<Uri> BeginCoreAsync(CancellationToken token)
     {
+        using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.Login,DiagnosticArea.Authentication,"A01");
         if (!http.Access.AuthenticatedReads) throw new SteamException(SteamFailure.Disabled);
         Dispose();
         // Minimal independent encoding of public protocol field numbers; no protobuf dependency/source copying.
@@ -41,6 +43,7 @@ public sealed class SteamQrAuthentication(SteamHttp http, TimeProvider? timeProv
     public Task<bool> CheckAsync(CancellationToken token = default) => GuardAsync(() => CheckCoreAsync(token));
     private async Task<bool> CheckCoreAsync(CancellationToken token)
     {
+        using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.LoginCheck,DiagnosticArea.Authentication,"A03");
         if (Challenge is null || clock.GetUtcNow() > expires) throw new SteamException(SteamFailure.Expired);
         if (clock.GetUtcNow() < nextPoll) return false;
         nextPoll = clock.GetUtcNow() + interval;
@@ -60,6 +63,7 @@ public sealed class SteamQrAuthentication(SteamHttp http, TimeProvider? timeProv
     }
     private async Task FinalizeAsync(string refresh, CancellationToken token)
     {
+        using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.AuthState,DiagnosticArea.Authentication,"A02");
         var csrf = Convert.ToHexString(RandomNumberGenerator.GetBytes(12)).ToLowerInvariant();
         using var form = SteamHttp.Form(new("https://login.steampowered.com/jwt/finalizelogin"), new Dictionary<string, string>
         { ["nonce"] = refresh, ["sessionid"] = csrf, ["redir"] = "https://steamcommunity.com/login/home/?goto=" });

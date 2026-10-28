@@ -5,6 +5,7 @@ public static class MockListingManagement
 {
     public static IReadOnlyList<MockListing> Reprice(IDemoDataStore store, IReadOnlyList<MockListing> approved, IReadOnlyList<long> prices)
     {
+        using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.Reprice,DiagnosticArea.Management,"B10");
         var current = store.ReadListings().ToList();
         if (approved.Count == 0 || prices.Count != approved.Count || approved.Select(x => x.ListingId).Distinct().Count() != approved.Count ||
             approved.Any(x => x.State != ListingState.Listed || !current.Contains(x)) || prices.Any(x => x is < 3 or > 1_000_000_000))
@@ -14,6 +15,7 @@ public static class MockListingManagement
     }
     public static IReadOnlyList<MockListing> RetryFailed(IDemoDataStore store, IReadOnlyList<MockListing> approved)
     {
+        using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.Retry,DiagnosticArea.Management,"B11");
         var current = store.ReadListings().ToList();
         if (approved.Count == 0 || approved.Select(x => x.ListingId).Distinct().Count() != approved.Count || approved.Any(x =>
             (!CanResume(current, x) && (x.State != ListingState.Failed || x.Action is not (ListingAction.Cancel or ListingAction.Reprice))) || !current.Contains(x)))
@@ -29,11 +31,14 @@ public static class MockListingManagement
     }
     public static void CancelOne(IDemoDataStore store, List<MockListing> current, MockListing listing)
     {
+        using var diagnosticScope=DiagnosticHub.Scope(item:listing.ListingId);
         var index = current.FindIndex(x => x.ListingId == listing.ListingId);
+        DiagnosticHub.Emit(DiagnosticEvent.CancelRequested,DiagnosticArea.Management,DiagnosticOutcome.Started,from:listing.State.ToString(),to:ListingState.CancelRequested.ToString(),requirement:"B08");
         current[index] = listing with { State = ListingState.CancelRequested, Action = ListingAction.Cancel, Attempt = checked(listing.Attempt + 1) };
         store.SaveListings(current);
         current[index] = current[index] with { State = Reject(listing) ? ListingState.Failed : ListingState.Cancelled };
         store.SaveListings(current);
+        DiagnosticHub.Emit(DiagnosticEvent.CancelResult,DiagnosticArea.Management,current[index].State==ListingState.Failed?DiagnosticOutcome.Failed:DiagnosticOutcome.Succeeded,from:ListingState.CancelRequested.ToString(),to:current[index].State.ToString(),journal:"Committed",requirement:"B09");
     }
     private static bool Reject(MockListing listing) => listing.ListingId == "demo-reject" && listing.Attempt == 0;
     public static bool CanResume(IReadOnlyList<MockListing> current, MockListing listing) => listing.State == ListingState.Cancelled && listing.Action == ListingAction.Reprice &&

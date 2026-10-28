@@ -46,3 +46,7 @@ artifacts/
 !docs/WORKLOG.md
 
 # Keep normal project source/assets and documentation under version control.
+
+# Structured local diagnostics / reviewed packages
+session-*.jsonl
+**/Logs/

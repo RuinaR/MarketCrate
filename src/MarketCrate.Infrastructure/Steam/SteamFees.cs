@@ -34,7 +34,7 @@ public static class SteamFees
             return new((long)value, data.TryGetProperty("fee_cap", out var cap) ? SteamContract.Integer(cap) : 0);
         }
         var result = new SteamFeeSchedule(wallet.Currency, wallet.MinimumWire, wallet.IncrementWire, Rate("steam_fee"), Rate("publisher_fee"));
-        result.Validate(); return result;
+        result.Validate(); DiagnosticHub.Emit(DiagnosticEvent.FeeValidated,DiagnosticArea.Pricing,requirement:"D10");return result;
     });
     public static async Task<SteamFeeSchedule> FetchAsync(SteamHttp http, int appId, CancellationToken token)
     {

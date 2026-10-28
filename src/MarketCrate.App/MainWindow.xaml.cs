@@ -8,6 +8,6 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         Loaded += async (_, _) => { if (DataContext is MainViewModel vm) await vm.InitializeAsync(); };
-        Closing += (_, e) => { if (DataContext is MainViewModel { Busy: true }) e.Cancel = true; };
+        Closing += (_, e) => { if (DataContext is MainViewModel vm && (vm.Busy || vm.Steam.Busy)) e.Cancel = true; };
     }
 }

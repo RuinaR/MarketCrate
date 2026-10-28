@@ -18,6 +18,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
     public bool CanReconcile => auth.Connected;
     public async Task ValidateBatchAsync(SaleBatchSnapshot snapshot, CancellationToken token)
     {
+        using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,"E09");
         approved.Clear();
         if (!CanExecute || snapshot.AccountReference != auth.SteamId) throw new SteamException(SteamFailure.Disabled);
         BatchValidation.Validate(snapshot, DateTimeOffset.UtcNow);
@@ -60,6 +61,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
     }
     public async Task<LineResult> SubmitAsync(SaleLineSnapshot line, string requestKey, CancellationToken cancellationToken)
     {
+        using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.ItemResult,DiagnosticArea.Sales,"F01");
         await mutations.WaitAsync(cancellationToken);
         try
         {
@@ -89,7 +91,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
                 var conflict = SteamContract.Parse(body, root =>
                     root.TryGetProperty("price", out var serverPrice) && SteamContract.Integer(serverPrice) != new Money(line.UnitQuote.SellerReceives, line.Currency).Wire ||
                     root.TryGetProperty("fee", out var serverFee) && SteamContract.Integer(serverFee) != new Money(line.UnitQuote.Fees, line.Currency).Wire);
-                if (conflict) response = (SaleState.Unknown, null);
+                if (conflict) {DiagnosticHub.Emit(DiagnosticEvent.FeeValidated,DiagnosticArea.Sales,DiagnosticOutcome.Unknown,LogLevel.Error,DiagnosticError.Validation,reason:"FieldsMismatch",currency:line.Currency,quote:line.UnitQuote,requirement:"D10");response = (SaleState.Unknown, null);}
                 if (response.ListingId is not null && store.Commands().Any(x => x.Kind == "sell" && x.RequestKey != requestKey && x.ListingId == response.ListingId))
                     response = (SaleState.Unknown, null);
                 if (response.State == SaleState.Unknown) http.Stop(SteamFailure.ContractChanged);
@@ -107,6 +109,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
     }
     public async Task<LineResult> ReconcileAsync(SaleLineSnapshot line, string requestKey, CancellationToken cancellationToken)
     {
+        using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.EvidenceChecked,DiagnosticArea.Sales,"F09");
         var command = store.ReadCommand(requestKey);
         if (!CanReconcile || command is null || command.Account != auth.SteamId || command.Line != line || command.Kind != "sell")
             return new(line.LineId, SaleState.Unknown, "동일 계정/요청 증거 없음");
@@ -125,6 +128,8 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
     }
     public async Task<LineResult> CancelAsync(SteamListing reviewed, string requestKey, CancellationToken token = default)
     {
+        using var diagnosticScope=DiagnosticHub.Scope(item:requestKey);
+        using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.CancelRequested,DiagnosticArea.Management,"B08");
         await mutations.WaitAsync(token);
         try
         {
@@ -181,11 +186,14 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         {
             store.SaveReturn(new(requestKey, originalSell!.RequestKey, returned!.Key, intent.Line.Quantity, DateTimeOffset.UtcNow));
         }
+        DiagnosticHub.Emit(DiagnosticEvent.CancelResult,DiagnosticArea.Management,confirmed?DiagnosticOutcome.Reconciled:DiagnosticOutcome.Unknown,from:intent.State.ToString(),to:state.ToString(),reason:confirmed?"Committed":"NoCausalEvidence",requirement:"B09");
         store.SaveCommand(intent with { State = state });
         return new(intent.Line.LineId, state, confirmed ? "취소 접수·목록 부재·동일 단일 자산 반환 대조 완료" : current is null ? "목록 부재/스택 증가만으로 취소 인과관계 확인 불가: 재등록 차단" : "목록에 아직 존재: 취소 완료 아님");
     }
     public async Task<SteamEvidenceReport> InspectAsync(string requestKey, CancellationToken token = default)
     {
+        using var diagnosticScope=DiagnosticHub.Scope(item:requestKey);
+        using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.EvidenceChecked,DiagnosticArea.Management,"F06");
         var command = store.ReadCommand(requestKey);
         if (!CanReconcile || command is null || command.Account != auth.SteamId) throw new SteamException(SteamFailure.Restricted);
         var rows = await orders.RefreshAsync(token); var line = command.Line;
@@ -199,13 +207,35 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         }).ToArray();
         var matches = candidates.Count(x => x.Reason == SteamEvidenceReason.CandidateOnly);
         var verdict = candidates.Any(x => x.Reason == SteamEvidenceReason.ServerIdAndFields) ? SteamEvidenceReason.ServerIdAndFields : matches > 1 ? SteamEvidenceReason.MultipleCandidates : matches == 1 ? SteamEvidenceReason.CandidateOnly : SteamEvidenceReason.NoCandidate;
-        var report = new SteamEvidenceReport(requestKey, DateTimeOffset.UtcNow, verdict, candidates); store.SaveEvidence(report); return report;
+        var report = new SteamEvidenceReport(requestKey, DateTimeOffset.UtcNow, verdict, candidates); store.SaveEvidence(report); DiagnosticHub.Emit(DiagnosticEvent.EvidenceChecked,DiagnosticArea.Management,verdict==SteamEvidenceReason.ServerIdAndFields?DiagnosticOutcome.Reconciled:DiagnosticOutcome.Unknown,reason:verdict.ToString(),count:candidates.Length,requirement:"F06");return report;
     }
     public async Task<SteamRepriceIntent> RepriceAsync(SteamListing listing, long buyer, string key, CancellationToken token = default)
     {
+        using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.Reprice,DiagnosticArea.Management,"B10");
         await repricing.WaitAsync(token);
         try { return await RepriceCoreAsync(listing,buyer,key,token); }
         finally { repricing.Release(); }
+    }
+    // Explicit NEW approval, never mutate or replay the previous approval. Reuse only proven cancellation.
+    public async Task<SteamRepriceIntent> ReviseRepriceAsync(string previousKey,long buyer,string newKey,CancellationToken token=default)
+    {
+        using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.Reprice,DiagnosticArea.Management,"B10");
+        await repricing.WaitAsync(token);
+        try
+        {
+            if(!CanExecute)throw new SteamException(SteamFailure.Disabled);
+            var old=store.Reprice(previousKey)??throw new SteamException(SteamFailure.Restricted);
+            if(old.Account!=auth.SteamId||old.ReplacementKey is not null||old.State is SteamRepriceState.Superseded or SteamRepriceState.Unknown||store.Reprice(newKey)is not null)throw new SteamException(SteamFailure.Restricted);
+            var cancelKey=old.CancellationKey??old.Key+":cancel";
+            if((await ReconcileCancellationAsync(cancelKey,token)).State!=SaleState.Reconciled)throw new SteamException(SteamFailure.Restricted);
+            var fees=await SteamFees.FetchAsync(http,old.Listing.Asset.AppId,token);
+            if(fees.Currency!=old.Listing.Currency)throw new SteamException(SteamFailure.Restricted);
+            _=fees.FromBuyer(buyer);
+            var next=new SteamRepriceIntent(newKey,old.Account,old.Listing,buyer,DateTimeOffset.UtcNow,SteamRepriceState.AwaitingReturn,CancellationKey:cancelKey);
+            store.SupersedeReprice(old,next);
+            return await RepriceCoreAsync(next.Listing,buyer,newKey,token);
+        }
+        finally{repricing.Release();}
     }
     private async Task<SteamRepriceIntent> RepriceCoreAsync(SteamListing listing, long buyer, string key, CancellationToken token)
     {
@@ -220,7 +250,9 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         }
         if (intent.Account != auth.SteamId || intent.Listing != listing || intent.BuyerPrice != buyer) throw new SteamException(SteamFailure.Restricted);
         if (intent.ReplacementKey is not null) return intent; // Never submit replacement twice after restart/timeout.
-        var cancelKey = key + ":cancel";
+        if(intent.State==SteamRepriceState.Superseded||intent.SupersededBy is not null)throw new SteamException(SteamFailure.StaleReview);
+        if(intent.CreatedAt>DateTimeOffset.UtcNow.AddSeconds(5)||DateTimeOffset.UtcNow-intent.CreatedAt>TimeSpan.FromMinutes(5))throw new SteamException(SteamFailure.StaleReview);
+        var cancelKey = intent.CancellationKey??key + ":cancel";
         if (store.ReadCommand(cancelKey) is null) await CancelAsync(listing, cancelKey, token);
         var status = await ReconcileCancellationAsync(cancelKey, token);
         if (status.State != SaleState.Reconciled) { intent = intent with { State = SteamRepriceState.AwaitingReturn }; store.SaveReprice(intent); return intent; }

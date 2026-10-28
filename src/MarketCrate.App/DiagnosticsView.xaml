@@ -1,0 +1,15 @@
+<UserControl x:Class="MarketCrate.App.DiagnosticsView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Background="{StaticResource Canvas}" Foreground="{StaticResource Ink}">
+ <Grid Margin="8"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+  <StackPanel><TextBlock Text="진단 / 로그 관리" Style="{StaticResource Heading}"/>
+   <TextBlock Text="{Binding Policy}" Style="{StaticResource MutedText}"/>
+   <WrapPanel><CheckBox Content="최근 오류만" IsChecked="{Binding ErrorsOnly}"/><CheckBox Content="상세 진단 모드" IsChecked="{Binding DiagnosticMode}"/><Button Content="최근 이벤트·오류 갱신" Command="{Binding Refresh}"/><Button Content="로그 폴더 열기" Command="{Binding OpenFolder}"/><Button Content="오래된 로그 정리" Command="{Binding Cleanup}"/></WrapPanel>
+   <TextBlock Text="{Binding Status}" Style="{StaticResource MutedText}" Margin="0,8"/>
+   <WrapPanel><TextBlock Text="OperationId (비우면 보존된 전체 작업)" VerticalAlignment="Center"/><TextBox Width="300" Text="{Binding OperationFilter,UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="진단 작업 OperationId 필터"/><Button Content="관련 로그 검색 / ZIP 범위 검토" Command="{Binding ReviewPackage}"/></WrapPanel>
+   <TextBlock Text="{Binding Summary}" Style="{StaticResource MutedText}" Margin="0,8"/>
+   <WrapPanel><CheckBox Content="내보낼 범위와 민감정보 제외 정책을 확인했습니다" IsChecked="{Binding Reviewed}"/><Button Content="검토한 진단 ZIP 로컬 저장" Command="{Binding Export}"/></WrapPanel>
+  </StackPanel>
+  <ListBox Grid.Row="1" ItemsSource="{Binding Events}" VirtualizingPanel.IsVirtualizing="True" VirtualizingPanel.VirtualizationMode="Recycling" ScrollViewer.CanContentScroll="True" AutomationProperties.Name="최근 작업 진단 이벤트, 오류 수준 포함">
+   <ListBox.ItemTemplate><DataTemplate><StackPanel Margin="2,6"><TextBlock Text="{Binding Time}" Style="{StaticResource MutedText}"/><TextBlock Text="{Binding Detail}"/><TextBox Text="{Binding OperationId,Mode=OneWay}" IsReadOnly="True" AutomationProperties.Name="선택 작업 OperationId, 복사 가능"/><TextBlock Text="{Binding Links}" Style="{StaticResource MutedText}"/></StackPanel></DataTemplate></ListBox.ItemTemplate>
+  </ListBox>
+ </Grid>
+</UserControl>

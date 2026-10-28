@@ -1,7 +1,10 @@
+using MarketCrate.Tests;
 using System.Collections.Immutable;
 using MarketCrate.Core;
 using MarketCrate.Infrastructure;
 using MarketCrate.App.ViewModels;
+
+if(args.Contains("--stage6")){var focused=await SixthStageTests.RunAsync();Console.WriteLine($"STAGE6 RESULT {focused.Passed} PASS / {focused.Failed} FAIL");return focused.Failed==0?0:1;}
 
 if (args.Length > 0 && args[0].StartsWith("--crash-", StringComparison.Ordinal)) return ThirdStageTests.CrashHelper(args);
 
@@ -39,7 +42,8 @@ failed += next.Failed;
 var third = await ThirdStageTests.RunAsync(); failed += third.Failed;
 var fourth = await FourthStageTests.RunAsync(); failed += fourth.Failed;
 var fifth = await FifthStageTests.RunAsync(); failed += fifth.Failed;
-var total = tests.Length + next.Passed + next.Failed + third.Passed + third.Failed + fourth.Passed + fourth.Failed + fifth.Passed + fifth.Failed;
+var sixth=await SixthStageTests.RunAsync();failed+=sixth.Failed;
+var total = sixth.Passed+sixth.Failed+tests.Length + next.Passed + next.Failed + third.Passed + third.Failed + fourth.Passed + fourth.Failed + fifth.Passed + fifth.Failed;
 Console.WriteLine($"RESULT {total - failed}/{total} PASS; {failed} FAIL · synthetic data only, no GUI/network (Steam HTTP replaced by test handler)");
 return failed == 0 ? 0 : 1;
 

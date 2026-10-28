@@ -1,4 +1,6 @@
 using System.Net;
+using System.Diagnostics;
+using MarketCrate.Core;
 using System.Net.Http.Headers;
 using System.Text.Json;
 
@@ -64,12 +66,21 @@ public sealed class SteamHttp : IDisposable
     }
     internal async Task<string> SendAsync(HttpRequestMessage request, CancellationToken token, bool allowWalletHtml = false)
     {
+        using var scope=DiagnosticHub.Scope(correlation:true);
+        var started=DateTimeOffset.UtcNow;var watch=Stopwatch.StartNew();
         ValidateUri(request.RequestUri!);
         var path = request.RequestUri!.AbsolutePath;
+        var endpoint=path switch {
+            "/IAuthenticationService/BeginAuthSessionViaQR/v1/"=>"AuthBegin", "/IAuthenticationService/PollAuthSessionStatus/v1/"=>"AuthPoll",
+            "/jwt/finalizelogin"=>"AuthFinalize", "/login/settoken"=>"AuthTransfer", "/market/"=>"Wallet", "/market/ajaxfeestructure/"=>"Fees",
+            "/market/orderbook"=>"Orderbook", "/market/pricehistory/"=>"History", "/market/mylistings/render/"=>"Listings", "/market/sellitem/"=>"Sell",
+            _=>path.StartsWith("/inventory/",StringComparison.Ordinal)?"Inventory":"Cancel"};
+        DiagnosticHub.Emit(DiagnosticEvent.HttpRequest,DiagnosticArea.HTTP,DiagnosticOutcome.Started,endpoint:endpoint,method:request.Method.Method);
         var mustPost = path.Contains("AuthSession", StringComparison.Ordinal) || path is "/jwt/finalizelogin" or "/login/settoken" or "/market/sellitem/" || path.StartsWith("/market/removelisting/", StringComparison.Ordinal);
         if (request.Method != (mustPost ? HttpMethod.Post : HttpMethod.Get)) throw new SteamException(SteamFailure.ContractChanged);
         if (!Access.ResearchRiskAccepted) throw new SteamException(SteamFailure.Disabled);
-        await queue.WaitAsync(token);
+        var phase="QueueWait";
+        try{await queue.WaitAsync(token);}catch(OperationCanceledException error){DiagnosticHub.Emit(DiagnosticEvent.HttpFailure,DiagnosticArea.HTTP,DiagnosticOutcome.Cancelled,LogLevel.Warning,DiagnosticError.Cancelled,endpoint:endpoint,reason:phase,exception:error);throw;}
         try
         {
             if (Halted is { } halted) throw new SteamException(halted);
@@ -77,6 +88,7 @@ public sealed class SteamHttp : IDisposable
             if (wait > TimeSpan.Zero) await Task.Delay(wait, token);
             if (!Access.ResearchRiskAccepted) throw new SteamException(SteamFailure.Disabled);
             last = DateTimeOffset.UtcNow;
+            phase="ConnectOrHeaders";
             using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);
             if (response.Headers.TryGetValues("Set-Cookie", out var cookies))
             {
@@ -84,6 +96,10 @@ public sealed class SteamHttp : IDisposable
                 catch (CookieException) { Stop(SteamFailure.ContractChanged); throw new SteamException(SteamFailure.ContractChanged); }
             }
             var status = (int)response.StatusCode;
+            int? steamCode=response.Headers.TryGetValues("x-eresult",out var codes)&&int.TryParse(codes.FirstOrDefault(),out var numeric)?numeric:null;
+            DiagnosticHub.Emit(DiagnosticEvent.HttpResponse,DiagnosticArea.HTTP, status==200?DiagnosticOutcome.Succeeded:DiagnosticOutcome.Failed,
+                status==200?LogLevel.Information:LogLevel.Warning, status switch{401=>DiagnosticError.Authentication,403=>DiagnosticError.Forbidden,429=>DiagnosticError.RateLimited,>=500=>DiagnosticError.Server,>=400=>DiagnosticError.ClientRequest,_=>DiagnosticError.None},
+                endpoint:endpoint,method:request.Method.Method,status:status,serverCode:steamCode,started:started,elapsed:watch.ElapsedMilliseconds);
             if (status != 200)
             {
                 var failure = status switch { 401 => SteamFailure.Authentication, 403 => SteamFailure.Forbidden, 429 => SteamFailure.RateLimited,
@@ -93,6 +109,7 @@ public sealed class SteamHttp : IDisposable
             if (response.Headers.TryGetValues("x-eresult", out var results) && results.FirstOrDefault() is { } result && result != "1")
             { var failure = result == "15" ? SteamFailure.Denied : result == "27" ? SteamFailure.Expired : SteamFailure.Authentication; Stop(failure); throw new SteamException(failure); }
             // Bounded reads prevent unexpected HTML/large payloads from consuming unbounded memory.
+            phase="Body";
             await using var stream = await response.Content.ReadAsStreamAsync(token);
             using var bytes = new MemoryStream(); var buffer = new byte[8192]; int read;
             while ((read = await stream.ReadAsync(buffer, token)) != 0)
@@ -102,10 +119,15 @@ public sealed class SteamHttp : IDisposable
             }
             var text = System.Text.Encoding.UTF8.GetString(bytes.ToArray());
             if (text.TrimStart().StartsWith('<') && !(allowWalletHtml && request.RequestUri!.AbsoluteUri == "https://steamcommunity.com/market/")) { Stop(SteamFailure.Challenge); throw new SteamException(SteamFailure.Challenge); }
+            DiagnosticHub.Emit(DiagnosticEvent.ResponseBody,DiagnosticArea.HTTP,DiagnosticOutcome.Completed,endpoint:endpoint,method:request.Method.Method,started:started,elapsed:watch.ElapsedMilliseconds);
             return text;
         }
+        catch(SteamException error)
+        { SteamDiagnostics.Failure(error,endpoint,watch.ElapsedMilliseconds);throw; }
         catch (Exception error) when (error is HttpRequestException or TaskCanceledException || error is IOException and not SteamException)
-        { Stop(SteamFailure.Transport); throw new SteamException(SteamFailure.Transport); }
+        { DiagnosticHub.Emit(DiagnosticEvent.HttpFailure,DiagnosticArea.HTTP,token.IsCancellationRequested?DiagnosticOutcome.Cancelled:DiagnosticOutcome.Failed,LogLevel.Error,
+            token.IsCancellationRequested?DiagnosticError.Cancelled:error is TaskCanceledException?DiagnosticError.Timeout:DiagnosticError.Transport,endpoint:endpoint,reason:phase,exception:error,started:started,elapsed:watch.ElapsedMilliseconds);
+          Stop(SteamFailure.Transport); throw new SteamException(SteamFailure.Transport); }
         finally { queue.Release(); }
     }
     internal static HttpRequestMessage Form(Uri uri, IEnumerable<KeyValuePair<string, string>> fields)
@@ -119,7 +141,7 @@ public sealed class SteamHttp : IDisposable
     internal static JsonDocument Json(string body)
     {
         try { return JsonDocument.Parse(body, new JsonDocumentOptions { MaxDepth = 32 }); }
-        catch (JsonException) { throw new SteamException(SteamFailure.ContractChanged); }
+        catch (JsonException error) { DiagnosticHub.Emit(DiagnosticEvent.ResponseParsed,DiagnosticArea.HTTP,DiagnosticOutcome.Failed,LogLevel.Error,DiagnosticError.Parsing,exception:error); throw new SteamException(SteamFailure.ContractChanged); }
     }
     public void Dispose() { Access.Revoke(); client.Dispose(); queue.Dispose(); }
 }

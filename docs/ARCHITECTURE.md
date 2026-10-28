@@ -1,5 +1,13 @@
 # MarketCrate — 아키텍처 (최초 Mock 구현 / 후속 계획)
 
+## 6차 — 진단 경계와 재가격 승인 revision
+
+- Core `Diagnostics.cs`는 typed 이벤트와 AsyncLocal 연결 scope만 정의한다. Infrastructure `Diagnostics/JsonDiagnosticLog.cs`가 Channel single writer/retention/reviewed export를 맡고 `DiagnosticRecordSafety.cs`가 생성·export 이중 whitelist를 적용한다. App은 startup 전에 로거를 구성하고 lifecycle/global exception/binding 이벤트를 연결한다. **로그와 transaction authority를 분리**하며 진단 실패는 주문 흐름에 예외를 전파하거나 재시도를 유발하지 않는다. 구조/보존/위험은 [DIAGNOSTICS](DIAGNOSTICS.md).
+- OperationId는 명령→VM→adapter→저장소 문맥을 공유한다. HTTP request/response는 별도 CorrelationId, BatchId는 snapshot GUID, 내부 항목은 로컬 명령 key의 단방향 digest다. 실제 ID·헤더·QR·원문 exception message를 구조화 객체에 받지 않는다. 앱 로그는 user LocalAppData, 초기 INFO/사용자 진단 옵션 복원.
+- SteamWorkspaceVM은 전체 모델과 필터된 virtualized 뷰를 분리하고, 현재 실행의 asset key 선택/수량 dictionary를 보존한다. 갱신은 최신 가용량에 맞춰 clamp, 인증 변경 시 전체 선택 메모리 폐기. 가격 cache는 새 승인에 재검증한다.
+- `SteamRepriceIntent`에 optional CancellationKey/SupersededBy, Superseded 상태를 추가한다. 취소가 확정된 미전송 의도만 새 승인으로 revision. SQLite transaction에서 이전 의도 폐기/새 의도/audit를 함께 저장한다. 새 의도는 원 취소 proof를 재사용하며 후속 request key를 전송 전에 보존한다. **Steam schema v3**: 기존 v0/v1/v2 row/명령/불명 증거를 그대로 유지하고 header만 올린다. 구 v2 앱은 v3 DB를 거부하여 폐기 승인을 재개할 수 없다. Demo DB는 기존 v2 유지.
+- 실제 이미지/게임 자동 발견/정확한 live VWAP/외부 또는 stack 취소 반환 인과 증거/live 확정 실패 재시도는 완료하지 않았다. [요구사항별 코드 경로](REQUIREMENTS-TRACEABILITY.md)에 PARTIAL/MISSING/BLOCKED/UNVERIFIED 근거를 고정한다.
+
 ## 5차 UI/통화/예약/대조 — 2026-10-28 (최신)
 
 - 기존 Demo MainViewModel을 재작성하지 않고 지연 factory의 `SteamWorkspaceViewModel`/독립 UserControl을 추가했다. 시작/탭 생성은 네트워크·실저널을 생성하지 않는다. 실제 연결 화면은 Mock 사이드바/합계/상태를 숨기고 별도 출처/시각을 사용한다.

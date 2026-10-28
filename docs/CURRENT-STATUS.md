@@ -1,5 +1,19 @@
-# MarketCrate — 현재 상태 (2026-10-28 KST, 5차)
+# MarketCrate — 현재 상태 (2026-10-28 KST, 6차)
 
+## 6차 최신 상태 — 전체 감사 / 구조화 진단 / 안전한 새 재가격 승인
+
+감사 기준 `origin/main=33cd152`(fetch 확인), 기존 사용자 변경 없음. 최초 A–G **75개**: **COMPLETE 44 / PARTIAL 16 / MISSING 1 / BLOCKED 5 / UNVERIFIED 9**. COMPLETE는 로컬/합성/내부 UI 범위이며 실계정 검증은 전부 N. [세부 대응표](REQUIREMENTS-TRACEABILITY.md), [QA 매트릭스](QA-MATRIX.md), [진단 운영](DIAGNOSTICS.md).
+
+- 중앙 DiagnosticHub + whitelist JSONL, 실행/operation/request/batch/internal item 연결, 버전/commit/UTC, 상태/소요 시간/오류 분류/정제 코드 위치. HTTP·인증·데이터·가격·배치·관리·SQLite·UI에 연결. 별도 진단 탭에서 상세 모드/오류·작업 검색/UTC-KST/보존 정책/로컬 검토 ZIP. 토큰·QR·원문·DB export/자동 외부 전송 없음.
+- INFO 기본, 상세 모드 설정 복원, async bounded 256 큐/최근512, 2 MiB·20 MiB·20파일·14일 회전·정리. 기록 실패·포화는 health로 표시하고 거래 결과/재전송에 영향 없음. 종료 tail은 최선 노력이며 모든 오류 재현/원인 확정을 보장하지 않음.
+- 실험 보관함 검색/정렬/marketable 필터/선택 해제, 실제 판매 게임 필터/해제, 실행 중 갱신/게임 전환 선택·수량 복원/상한 축소. 오래된 가격은 재조회하며 선택을 실제 데이터로 가장하지 않음. UI 가격 이상 경고/신선도 재확인 추가.
+- 오래된 재가격은 취소 요청 **전** 차단. 확정 반환 proof가 있는 미전송 의도는 새 가격 검토/승인으로만 새 immutable intent를 만들며 이전 의도를 원자적 Superseded로 보존. 취소/반환/후속 요청 키를 유지해 재시작 중복 방지. 기존 앱이 Superseded를 오해하지 못하도록 Steam schema **v3**로 올리고 v1/v2 내용을 보존한다. 하위 버전 앱으로 DB를 열지 말 것(기존 v2 코드는 v3 거부).
+- 창 닫기 검사에 누락된 Steam.Busy 추가. 실제 Window 이벤트는 실행하지 않음. 실행 중 JSONL export 공유 모드 오류를 오류 주입으로 발견·수정. 로그 재정제/부분 ZIP 원자적 완료/검색 중 승인 범위 변경도 방어.
+- 검증: 전체 Debug 빌드 경고0/오류0, **139/139** 기능·합성 HTTP·저장소·진단 및 **23/23** 비표시 WPF PASS, FAIL0. Steam v3 migration 후 전체 회귀 통과. Release 마감 기록은 아래에 추가. 실제 계정 인증/판매/취소/Guard, 실제 앱 실행/Popup/전역 입력/물리 DPI/설치 미실행. 자체 STA 렌더만 허용 범위에서 수행.
+
+**실사용 차단 요소:** 실제 이미지 미구현, 고정 3게임/context 외 계정 게임 발견 미구현, 정확한 실거래 평균 원자료 미확보, 실제 KRW 수수료·스택/반환·인증/응답 계약 미검증, ID 없는 요청/외부 동시 등록 인과 증거 미확보, live 확정 실패 재시도/실환경 QA 미완성. **실제 전체 일괄 판매등록이 최종 목표지만 현재 실판매 완료 아님**, SteamTradingPolicy.Blocked 기본. [최신 허용 근거 검토](STEAM-INTEGRATION-FEASIBILITY.md).
+
+### 이전 5차 기록 (당시 검증)
 ## 5차 최신 상태: 사용자 시작 연결 UI / 실거래 기본 차단
 
 구현/검증 커밋 `f7bd8aa` origin/main push 완료 (`73ad542..f7bd8aa`). 최종 기록 동기화 커밋은 완료 보고 참조.

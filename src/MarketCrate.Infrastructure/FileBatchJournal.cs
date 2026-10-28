@@ -4,7 +4,7 @@ using MarketCrate.Core;
 namespace MarketCrate.Infrastructure;
 
 // Single-writer lock is held for the lifetime of the app/journal, including across processes.
-// The demo stores synthetic IDs only. SQLite migrations are deferred until real permitted data exists.
+// Legacy synthetic JSON journal; production Demo composition uses SqliteDemoStore.
 public sealed class FileBatchJournal : IDemoJournal, IDisposable
 {
     private readonly string path;
@@ -17,6 +17,7 @@ public sealed class FileBatchJournal : IDemoJournal, IDisposable
     }
     public async Task<BatchRecord?> LoadAsync(CancellationToken cancellationToken)
     {
+        using var operation=DiagnosticHub.Operation(DiagnosticEvent.StoreRecovery,DiagnosticArea.Storage,"F10");
         if (!File.Exists(path)) return null;
         await using var stream = File.OpenRead(path);
         var record = await JsonSerializer.DeserializeAsync<BatchRecord>(stream, cancellationToken: cancellationToken)
@@ -28,6 +29,8 @@ public sealed class FileBatchJournal : IDemoJournal, IDisposable
     }
     public async Task SaveAsync(BatchRecord record, CancellationToken cancellationToken)
     {
+        using var scope=DiagnosticHub.Scope(batch:record.Snapshot.BatchId);
+        using var operation=DiagnosticHub.Operation(DiagnosticEvent.JournalWrite,DiagnosticArea.Storage,"F02");
         var temporary = path + ".tmp";
         await using (var stream = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.WriteThrough))
         {
@@ -36,6 +39,7 @@ public sealed class FileBatchJournal : IDemoJournal, IDisposable
             stream.Flush(true);
         }
         File.Move(temporary, path, true);
+        DiagnosticHub.Emit(DiagnosticEvent.JournalWrite,DiagnosticArea.Storage,journal:"Committed");
     }
     public void ClearDemo() { if (File.Exists(path)) File.Delete(path); }
     public void Dispose() => lease.Dispose();

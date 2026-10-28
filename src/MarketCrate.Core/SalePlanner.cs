@@ -14,6 +14,7 @@ public static class SalePlanner
 {
     public static SalePlan Build(IEnumerable<SaleSelection> selections, bool immediate)
     {
+        using var operation=DiagnosticHub.Operation(DiagnosticEvent.PricePlan,DiagnosticArea.Pricing,"D05");
         var selected = selections.ToArray();
         if (selected.Select(x => x.Asset.Key).Distinct().Count() != selected.Length) throw new ArgumentException("중복 선택 자산");
         var remaining = new Dictionary<(int, string, string), List<BidLevel>>();
@@ -42,6 +43,7 @@ public static class SalePlanner
             if (plan.UnpricedQuantity > 0) unpriced.Add(new(entry, plan.UnpricedQuantity));
             foreach (var allocation in plan.Lines) result.Add(new(entry, allocation));
         }
+        DiagnosticHub.Emit(DiagnosticEvent.PricePlan,DiagnosticArea.Pricing,count:missing,reason:missing>0?"InsufficientDepth":immediate?"Immediate":"Average",requirement:"D06");
         return new(result.ToImmutable(), missing) { Unpriced = unpriced.ToImmutable() };
     }
 

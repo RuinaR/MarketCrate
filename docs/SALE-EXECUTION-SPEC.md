@@ -1,5 +1,12 @@
 # MarketCrate — Sale Execution Product Contract
 
+## 6차 추가 계약: 승인 revision과 진단 authority
+
+- 최종 전체 한 번 승인/immutable batch/분할 가격·수량/Guard 수동 승인/기본 live 차단 목표를 그대로 유지한다. 상세 요구 ID F01–F12는 REQUIREMENTS-TRACEABILITY에 고정한다.
+- 오래된 재가격 승인은 **취소 전** 거부한다. 이미 확정 취소 proof가 있고 replacement가 미전송인 의도만 새 검토/새 승인으로 revision 가능하다. 이전 의도를 바꾸지 않고 SupersededBy를 가진 Superseded로 원자 보존, 새 intent는 CancellationKey로 원 proof를 재사용한다. 미확정 취소/스택 추정 반환/이미 전송한 replacement는 새 승인으로도 자동 재전송 불가.
+- Steam schema v3 마이그레이션은 기존 v1/v2 내용/불명을 보존한다. 구 v2 앱은 v3 DB를 거부하여 Superseded 상태를 잘못 재개하지 않는다. 하위 버전 앱으로 사용 데이터 폴더를 열지 않는다.
+- DiagnosticHub BatchId/OperationItemId/state transition은 진단 보조다. JSONL/ZIP 누락·실패/로그의 성공 문구로 저널 상태를 바꾸거나 재시도/예약 해제하지 않는다. 로그 실패와 판매 처리 실패를 분리한다. 실제 인과 근거 없는 ID-less 결과는 여전히 Unknown이다.
+
 ## 5차 통화·스택·관리 계약 (최신)
 
 - 단일 최종 승인 전체 배치 목표 유지. 앱 초기값은 조회 연결 UI만 제공하며 실제 거래는 policy Blocked. 실제 Steam 로그인·등록·취소·Guard는 이번 개발에서 실행하지 않는다.

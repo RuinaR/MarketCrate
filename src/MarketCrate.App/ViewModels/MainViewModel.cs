@@ -8,6 +8,7 @@ namespace MarketCrate.App.ViewModels;
 
 public sealed class MainViewModel : Observable, IDisposable
 {
+    public DiagnosticsViewModel Diagnostics {get;}
     public SteamWorkspaceViewModel Steam { get; } = new();
     private IInventoryProvider inventoryProvider;
     private IMarketDataProvider marketProvider;
@@ -58,6 +59,8 @@ public sealed class MainViewModel : Observable, IDisposable
     public MainViewModel(IInventoryProvider inventory, IMarketDataProvider market, IDemoJournal journal)
     {
         inventoryProvider = inventory; marketProvider = market; this.journal = journal; data = journal as IDemoDataStore;
+        Diagnostics=new(DiagnosticHub.Current as MarketCrate.Infrastructure.Diagnostics.JsonDiagnosticLog,saveMode:value=>Persist("diagnostic-mode",value?"true":"false"));
+        if(data?.ReadSetting("diagnostic-mode")=="true")Diagnostics.DiagnosticMode=true;
         if (data?.ReadSetting("demo-count") == "10000" && inventory is DemoDataProvider)
         { var large = new DemoDataProvider(10000); inventoryProvider = large; marketProvider = large; }
         gridMode = data?.ReadSetting("grid") != "false"; reducedMotion = data?.ReadSetting("motion") != "false";
@@ -153,6 +156,7 @@ public sealed class MainViewModel : Observable, IDisposable
     private SalePlan CreatePlan() => SalePlanner.Build(Items.Where(x => x.Selected).Select(x => new SaleSelection(x.Asset, x.Price, x.Quantity)), strategy == Strategies[0]);
     private void BuildReview()
     {
+        using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.ReviewOpened,DiagnosticArea.Pricing,"E01");
         try
         {
             ReviewLines.Clear(); var plan = CreatePlan();
@@ -266,8 +270,8 @@ public sealed class MainViewModel : Observable, IDisposable
     }
     private void SetSelection(IEnumerable<ItemViewModel> items, bool value)
     { bulkSelection = true; try { foreach (var item in items) item.Selected = value; } finally { bulkSelection = false; Update(); } }
-    private void Persist(string key, string value) { try { data?.WriteSetting(key, value); } catch (Exception e) when (e is IOException or Microsoft.Data.Sqlite.SqliteException) { Status = "설정 저장 실패: 저장소를 확인하세요."; } }
-    private void Error(Exception e) { Status = e is OperationCanceledException ? "사용자 취소 · 이미 접수된 요청을 되돌리지 않으며 자동 재전송하지 않습니다." : e is ArgumentException ? e.Message : e is IOException ? "조회/저장 연결 실패 · 자동 재전송 안 함. 수동 갱신/상태 대조가 필요합니다." : "안전 중단: 데이터/저널을 확인하세요. 자동 재전송하지 않았습니다."; try { (journal as IDiagnosticStore)?.RecordDiagnostic(DiagnosticCode.UiFailure); } catch { } Busy = false; Raise(nameof(DiagnosticsText)); }
+    private void Persist(string key, string value) { try { data?.WriteSetting(key, value); } catch (Exception e) when (e is IOException or Microsoft.Data.Sqlite.SqliteException) { DiagnosticHub.Emit(DiagnosticEvent.Settings,DiagnosticArea.Storage,DiagnosticOutcome.Failed,LogLevel.Warning,DiagnosticError.Storage,exception:e); Status = "설정 저장 실패: 저장소를 확인하세요."; } }
+    private void Error(Exception e) { DiagnosticHub.Emit(DiagnosticEvent.UiFailure,DiagnosticArea.UI,DiagnosticOutcome.Failed,LogLevel.Error,e is OperationCanceledException?DiagnosticError.Cancelled:DiagnosticError.Validation,exception:e); Status = e is OperationCanceledException ? "사용자 취소 · 이미 접수된 요청을 되돌리지 않으며 자동 재전송하지 않습니다." : e is ArgumentException ? e.Message : e is IOException ? "조회/저장 연결 실패 · 자동 재전송 안 함. 수동 갱신/상태 대조가 필요합니다." : "안전 중단: 데이터/저널을 확인하세요. 자동 재전송하지 않았습니다."; try { (journal as IDiagnosticStore)?.RecordDiagnostic(DiagnosticCode.UiFailure); } catch { } Busy = false; Raise(nameof(DiagnosticsText)); }
     private void Safe(Action action) { try { action(); } catch (Exception e) { Error(e); } }
     private void Update()
     {

@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using MarketCrate.Core;
 using System.Runtime.CompilerServices;
 using System.Windows.Input;
 
@@ -15,7 +16,12 @@ public sealed class Command(Action action, Func<bool>? canExecute = null) : ICom
 {
     public event EventHandler? CanExecuteChanged;
     public bool CanExecute(object? parameter) => canExecute?.Invoke() ?? true;
-    public void Execute(object? parameter) { if (CanExecute(parameter)) action(); }
+    public void Execute(object? parameter)
+    {
+        if(!CanExecute(parameter))return;
+        using var scope=DiagnosticHub.Operation(DiagnosticEvent.UiCommand,DiagnosticArea.UI,"G08");
+        try{action();}catch(Exception e){DiagnosticHub.Emit(DiagnosticEvent.UiFailure,DiagnosticArea.UI,DiagnosticOutcome.Failed,LogLevel.Error,DiagnosticError.Validation,exception:e);throw;}
+    }
     public void Refresh() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
 }
 public sealed class AsyncCommand(Func<Task> action, Action<Exception> onError, Func<bool>? canExecute = null) : ICommand
@@ -26,9 +32,10 @@ public sealed class AsyncCommand(Func<Task> action, Action<Exception> onError, F
     public async void Execute(object? parameter)
     {
         if (!CanExecute(parameter)) return;
+        using var scope=DiagnosticHub.Operation(DiagnosticEvent.UiCommand,DiagnosticArea.UI,"G08");
         running = true; Refresh();
         try { await action(); }
-        catch (Exception e) { onError(e); }
+        catch (Exception e) { DiagnosticHub.Emit(DiagnosticEvent.UiFailure,DiagnosticArea.UI,DiagnosticOutcome.Failed,LogLevel.Error,DiagnosticError.Unhandled,exception:e); onError(e); }
         finally { running = false; Refresh(); }
     }
     public void Refresh() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
