@@ -2,6 +2,10 @@
 
 ## 0.14.0 배포·정리·롤백
 
+14차 배포 구현커밋 3e5201cd5980a4bf36fb25e7dbb6f7cb5e81960f origin/main push. 새 `artifacts/releases/MarketCrate-0.14.0-stage14-3e5201c-win-x64.zip`:66,498,491바이트/412파일, SHA256 E1A001291F4AE0F6BE0C5410FA51421BD95E52612472BD9C187890CBED034680. 원본전체entry SHA·SourceCommit·CLR/WPF10.0.9/SQLite x64/라이선스/민감·개발파일 제외 PASS, Release경고오류0. 실제EXE/설치·실계정 미실행/서명미적용. 최신·롤백은 artifacts/releases.json.
+
+검증된 새release 등록 후 dry-run11폴더/242파일(45,650바이트) 재검증·제거, skipped0. exact256byte 합성PE/고지fixture만 대상. 큰 실행폴더는 사용중/사용자내용 불확실하여 보존. 원본0.13 ZIP SHA256 2B76B0ACB3440CCBA5F2C2364AAD46BA458D10E89E329A8456400A0ED83BD7C8 재확인. 추출본/진단/SQLite/저널/설정/인증/캐시/LOCALAPPDATA 보존. ignored 증거 artifacts/cleanup-plan-f8ca226ee39e4e5aa6149f38d3fb6690.json 및 cleanup-result-755a1b5fc521421bb440139a33344cb5.json.
+
 새 x64 self-contained는 고유버전/커밋 경로에 생성한다. 기존 CLR/WPF/SQLite 아키텍처·라이선스·민감/개발파일 제외 검사 유지. ZIP 전체entry SHA를 원본과 대조한 후 Register-Release.ps1로 artifacts/releases.json Latest/rollback 등록. 사용자자료는 기존 사용자별 저장소 보존. EXE/설치실행·디지털서명은 별도 미검증이다.
 
 Clean-Artifacts.ps1 기본dry-run은 후보·크기·참조수·보존이유를 ignored artifacts/cleanup-plan-*.json으로 남긴다. -Apply -PlanPath <절대경로>는 현재버전 검증Latest·rollback SHA 일치 이후에만 실행한다. 자동삭제는 exact hash256byte 가짜PE/합성고지22파일의 runtime/distribution-tests-<guid>만 허용. 경로정규화/reparse경계/파일잠금/변조 재검증, 파일별삭제 후 빈폴더만 비재귀제거. unknown/locked는 보존. 실제junction 생성은 환경제약으로 미검증.

@@ -2,6 +2,8 @@
 
 ## 0.14.0 — 개별 읽기 권한·빈 보관함 판정 개선
 
+최신 portable: `artifacts/releases/MarketCrate-0.14.0-stage14-3e5201c-win-x64.zip` (소스3e5201c,63.42MiB/412파일). SHA256 `E1A001291F4AE0F6BE0C5410FA51421BD95E52612472BD9C187890CBED034680`. 0.13 롤백본 보존. 파일 무결성/Release 정적검증 PASS, 실제 실행·실계정은 사용자 확인 필요.
+
 0.13 사용자 관측은 QR기록/목록첫8건·CS2자산0건·지갑차단입니다. 전체실계정 지원 검증은 아닙니다. 새버전은 조회권한실패와 로그인전체실패를 분리하고 불완전응답을 정상빈으로 표시하지 않습니다. 지갑통화만 확인되면 가격단위·수수료를 추측하지 않습니다. 자가검증 요약·접힌작업상세에서 다음행동을 확인하세요.
 
 portable을 별도폴더에 풀어 직접실행하세요. 기존DB/저널 보존. 최신/롤백 경로·SHA는 artifacts/releases.json에 기록하며 0.13 ZIP/추출본을 보존합니다. `pwsh -File scripts/Clean-Artifacts.ps1` 기본dry-run, 실행폴더/개인자료 자동삭제 없음. [읽기검증](docs/READ-ONLY-VALIDATION.md), [배포·정리·롤백](docs/DEPLOYMENT-CHECKLIST.md).

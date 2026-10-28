@@ -2,6 +2,10 @@
 
 ## 2026-10-29 — 14차 읽기 계약 복구 및 안전 정리
 
+14차 배포 구현커밋 3e5201cd5980a4bf36fb25e7dbb6f7cb5e81960f origin/main push. 새 `artifacts/releases/MarketCrate-0.14.0-stage14-3e5201c-win-x64.zip`:66,498,491바이트/412파일, SHA256 E1A001291F4AE0F6BE0C5410FA51421BD95E52612472BD9C187890CBED034680. 원본전체entry SHA·SourceCommit·CLR/WPF10.0.9/SQLite x64/라이선스/민감·개발파일 제외 PASS, Release경고오류0. 실제EXE/설치·실계정 미실행/서명미적용. 최신·롤백은 artifacts/releases.json.
+
+검증된 새release 등록 후 dry-run11폴더/242파일(45,650바이트) 재검증·제거, skipped0. exact256byte 합성PE/고지fixture만 대상. 큰 실행폴더는 사용중/사용자내용 불확실하여 보존. 원본0.13 ZIP SHA256 2B76B0ACB3440CCBA5F2C2364AAD46BA458D10E89E329A8456400A0ED83BD7C8 재확인. 추출본/진단/SQLite/저널/설정/인증/캐시/LOCALAPPDATA 보존. ignored 증거 artifacts/cleanup-plan-f8ca226ee39e4e5aa6149f38d3fb6690.json 및 cleanup-result-755a1b5fc521421bb440139a33344cb5.json.
+
 main/origin6c40500 clean/fetch 일치에서 시작. 0.13 사용자부분관측 반영, wallet실패 실제응답 미확보. 공식공개 market.js/marketselldialog.js·익명Market만 GET. 모든GET redirect/API오류를 인증실패로 묶던 경로와 증거없는빈inventory 허용 수정. wallet관측/strict money분리, endpoint권한 보존, 독립조회 복구, 요약/접힌상세와 고정진단사실 추가.
 
 기능8개·자체WPF1개 추가, 전체207/46/14 PASS/FAIL0·경고오류0. 안전정리7 PASS/1 NOT VERIFIED(실제junction 생성불가). 실행폴더 사용여부를 알아보는 프로세스 조사를 하지 않았고 모두 보존. release성공 이후 검증된 dry-run만 적용한다. 실제앱/계정/Steam/브라우저조작·타프로세스·전역입력·화면접근0. 실거래 차단 유지.

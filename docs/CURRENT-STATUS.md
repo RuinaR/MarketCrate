@@ -1,5 +1,11 @@
 # MarketCrate — 현재 상태 (2026-10-29 KST, 14차)
 
+### 14차 최종 배포·정리 결과
+
+구현커밋 **3e5201cd5980a4bf36fb25e7dbb6f7cb5e81960f**, origin/main push 완료. 새 **0.14.0 win-x64 self-contained**: `artifacts/releases/MarketCrate-0.14.0-stage14-3e5201c-win-x64.zip` (66,498,491바이트,412파일). SHA256 **E1A001291F4AE0F6BE0C5410FA51421BD95E52612472BD9C187890CBED034680**. 원본폴더 `artifacts/releases/stage14-3e5201c-windows-x64`의 모든파일과 ZIP entry hash 일치, ProductVersion/SourceCommit·CLR/WPF10.0.9·SQLite x64·라이선스·DB/로그/인증/개발파일 제외 PASS. Release 경고·오류0. EXE/설치/물리GUI·실계정은 Codex 미실행, 서명 미적용.
+
+검증된 release index 생성 후 dry-run11폴더/242파일을 재검증해 **45,650바이트(44.58KiB)** 제거, skipped0. 프로젝트생성22파일짜리 exact 비실행 합성 fixture만 대상. 큰 배포폴더는 실행중 여부/사용자내용 불확실성 때문에 보존했으며 수GB 정리를 주장하지 않는다. 롤백0.13 ZIP `artifacts/MarketCrate-0.13.0-stage13-dd7e276-win-x64.zip` SHA256 **2B76B0ACB3440CCBA5F2C2364AAD46BA458D10E89E329A8456400A0ED83BD7C8** 재확인, 사용자추출본·이전실행폴더·진단·SQLite/저널/설정/인증·캐시·LOCALAPPDATA 보존. dry-run/적용증거는 ignored `artifacts/cleanup-plan-f8ca226ee39e4e5aa6149f38d3fb6690.json`, `artifacts/cleanup-result-755a1b5fc521421bb440139a33344cb5.json`. 최신/롤백경로는 `artifacts/releases.json`.
+
 ## 14차 — 개별 읽기 권한·빈 응답 검증·안전 정리 (2026-10-29 KST)
 
 0.14.0. 사용자0.13 관측: QR 인증기록 성공, 판매목록 첫8건/활성8건, CS2 730/2 첫0건·marketable0, 지갑 인증확인 차단 및 후속차단. 부분 실계정 증거이며 전체 계약 검증이 아니다. Codex는 실제 인증·계정조회·거래·앱 실행을 하지 않았다.
