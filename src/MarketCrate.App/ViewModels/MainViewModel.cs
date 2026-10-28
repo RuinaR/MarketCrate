@@ -31,7 +31,7 @@ public sealed class MainViewModel : Observable, IDisposable
     public ObservableCollection<string> History { get; } = [];
     public ObservableCollection<ListingViewModel> Listings { get; } = [];
     public string[] Games { get; } = ["모든 게임", "Counter-Strike 2", "Dota 2", "Team Fortress 2"];
-    public string[] Strategies { get; } = ["구매주문 기반 예상가", "24시간 거래량 가중 평균가"];
+    public string[] Strategies { get; } = [PriceDisplay.Immediate, PriceDisplay.MockAverage];
     public string[] Sorts { get; } = ["이름순", "평균가 높은순"];
     public Command SelectAll { get; }
     public Command ClearSelection { get; }
@@ -66,7 +66,7 @@ public sealed class MainViewModel : Observable, IDisposable
         { var large = new DemoDataProvider(10000); inventoryProvider = large; marketProvider = large; }
         gridMode = data?.ReadSetting("grid") != "false"; reducedMotion = data?.ReadSetting("motion") != "false";
         var savedGame = data?.ReadSetting("game"); if (savedGame != null && Games.Contains(savedGame)) game = savedGame;
-        var savedStrategy = data?.ReadSetting("strategy"); if (savedStrategy != null && Strategies.Contains(savedStrategy)) strategy = savedStrategy;
+        var savedStrategy = data?.ReadSetting("strategy"); if (PriceDisplay.TryReadSetting(savedStrategy, out var savedBasis)) strategyBasis = savedBasis;
         coordinator = new(new MockListingExecutor(data), journal);
         SelectAll = new(() => SetSelection(VisibleItems, true), () => !Busy && !AnyDialog);
         ClearSelection = new(() => SetSelection(Items, false), () => !Busy && !AnyDialog);
@@ -91,14 +91,15 @@ public sealed class MainViewModel : Observable, IDisposable
         ClearDemo = new(() => Safe(() => { journal.ClearDemo(); record = null; Results.Clear(); History.Clear(); Status = "활성 Mock 배치 해제. 이전 요청 증거·예약 수량은 보존됩니다."; Update(); }), () => !Busy && !AnyDialog && (record == null || record.Results.All(x => x.State is SaleState.Ready or SaleState.Listed or SaleState.Failed)));
         DeleteLocalDemoData = new(() => Safe(() => { if (journal is SqliteDemoStore sql) sql.DeleteDemoData(); record = null; Items.Clear(); VisibleItems.Clear(); Results.Clear(); Listings.Clear(); History.Clear(); ReviewLines.Clear(); Status = "SQLite 합성 데이터·설정·저널 삭제 완료. 이관 원본 JSON은 보존됩니다."; Raise(nameof(HasNoItems)); Update(); }), () => journal is SqliteDemoStore && !Busy && !IsReviewOpen && !IsCancelReviewOpen);
     }
-    private string search = "", game = "모든 게임", sort = "이름순", strategy = "구매주문 기반 예상가";
+    private string search = "", game = "모든 게임", sort = "이름순";
+    private PriceBasis strategyBasis = PriceBasis.Immediate;
     private bool marketableOnly = true, gridMode = true, reviewOpen, busy, inputErrors, cancelReviewOpen, reducedMotion = true;
     private string status = "Mock 전용 · Steam 연결 없음 · 실등록 IntegrationBlocked";
     public bool HasInputErrors { get => inputErrors; set { if (Set(ref inputErrors, value)) { Raise(nameof(ReviewTotals)); Update(); } } }
     public string Search { get => search; set { if (Set(ref search, value)) Filter(); } }
     public string SelectedGame { get => game; set { if (Set(ref game, value)) { Persist("game", value); Filter(); } } }
     public string SelectedSort { get => sort; set { if (Set(ref sort, value)) Filter(); } }
-    public string SelectedStrategy { get => strategy; set { if (Set(ref strategy, value)) { var reopen = IsReviewOpen; IsReviewOpen = false; ReviewLines.Clear(); Persist("strategy", value); if (reopen) BuildReview(); Status = PriceEditRule; Update(); } } }
+    public string SelectedStrategy { get => strategyBasis == PriceBasis.Immediate ? PriceDisplay.Immediate : PriceDisplay.MockAverage; set { if (!PriceDisplay.TryReadSetting(value, out var basis)) return; if (Set(ref strategyBasis, basis)) { var reopen = IsReviewOpen; IsReviewOpen = false; ReviewLines.Clear(); Persist("strategy", strategyBasis.ToString()); if (reopen) BuildReview(); Status = PriceEditRule; Update(); } } }
     public bool MarketableOnly { get => marketableOnly; set { if (Set(ref marketableOnly, value)) Filter(); } }
     public bool GridMode { get => gridMode; set { if (Set(ref gridMode, value)) Persist("grid", value ? "true" : "false"); } }
     public bool ReducedMotion { get => reducedMotion; set { if (Set(ref reducedMotion, value)) Persist("motion", value ? "true" : "false"); } }
@@ -154,7 +155,7 @@ public sealed class MainViewModel : Observable, IDisposable
         filtered = sort == "평균가 높은순" ? filtered.OrderByDescending(x => Pricing.WeightedAverage(x.Price.Trades)) : filtered.OrderBy(x => x.Name);
         VisibleItems.ReplaceAll(filtered); Raise(nameof(HasNoItems));
     }
-    private SalePlan CreatePlan() => SalePlanner.Build(Items.Where(x => x.Selected).Select(x => new SaleSelection(x.Asset, x.Price, x.Quantity)), strategy == Strategies[0]);
+    private SalePlan CreatePlan() => SalePlanner.Build(Items.Where(x => x.Selected).Select(x => new SaleSelection(x.Asset, x.Price, x.Quantity)), strategyBasis == PriceBasis.Immediate);
     private void BuildReview()
     {
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.ReviewOpened,DiagnosticArea.Pricing,"E01");

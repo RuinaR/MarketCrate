@@ -46,7 +46,7 @@ public sealed class DiagnosticsViewModel : Observable
 public sealed record DiagnosticRow(DiagnosticRecord Record)
 {
     public string Time=>$"{Record.Utc:yyyy-MM-dd HH:mm:ss} UTC / {Record.Utc.ToOffset(TimeSpan.FromHours(9)):HH:mm:ss} KST";
-    public string Detail=>$"{Record.Level} · {Record.EventId} {Record.EventName} · {Record.Outcome} · {Record.Error} · {Record.PreviousState} → {Record.NewState}";
+    public string Detail=>$"{Record.Level} · {Record.EventId} {Record.EventName} · {Record.Outcome} · {Record.Error} · {Record.PreviousState} → {Record.NewState} · {(Record.Reason=="Immediate"?PriceDisplay.Immediate:Record.Reason)}";
     public string OperationId=>Record.Context.OperationId.ToString();
     public string Links=>$"요청 {Record.Context.CorrelationId} · 배치 {Record.Context.BatchId} · 내부 항목 {Record.Context.OperationItemId}";
 }

@@ -78,3 +78,10 @@
 - Windows support: https://learn.microsoft.com/en-us/dotnet/core/install/windows — 지원 Windows11 desktop x64 guest 조건, 모든 Windows10/구형 OS 정상 동작 주장 안 함.
 - Windows Sandbox: https://learn.microsoft.com/en-us/windows/security/application-security/application-isolation/windows-sandbox/ — Home 미지원/별도 지원 에디션·가상화 조건. 현재 Core와 exe 부재만 확인, firmware/SLAT은 CIM 권한 제한으로 미확인. 활성화/설치/실행 미수행.
 - 문서 참고만 했고 Microsoft 예제 코드를 복사하지 않았다. self-contained runtime 원본 MIT/THIRD-PARTY는 팩에서 산출물에 보존한다.
+
+## 10차 공개 로그인·정책 재검토 (2026-10-28 KST)
+
+- SteamDatabase auth proto: https://github.com/SteamDatabase/Protobufs/blob/master/steam/steammessages_auth.steamclient.proto — QR 회전 선택 필드. 공개 프로토콜 전사이며 Valve 허가/실응답 검증은 아님.
+- node-steam-session AuthenticationClient: https://github.com/DoctorMcKay/node-steam-session/blob/master/src/AuthenticationClient.ts — 기존 Begin device_details/Poll newClientId/newChallengeUrl 전달을 재확인, 코드 도입 없음(기존 확인 MIT).
+- 공식 Market https://steamcommunity.com/market/ — 로그인 후 목록 관리 문구와 공식 수동 대체 URL. 계정/인증 요청 안 함.
+- 공식 Agreement https://store.steampowered.com/subscriber_agreement/ — Automation/Enforcement. 위험0/일반 허가 추론 안 함. 확인 도움말은 이미지 한 줄 응답으로 이번 본문 재검증 실패.

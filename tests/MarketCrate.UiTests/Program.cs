@@ -125,6 +125,7 @@ internal static class Program
             SixthStageUiTests.Run((name,test)=>Test(name,test),Render);
             SeventhStageUiTests.Run((name,test)=>Test(name,test),Render);
             EighthStageUiTests.Run((name,test)=>Test(name,test),Render);
+            TenthStageUiTests.Run((name,test)=>Test(name,test),Render);
             Test("바인딩 오류 없음 (의도적 invalid 가격 변환 제외)", () =>
             {
                 listener.Flush(); var output = bindingOutput.ToString();

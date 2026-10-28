@@ -1,4 +1,4 @@
-<UserControl x:Class="MarketCrate.App.MainView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="clr-namespace:MarketCrate.App.Controls" xmlns:local="clr-namespace:MarketCrate.App" c:Motion.Reduced="{Binding ReducedMotion}" Background="{StaticResource Canvas}" Foreground="{StaticResource Ink}" FontFamily="Segoe UI, Malgun Gothic" FontSize="13" ToolTipService.InitialShowDelay="650">
+<UserControl x:Class="MarketCrate.App.MainView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:core="clr-namespace:MarketCrate.Core;assembly=MarketCrate.Core" xmlns:c="clr-namespace:MarketCrate.App.Controls" xmlns:local="clr-namespace:MarketCrate.App" c:Motion.Reduced="{Binding ReducedMotion}" Background="{StaticResource Canvas}" Foreground="{StaticResource Ink}" FontFamily="Segoe UI, Malgun Gothic" FontSize="13" ToolTipService.InitialShowDelay="650">
   <UserControl.Resources>
     <DataTemplate x:Key="Row">
       <Grid Margin="2,5">
@@ -16,7 +16,7 @@
           <TextBlock Text="{Binding Flags}" Style="{StaticResource MutedText}" />
         </StackPanel>
         <TextBlock Grid.Column="2" Text="{Binding Average}" VerticalAlignment="Center" ToolTip="24시간 거래량 가중 평균 · Mock" />
-        <TextBlock Grid.Column="3" Text="{Binding Bid}" Foreground="{StaticResource Accent}" VerticalAlignment="Center" ToolTip="최상위 구매주문 · 수량별 가격은 최종 검토에서 분리" />
+        <TextBlock Grid.Column="3" Text="{Binding Bid}" Foreground="{StaticResource Accent}" VerticalAlignment="Center" ToolTip="{x:Static core:PriceDisplay.ImmediateExplanation}" />
         <StackPanel Grid.Column="4">
           <c:NumericStepper Value="{Binding Quantity}" Maximum="{Binding Maximum}" IsEnabled="{Binding CanSelect}" />
           <TextBlock Text="{Binding Maximum,StringFormat=보유 {0}개}" Style="{StaticResource MutedText}" HorizontalAlignment="Center" />
@@ -42,7 +42,7 @@
               <TextBlock Text="{Binding Average}" FontSize="18" />
             </StackPanel>
             <StackPanel Grid.Column="1">
-              <TextBlock Text="최상위 매수" Style="{StaticResource MutedText}" />
+              <TextBlock Text="{x:Static core:PriceDisplay.Immediate}" ToolTip="{x:Static core:PriceDisplay.ImmediateExplanation}" Style="{StaticResource MutedText}" />
               <TextBlock Text="{Binding Bid}" Foreground="{StaticResource Accent}" FontSize="18" />
             </StackPanel>
           </Grid>
@@ -241,7 +241,7 @@
             </StackPanel>
           </ScrollViewer>
         </TabItem>
-        <TabItem Header="Steam 실험 연동"><DockPanel><Button DockPanel.Dock="Top" Content="현재 Steam 작업의 진단 보기" Click="SteamDiagnosticsClicked" HorizontalAlignment="Right"/><local:SteamWorkspaceView DataContext="{Binding Steam}" /></DockPanel></TabItem>
+        <TabItem Header="Steam 계정·보관함"><DockPanel><Button DockPanel.Dock="Top" Content="현재 Steam 작업의 진단 보기" Click="SteamDiagnosticsClicked" HorizontalAlignment="Right"/><local:SteamWorkspaceView DataContext="{Binding Steam}" /></DockPanel></TabItem>
         <TabItem Header="진단 / 로그"><local:DiagnosticsView DataContext="{Binding Diagnostics}"/></TabItem>
       </TabControl>
       <Border Grid.Column="4">
@@ -255,7 +255,7 @@
             <TextBlock Text="SALE PLAN" Style="{StaticResource MutedText}" />
             <TextBlock Text="{Binding SelectionSummary}" FontSize="19" Margin="0,12" />
             <TextBlock Text="가격 산정 방식" Margin="0,12,0,4" />
-            <ComboBox ItemsSource="{Binding Strategies}" SelectedItem="{Binding SelectedStrategy}" AutomationProperties.Name="가격 전략" />
+            <ComboBox ToolTip="{x:Static core:PriceDisplay.ImmediateExplanation}" ItemsSource="{Binding Strategies}" SelectedItem="{Binding SelectedStrategy}" AutomationProperties.Name="가격 전략" />
             <TextBlock Text="구매자 지불 예상 합계" Style="{StaticResource MutedText}" Margin="0,24,0,8" />
             <TextBlock Text="{Binding Estimate}" FontSize="29" Foreground="{StaticResource Accent}" />
             <TextBlock Text="수수료·실수령·가격별 수량은 최종 검토에서 확인합니다." Style="{StaticResource MutedText}" Margin="0,12" />
@@ -266,7 +266,7 @@
         </DockPanel>
       </Border>
     </Grid>
-    <Border Grid.Row="2" Style="{StaticResource Toast}" Margin="0,14,0,0" AutomationProperties.LiveSetting="Polite">
+    <Border x:Name="StatusToast" Grid.Row="2" Margin="0,14,0,0" AutomationProperties.LiveSetting="Polite"><Border.Style><Style TargetType="Border" BasedOn="{StaticResource Toast}"><Style.Triggers><DataTrigger Binding="{Binding SelectedIndex,ElementName=WorkspaceTabs}" Value="4"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger><DataTrigger Binding="{Binding SelectedIndex,ElementName=WorkspaceTabs}" Value="5"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Border.Style>
       <TextBlock Foreground="{StaticResource Warning}"><TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}"><Setter Property="Text" Value="{Binding Status}"/><Style.Triggers><DataTrigger Binding="{Binding SelectedIndex,ElementName=WorkspaceTabs}" Value="4"><Setter Property="Text" Value="{Binding Steam.Status}"/></DataTrigger><DataTrigger Binding="{Binding SelectedIndex,ElementName=WorkspaceTabs}" Value="5"><Setter Property="Text" Value="{Binding Diagnostics.Status}"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
     </Border>
     <Grid Grid.RowSpan="3" Background="#C00A0E16" Visibility="{Binding IsReviewOpen,Converter={StaticResource BoolVisibility}}" c:ModalNavigation.IsOpen="{Binding IsReviewOpen}" FocusManager.IsFocusScope="True" KeyboardNavigation.ControlTabNavigation="Cycle" KeyboardNavigation.DirectionalNavigation="Contained" x:Name="ReviewOverlay" KeyboardNavigation.TabNavigation="Cycle" PreviewKeyDown="ReviewKeyDown">
@@ -287,7 +287,7 @@
                 <ColumnDefinition />
                 <ColumnDefinition Width="Auto" />
               </Grid.ColumnDefinitions>
-              <ComboBox ItemsSource="{Binding Strategies}" SelectedItem="{Binding SelectedStrategy}" AutomationProperties.Name="검토 가격 전략" />
+              <ComboBox ToolTip="{x:Static core:PriceDisplay.ImmediateExplanation}" ItemsSource="{Binding Strategies}" SelectedItem="{Binding SelectedStrategy}" AutomationProperties.Name="검토 가격 전략" />
               <Button Grid.Column="1" Content="신선도 확인" Command="{Binding RefreshReviewStatus}" />
             </Grid>
             <TextBlock Text="{Binding PriceEditRule}" Style="{StaticResource MutedText}" />

@@ -1,4 +1,15 @@
-# MarketCrate — 현재 상태 (2026-10-28 KST, 9차)
+# MarketCrate — 현재 상태 (2026-10-28 KST, 10차)
+
+## 10차 — Steam 사용자 경로 연결 / 즉시거래가능가 (2026-10-28 KST)
+
+기준 main/origin `a0e7c95` clean/fetch. 사용자 보고: **9차 기본 GUI7항목 PASS**(앱실행, hover/click, 선택·수량, 가격전환·검토, Mock배치, 취소·재가격·진단, 재시작 보존). 정확한 테스트 빌드/OS/DPI·24개 전체 결과는 제공되지 않았고 10차 현재 빌드 GUI 성공으로 승격하지 않는다. Codex는 실제 앱/창/Steam 인증·API·거래·Guard를 실행하지 않았다.
+
+- PriceDisplay 공통 표시/설명과 PriceBasis 저장키: 주 모드 `즉시거래가능가`, 기존 한국어 setting alias는 읽고 다음 변경 시 Immediate/ExactAverage 저장. enum/Steam 인덱스/배분/기존 저널 변경 없음. 정확평균 원자료 없음/중앙값 추정 분리. 현재 매수주문 기준 예상이며 실제 즉시 체결 보장 없음.
+- 정상 portable 앱 시작은 Steam 탭을 보여주되 인증/조회는 자동 실행하지 않는다. 격리QA는 계속 offline Mock. QR 서버 회전 시 UI matrix 갱신, 빈 기본값 유지/만료 후 재로그인, 연결 중 실수로 새 로그인 시작 차단. logout/인증만료의 이전 데이터 보존·오래된 검토 차단.
+- 판매목록/지갑·fee를 보관함과 독립 조회 가능. 404 보관함이 account 판매목록 조회를 막지 않는다(403/429중단은 유지). fee 없어도 취소 **검토만** 가능, 실제 제출은 원래 policy/preflight. 판매목록 시세는 현재 모드로 조회, 최고 구매주문/잔량·현재 단가 차이/중앙값 기간 구분.
+- ReadContract4202의 고정 endpoint/count/currency/time/OperationId만 UI/JSONL에 연결. 원문·필드덤프/계정·asset·QR·쿠키·token 없음. 실제 응답이 아니라면 Synthetic으로 표시. 관측 성공을 READ_ONLY_READY로 자동 판정하지 않는다.
+- 공식 Steam 장터 버튼은 사용자 클릭 때 기본 브라우저의 고정 공식 URL만 연다. Codex/테스트는 대체 delegate만 사용. 해당 수동 흐름이 단일 승인 앱 일괄 등록 완료를 뜻하지 않는다.
+- 최종 기능172/172·detached WPF33/33·파일계약14/14 PASS, FAIL0/Debug 경고0·오류0. Release/portable 패키지는 소스 커밋 후 정적 마감에 반영. 75개 **47 COMPLETE / 15 PARTIAL / 0 MISSING / 4 BLOCKED / 9 UNVERIFIED** 유지. 실서버·KRW fee·stack/반환 인과·실제 쓰기·현재 GUI·서명/실환경 출시 기준은 여전히 미검증/차단.
 
 ## 9차 — 배포·진단 보완, 실제 GUI QA 차단 유지 (2026-10-28 KST)
 

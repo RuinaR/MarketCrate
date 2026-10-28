@@ -1,0 +1,46 @@
+{
+  "Schema": 1,
+  "Evidence": "User report in stage ten request",
+  "TestedBuild": "Stage nine; exact hash not provided",
+  "OperatingSystem": null,
+  "Dpi": null,
+  "CurrentBuildVerified": false,
+  "DoesNotCompleteAllDetailedScenarios": true,
+  "Cases": [
+    {
+      "Id": "BASIC-01",
+      "Action": "앱 실행",
+      "Result": "PASS"
+    },
+    {
+      "Id": "BASIC-02",
+      "Action": "호버·클릭",
+      "Result": "PASS"
+    },
+    {
+      "Id": "BASIC-03",
+      "Action": "보관함 선택·수량 변경",
+      "Result": "PASS"
+    },
+    {
+      "Id": "BASIC-04",
+      "Action": "가격 기준 전환·검토",
+      "Result": "PASS"
+    },
+    {
+      "Id": "BASIC-05",
+      "Action": "Mock 배치",
+      "Result": "PASS"
+    },
+    {
+      "Id": "BASIC-06",
+      "Action": "취소·재가격·진단",
+      "Result": "PASS"
+    },
+    {
+      "Id": "BASIC-07",
+      "Action": "재시작 데이터 보존",
+      "Result": "PASS"
+    }
+  ]
+}

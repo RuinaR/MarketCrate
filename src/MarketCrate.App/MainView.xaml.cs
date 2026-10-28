@@ -26,6 +26,7 @@ public partial class MainView : UserControl
             if (e.NewValue is MainViewModel current) current.PropertyChanged += ReviewChanged;
         };
     }
+    public void ShowSteamWorkspace() => WorkspaceTabs.SelectedIndex = 4;
     private void InputError(object? sender, ValidationErrorEventArgs e)
     {
         if (e.Action == ValidationErrorEventAction.Added) {DiagnosticHub.Emit(DiagnosticEvent.UiFailure,DiagnosticArea.UI,DiagnosticOutcome.Failed,LogLevel.Warning,DiagnosticError.Validation,reason:"InputRejected");invalidInputs.Add(e.OriginalSource);} else invalidInputs.Remove(e.OriginalSource);

@@ -117,3 +117,9 @@
 - Mock 대조는 실제 서버 증거가 없으므로 Unknown으로 남긴다. 공식 모바일 승인을 시뮬레이션해 Listed로 만들지 않는다.
 - 앱 종료는 진행 중 쓰기가 끝나기 전 보류한다. 작업별 취소 토큰은 앱 수명 토큰과 분리하여 취소가 이후 모든 갱신을 영구적으로 막지 않는다.
 - 향후 live 경계에는 허용 증거·옵트인·자산/계정 재검증·실제 서버 대조·다중 배치 저장/원자적 전이·데이터 보호·통화별 수수료 검증이 추가로 필요하다.
+
+## 10차 연결 보완
+
+`Core.PriceDisplay`는 표시 이름·설명·이전 설정 alias의 경계다. Mock 전략은 내부 `PriceBasis`를 사용하고 설정은 `Immediate/ExactAverage`로 쓴다. 기존 저장값은 읽기 호환되며 배치/저널 schema와 Steam 가격 모드 인덱스는 유지한다.
+
+`SteamConnectionViewModel` partial은 기존 세션/Orders/Fees 어댑터를 독립 명령에 연결한다. `UpdateChallenge`는 기존 auth의 회전된 URI를 로컬 QR matrix에 반영한다. `ReadContract4202`는 현재 UI OperationId 안의 고정 endpoint/count/currency 관측이며 실응답 인증이나 거래 권한 증명이 아니다. 공식 장터 URI는 고정 값이며 명시적 사용자 명령만 기본 브라우저를 연다. 테스트는 delegate로 대체한다. 실제 쓰기 코디네이터·Unknown·SQLite 저널·예약은 변경하지 않았다.

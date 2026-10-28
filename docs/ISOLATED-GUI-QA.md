@@ -1,5 +1,9 @@
 # 실제 GUI 후속 검사 구성 — 준비만 완료, 실행 NOT VERIFIED
 
+## 10차 사용자 직접 검증 보고
+
+사용자는 9차 일반 Windows PC 기본 GUI7개 PASS를 보고했다. 기록은 qa/user-basic-stage9.json이며 정확한 빌드hash/OS/DPI는 미제공이다. GUI-01~24는 상세 조건 전체를 수행했다는 증거가 없어 기존 NOT VERIFIED를 유지한다. 10차 실제 앱 실행은 Codex가 하지 않았고 사용자가 직접 확인한다. Steam 읽기는 별도 [최소 검증 절차](READ-ONLY-VALIDATION.md)를 사용하며 격리QA offline 프로필에서는 계정 연결이 차단된다.
+
 ## 9차 실행 조건 및 배포 선택 (실제 GUI 미실행)
 
 최종 준비 산출물(ignored, 코드 `d19dcc9`): `artifacts/stage9-release-qa-self-contained`414개 hash/142.02MiB와 `artifacts/stage9-release-qa-framework-dependent`40개 hash/33.51MiB. SourceCommit/PackagingCommit/Core metadata 일치, 두 Release 경고0/오류0. 패키지 생성·해시·아키텍처/고지/데이터 제외만 PASS, guest launcher/실제 GUI24개는 미실행.

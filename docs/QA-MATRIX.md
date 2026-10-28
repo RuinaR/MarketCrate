@@ -1,4 +1,20 @@
-# 정상·오류·복구 QA 매트릭스 — 9차 (2026-10-28 KST)
+# 정상·오류·복구 QA 매트릭스 — 10차 (2026-10-28 KST)
+
+## 10차 검증 및 사용자 증거
+
+사용자 직접 보고의 9차 기본7항목: **7 PASS/0 FAIL**. 실제 Windows에서 실행/hover·click/보관함선택·수량/가격전환·검토/Mock배치/취소·재가격·진단/재시작 보존을 묶은7개다. 개별 테스트시각·빌드hash·OS·DPI 미제공. 상세 GUI-01~24 전항목 PASS로 변환하지 않으며, 10차 코드의 물리 GUI·읽기연동 결과로도 사용하지 않는다.
+
+| 10차 결함/경로 | 수정과 검증 |
+|---|---|
+| 한국어 이름이 전략 로직/저장값 | PriceDisplay alias 경계/PriceBasis 내부판단/안정 enum key. T10.Terms 저장·재시작·수동전략/단가 차이 검증 |
+| QR 회전 후 옛 matrix | auth Challenge→UpdateChallenge→새 QrMatrix. T10.QrRotation 기본빈값/회전/만료/재로그인, 연결중 Begin 비활성 |
+| inventory/fee 실패가 listings를 막음 | 독립 LoadListings/LoadFees와 fee없는 취소검토. T10.IndependentListings inventory404 후 정상 목록/차이·Submit차단/거래0 |
+| 인증만료 후 이전 데이터 | T10.ExpiredReads401→Expired/이전row보존/새검토불가/logout정리. 서버자료를Mock으로 대체 안 함 |
+| 계약 진단 | T10.ReadDiagnostics UI operation→HTTP correlation→ReadContract endpoint/count·Synthetic; 비밀sentinel/계정·hash원문누출0 |
+| 공식 대체 버튼 | T10.OfficialPage 고정URL delegate/연결0/실행0/쓰기0. 실제 브라우저 미실행 |
+| 사용자 명칭/진입/검토 | U10.terms/connected: 가격명·툴팁·독립명령·합성계약배너·검토명/중복상태숨김·자체PNG |
+
+최종 기능172/172·detached WPF33/33·파일계약14/14 PASS, FAIL0/Debug 경고0·오류0. Release/portable 패키지는 소스 커밋 후 정적 마감에 반영. 기존166개 기능/31개 UI/14개 파일 검사를 유지한다. 새 U10 첫 검사에서 같은 전략ComboBox가2곳인 정상구조를 Single로 가정해 FAIL1; 두 컨트롤 모두 같은명/선택/설명을 단언하도록 고쳤다. 기본 cache 경로 미지정 build의 NU1101은 기존 Verify 환경변수로 해소했고 패키지/SDK 설치·우회 없음.
 
 ## 9차 결과 (2026-10-28 KST)
 

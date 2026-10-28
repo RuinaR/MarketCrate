@@ -1,4 +1,12 @@
-# 진단 시스템 (9차, 2026-10-28 KST)
+# 진단 시스템 (10차, 2026-10-28 KST)
+
+## 10차 실제 연결 계약 관측
+
+ReadContract **4202**: 기존UI operation 안에서 파싱이 끝난 AuthTransfer/Inventory/Listings/Fees/Orderbook/History의 고정endpoint·건수·KRW/USD·UTC·OperationId를기록한다. HTTP는같은operation의서로다른CorrelationId로연결한다. Synthetic/Observed를구분하고Observed는라이브계약검증완료가아니다. QR갱신은QrReady/SourceChanged만, URI/셀/토큰로그없음.
+
+QR화면ContractSummary는마지막관측시간·개수·내부작업ID만표시한다. 실패후이전자료는마지막관측으로유지하며새검토는연결상태필수. 계정·asset/listingid·hashname·JSON필드덤프·HTTP원문을진단항목으로추가하지않았다. 로그에남지않는필드때문에정확한실제스키마차이를확정할수없는경우는UNVERIFIED로남긴다.
+
+실사용자는진단탭OperationId필터/Refresh→package범위검토→Reviewed→로컬ZIP내보내기를사용한다. 6~9차정제·UTC정렬·회전·보존상한·오류실패독립·저널분리는유지. 진단친화레이블은Immediate를즉시거래가능가로표시하되JSONEventId/Reason은기존키다.
 
 ## 9차 진단 패키지 결함 수정
 

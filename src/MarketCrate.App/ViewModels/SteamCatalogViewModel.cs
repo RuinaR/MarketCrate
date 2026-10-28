@@ -25,7 +25,7 @@ public sealed partial class SteamWorkspaceViewModel
     public AsyncCommand ListingMetrics{get;private set;}=null!;
     private void InitializeCatalog()
     {
-        ListingMetrics=new(()=>Run(async token=>{RequireConnection();var rows=Listings.Where(x=>x.Selected).ToArray();if(rows.Select(x=>(x.Listing.Asset.AppId,x.Listing.HashName)).Distinct().Count()>10)throw new ArgumentException("MetricLimit");foreach(var group in rows.GroupBy(x=>(x.Listing.Asset.AppId,x.Listing.HashName))){var item=group.First().Listing;var asset=new InventoryAsset(item.Asset,"Steam",item.HashName,item.HashName,item.Quantity,item.Quantity>1,true,false);var snapshot=await workspace!.Prices.RefreshEstimateAsync(asset,IndicatorWindow,token);foreach(var row in group)row.Metric=snapshot.Estimate is {} ev?$"Steam pricehistory · 최근 정확한 평균 이용 불가 · 기간 중앙값 가중 추정 {new Money(ev.Minor,ev.Currency)} · {ev.Buckets}구간 / 서버 거래량 {ev.Volume} · {ev.WindowStart:MM-dd HH:mm}–{ev.WindowEnd:MM-dd HH:mm} UTC · 수집 {ev.CapturedAt:HH:mm:ss}":"해당 기간 표본 부족 · 평균/추정값 없음";}}),Error,()=>Connected&&!Busy&&!AnyReview&&Listings.Any(x=>x.Selected));
+        ListingMetrics=new(ListingMetricsAsync,Error,()=>Connected&&!Busy&&!AnyReview&&Listings.Any(x=>x.Selected));
         AddScope=new(()=>{try
         {
             var scope=new InventoryScope(int.Parse(AppInput,System.Globalization.CultureInfo.InvariantCulture),ContextInput,NameInput);scope.Validate();
@@ -34,6 +34,27 @@ public sealed partial class SteamWorkspaceViewModel
         }catch(Exception error){Error(error);}},()=>Connected&&!Busy&&!AnyReview);
         RemoveScope=new(()=>{try{var old=Game;var index=Games.IndexOf(old);Games.Remove(old);try{SaveCatalog();}catch{Games.Insert(index,old);throw;}Game=Games[0];Status="게임/context 목록에서 제거 · 거래 저널/예약은 보존합니다.";}catch(Exception error){Error(error);}},()=>Connected&&!Busy&&!AnyReview&&Games.Count>1);
     }
+    private Task ListingMetricsAsync()=>Run(async token=>
+    {
+        RequireConnection();var revision=priceRevision;var mode=PricingMode;var window=IndicatorWindow;var groups=Listings.Where(x=>x.Selected).GroupBy(x=>(x.Listing.Asset.AppId,x.Listing.HashName)).ToArray();
+        if(groups.Length>10)throw new ArgumentException("MetricLimit");
+        foreach(var group in groups)
+        {
+            if(mode==1){foreach(var row in group)row.Metric="최근 정확한 평균 이용 불가 · 실제 체결 원자료 없음";continue;}
+            var item=group.First().Listing;var asset=new InventoryAsset(item.Asset,"Steam",item.HashName,item.HashName,item.Quantity,item.Quantity>1,true,false);
+            var snapshot=mode==2?await workspace!.Prices.RefreshEstimateAsync(asset,window,token):await workspace!.Prices.RefreshAsync(asset,token);
+            token.ThrowIfCancellationRequested();if(revision!=priceRevision)return;
+            if(snapshot.Currency!=item.Currency)throw new SteamException(SteamFailure.Restricted);
+            RecordCheck("Orderbook",snapshot.Bids.Length,snapshot.Currency);
+            foreach(var row in group)
+            {
+                var current=checked(row.Listing.SellerReceives+row.Listing.Fees);
+                row.Metric=mode==2?(snapshot.Estimate is {} ev?$"Steam pricehistory · 최근 정확한 평균 이용 불가 · 기간 중앙값 가중 추정 {new Money(ev.Minor,ev.Currency)} · {ev.Buckets}구간 / 서버 거래량 {ev.Volume} · {ev.WindowStart:MM-dd HH:mm}–{ev.WindowEnd:MM-dd HH:mm} UTC · 수집 {ev.CapturedAt:HH:mm:ss}":"해당 기간 표본 부족 · 평균/추정값 없음"):
+                    snapshot.Bids.IsEmpty?$"{PriceDisplay.Immediate} · 구매주문 없음":$"{PriceDisplay.Immediate} 최고 구매주문 {new Money(snapshot.Bids[0].BuyerPays,snapshot.Currency)} · 잔량 {snapshot.Bids[0].Quantity}개 · 현재 등록 단가 대비 {PriceDisplay.Difference(snapshot.Bids[0].BuyerPays,current,snapshot.Currency)} · 수집 {snapshot.CapturedAt:HH:mm:ss} UTC · 수량별 분배는 최종 검토 · {PriceDisplay.ImmediateExplanation}";
+            }
+            if(snapshot.Estimate is {} estimate)RecordCheck("History",estimate.Buckets,estimate.Currency);
+        }
+    });
     private void SaveCatalog()=>workspace!.Store.SaveCatalog(workspace.Authentication.SteamId!,Games.Select(x=>new InventoryScope(x.AppId,x.ContextId,x.Name)).ToArray());
     private void RestoreCatalog()
     {

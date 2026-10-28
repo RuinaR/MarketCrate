@@ -1,4 +1,14 @@
-# 요구사항–구현–검증 추적표 (9차, 2026-10-28 KST)
+# 요구사항–구현–검증 추적표 (10차, 2026-10-28 KST)
+
+## 10차 판정과 사용자 보고
+
+75개 기존 ID/기대동작/판정기준 유지: **47/15/0/4/9**, 판정변경0. 사용자9차 수동GUI7개PASS는 부분 실환경 증거로 기록하고 G03/04/08/09/11의 모든 조건/24개 전체를 COMPLETE로 승격하지 않는다. 실계정/실응답 인증 검증 N 유지.
+
+- A01/A02/A03/A05: SteamWorkspaceVM.Begin/Check→기존 Authentication→UpdateChallenge→QrMatrix; 회전UI/만료/재로그인/로그아웃 T10.QrRotation. 공개proto/합성일뿐실계정 성공 아님.
+- A04/B01/B05/C01: 독립 LoadListings/LoadFees→기존 Orders/Fees→SetListings/RecordCheck/UI. Inventory404가목록을막던결합제거. T10.IndependentListings/ExpiredReads. 실제 inventory/fee/listings 형식은 계속UNVERIFIED.
+- D02/D03/E03/G08: PriceDisplay→PriceBasis/기존SalePlanner→UI/ReviewRows; stable settings alias/enum키·표시, 최고매수주문잔량/단가비교. 기존 공유호가/정수fee/스택/Unknown회귀 그대로.
+- F01/F07/B08~11: 기존 IAuthorizedExecutor/BatchCoordinator/SteamStateStore와 defaultBlocked 그대로. 공식시장버튼은대체사용자행동이며F01완료아님. QR최종승인/로그인동의가Valve허가를뜻하지않음.
+- LOG: ReadContract4202→화이트리스트 log→OperationFilter/검토ZIP. Count/Currency/고정endpoint·내부ID만, raw응답/QR필드수집안함.
 
 ## 9차 판정 유지
 

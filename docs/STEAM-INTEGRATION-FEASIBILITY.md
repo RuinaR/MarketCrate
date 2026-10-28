@@ -1,5 +1,15 @@
 # Steam 연동 가능성 조사 — 2026-10-28 KST (7차)
 
+## 10차 실사용 연결 보완 (2026-10-28 KST)
+
+실계정/API/인증/등록/취소/Guard는Codex가실행하지않았다. [공개auth proto](https://github.com/SteamDatabase/Protobufs/blob/master/steam/steammessages_auth.steamclient.proto)와[node-steam-session AuthenticationClient](https://github.com/DoctorMcKay/node-steam-session/blob/master/src/AuthenticationClient.ts)를재확인했다. optional new_client_id/new_challenge_url 전달근거가있어이미구현된auth회전에UI QR도연결했다. 패키지/타소스직접도입없음. 실JSON/토큰finalize/cookie/기간·만료의실계정계약은미검증.
+
+[공식Market](https://steamcommunity.com/market/)은목록조회·편집·제거에로그인이필요함을표시한다. UI에고정공식Market URL을여는명시적사용자명령만추가했다. 기본브라우저쿠키를읽거나앱메모리세션을브라우저로전송하지않는다. 공식페이지사용이앱단일승인전체등록구현완료는아니다.
+
+[Subscriber Agreement](https://store.steampowered.com/subscriber_agreement/) Automation영역을재조회했다. 공개소스에서기술적으로요청이가능하다는사실로비공식자동화허가를추론하지않고기본IntegrationBlocked를유지한다. [확인도움말](https://help.steampowered.com/en/faqs/view/2E6E-A02C-5581-8904)은도구상본문한줄이미지만반환해이번재확인으로치지않는다. 계정제재위험과인증정보보호위험은별개다.
+
+독립목록/fee/보관함/호가/이력의UI→실제어댑터호출과합성예외는연결됐지만READ_ONLY_READY아님. 실제읽기계약을사용자가확인할최소절차는[READ-ONLY-VALIDATION](READ-ONLY-VALIDATION.md). 실제KRW서버fee/스택부분판매·반환ID인과·ID-less외부등록구분·Guard후게시의실응답은여전히필요하다. 쓰기는허용근거+사용자명시활성+실계정검증전미지원이다.
+
 ## 8차 공개 계약 근거 대조 (2026-10-28 KST)
 
 실제 인증/판매 API 호출 없음. 공개 문서와 source GET만 수행했고 다운로드한 JS를 실행·복사하지 않았다. 실제 서버 응답 기반 계약/실계정 판정은 여전히 N이다. 실제 전체 일괄 등록이 최종 목표지만 IntegrationBlocked·KRW/stack/median capability 기본 제한은 유지한다.

@@ -1,5 +1,15 @@
 7차 Release 검사 수정: SQLite 파일명 제외 정규식이 정상 의존성 Microsoft.Data.Sqlite.dll까지 거부했다. DB/sidecar 확장자 끝으로 한정해 수정하고 DLL 허용·sqlite/sqlite3-wal/db-shm/.env/session.json/private.key 차단 7개 파일명 회귀를 확인했다. 실제 비밀파일·DB는 생성하지 않았다. 최초 publish는 이 정적 검사에서 FAIL이며 실행파일은 실행하지 않았다.
 
+## 2026-10-28 KST — 10차 실제 사용자 경로 보완
+
+- 시작 main/origin `a0e7c95` clean/fetch. 기존 AGENTS/정의/상태/구조·QA·저널·진단 확인. 사용자보고9차 기본GUI7PASS를별도기록, 상세24개/10차GUI/실계정PASS로변환안함. 타프로세스·OS입력·화면/실앱·계정작업없음.
+- 즉시거래가능가 Core PriceDisplay 리소스/정확한비체결보장설명 도입. Main전략은문자열비교대신PriceBasis, 구한국어저장키읽기/새enum키저장. 실제모드인덱스·저널·계산함수변경없음.
+- QR Challenge회전이UI에누락되는결함수정. auth중빈갱신유지/만료재시작/성공시QR참조해제, connected중Begin차단. 인증401시이전관측row보존/새검토차단/logout정리검증.
+- 실제 판매목록이inventory+fees와묶여불가능한경로를독립명령으로연결. 수수료없는취소검토는허용하되쓰기flag·계약제약유지. 현재모드별시세/잔량·등록가격차이·음수차이는가격타입과분리해표시. 계약관측UI와정제ReadContract이벤트추가, 실제READ_ONLY_READY자동부여없음.
+- 정상App진입Steam탭(자동인증없음), 공식장터수동대체버튼, 중복상태Toast숨김. 테스트는URL delegate만사용. userStage9 GUI7스코프와LIVE·RELEASE미검증을화면에표시.
+- 공개Steam auth proto/유지보수자소스·공식market/약관재확인, 타코드도입없음. Supportconfirmation페이지본문은도구상재확인불가로현재검증근거로안씀.
+- 최종 기능172/172·detached WPF33/33·파일계약14/14 PASS, FAIL0/Debug 경고0·오류0. Release/portable 패키지는 소스 커밋 후 정적 마감에 반영. 신규UI검사Single가정실패1은실제두전략컨트롤전체단언으로수정. 최초단독buildcache NU1101은기존Verify환경사용으로해소. 초기실패도runtime기록보존. 실제Steam접근/거래/Guard·CodexGUI조작없음.
+
 ## 2026-10-28 KST — 9차 실행 조건 판단 / self-contained / 진단 ZIP 수정
 
 - 시작 main/origin `9cc73a4` clean/fetch. AGENTS/상태/QA/격리/정의/로그 검토. 명시 제공 guest 없음. registry Core/build26200.9711/X64·Sandbox exe 없음만 조회, CIM capability는 권한 제한으로 미확인. 다른 프로세스/창·입력·화면/VM 목록 탐색 없음. 시스템 변경/재부팅/가상화 설치·실행 없음. 공식Home 미지원/별도 Windows11 guest 필요를 기록.

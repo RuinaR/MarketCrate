@@ -38,6 +38,7 @@ public partial class App : Application
         var vm = new MainViewModel(new DemoDataProvider(), journal, offlineOnly: profile.OfflineQa);
         var window = new MainWindow { DataContext = vm };
         if (profile.OfflineQa) window.Title = "MarketCrate · ISOLATED GUI QA · Mock only / Steam disabled";
+        if (!profile.OfflineQa && window.Content is MainView view) view.ShowSteamWorkspace();
         MainWindow = window;
         window.Closed += (_, _) => vm.Dispose();
         window.Show();
