@@ -1,5 +1,9 @@
 # MarketCrate — 외부 자료·레퍼런스
 
+## 3차 조사 (2026-10-28 KST)
+
+공식 인증/Inventory/Economy/Market API·API 약관·자동화 약관·확인 절차와 공개 구현을 다시 조사했다. 범위/권한/미확인을 분리한 결과는 [STEAM-INTEGRATION-FEASIBILITY.md](STEAM-INTEGRATION-FEASIBILITY.md). 실제 로그인/API/거래를 시험하지 않았다. SteamHelper/CSlytics의 검토·가격 수정·상태별 관리 UX만 참고하며 코드/그래픽은 도입하지 않는다.
+
 ## 2차 재확인 / 채택 (2026-10-28 KST)
 
 - https://steamhelper.app/ 와 https://cslytics.com/ 공개 소개를 재조회했다. 선택→단가 검토, 게임별 자산/판매 상태 분리, 배치 활동/대기 표시를 참고했다. 제품 설치·로그인·실행이나 소스/그래픽 복사는 하지 않았다. 기존 AGPL/미확인 자산 라이선스 제한은 유지한다.

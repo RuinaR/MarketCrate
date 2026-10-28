@@ -1,5 +1,10 @@
 # MarketCrate — 누적 작업 로그
 
+## 2026-10-28 — 3차 조사 마일스톤
+- 시작 HEAD `9ce53df`, 작업 트리 clean. fetch한 origin/main과 일치, AGENTS/현황/QA/아키텍처/판매 계약 확인.
+- 공식 Steam OpenID·Web API 인증·Inventory/Economy/Market API 및 약관을 조회. publisher/소유 앱/secure server 제한과 개인용 장터 권한을 구분했다. 공식 Support 직접 본문 접근 실패 후 공식 검색 색인의 확인 절차 본문을 확인했다.
+- 오픈소스·서비스 공개 문서만 조사, 설치/실행/로그인/API/거래/모바일 승인 없음. 결과와 한계·라이선스·후속 해제 조건을 STEAM-INTEGRATION-FEASIBILITY에 기록. 실제 쓰기는 IntegrationBlocked 유지.
+
 ## 2026-10-28 — 최초 개발 지침 패키지 작성
 - 사용자 요구사항을 기반으로 제품 목표, UI/UX, 인증·안전, 일괄 판매 실행 계약, QA, 레퍼런스를 문서화.
 - **실제 앱 코드, 실행, Steam 로그인, 실거래, 테스트, Git 푸시는 수행되지 않음.**
