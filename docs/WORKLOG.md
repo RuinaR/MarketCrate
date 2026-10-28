@@ -10,6 +10,7 @@
 - 비표시 안전 안내 렌더에서 좁은 viewport 오른쪽 여백을 보완했고 카드 경계 검사를 추가했다. Steam 저널은 불변 배치+변경 result 행 transaction으로 저장하도록 구현했으며 128행/두 번째 행 실패 rollback 재열기 검사를 추가했다.
 - 최종 전체 회귀: 빌드 경고0/오류0, 도메인/저장/MVVM/합성 Steam HTTP **87/87 PASS**, detached STA WPF **17/17 PASS**, FAIL0. 기존58/16 회귀 유지. 새 안전 화면 자체 PNG 시각 검토·카드 경계 검사 PASS. 변경 소스 이후 Release publish·PE/로컬 데이터 제외 검사 PASS. 앱 실행/설치/공개 배포는 안 했다.
 - 전체 diff/비밀값 패턴/금지 API 검색에서 문제 없음. 기존 Process.Start는 이전 승인된 프로젝트 headless 테스트 자식뿐이다. raw source/응답/이미지/DB/로그/bin/obj/산출물은 Git 제외. 실제 Steam 인증/거래/Guard·다른 앱/화면/입력/프로세스는 건드리지 않았다. 후속은 QR/실계정 UI와 원화/스택 계약·확정 취소 및 불명 대조 근거 보강이다.
+- 구현/조사/검증 커밋 `61fbd58`을 origin/main에 정상 push했다 (`9455dc9..61fbd58`). 현재 일반 앱의 실거래 차단은 유지하며 LIVE_READY를 선언하지 않는다. 최종 기록 동기화 커밋은 최종 보고에 기재한다.
 
 ## 2026-10-28 — 3차 구현·검증 마일스톤
 - 조사 커밋 `db8a55c`를 origin/main에 정상 push한 뒤 기존 WPF/MVVM/Core/SQLite 구조를 이어 구현했다. 새로운 라이브 연동/의존성 설치/원격 변경 없음.
