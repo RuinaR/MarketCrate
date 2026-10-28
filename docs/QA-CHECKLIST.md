@@ -1,5 +1,9 @@
 # MarketCrate — QA 체크리스트 (자동/비표시 WPF 검증, 실제 창 미실행)
 
+## 10차 마감
+
+기능172/172, detached WPF33/33, 합성 파일계약14/14 PASS. 사용자9차 기본GUI7개PASS는 별도 qa/user-basic-stage9.json에 기록했으며 현재GUI/상세24개/실계정으로 승격하지 않는다. `e5db266` self-contained Release·x64/고지/데이터 제외와 portable ZIP412개 hash PASS, 앱·로그인·거래 미실행. 실제 읽기 확인은 READ-ONLY-VALIDATION.
+
 ## 9차 마감
 
 기능166/166, detached WPF31/31, 합성 배포파일계약14/14 PASS. `d19dcc9`의 SCD/FDD Release·고지·모드별 x64/native·runtimeconfig·데이터 제외·414/40개 bundle hashes PASS(정적). 실제 GUI/guest/설치 미실행, GUI24개 NOT VERIFIED. 최신 근거는 QA-MATRIX/ISOLATED-GUI-QA.

@@ -1,5 +1,9 @@
 # MarketCrate — 제품 정의서 (2026-10-28)
 
+## 10차 제품 범위
+
+실제 Steam 계정 연결과 관리가 우선이며 최종 단일 승인 전체 실등록 목표는 유지한다. 즉시거래가능가 용어/안정 저장키, QR 회전, 독립 목록·fee 조회, 사용자 계약 진단, 공식 장터 수동 대체 경로를 보완했다. 사용자9차 GUI 기본7개는 보고된 범위만 인정한다. READ_ONLY_READY/LIVE_CONTRACT_READY/LIVE_READY/RELEASE_READY는 아직 부여하지 않는다. 현재 실계정 테스트 없이 등록·취소를 활성화하지 않는다. 구체적 구현/검증 범위는 CURRENT-STATUS와 READ-ONLY-VALIDATION을 따른다.
+
 ## 7차 범위
 
 기존 75개 ID를 유지하며 이미지/수동·관측 context 카탈로그/정확 평균과 구분된 추정 지표를 실제 코드/UI/합성 계약/비표시 WPF로 연결했다. 단일 최종 승인 전체 실제 등록 목표와 기본 IntegrationBlocked 유지. 현재 로컬 기준 47 COMPLETE/15 PARTIAL/0 MISSING/4 BLOCKED/9 UNVERIFIED이며 실계정 출시 준비 완료를 뜻하지 않는다. 상세 기준은 REQUIREMENTS-TRACEABILITY/QA-MATRIX.

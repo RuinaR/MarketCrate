@@ -8,7 +8,7 @@
 - 실제 판매목록이inventory+fees와묶여불가능한경로를독립명령으로연결. 수수료없는취소검토는허용하되쓰기flag·계약제약유지. 현재모드별시세/잔량·등록가격차이·음수차이는가격타입과분리해표시. 계약관측UI와정제ReadContract이벤트추가, 실제READ_ONLY_READY자동부여없음.
 - 정상App진입Steam탭(자동인증없음), 공식장터수동대체버튼, 중복상태Toast숨김. 테스트는URL delegate만사용. userStage9 GUI7스코프와LIVE·RELEASE미검증을화면에표시.
 - 공개Steam auth proto/유지보수자소스·공식market/약관재확인, 타코드도입없음. Supportconfirmation페이지본문은도구상재확인불가로현재검증근거로안씀.
-- 최종 기능172/172·detached WPF33/33·파일계약14/14 PASS, FAIL0/Debug 경고0·오류0. Release/portable 패키지는 소스 커밋 후 정적 마감에 반영. 신규UI검사Single가정실패1은실제두전략컨트롤전체단언으로수정. 최초단독buildcache NU1101은기존Verify환경사용으로해소. 초기실패도runtime기록보존. 실제Steam접근/거래/Guard·CodexGUI조작없음.
+- 최종 기능172/172·detached WPF33/33·파일계약14/14 PASS, FAIL0/Debug 경고0·오류0. 구현 `e5db266` origin/main push 완료. 해당 소스 self-contained x64 Release PASS(경고0/오류0), CLR/WPF10.0.9·SQLite/고지/데이터·PDB 제외/Core commit 확인. `artifacts/MarketCrate-stage10-e5db266-win-x64.zip` 78.3MiB/412개 원본·ZIP hash 일치, 앱 미실행. SHA256 E14B0BA88D314276F485AEB2D8E97A64604B02F7EA7D5A77207C4DC122EC765F. 신규UI검사Single가정실패1은실제두전략컨트롤전체단언으로수정. 최초단독buildcache NU1101은기존Verify환경사용으로해소. 초기실패도runtime기록보존. 실제Steam접근/거래/Guard·CodexGUI조작없음.
 
 ## 2026-10-28 KST — 9차 실행 조건 판단 / self-contained / 진단 ZIP 수정
 

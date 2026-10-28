@@ -14,7 +14,7 @@
 | 공식 대체 버튼 | T10.OfficialPage 고정URL delegate/연결0/실행0/쓰기0. 실제 브라우저 미실행 |
 | 사용자 명칭/진입/검토 | U10.terms/connected: 가격명·툴팁·독립명령·합성계약배너·검토명/중복상태숨김·자체PNG |
 
-최종 기능172/172·detached WPF33/33·파일계약14/14 PASS, FAIL0/Debug 경고0·오류0. Release/portable 패키지는 소스 커밋 후 정적 마감에 반영. 기존166개 기능/31개 UI/14개 파일 검사를 유지한다. 새 U10 첫 검사에서 같은 전략ComboBox가2곳인 정상구조를 Single로 가정해 FAIL1; 두 컨트롤 모두 같은명/선택/설명을 단언하도록 고쳤다. 기본 cache 경로 미지정 build의 NU1101은 기존 Verify 환경변수로 해소했고 패키지/SDK 설치·우회 없음.
+최종 기능172/172·detached WPF33/33·파일계약14/14 PASS, FAIL0/Debug 경고0·오류0. 구현 `e5db266` origin/main push 완료. 해당 소스 self-contained x64 Release PASS(경고0/오류0), CLR/WPF10.0.9·SQLite/고지/데이터·PDB 제외/Core commit 확인. `artifacts/MarketCrate-stage10-e5db266-win-x64.zip` 78.3MiB/412개 원본·ZIP hash 일치, 앱 미실행. SHA256 E14B0BA88D314276F485AEB2D8E97A64604B02F7EA7D5A77207C4DC122EC765F. 기존166개 기능/31개 UI/14개 파일 검사를 유지한다. 새 U10 첫 검사에서 같은 전략ComboBox가2곳인 정상구조를 Single로 가정해 FAIL1; 두 컨트롤 모두 같은명/선택/설명을 단언하도록 고쳤다. 기본 cache 경로 미지정 build의 NU1101은 기존 Verify 환경변수로 해소했고 패키지/SDK 설치·우회 없음.
 
 ## 9차 결과 (2026-10-28 KST)
 

@@ -9,7 +9,7 @@
 - 판매목록/지갑·fee를 보관함과 독립 조회 가능. 404 보관함이 account 판매목록 조회를 막지 않는다(403/429중단은 유지). fee 없어도 취소 **검토만** 가능, 실제 제출은 원래 policy/preflight. 판매목록 시세는 현재 모드로 조회, 최고 구매주문/잔량·현재 단가 차이/중앙값 기간 구분.
 - ReadContract4202의 고정 endpoint/count/currency/time/OperationId만 UI/JSONL에 연결. 원문·필드덤프/계정·asset·QR·쿠키·token 없음. 실제 응답이 아니라면 Synthetic으로 표시. 관측 성공을 READ_ONLY_READY로 자동 판정하지 않는다.
 - 공식 Steam 장터 버튼은 사용자 클릭 때 기본 브라우저의 고정 공식 URL만 연다. Codex/테스트는 대체 delegate만 사용. 해당 수동 흐름이 단일 승인 앱 일괄 등록 완료를 뜻하지 않는다.
-- 최종 기능172/172·detached WPF33/33·파일계약14/14 PASS, FAIL0/Debug 경고0·오류0. Release/portable 패키지는 소스 커밋 후 정적 마감에 반영. 75개 **47 COMPLETE / 15 PARTIAL / 0 MISSING / 4 BLOCKED / 9 UNVERIFIED** 유지. 실서버·KRW fee·stack/반환 인과·실제 쓰기·현재 GUI·서명/실환경 출시 기준은 여전히 미검증/차단.
+- 최종 기능172/172·detached WPF33/33·파일계약14/14 PASS, FAIL0/Debug 경고0·오류0. 구현 `e5db266` origin/main push 완료. 해당 소스 self-contained x64 Release PASS(경고0/오류0), CLR/WPF10.0.9·SQLite/고지/데이터·PDB 제외/Core commit 확인. `artifacts/MarketCrate-stage10-e5db266-win-x64.zip` 78.3MiB/412개 원본·ZIP hash 일치, 앱 미실행. SHA256 E14B0BA88D314276F485AEB2D8E97A64604B02F7EA7D5A77207C4DC122EC765F. 75개 **47 COMPLETE / 15 PARTIAL / 0 MISSING / 4 BLOCKED / 9 UNVERIFIED** 유지. 실서버·KRW fee·stack/반환 인과·실제 쓰기·현재 GUI·서명/실환경 출시 기준은 여전히 미검증/차단.
 
 ## 9차 — 배포·진단 보완, 실제 GUI QA 차단 유지 (2026-10-28 KST)
 
