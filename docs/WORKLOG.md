@@ -1,5 +1,13 @@
 7차 Release 검사 수정: SQLite 파일명 제외 정규식이 정상 의존성 Microsoft.Data.Sqlite.dll까지 거부했다. DB/sidecar 확장자 끝으로 한정해 수정하고 DLL 허용·sqlite/sqlite3-wal/db-shm/.env/session.json/private.key 차단 7개 파일명 회귀를 확인했다. 실제 비밀파일·DB는 생성하지 않았다. 최초 publish는 이 정적 검사에서 FAIL이며 실행파일은 실행하지 않았다.
 
+## 2026-10-29 KST — 13차 기존 인증 검토·자가검증
+
+- 기준main/origin3684d07 clean/fetch 확인, AGENTS·제품/현재상태/작업기록·인증/읽기/진단 소스 감사. 공식OpenID/OAuth/Steamworks ticket와 공개QR 정의 재확인. 공식 장터 브라우저 내부 로그인 활용과 앱 Market 세션 권한을 구분, 지원 근거 없는 세션 전달/쿠키추출/자격증명 접근·OpenID로 Market권한 가장을 구현하지 않음.
+- 기존 provider에 첫 페이지 probe를 공통 page 함수로 추가, fee wallet/structure 단계를 분리. 불변 SteamReadCheckPlan·순차 실행기(거래/저널 명령 없음)와 사용자 범위/실행 동의·9단계 결과/중단·정제 진단4204/UI 탐색을 구현. 전체 목록 캐시·선택/수량·저널 유지. 일반 조회 실패와 인증 상태 분리 유지.
+- 감사에서 Wallet HTML 마커 부재를 Authentication으로 추측하던 오류 수정. QR transfer 쿠키 Secure/비어 있지 않음·미만료 검사. publisher rate/지갑·호가 통화 상충을 특정 원인으로 실패 처리. 실제 서버의 새 필드를 추정하지 않았으며 실응답 불일치를 확인한 것으로 과장하지 않는다.
+- 신규 합성12개 및 비표시UI3개, 전체199/199·45/45·14/14 PASS, FAIL0·Debug 경고0/오류0. 초기 helper scope 선행순서·UI 초기 탐색 바인딩 문제는 QA-MATRIX에 실패와 수정 근거 기록. 성공/차단/실행중 own RTB 이미지 직접 검토.
+- 실제 앱/브라우저 실행·계정 로그인·실계정 읽기·판매/취소/Guard·타 프로세스·입력/화면·기존 사용자 DB 접근/초기화0. SDK/Windows 설정 설치·변경0. 날짜가 자정 경계를 지나 공개 자료 확인기간은28~29KST로 기록. 버전0.13.0,75개 판정47/15/0/4/9 유지.
+
 ## 2026-10-28 KST — 12차 사용자 발견 복구·UI 결함
 
 12차 배포: 구현 `49a3ffad9a8b37aa4085d6ace6191ddbd035430e` origin/main push. **0.12.0 Windows x64 self-contained Release PASS**, 경고·오류0, CLR/WPF10.0.9·SQLite 네이티브/고지 포함, DB·로그·세션·PDB·개발파일 제외. `artifacts/MarketCrate-0.12.0-stage12-49a3ffa-win-x64.zip` **78.30MiB/412파일**, ZIP 전체 파일 SHA256가 원본과 일치. SHA256 `EAE969B83190F2EB9A29F7299AD2B879DC7D699502D631E960A6F10308986408`. ProductVersion/SourceCommit 일치. 앱/인증/실거래/설치·서명은 실행하지 않았고 기존 배포본·사용자 데이터는 보존했다.

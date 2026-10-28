@@ -1,5 +1,23 @@
 # 정상·오류·복구 QA 매트릭스 — 10차 (2026-10-28 KST)
 
+## 13차 읽기 전용 자가검증 (2026-10-29 KST)
+
+기능 **199/199**, 비표시 WPF **45/45**, 배포 파일계약 **14/14 PASS**, FAIL0/Debug 경고0·오류0. 기존187/42/14 회귀 유지. 실제 인증/서버/GUI/설치 검증이 아니다.
+
+| 새 검사 | 단언한 증거 |
+|---|---|
+| T13.Consent/Scope | 승인 없이 직접 호출 요청0, 범위/게임 변경 시 승인 해제, listings-only GET1·완전 목록 캐시 불변·승인1회 소비·거래0 |
+| T13.All/Page | 허용된 Community GET6+무인증 이미지1, 모든 step 성공은 합성임을 표시. inventory Next가 있어도 추가 페이지 요청0, 기존 row/선택 동일 |
+| T13.Restrictions |401/403/429 후 실제 읽기1회/나머지Blocked, 세션/HTTP latch 구분·인증만료만 로그아웃, 우회0 |
+| T13.Independent/WalletFailure | malformed/503은 독립 실패·다른 허용된 조회 진행, g_rgWalletInfo 없는 HTML은Schema·로그인 유지, wallet 미확인이면 fees 요청0 |
+| T13.Missing/Cancel | 빈 보관함Count0·품목 없음 미검증/호가·이미지 무요청, 취소 뒤 후속요청0, 로그아웃 중 늦은 결과 폐기 |
+| T13.Diagnostics/Cookie/Mismatch |4204·HTTP Correlation·row OperationId 동일, raw/synthetic secret/name/SteamID sentinel 누출0. Community cookie 없음/빈 값/비Secure 거부. 지갑·호가 통화 및 publisher fee 불일치가 특정 Error로 실패, 거래0 |
+| U13 3종 | 범위OFF·진입/승인 바인딩·버튼 비활성; 실제 어댑터 합성 성공/실행 중 입력잠금·취소/403차단/OperationId 자체 렌더; VM 명령→페이지와 Selector→VM 양방향 탐색 |
+
+초기 T13 helper가 수수료를 지갑보다 먼저 설정하는 체인 대입 때문에 3개 FAIL: UI는 지갑 선행 조건을 강제하므로 helper를 같은 순서로 고치고 검증 단언을 유지했다. UI 회귀3개는 초기 바인딩 전에 SelectedIndex를 직접 덮던 테스트 설정과 WorkPage 초기 전송의 충돌이었다. 기존 검색/이미지/계약 요약 단언을 삭제하지 않고 VM 탐색 상태로 진입시키며 별도 양방향 Selector 검사를 추가했다. 실제 물리 입력을 재현했다고 판정하지 않는다.
+
+자가검증 성공/차단/실행 중 PNG를 1100×800/1380×900·1/1.25 출력 밀도로 직접 검토. 실제 Window/Popup/화면캡처/모니터 DPI/키보드·마우스 입력은 실행하지 않았다. 실제 Steam 응답이 없으므로 서버 파서 호환성 PASS·READ_ONLY_READY·LIVE_READY 판정은 없다.
+
 ## 12차 — 실제 사용자 발견 결함 재현과 수정
 
 12차 배포: 구현 `49a3ffad9a8b37aa4085d6ace6191ddbd035430e` origin/main push. **0.12.0 Windows x64 self-contained Release PASS**, 경고·오류0, CLR/WPF10.0.9·SQLite 네이티브/고지 포함, DB·로그·세션·PDB·개발파일 제외. `artifacts/MarketCrate-0.12.0-stage12-49a3ffa-win-x64.zip` **78.30MiB/412파일**, ZIP 전체 파일 SHA256가 원본과 일치. SHA256 `EAE969B83190F2EB9A29F7299AD2B879DC7D699502D631E960A6F10308986408`. ProductVersion/SourceCommit 일치. 앱/인증/실거래/설치·서명은 실행하지 않았고 기존 배포본·사용자 데이터는 보존했다.

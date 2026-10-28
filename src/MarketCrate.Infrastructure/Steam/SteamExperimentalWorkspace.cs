@@ -36,5 +36,8 @@ public sealed class SteamExperimentalWorkspace : IDisposable
         Executor = new(http, Authentication, store, Inventory, Prices, Orders, Policy); Batches = new(Executor, store);
     }
     public Task<SteamFeeSchedule> FeesAsync(int appId, CancellationToken token = default) => SteamFees.FetchAsync(http, appId, token);
+    public Task<SteamInventoryPage> ProbeInventoryAsync(int appId,string contextId,string game,CancellationToken token)=>new SteamInventoryProvider(http,Authentication,appId,contextId,game).ProbeAsync(token);
+    public Task<SteamWallet> ProbeWalletAsync(CancellationToken token)=>SteamFees.FetchWalletAsync(http,token);
+    public Task<SteamFeeSchedule> ProbeFeesAsync(int appId,SteamWallet wallet,CancellationToken token)=>SteamFees.FetchStructureAsync(http,appId,wallet,token);
     public void Dispose() { Authentication.Dispose(); Images.Dispose();http.Dispose(); store.Dispose(); }
 }

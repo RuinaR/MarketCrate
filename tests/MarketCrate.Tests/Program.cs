@@ -4,6 +4,7 @@ using MarketCrate.Core;
 using MarketCrate.Infrastructure;
 using MarketCrate.App.ViewModels;
 
+if(args.Contains("--stage13")){var focused=await ThirteenthStageTests.RunAsync();return focused.Failed==0?0:1;}
 if(args.Contains("--stage7")){var focused=await SeventhStageTests.RunAsync();Console.WriteLine($"STAGE7 RESULT {focused.Passed} PASS / {focused.Failed} FAIL");return focused.Failed==0?0:1;}
 if(args.Contains("--stage6")){var focused=await SixthStageTests.RunAsync();Console.WriteLine($"STAGE6 RESULT {focused.Passed} PASS / {focused.Failed} FAIL");return focused.Failed==0?0:1;}
 
@@ -50,7 +51,8 @@ var ninth=await NinthStageTests.RunAsync();failed+=ninth.Failed;
 var tenth=await TenthStageTests.RunAsync();failed+=tenth.Failed;
 var eleventh=await EleventhStageTests.RunAsync();failed+=eleventh.Failed;
 var twelfth=await TwelfthStageTests.RunAsync();failed+=twelfth.Failed;
-var total = twelfth.Passed+twelfth.Failed+ eleventh.Passed+eleventh.Failed+tenth.Passed+tenth.Failed+ninth.Passed+ninth.Failed+eighth.Passed+eighth.Failed+seventh.Passed+seventh.Failed+sixth.Passed+sixth.Failed+tests.Length + next.Passed + next.Failed + third.Passed + third.Failed + fourth.Passed + fourth.Failed + fifth.Passed + fifth.Failed;
+var thirteenth=await ThirteenthStageTests.RunAsync();failed+=thirteenth.Failed;
+var total = thirteenth.Passed+thirteenth.Failed+ twelfth.Passed+twelfth.Failed+ eleventh.Passed+eleventh.Failed+tenth.Passed+tenth.Failed+ninth.Passed+ninth.Failed+eighth.Passed+eighth.Failed+seventh.Passed+seventh.Failed+sixth.Passed+sixth.Failed+tests.Length + next.Passed + next.Failed + third.Passed + third.Failed + fourth.Passed + fourth.Failed + fifth.Passed + fifth.Failed;
 Console.WriteLine($"RESULT {total - failed}/{total} PASS; {failed} FAIL · synthetic data only, no GUI/network (Steam HTTP replaced by test handler)");
 return failed == 0 ? 0 : 1;
 

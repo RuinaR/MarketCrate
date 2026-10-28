@@ -1,5 +1,13 @@
 # 진단 시스템 (10차, 2026-10-28 KST)
 
+## 13차 연결 자가검증
+
+**ReadSelfCheck4204**(Data,A04), Step=고정 Endpoint SessionCheck/Listings/Inventory/Marketable/Wallet/Fees/Orderbook/History/Image. Running/Succeeded/Failed/Blocked/Unsupported/Unverified/Cancelled을 기존 outcome/error로 기록한다. GUI SelfCheckAsync의 OperationId를 9개 행과 provider/HTTP correlation까지 공유한다. 표시 detail/게임명/아이템명/plan/QR·쿠키·원문은 로그에 직렬화하지 않고 고정 step·상태·원인·count·통화만 허용한다.
+
+예: `UiCommand(O)→ReadSelfCheck(SelfCheck)→SessionCheck(Succeeded:메모리 기록)→HTTP(Listings,R,403)→ReadSelfCheck(Listings,Blocked,Forbidden,O)→나머지허용step(Blocked,미전송,O)`. parse/503은 해당 step Failed 후 다른 허용 read를 진행할 수 있고 재시도하지 않는다. Wallet 실패→Fees(Unverified)에는 HTTP Fees가 없어야 한다. Currency mismatch는 Orderbook/Failed/Currency, publisher fee mismatch는 Fees/Failed/Validation이다. 이미지가 캐시 적중이면 HTTP 대신 기존 ImageLoad cache 이벤트가 있을 수 있다.
+
+행의 UTC/KST는 검사 시각이며 원자료의 서버 수집 시각을 보증하지 않는다. 성공은 개별 관측이고 QR 발급/세션 존재/전체 읽기/실거래 권한을 동일시하지 않는다. 자동 ZIP 전송 없음. 기존 진단 검색·범위 검토·내보내기·정제·회전/보존 정책과 SQLite 복구 저널 분리는 그대로다.
+
 ## 12차 인증과 조회 상태 진단
 
 **ReadState4203**(Area Data,A04): Inventory/Listings/Fees/Orderbook/History 고정 Endpoint별 NotQueried→Loading→Ready/Empty/Failed/Unsupported/AccessBlocked/Cancelled/Stale 전이를 기록한다. OperationId는 GUI Run→provider→HTTP Correlation→UI state까지 공유하며 원본 URL/본문/계정·자산·인증자료는 없다. per-read 마지막 At/OperationId는 로컬 상태이며 복구 저널을 대체하지 않는다.

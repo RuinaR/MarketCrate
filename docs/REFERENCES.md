@@ -96,3 +96,10 @@
 
 - [Microsoft UIElement.IsMouseOver](https://learn.microsoft.com/en-us/dotnet/api/system.windows.uielement.ismouseover?view=windowsdesktop-10.0): 자식 요소 포함 상태임을 확인. Header Border만 Hover 소유자로 채택. 문서·원리 참조, 소스 도입 없음. 문서가 실제 사용자 환경의 물리 깜빡임 재현 증거는 아니다.
 - [SteamHelper](https://steamhelper.app/): 게임 전환·시세/검토 문맥을 공개 페이지에서 재확인. [CSlytics](https://cslytics.com/): inventory/listings/activity를 나누는 흐름 참고, 사이트는 AGPL을 명시. UI 자산·브랜드·코드 복사/제품 실행 없음. 문맥 분리만 독자적인 WPF 레이아웃으로 구현했고 인증·거래 허가 근거로 사용하지 않았다.
+
+## 13차 인증 조사 (확인 2026-10-28~29 KST)
+
+- [공식 User Authentication](https://partner.steamgames.com/doc/features/auth)·[Community dev/OpenID](https://steamcommunity.com/dev): 브라우저 SteamID 신원 확인·게임 ticket 검증 참조. Market 세션 전달 근거로 미채택. 문서·프로토콜 사실만 참조, 코드/이미지 복제 없음.
+- [공식 OAuth](https://partner.steamgames.com/doc/webapi_overview/oauth)·[API keys](https://partner.steamgames.com/doc/webapi_overview/auth): Client ID/제한된 서비스·서버 publisher key 조건 참조. 타 앱 ID/API key/클라이언트 세션을 빌려오는 방식 미채택.
+- [공개 QR proto](https://github.com/SteamDatabase/Protobufs/blob/master/steam/steammessages_auth.steamclient.proto)·[node-steam-session AuthenticationClient](https://github.com/DoctorMcKay/node-steam-session/blob/master/src/AuthenticationClient.ts): 기존Begin/Poll/회전 필드 재확인. 기존 독립 encoder 유지, 외부 소스/패키지 도입0. 비공식 코드의 존재를 Valve 허가로 간주하지 않음.
+- [Subscriber Agreement §4](https://store.steampowered.com/subscriber_agreement/): 자동화·제재 위험 재확인. 사용자 실행 읽기도 안전/허용 보증으로 해석하지 않음.

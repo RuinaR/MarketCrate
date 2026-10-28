@@ -40,9 +40,9 @@ internal static class SixthStageUiTests
         });
         test("Steam 검색/정렬/해제 UI 바인딩과 신규 재가격 검토 명령",()=>
         {
-            using var vm=new SteamWorkspaceViewModel();var view=new SteamWorkspaceView{DataContext=vm};((TabControl)view.FindName("SteamPages")).SelectedIndex=1;
+            using var vm=new SteamWorkspaceViewModel();var view=new SteamWorkspaceView{DataContext=vm};vm.WorkPage=1;
             render(view,1100,700,1,"stage6-steam-filters.png");var search=Find<TextBox>(view).First(x=>x.GetBindingExpression(TextBox.TextProperty)?.ParentBinding.Path.Path=="Search");search.Text="synthetic";search.GetBindingExpression(TextBox.TextProperty)!.UpdateSource();Check(vm.Search=="synthetic");
-            Check(Find<Button>(view).Any(x=>ReferenceEquals(x.Command,vm.ClearSelection)));((TabControl)view.FindName("SteamPages")).SelectedIndex=4;
+            Check(Find<Button>(view).Any(x=>ReferenceEquals(x.Command,vm.ClearSelection)));vm.WorkPage=4;
             render(view,1100,700,1,"stage6-steam-evidence.png");Check(Find<Button>(view).Any(x=>ReferenceEquals(x.Command,vm.ReviewStoredReprice)));Check(!vm.ReviewStoredReprice.CanExecute(null));Check(Application.Current.Windows.Count==0);
         });
     }

@@ -18,14 +18,7 @@ public sealed class SteamInventoryProvider(SteamHttp http, SteamQrAuthentication
         var all = new List<InventoryAsset>(); var fees = new Dictionary<AssetKey, int>(); var keys = new HashSet<AssetKey>(); var cursors = new HashSet<string>(); string? next = null;
         for (var page = 0; page < 100; page++)
         {
-            var path = $"https://steamcommunity.com/inventory/{auth.SteamId}/{appId}/{contextId}?l=english&count=1000";
-            if (next is not null) path += "&start_assetid=" + next;
-            using var correlation=DiagnosticHub.Scope(correlation:true);
-        using var request = new HttpRequestMessage(HttpMethod.Get, path);
-            var body = await http.SendAsync(request, cancellationToken);
-            SteamInventoryPage result;
-            try { result = SteamContract.Inventory(body, appId, contextId, game); }
-            catch (SteamException error) { error.Endpoint??="Inventory";throw; }
+            var result=await PageAsync(next,cancellationToken);
             foreach (var asset in result.Assets)
                 if (!keys.Add(asset.Key)) { http.Stop(SteamFailure.ContractChanged); throw new SteamException(SteamFailure.ContractChanged); } else all.Add(asset);
             DiagnosticHub.Emit(DiagnosticEvent.InventoryPage,DiagnosticArea.Data,count:result.Assets.Length,requirement:"C01");
@@ -36,6 +29,16 @@ public sealed class SteamInventoryProvider(SteamHttp http, SteamQrAuthentication
             if (!cursors.Add(next)) break;
         }
         http.Stop(SteamFailure.ContractChanged); throw new SteamException(SteamFailure.ContractChanged);
+    }
+    // One page only. Does not replace the full inventory/image/fee caches or claim complete counts.
+    public Task<SteamInventoryPage> ProbeAsync(CancellationToken token=default)=>PageAsync(null,token);
+    private async Task<SteamInventoryPage> PageAsync(string? next,CancellationToken token)
+    {
+        if(!auth.Connected)throw new SteamException(SteamFailure.Authentication);
+        var path=$"https://steamcommunity.com/inventory/{auth.SteamId}/{appId}/{contextId}?l=english&count=1000";
+        if(next is not null)path+="&start_assetid="+next;
+        using var correlation=DiagnosticHub.Scope(correlation:true);using var request=new HttpRequestMessage(HttpMethod.Get,path);
+        var body=await http.SendAsync(request,token);try{return SteamContract.Inventory(body,appId,contextId,game);}catch(SteamException error){error.Endpoint??="Inventory";throw;}
     }
 }
 
@@ -99,11 +102,7 @@ public sealed class SteamOrdersProvider(SteamHttp http, SteamQrAuthentication au
         var all = new Dictionary<string, SteamListing>(); int? total = null; var active = 0;
         for (var start = 0; start < 10000; start += 100)
         {
-            using var correlation=DiagnosticHub.Scope(correlation:true);
-        using var request = new HttpRequestMessage(HttpMethod.Get, $"https://steamcommunity.com/market/mylistings/render/?norender=1&start={start}&count=100");
-            var body = await http.SendAsync(request, token);
-            SteamListingsPage page;
-            try { page = SteamContract.Listings(body); } catch (SteamException error) { error.Endpoint??="Listings";throw; }
+            var page=await PageAsync(start,token);
             if(page.Images is {} pageImages)foreach(var image in pageImages)images[image.Key]=image.Value;
             total ??= page.TotalActive;
             if (total != page.TotalActive) break; // Unstable pagination is not a complete authoritative snapshot.
@@ -116,6 +115,13 @@ public sealed class SteamOrdersProvider(SteamHttp http, SteamQrAuthentication au
             if (page.Listings.Count(x => x.State == SaleState.Listed) == 0) break;
         }
         throw new SteamException(SteamFailure.ContractChanged);
+    }
+    public Task<SteamListingsPage> ProbeAsync(CancellationToken token=default)=>PageAsync(0,token);
+    private async Task<SteamListingsPage> PageAsync(int start,CancellationToken token)
+    {
+        if(!auth.Connected)throw new SteamException(SteamFailure.Authentication);
+        using var correlation=DiagnosticHub.Scope(correlation:true);using var request=new HttpRequestMessage(HttpMethod.Get,$"https://steamcommunity.com/market/mylistings/render/?norender=1&start={start}&count=100");
+        var body=await http.SendAsync(request,token);try{return SteamContract.Listings(body);}catch(SteamException error){error.Endpoint??="Listings";throw;}
     }
 }
 

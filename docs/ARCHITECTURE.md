@@ -1,5 +1,11 @@
 # MarketCrate — 아키텍처 (최초 Mock 구현 / 후속 계획)
 
+## 13차 읽기 자가검증 경계
+
+SteamReadSelfCheck는 기존 workspace의 인증 기록/목록·보관함 probe/지갑/fee/가격·이력/이미지 adapter만 사용한다. 로그인 시작·executor·store mutation은 호출하지 않는다. 승인 때 고정한 SteamReadCheckPlan은 게임/context·최대 한 자산·이미지 참조·7개 범위를 담고 ToString은 정제한다. metadata 자체를 로그로 직렬화하지 않는다.
+
+Probe는 GetAsync/RefreshAsync와 같은 parser·HTTP 직렬 큐/간격·latch를 사용하되 첫 페이지만 요청하고 완전 스냅샷으로 캐시를 덮지 않는다. 가격/이미지 캐시는 기존 정책을 유지한다. wallet과 fee를 분리해 의존 실패를 실제 무요청/미검증으로 보여준다. UI는 WorkPage 양방향 상태와 전용 결과 목록을 사용하고 로그아웃 중 늦은 callback을 폐기한다. Source/At/Outcome이 거래 저널이나 LIVE readiness를 대체하지 않는다. SQLite 스키마·사용자 데이터 경로 변경 없음.
+
 ## 12차 세션/요청/조회 상태 경계
 
 SteamQrAuthentication.HasSession은 성공한 finalize/Community transfer와 메모리 세션 존재, Connected는 인증 만료 여부를 나타낸다. 전역 SteamHttp.Halted는 요청 안전 latch이며 이 값을 로그인 존재와 동일시하지 않는다. VM.CanRead=Connected && !RequestsBlocked, 실행기 CanExecute/CanReconcile은 별도로 http.Halted=null까지 검사한다. 권한을 우회하거나 latch를 지우는 API는 추가하지 않았다.

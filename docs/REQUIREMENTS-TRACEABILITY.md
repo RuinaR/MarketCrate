@@ -1,4 +1,8 @@
-# 요구사항–구현–검증 추적표 (12차, 2026-10-28 KST)
+# 요구사항–구현–검증 추적표 (13차, 2026-10-29 KST)
+
+## 13차 판정 유지
+
+최초75개 ID/기준 **47 COMPLETE / 15 PARTIAL / 0 MISSING / 4 BLOCKED / 9 UNVERIFIED**, 변경0. A01~05는 기존 QR+Secure Community cookie 검사, 공식 OpenID identity/브라우저 세션 전달 미지원 구분. A04/B01/C01/D01/D02/D09/D10/B04: UI SelfCheck→불변 plan→SteamReadSelfCheck→기존 probe/fee/price/image→정제4204→row 결과, T13 12개/U13 3개 근거. 실서버·실계정 검증 N, 앱 OpenID/OAuth 미구현, LIVE 차단 유지. 자가검증의 로컬/합성 완성을 원 요구사항의 실제 계정 지원 COMPLETE로 승격하지 않는다.
 
 ## 12차 사용자 결함 보완 — 기존75개 판정 유지
 

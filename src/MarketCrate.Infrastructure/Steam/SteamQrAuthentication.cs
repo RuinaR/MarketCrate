@@ -87,7 +87,7 @@ public sealed class SteamQrAuthentication(SteamHttp http, TimeProvider? timeProv
         var fields = new Dictionary<string, string> { ["steamID"] = steamId, ["nonce"] = parameters.GetProperty("nonce").GetString()!, ["auth"] = parameters.GetProperty("auth").GetString()! };
         using var transfer = SteamHttp.Form(new("https://steamcommunity.com/login/settoken"), fields);
         using var result = await ReadResponseAsync(transfer,token,"AuthTransfer");
-        if (result.RootElement.GetProperty("result").GetInt32() != 1 || http.Cookies.GetCookies(new("https://steamcommunity.com/"))["steamLoginSecure"] is null)
+        if (result.RootElement.GetProperty("result").GetInt32() != 1 || http.Cookies.GetCookies(new("https://steamcommunity.com/"))["steamLoginSecure"] is not {Secure:true,Expired:false,Value.Length:>0})
             throw new SteamException(SteamFailure.Authentication);
         http.Cookies.Add(new System.Net.Cookie("sessionid", csrf, "/", "steamcommunity.com") { Secure = true });
         SessionId = csrf; SteamId = steamId;

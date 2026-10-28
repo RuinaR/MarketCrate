@@ -11,7 +11,7 @@ public static class SteamFees
     {
         try
         {
-            var index = html.IndexOf("g_rgWalletInfo", StringComparison.Ordinal); if (index < 0) throw new SteamException(SteamFailure.Authentication);
+            var index = html.IndexOf("g_rgWalletInfo", StringComparison.Ordinal); if (index < 0) throw new SteamException(SteamFailure.ContractChanged);
             index = html.IndexOf('=', index) + 1; var start = html.IndexOf('{', index);
             if (index == 0 || start < index || start - index > 16) throw new SteamException(SteamFailure.ContractChanged);
             var reader = new Utf8JsonReader(Encoding.UTF8.GetBytes(html[start..])); using var document = JsonDocument.ParseValue(ref reader); var root = document.RootElement;
@@ -38,11 +38,14 @@ public static class SteamFees
     });
     public static async Task<SteamFeeSchedule> FetchAsync(SteamHttp http, int appId, CancellationToken token)
     {
-        SteamWallet wallet;
-        using(DiagnosticHub.Scope(correlation:true)){using var walletRequest = new HttpRequestMessage(HttpMethod.Get, "https://steamcommunity.com/market/");wallet = Wallet(await http.SendAsync(walletRequest, token, true));}
-        using var correlation=DiagnosticHub.Scope(correlation:true);
-        using var feesRequest = new HttpRequestMessage(HttpMethod.Get, $"https://steamcommunity.com/market/ajaxfeestructure/?appid={appId}");
-        try { return Structure(await http.SendAsync(feesRequest, token), wallet); }
-        catch (SteamException) { throw; }
+        var wallet=await FetchWalletAsync(http,token);return await FetchStructureAsync(http,appId,wallet,token);
+    }
+    public static async Task<SteamWallet> FetchWalletAsync(SteamHttp http,CancellationToken token)
+    {
+        using var correlation=DiagnosticHub.Scope(correlation:true);using var request=new HttpRequestMessage(HttpMethod.Get,"https://steamcommunity.com/market/");return Wallet(await http.SendAsync(request,token,true));
+    }
+    public static async Task<SteamFeeSchedule> FetchStructureAsync(SteamHttp http,int appId,SteamWallet wallet,CancellationToken token)
+    {
+        using var correlation=DiagnosticHub.Scope(correlation:true);using var request=new HttpRequestMessage(HttpMethod.Get,$"https://steamcommunity.com/market/ajaxfeestructure/?appid={appId}");return Structure(await http.SendAsync(request,token),wallet);
     }
 }

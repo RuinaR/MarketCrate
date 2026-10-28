@@ -1,4 +1,20 @@
-# Steam 연동 가능성 조사 — 2026-10-28 KST (7차)
+# Steam 연동 가능성 조사 — 2026-10-29 KST (13차)
+
+## 13차 기존 인증 활용 판정 (공개 자료 확인: 2026-10-28~29 KST)
+
+| 방식 | 공식 근거와 판정 | MarketCrate 적용 |
+|---|---|---|
+| 기존 기본 브라우저 | 사용자가 공식 장터를 여는 경우 브라우저 내부 로그인 상태를 직접 활용할 수 있으나 재인증 필요 여부는 Steam 판단 | 기존 공식 장터 버튼 유지, 앱에 세션을 전달하지 않음 |
+| OpenID | [User Authentication](https://partner.steamgames.com/doc/features/auth#website) 및 [Community 개발 문서](https://steamcommunity.com/dev): SteamID 신원 확인/계정 연결. 장터 쿠키·거래 세션 권한을 반환한다고 명시하지 않음 | 앱 OpenID 미구현. 신원만 얻기 위해 새 callback 서버/로그인 절차를 추가하지 않음 |
+| OAuth | [공식 OAuth](https://partner.steamgames.com/doc/webapi_overview/oauth): Valve Client ID 필요, Cloud/Workshop 목적 등 권한 협의. 일반 장터용 session bridge 근거 없음 | Client ID/허가 없음, 타 앱 ID 차용·임의 OAuth 경로 생성 안 함 |
+| Steamworks ticket | [공식 인증 문서](https://partner.steamgames.com/doc/features/auth): 게임/백엔드 신원·소유권 검증 | 타 앱 AppID·클라이언트 내부 세션을 이용한 장터 세션 획득으로 해석하지 않음 |
+| 독립 QR | [공개 proto](https://github.com/SteamDatabase/Protobufs/blob/master/steam/steammessages_auth.steamclient.proto), [node-steam-session](https://github.com/DoctorMcKay/node-steam-session/blob/master/src/AuthenticationClient.ts)의 Begin/Poll/회전 필드 대조 | 기존 비공식 어댑터 유지, 코드 직접 도입 없음. 실제 서버/계정 검증·Valve 허용을 뜻하지 않음 |
+
+확인한 공식 문서 범위에서 기존 브라우저/Steam 클라이언트 Community 인증 세션을 범용 데스크톱 앱으로 공식 전달하는 방법은 찾지 못했다. 이 부재를 모든 미래/비공개 방법의 불가능 증명으로 확대하지 않는다. 인증 파일/쿠키/메모리/Windows 자격 증명 추출·Web UI 주입은 구현하지 않았다. QR의 client_id는 세션 식별자이며 OAuth 앱 Client ID와 다르다.
+
+자가검증은 새 인증을 시작하거나 권한을 만들지 않는다. 성공한 QR finalize/Community transfer 기록·메모리 세션 존재를 먼저 확인하고, 명시 허용된 endpoint 응답을 각각 검사한다. 세션 존재/개별 응답 파싱 성공은 전체 권한·시장 게시·실거래 계약 검증과 별개다. [Subscriber Agreement §4](https://store.steampowered.com/subscriber_agreement/) 자동화 조항을 재확인했으며 사용자 클릭·읽기 전용·호출 간격만으로 Valve 허용 또는 제재 위험 감소를 보장하지 않는다.
+
+실계정 응답은 수집하지 않았으므로 새로 확인된 서버 계약 불일치 수정이라고 주장할 항목은 없다. Wallet HTML 마커 부재의 잘못된 인증 만료 추론, Secure/빈 쿠키 검증은 코드 논리와 합성 응답으로 수정했다. 실제 QR 발급/승인/finalize/transfer·지갑·수수료·보관함/장터 스키마는 여전히 사용자 직접 검증이 필요하며 READ_ONLY_READY/LIVE_READY 미부여.
 
 ## 11차 QR 계약 수정 근거 (2026-10-28 KST)
 
