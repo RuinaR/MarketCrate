@@ -64,7 +64,7 @@
 | E26 | SQLite 외부 lock(격리 DB만) | 설정 쓰기 실패/기존 데이터 보존 | S6.StorageLocked: Locked/SqliteErrorCode, SQL/값 미기록 | PASS |
 | E27 | SQLite 파손/미지원 migration 버전 | 열기 중단, 원본 파일 보존/lease 정리 | S6.StorageFault; NextStage 스키마/이관 | PASS; 모든 실패의 migration 상세 사유 분류 PARTIAL |
 | E28 | transaction 중단/저널 저장 실패 | 롤백, 판매 전송0, 성공 상태 로그0 | NextStage 롤백; S6.JournalFailure | PASS |
-| E29 | 로그 권한 거부/가짜 disk full 예외 | WriteFailure health, 판매 결과/호출 수 불변 | S6.DiskFailure | PASS(주입); 실제 운영 디스크를 채우지 않음 |
+| E29 | 로그 권한 거부/가짜 disk full 예외 | WriteFailure health, 판매 결과/호출 수 불변 | S6.DiskFailure: 마지막 오류 분류/연관 OperationId도 assert | PASS(주입); 실제 운영 디스크를 채우지 않음 |
 | E30 | SQLite max_page_count 한계 | SQLITE_FULL 13/Disk, 실패 INSERT 행0 | S6.SqliteFull: 자체 in-memory 512B 페이지 제한 | PASS(제한된 SQLite); 실제 OS 디스크 부족 NOT VERIFIED |
 | E31 | 느린 로그 스트림/큐 포화 | TryWrite 비차단, 유한 메모리/누락 수 노출 | S6.QueuePressure: 2-slot/TCS 결정적 차단/해제 | PASS |
 | E32 | 잘못된 설정/legacy 손상/이관 실패 | 임의 덮어쓰기/실거래 없음 | NextStage/F3 DB/migration/설정 방어 | PASS(기존 기능); 각 설정값 상세 진단 PARTIAL |

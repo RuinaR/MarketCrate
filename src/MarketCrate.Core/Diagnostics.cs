@@ -102,7 +102,7 @@ public static class DiagnosticHub
     {
         private readonly IDisposable scope;private readonly DiagnosticEvent evt;private readonly DiagnosticArea area;private readonly string requirement,stage;private readonly DateTimeOffset start=DateTimeOffset.UtcNow;private readonly Stopwatch watch=Stopwatch.StartNew();
         public OperationScope(DiagnosticEvent evt,DiagnosticArea area,string requirement,string stage)
-        {this.evt=evt;this.area=area;this.requirement=requirement;this.stage=SafeCode(stage)??"Operation";scope=Scope();Emit(evt,area,DiagnosticOutcome.Started,requirement:requirement,reason:this.stage);}
-        public void Dispose(){Emit(evt,area,DiagnosticOutcome.Completed,requirement:requirement,reason:stage,started:start,elapsed:watch.ElapsedMilliseconds);scope.Dispose();}
+        {this.evt=evt;this.area=area;this.requirement=requirement;this.stage=evt==DiagnosticEvent.Retry?"UserRequested":SafeCode(stage)??"Operation";scope=Scope();Emit(evt,area,DiagnosticOutcome.Started,requirement:requirement,reason:this.stage,retry:evt==DiagnosticEvent.Retry);}
+        public void Dispose(){Emit(evt,area,DiagnosticOutcome.Completed,requirement:requirement,reason:stage,started:start,elapsed:watch.ElapsedMilliseconds,retry:evt==DiagnosticEvent.Retry);scope.Dispose();}
     }
 }

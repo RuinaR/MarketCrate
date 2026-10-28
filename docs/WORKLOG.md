@@ -2,6 +2,8 @@
 
 ## 2026-10-28 KST — 6차 요구사항 감사 및 실사용 진단
 
+- 구현/감사 커밋 `5b44e0d` origin/main push 및 Release PE/데이터 제외/라이선스 검사 PASS. 마감 점검에서 writer 실패의 원인 분류/OperationId가 health에 부족하고 변조 null stack 프레임이 export를 중단할 수 있음을 발견해 후속 보완했다. 원문 없이 typed 실패/OS 숫자 코드/작업 ID를 화면·manifest에 제공하고 null 프레임은 제외한다.
+
 - origin/main `33cd152` fetch/clean 기준, AGENTS/정의/설계/기록/QA/실연동 자료와 관련 코드 경로를 대조했다. 75개 ID 추적표를 작성했고 COMPLETE44/PARTIAL16/MISSING1/BLOCKED5/UNVERIFIED9(로컬/합성 범위)을 분리했다. 실계정/실제 응답 수집은 전부 미실행이다.
 - 실제 결함: 실험 화면 검색·필터·정렬/선택 해제·게임별 판매 필터 누락, 갱신/게임 변경 시 선택 소실, MainWindow 닫기에서 Steam.Busy 누락, stale 재가격의 검증 순서가 취소 이후였음. 관련 코드/UI/수량 상한 복원을 수정했다. 자동 발견/이미지/실평균가는 별도 미완성으로 명시했다.
 - 고정 코드/건수 진단을 재사용·연결하면서 중앙 구조화 JSONL 시스템을 추가했다. operation/correlation/batch/item, UTC/버전/commit, 고정 EventId/RequirementId, HTTP·저장소 오류/상태·가격/재시도, 정제 stack/inner 위치와 사용자 진단/로컬 ZIP UI. 읽는 중 writer 파일 공유 오류를 첫 주입 검사에서 찾아 ReadWrite 공유로 수정했다.

@@ -21,7 +21,7 @@
 
 DiagnosticHub는 URL/쿼리/HTTP 헤더/본문/계정/아이템명/검색어/QR 문자열용 인자를 제공하지 않는다. endpoint/reason/state/journal은 고정 token allowlist만 통과한다. 원본 예외 Message/Data/ToString/StackTrace 문자열을 저장하지 않는다. 예외 타입은 allowlist로 제한하며, 현재 프로세스의 이미 로드된 1st-party assembly 메타데이터와 일치하는 메서드명+숫자 IL offset만 최대8개 남긴다. 내부 예외는 깊이3/각2개, 경로/소스 파일/줄 내용 없음. IL 위치의 PDB 대조는 같은 빌드 소스에서 개발자가 수행한다.
 
-Sink 입구와 ZIP 내보내기에서 `DiagnosticRecordSafety.Clean`으로 다시 검사한다. 파일을 수동 편집해 인증 URL/문자열/가짜 프레임/이벤트 이름을 삽입해도 해당 값은 제외/고정 이름으로 교체한다. 구조화 타입 외 데이터를 일괄 직렬화하지 않는다. JSONL은 사용자 계정 권한의 로컬 평문이며 별도 암호화나 보안 제품은 아니다. ZIP에는 시각/내부 작업 ID/가격 등이 있으므로 사용자가 범위를 확인하고 직접 공유한다.
+Sink 입구와 ZIP 내보내기에서 `DiagnosticRecordSafety.Clean`으로 다시 검사한다. 파일을 수동 편집해 인증 URL/문자열/가짜 프레임/이벤트 이름을 삽입해도 해당 값은 제외/고정 이름으로 교체한다. 구조화 타입 외 데이터를 일괄 직렬화하지 않는다. 변조된 null stack 프레임도 제외해 패키지 검토 전체가 중단되지 않게 한다. JSONL은 사용자 계정 권한의 로컬 평문이며 별도 암호화나 보안 제품은 아니다. ZIP에는 시각/내부 작업 ID/가격 등이 있으므로 사용자가 범위를 확인하고 직접 공유한다.
 
 ## 주요 경로와 이벤트
 
@@ -87,7 +87,7 @@ HTTP는 고정 목적명(AuthBegin/AuthPoll/AuthFinalize/AuthTransfer/Wallet/Fee
 ## 운영 한도/쓰기 실패
 
 - 기본 Information 이상, 사용자가 상세 진단 모드를 켜면 Trace/Debug까지. 자동 네트워크 폴링/원격 텔레메트리 없음.
-- single async writer, 큐 256, 각 이벤트 최대32 KiB, 최근 메모리 512. UI/거래 스레드는 TryWrite만 하고 꽉 차면 버린다. Health.Dropped/WriteFailures/Accepted/Written으로 간극을 표시한다.
+- single async writer, 큐 256, 각 이벤트 최대32 KiB, 최근 메모리 512. UI/거래 스레드는 TryWrite만 하고 꽉 차면 버린다. Health.Dropped/WriteFailures/Accepted/Written으로 간극을 표시한다. 마지막 writer 실패는 자유 텍스트 대신 고정 LastFailure 분류·숫자 NativeError·FailedOperationId로 UI/manifest에 연결한다. 접근 거부와 알려진 OS disk-full/lock 코드는 구분하며 메시지의 단어를 보고 추측하지 않는다.
 - UTC 일자 또는 기본 2 MiB 파일 회전, 최대20개/전체20 MiB/14일. 회전 전 한 파일 여유를 확보한다. 한 이벤트가 파일 한도보다 크면 최대32 KiB의 유한 초과가 가능하다. 파일을 쓰는 중에도 FileShare.ReadWrite로 안전 요약을 읽는다.
 - 자동 정리는 지정 폴더의 `session-*.jsonl` 일반 파일만 대상으로 하며 링크 파일/루트는 배제한다. 보존 한도 검사/삭제 실패 시 health에 실패가 드러나며 임의 다른 폴더를 정리하지 않는다. 수동 정리는 UI 명령으로 실행한다.
 - 디스크 오류/권한 오류 후 writer는 해당 실행에서 쓰기를 중단하고 health=WriteFailure를 표시한다. 메모리 최근 기록은 남을 수 있다. 거래/취소는 이 오류 때문에 재전송하지 않는다. 재시작 후 파일 권한/공간을 확인한다.

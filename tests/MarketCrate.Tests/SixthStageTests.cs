@@ -64,7 +64,7 @@ public static class SixthStageTests
         Check(text.Contains("ThrowSecret")&&text.Contains("System.InvalidOperationException"));
         var valid=f.Log.Recent.Single();
         // A local log file may be edited. Export validates again, not just at original emission.
-        File.WriteAllText(Path.Combine(f.Folder,"session-injected.jsonl"),JsonSerializer.Serialize(valid with{Reason=secret,Endpoint=secret,Exception=new(secret,secret,[secret],[]),EventName=secret},JsonDiagnosticLog.Json));
+        File.WriteAllText(Path.Combine(f.Folder,"session-injected.jsonl"),JsonSerializer.Serialize(valid with{Reason=secret,Endpoint=secret,Exception=new(secret,secret,[secret,null!],[]),EventName=secret},JsonDiagnosticLog.Json));
         var review=await f.Log.ReviewExportAsync(null);var zip=await f.Log.ExportAsync(review.ReviewId,true);
         using var archive=ZipFile.OpenRead(zip);Check(archive.Entries.Count==2);
         foreach(var entry in archive.Entries){using var reader=new StreamReader(entry.Open());Check(!(await reader.ReadToEndAsync()).Contains(secret));}
@@ -80,6 +80,8 @@ public static class SixthStageTests
         await f.Log.FlushAsync();var events=f.Log.Recent;Equal(3,events.Count);Equal(1,events.Select(x=>x.Context.OperationId).Distinct().Count());
         Check(events.Any(x=>x.Context.CorrelationId is not null));Check(events.Last().DurationMs>=0);Check(events.All(x=>x.SessionId==f.Log.SessionId&&x.Utc.Offset==TimeSpan.Zero));
         Check(events.All(x=>x.AppVersion!="unavailable"&&x.Commit.Length==40));
+        using(DiagnosticHub.Operation(DiagnosticEvent.Retry,DiagnosticArea.Management,"B11")){}
+        Check(f.Log.Recent.Where(x=>x.EventId==(int)DiagnosticEvent.Retry).All(x=>x.Retry&&x.Reason=="UserRequested"));
     }
     private static async Task Rotation()
     {
@@ -96,7 +98,7 @@ public static class SixthStageTests
         foreach(var failure in new Exception[]{new UnauthorizedAccessException("synthetic token"),new IOException("synthetic disk full")})
         {
             using var f=new Fixture(open:_=>throw failure);var executor=new TestExecutor();var record=await new SaleBatchCoordinator(executor,new MemoryJournal()).ExecuteAsync(Batch());
-            await f.Log.FlushAsync();Equal(2,executor.Calls);Equal(2,record.Results.Length);Check(f.Log.Health.WriteFailures>0);Equal("WriteFailure",f.Log.Health.State);
+            await f.Log.FlushAsync();Equal(2,executor.Calls);Equal(2,record.Results.Length);Check(f.Log.Health.WriteFailures>0);Equal("WriteFailure",f.Log.Health.State);Equal(failure is UnauthorizedAccessException?DiagnosticError.Forbidden:DiagnosticError.Logging,f.Log.Health.LastFailure);Check(f.Log.Health.FailedOperationId is not null);
         }
     }
     private static async Task QueuePressure()

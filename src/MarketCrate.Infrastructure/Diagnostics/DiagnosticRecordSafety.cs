@@ -24,9 +24,9 @@ internal static class DiagnosticRecordSafety
         return new(type,frames.FirstOrDefault(),frames,(value.Inner??[]).Take(2).Select(x=>Safe(x,depth+1)).Where(x=>x is not null).Cast<SafeException>().ToArray());
     }
     private static readonly ConcurrentDictionary<Assembly,HashSet<string>> symbols=new();
-    private static bool ValidFrame(string frame)
+    private static bool ValidFrame(string? frame)
     {
-        if(frame.Length>260||!Regex.IsMatch(frame,@"^MarketCrate\.[A-Za-z0-9_.+<>`]+@IL[0-9]+$"))return false;
+        if(string.IsNullOrEmpty(frame)||frame.Length>260||!Regex.IsMatch(frame,@"^MarketCrate\.[A-Za-z0-9_.+<>`]+@IL[0-9]+$"))return false;
         var name=frame[..frame.IndexOf("@IL",StringComparison.Ordinal)];
         // Compare with symbols in this process's already-loaded first-party assemblies; never load a path from a log.
         foreach(var assembly in AppDomain.CurrentDomain.GetAssemblies().Where(x=>x.GetName().Name?.StartsWith("MarketCrate.",StringComparison.Ordinal)==true))

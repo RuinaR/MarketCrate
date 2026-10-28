@@ -9,7 +9,7 @@ using MarketCrate.Core;
 namespace MarketCrate.Infrastructure.Diagnostics;
 
 public sealed record LogPolicy(int FileBytes=2*1024*1024,int TotalBytes=20*1024*1024,int Files=20,int Days=14,int Queue=256);
-public sealed record LogHealth(long Accepted,long Written,long Dropped,long WriteFailures,bool DiagnosticMode,string State);
+public sealed record LogHealth(long Accepted,long Written,long Dropped,long WriteFailures,bool DiagnosticMode,string State,DiagnosticError LastFailure=DiagnosticError.None,int? NativeError=null,Guid? FailedOperationId=null);
 public sealed record DiagnosticPackageReview(Guid ReviewId,Guid? OperationId,int Events,int Errors,int Skipped,string Summary);
 
 // Local, bounded, single writer. Diagnostic failure is not a transaction failure.
@@ -21,7 +21,8 @@ public sealed class JsonDiagnosticLog:IDiagnosticLog,IDisposable
     private readonly LogPolicy policy;
     private readonly Func<string,Stream>? testOpen;
     private long accepted,written,dropped,failures;
-    private int enabled,disposed;
+    private int enabled,disposed,lastFailure,nativeError;
+    private DiagnosticContext? failedContext;
     private DiagnosticRecord[]? reviewed;
     private DiagnosticPackageReview? review;
     public Guid SessionId{get;}=Guid.NewGuid();
@@ -34,8 +35,16 @@ public sealed class JsonDiagnosticLog:IDiagnosticLog,IDisposable
         queue=Channel.CreateBounded<(DiagnosticRecord?,TaskCompletionSource?)>(new BoundedChannelOptions(this.policy.Queue){SingleReader=true,FullMode=BoundedChannelFullMode.Wait});
         writer=Task.Run(WriterAsync);
     }
+    private void RecordFailure(Exception error,DiagnosticContext? context=null)
+    {
+        var code=error.HResult&0xffff;
+        Volatile.Write(ref lastFailure,(int)(error is UnauthorizedAccessException?DiagnosticError.Forbidden:error is IOException&&code==112?DiagnosticError.Disk:error is IOException&&code is 32 or 33?DiagnosticError.Locked:DiagnosticError.Logging));
+        Volatile.Write(ref nativeError,code);
+        Volatile.Write(ref failedContext,context??DiagnosticHub.Context);
+        Interlocked.Increment(ref failures);
+    }
     public bool DiagnosticMode{get=>Volatile.Read(ref enabled)==1;set=>Volatile.Write(ref enabled,value?1:0);}
-    public LogHealth Health=>new(Interlocked.Read(ref accepted),Interlocked.Read(ref written),Interlocked.Read(ref dropped),Interlocked.Read(ref failures),DiagnosticMode,Volatile.Read(ref disposed)!=0?"Closed":Interlocked.Read(ref failures)>0?"WriteFailure":"Active");
+    public LogHealth Health=>new(Interlocked.Read(ref accepted),Interlocked.Read(ref written),Interlocked.Read(ref dropped),Interlocked.Read(ref failures),DiagnosticMode,Volatile.Read(ref disposed)!=0?"Closed":Interlocked.Read(ref failures)>0?"WriteFailure":"Active",(DiagnosticError)Volatile.Read(ref lastFailure),Volatile.Read(ref nativeError)==0?null:Volatile.Read(ref nativeError),Volatile.Read(ref failedContext)?.OperationId);
     public IReadOnlyList<DiagnosticRecord> Recent=>recent.ToArray();
     public void Write(DiagnosticRecord record)
     {
@@ -46,7 +55,7 @@ public sealed class JsonDiagnosticLog:IDiagnosticLog,IDisposable
             recent.Enqueue(safe);while(recent.Count>512)recent.TryDequeue(out _);
             if(queue.Writer.TryWrite((safe,null)))Interlocked.Increment(ref accepted);else Interlocked.Increment(ref dropped);
         }
-        catch{Interlocked.Increment(ref failures);}
+        catch(Exception error){RecordFailure(error);}
     }
     public async Task FlushAsync(CancellationToken token=default)
     {
@@ -62,7 +71,7 @@ public sealed class JsonDiagnosticLog:IDiagnosticLog,IDisposable
             await foreach(var entry in queue.Reader.ReadAllAsync().ConfigureAwait(false))
             {
                 if(entry.Barrier is {} barrier)
-                {try{if(stream is not null)await stream.FlushAsync().ConfigureAwait(false);}catch{Interlocked.Increment(ref failures);}finally{barrier.TrySetResult();}continue;}
+                {try{if(stream is not null)await stream.FlushAsync().ConfigureAwait(false);}catch(Exception error){RecordFailure(error);}finally{barrier.TrySetResult();}continue;}
                 if(broken)continue;
                 try
                 {
@@ -79,11 +88,11 @@ public sealed class JsonDiagnosticLog:IDiagnosticLog,IDisposable
                     }
                     await stream.WriteAsync(bytes).ConfigureAwait(false);await stream.FlushAsync().ConfigureAwait(false);length+=bytes.Length;Interlocked.Increment(ref written);
                 }
-                catch{broken=true;Interlocked.Increment(ref failures);}
+                catch(Exception error){broken=true;RecordFailure(error,entry.Record?.Context);}
             }
         }
-        catch{Interlocked.Increment(ref failures);}
-        finally{try{if(stream is not null)await stream.DisposeAsync().ConfigureAwait(false);}catch{Interlocked.Increment(ref failures);}}
+        catch(Exception error){RecordFailure(error);}
+        finally{try{if(stream is not null)await stream.DisposeAsync().ConfigureAwait(false);}catch(Exception error){RecordFailure(error);}}
     }
     private FileInfo[] OwnedFiles()=>Directory.Exists(DirectoryPath)&&(File.GetAttributes(DirectoryPath)&FileAttributes.ReparsePoint)==0?new DirectoryInfo(DirectoryPath).GetFiles("session-*.jsonl",SearchOption.TopDirectoryOnly).Where(x=>(x.Attributes&FileAttributes.ReparsePoint)==0).OrderBy(x=>x.LastWriteTimeUtc).ToArray():[];
     private void CleanupCore()
@@ -92,7 +101,7 @@ public sealed class JsonDiagnosticLog:IDiagnosticLog,IDisposable
         foreach(var file in files)
         {
             if(file.LastWriteTimeUtc<DateTime.UtcNow.AddDays(-policy.Days)||remaining>=policy.Files||total>policy.TotalBytes-policy.FileBytes)
-            {try{var size=file.Length;file.Delete();total-=size;remaining--;}catch(IOException){Interlocked.Increment(ref failures);}catch(UnauthorizedAccessException){Interlocked.Increment(ref failures);}}
+            {try{var size=file.Length;file.Delete();total-=size;remaining--;}catch(IOException error){RecordFailure(error);}catch(UnauthorizedAccessException error){RecordFailure(error);}}
         }
     }
     public async Task CleanupAsync(CancellationToken token=default)
@@ -145,7 +154,7 @@ public sealed class JsonDiagnosticLog:IDiagnosticLog,IDisposable
                 }
                 token.ThrowIfCancellationRequested();File.Move(temporary,target);
             }
-            catch{try{File.Delete(temporary);}catch(IOException){Interlocked.Increment(ref failures);}catch(UnauthorizedAccessException){Interlocked.Increment(ref failures);}throw;}
+            catch{try{File.Delete(temporary);}catch(IOException error){RecordFailure(error);}catch(UnauthorizedAccessException error){RecordFailure(error);}throw;}
             return target;
         },token).ConfigureAwait(false);
     }

@@ -39,7 +39,7 @@ public sealed class DiagnosticsViewModel : Observable
     {
         Events.Clear();var rows=log?.Recent??[];
         foreach(var item in rows.Where(x=>(!ErrorsOnly||x.Level>=LogLevel.Error)&&(!Guid.TryParse(OperationFilter,out var id)||x.Context.OperationId==id)).TakeLast(100).Reverse())Events.Add(new(item));
-        var health=log?.Health;Status=health is null?"로거 연결 없음 (격리 UI/테스트 환경)":$"{health.State} · 저장 {health.Written} · 큐 누락 {health.Dropped} · 쓰기 실패 {health.WriteFailures} · Session {log!.SessionId}";
+        var health=log?.Health;Status=health is null?"로거 연결 없음 (격리 UI/테스트 환경)":$"{health.State} · 저장 {health.Written} · 큐 누락 {health.Dropped} · 쓰기 실패 {health.WriteFailures} · Session {log!.SessionId}{(health.WriteFailures>0?$" · 최근 오류 {health.LastFailure} / code {health.NativeError} / 작업 {health.FailedOperationId}":"")}";
     }
     private void Failure(Exception e){DiagnosticHub.Emit(DiagnosticEvent.Export,DiagnosticArea.Diagnostics,DiagnosticOutcome.Failed,LogLevel.Error,DiagnosticError.Logging,exception:e);Status="진단 작업 실패 · 파일 접근/디스크/검토 ID를 확인하세요. 거래 저널은 변경하지 않았습니다.";}
 }
