@@ -1,4 +1,45 @@
-# Steam 연동 가능성 조사 — 2026-10-28 KST (4차)
+# Steam 연동 가능성 조사 — 2026-10-28 KST (5차)
+
+## 5차: UI 연결·통화·수량·대조 계약 (최신)
+
+**실제 계정 로그인·보관함/지갑/수수료 API·판매·취소·모바일 승인은 시험하지 않았다.** 최신 공개 소스를 읽고 실제 어댑터에 합성 HTTP를 주입해 검사했다. 일반 앱에 읽기 연결 UI를 추가했지만 자동 시작은 없으며, 거래는 별도의 `SteamTradingPolicy.Blocked`가 기본이다. 위험 동의/최종 클릭이 Valve의 허가가 되지 않는다. 최종 실제 일괄 등록 제품 목표는 아직 실계정/정책 검증을 완료하지 못했다.
+
+### 추가로 직접 확인한 공식 근거
+
+- [공식 Market 페이지](https://steamcommunity.com/market/)가 연결한 [community/main.js](https://community.fastly.steamstatic.com/public/javascript/applications/community/main.js?contenthash=B3VTzWgT)와 동적으로 사용하는 [marketselldialog.js](https://community.fastly.steamstatic.com/public/javascript/applications/community/marketselldialog.js)를 다운로드해 **실행하지 않고 소스**를 확인했다. 조사일 2026-10-28 KST, 판매 번들 SHA256 `CB84BB8A9B2970F71D277626A0B4E922B47CCE90BF437F704CF8F5100FA66726`. 원본은 ignored runtime에만 있다.
+- 현 판매 다이얼로그는 지갑의 `wallet_market_minimum`, `wallet_currency_increment`와 `market/ajaxfeestructure/?appid=...`에서 읽는 `steam_fee`/`publisher_fee`의 `fee_rate`·`fee_cap`을 사용한다. 기존 `wallet_fee_minimum`/고정 5%·10%만으로 설명할 수 없어 새 경로로 대체했다. **인증이 필요한 실제 ajaxfeestructure 응답은 조회하지 않았으며**, 파서의 응답 계약은 이 공식 소비 코드와 합성 샘플에 근거한다. 다른 필드/세금/지원하지 않는 형태는 추측하지 않고 차단한다.
+- 공식 순방향 계산: 판매자 금액의 최소/증분 조정, 수수료율 곱의 절삭, 수수료 최소·증분의 최근접/절반 올림, 선택적 상한. 독립 정수 계산으로 구현했다. 구매자 금액이 정확히 표현되지 않으면 수수료를 임의 추가하지 않고 입력을 거절한다. 호가 제안만 표현 가능한 하한으로 조정하고 원 호가와 조정 추천을 함께 보여 준다.
+- 같은 번들은 `sellitem`에 `appid/contextid/assetid/amount/price`를 전송하고 수량 범위와 `requires_confirmation`을 처리한다. 이는 **기술적 amount 계약의 근거**이며 모든 게임/스택 ID가 부분 판매 후 유지된다는 보장은 아니다. 스택 제출은 별도 capability로 제한한다.
+- [공식 global.js](https://community.fastly.steamstatic.com/public/javascript/global.js?l=english)의 통화 ID/whole-unit 정보와 판매 입력의 whole-unit `wire/100` 표시를 확인했다. KRW(ID16)는 원 단위와 wire×100을 구분하고 USD(ID1)는 cent=wire를 사용한다. 국가/문자열 통화 기호로 지갑 통화를 추측하지 않는다. 다른 통화는 아직 미지원이다.
+
+### 현재 구현/검증 범위
+
+| 기능 | 구현 | 제한 |
+|---|---|---|
+| 사용자 연결 UI | 별도 Steam 탭, 위험별 동의, 로컬 QR, 직접 승인 확인, 성공/만료/거부/취소/네트워크/차단/계약 오류, 로그아웃 | 실계정/실제 QR 스캔 미검증. 자동 polling·secret 입력·외부 QR 서비스·token 저장 없음 |
+| 실제 데이터 UI | 명시적 갱신으로 세 게임(730/570/440, context2) 보관함·지갑·목록, 선택한 최대50종 호가/중간가격 이력, 원천·시각·오류 표시 | 게임/context 자동 발견 미구현. 중간가격은 정확한 거래 VWAP 아님. 일반 Mock 데이터로 실패를 대체하지 않음 |
+| KRW/USD | `Money(long Minor,Currency)`와 별도 wire 변환, 서버 최소·증분·요율·상한 profile, 항목별 구매자/Steam·게임 수수료/실수령 즉시 갱신 | 새로운/불확실한 통화·반올림·추가 fee 형식은 제출 차단. 실제 지갑/서버 계산 비교 미검증 |
+| 스택·동일 품목 | 보관함 수량과 로컬 예약 반영 가용량 분리, App/상품명/통화별 공유 잔량(다른 context도 공유), 3/4/3 분배, 부족 수량 별도 검토, 원자적 intent·예약 보존 | 부분 판매는 `StackAmountsSupported` 필요. 외부 스택 증가/병합·자산 ID 교체가 불확실하면 가용량은 보수적 하한, 강제 우회/새 ID 추측 없음 |
+| 등록·대조 | 불변 최종 snapshot→새 지갑/fee/자산/호가 검증→직렬 전송. 서버 price/fee 모순 시 Unknown/중단. 요청 시각·기존 목록 ID·가격·수량·후보·감사 이력 수동 도구 | 사후 모순이 이미 보낸 요청을 되돌린다는 의미가 아님. listingid 없는 후보는 1개여도 인과관계 증명 불가: pending/Unknown 유지, 강제 성공·자동 재전송 없음 |
+| 취소·재가격 | 전체 선택/개별 검토, 취소 의도 보존, 접수+목록 부재+원래 비스택 단일 자산의 동일 ID 반환을 모두 확인한 경우만 새 가격 제출. 재가격 target/후속 request key 보존, 명시적 대조·재개 | 다른 ID로 반환/응답 유실·미확정이면 재등록 불가. 승인 5분 경과 시 StaleReview 차단. 기존 재가격 의도의 가격 revision UI는 미지원; 확정 반환 후 새 보관함 검토/배치를 사용해야 함 |
+| 저장·재시작 | Steam DB v1→v2 보존, 요청/상태 audit 원자 저장, 반환 증거에 해당하는 예약만 해제, 확정 배치 보관(명령·증거·예약 보존) 후 다음 배치 | Unknown/Guard 대기 배치는 보관 불가, live 확정 실패 재시도 분류·OS 전원 차단·실사용 장기 검증 미완료 |
+
+등록 ID가 서버 응답으로 직접 연결되고 통화/수량/가격/품목이 맞을 때만 Listed를 확정한다. 메타데이터가 일치하는 후보를 자신의 요청으로 확정하는 것은 구현하지 않았다. 이는 사용자 데이터/실거래의 불확실성을 숨기지 않기 위한 필수 제한이다.
+
+**취소 반환의 추가 제한:** 현재 자동 proof는 원래 검토 snapshot의 비스택 단일 자산과 서버 listingid가 직접 연결된 경우에만 허용한다. 스택의 증가 수량은 외부 병합/취득과 구분할 수 없으므로 목록 부재와 증가가 보여도 취소 완료로 확정하지 않고 예약/재가격 차단을 유지한다. 외부에서 등록된 항목이나 반환 ID 변경도 별도 서버 인과 증거가 필요하다. 해당 증거 어댑터는 미구현이다. 이 제한은 기본 거래 차단과 별도로 동작한다.
+
+### QR 소스·배포 고지
+
+[QrCodeGenerator v2.0.0](https://github.com/manuelbl/QrCodeGenerator/tree/11cf58fe6cec5bc44f70aa360e84b8d37570e37d), MIT(Manuel Bleichenbacher / Project Nayuki) 순수 계산 6파일을 고정 버전으로 포함했다. 원 저작권/라이선스 전문과 LICENSE를 보존하고 nullable 지시문만 추가했다. 네트워크/파일/프로세스 접근 코드가 없음을 확인했다. 새 패키지/SDK 설치 없이 로컬 WPF DrawingContext로 모듈·quiet zone을 그린다. 바이너리 배포에 MIT LICENSE와 THIRD-PARTY-NOTICES를 복사/검사한다. 비교 제품의 코드는 도입하지 않았다.
+
+### 사용자 시작 및 거래 해제 경계
+
+1. 앱 시작/Steam 탭 열기만으로 네트워크나 실저널을 만들지 않는다. 사용자가 위험별 체크 후 **QR 로그인 시작**을 누르면 해당 세션에서만 새 인증을 시작하도록 구현했다. 이번 개발에서는 누르지 않았고 합성 handler만 사용했다.
+2. 공식 앱에서 직접 인증 후 **모바일 승인 상태 확인**과 데이터/시세 갱신을 요청한다. QR·토큰은 저장/로그/외부 변환하지 않는다. 로그아웃·동의 철회는 취소와 화면 정리를 수행하고 늦은 응답은 반영하지 않는다.
+3. 기본 앱 factory는 `SteamTradingPolicy.Blocked`다. 체크박스만으로 거래가 열리지 않는다. Valve 허용 근거·해당 게임/스택/통화 검증과 별도 실계정 시험 승인이 준비된 composition에서만 정책 capability를 교체해야 한다. 합성 테스트의 허용 policy는 테스트 handler에만 사용한다.
+4. 승인된 환경에서는 **최종 검토의 전체 판매등록 한 번**으로 선택 전체를 처리한다. Steam Guard 확인은 사용자 공식 앱/이메일에서 직접, 접수/대기와 실제 게시를 구분한다. 403/429/CAPTCHA/불명 요청은 우회·자동 재전송하지 않는다.
+
+계정 제재/정책 위험과 인증 탈취 위험은 독립적이다. 출처 확인·짧은 직렬 요청·수동 확인·메모리 세션이 제재 위험0 또는 침해 불가능성을 보장하지 않는다. 실제 정책/계정/시장 조건·QR 스캔·실제 입력/모니터 DPI·설치/보안 감사는 아직 검증하지 않았다. 아래는 이전 단계의 당시 기록이다.
 
 ## 4차: 구현 후보와 현재 제품 상태 (아래 3차 기록보다 우선)
 

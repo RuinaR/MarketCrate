@@ -4,7 +4,8 @@ using Microsoft.Data.Sqlite;
 
 namespace MarketCrate.Infrastructure.Steam;
 
-public sealed record SteamCommandRecord(string RequestKey, string Account, SaleLineSnapshot Line, string Kind, SaleState State, string? ListingId = null);
+public sealed record SteamCommandRecord(string RequestKey, string Account, SaleLineSnapshot Line, string Kind, SaleState State, string? ListingId = null,
+    DateTimeOffset? SentAt = null, string[]? BeforeListingIds = null, int AvailableBefore = 0, bool Accepted = false);
 
 // Separate from Demo; no delete/reset UI and no auth material. A missing response never removes intent.
 public sealed class SteamStateStore : IBatchJournal, IDisposable
@@ -22,10 +23,10 @@ public sealed class SteamStateStore : IBatchJournal, IDisposable
             connection.Open(); Execute("PRAGMA synchronous=FULL");
             if (Scalar("PRAGMA quick_check") != "ok") throw new InvalidDataException("SteamStoreCorrupt");
             var version = Scalar("PRAGMA user_version");
-            if (version is not ("0" or "1")) throw new InvalidDataException("SteamStoreSchemaUnsupported");
+            if (version is not ("0" or "1" or "2")) throw new InvalidDataException("SteamStoreSchemaUnsupported");
             using var transaction = connection.BeginTransaction();
             Execute("CREATE TABLE IF NOT EXISTS state(kind TEXT NOT NULL,id TEXT NOT NULL,value TEXT NOT NULL,PRIMARY KEY(kind,id))", transaction);
-            Execute("PRAGMA user_version=1", transaction); transaction.Commit();
+            Execute("PRAGMA user_version=2", transaction); transaction.Commit();
         }
         catch { connection.Dispose(); lease.Dispose(); throw; }
     }
@@ -65,10 +66,65 @@ public sealed class SteamStateStore : IBatchJournal, IDisposable
     {
         ValidateCommand(command);
         var previous = ReadCommand(command.RequestKey);
-        if (previous is not null && (previous.Account != command.Account || previous.Line != command.Line || previous.Kind != command.Kind ||
+        if (previous is not null && (previous.Account != command.Account || previous.Line != command.Line || previous.Kind != command.Kind || previous.SentAt != command.SentAt || previous.AvailableBefore != command.AvailableBefore ||
+            !(previous.BeforeListingIds ?? []).SequenceEqual(command.BeforeListingIds ?? []) ||
             previous.ListingId is not null && previous.ListingId != command.ListingId || previous.State == SaleState.Listed && command.State != previous.State))
             throw new InvalidDataException("SteamCommandImmutable");
-        Save("command", command.RequestKey, command);
+        using var transaction=connection.BeginTransaction();Upsert("command",command.RequestKey,command,transaction);
+        Audit(command.RequestKey,command.Kind=="sell"?SteamAuditAction.Sell:SteamAuditAction.Cancel,command.State.ToString(),transaction);transaction.Commit();
+    }
+    internal void SaveEvidence(SteamEvidenceReport report) => Save("evidence", report.RequestKey, report);
+    public SteamEvidenceReport? Evidence(string key) => Read<SteamEvidenceReport>("evidence", key);
+    internal void SaveReturn(SteamReturnProof proof)
+    {
+        using var transaction=connection.BeginTransaction();Upsert("return",proof.CancelKey,proof,transaction);Audit(proof.CancelKey,SteamAuditAction.Return,"ConfirmedAssetReturn",transaction);transaction.Commit();
+    }
+    private void Audit(string key,SteamAuditAction action,string state,SqliteTransaction transaction)=>Upsert("audit",Guid.NewGuid().ToString("N"),new SteamAuditEvent(key,DateTimeOffset.UtcNow,action,state),transaction);
+    public IReadOnlyList<SteamAuditEvent> AuditTrail(string key)
+    {
+        using var query=connection.CreateCommand();query.CommandText="SELECT value FROM state WHERE kind='audit'";using var reader=query.ExecuteReader();var result=new List<SteamAuditEvent>();
+        while(reader.Read()){var value=JsonSerializer.Deserialize<SteamAuditEvent>(reader.GetString(0))??throw new InvalidDataException("AuditInvalid");if(value.RequestKey==key)result.Add(value);}return result.OrderBy(x=>x.At).ToArray();
+    }
+    public SteamReturnProof? Return(string cancelKey) => Read<SteamReturnProof>("return", cancelKey);
+    internal bool IsReleased(string sellKey)
+    {
+        using var query=connection.CreateCommand();query.CommandText="SELECT value FROM state WHERE kind='return'";using var reader=query.ExecuteReader();
+        while(reader.Read())if(JsonSerializer.Deserialize<SteamReturnProof>(reader.GetString(0))?.SellKey==sellKey)return true;return false;
+    }
+    public void ArchiveCompleted()
+    {
+        var record=LoadAsync(default).GetAwaiter().GetResult()??throw new InvalidDataException("NoActiveBatch");
+        if(record.Results.Any(x=>x.State is not(SaleState.Listed or SaleState.Failed or SaleState.Reconciled or SaleState.Ready)))throw new InvalidOperationException("UnresolvedBatch");
+        using var transaction=connection.BeginTransaction();Upsert("archive",record.Snapshot.BatchId.ToString("N"),record,transaction);
+        Execute("DELETE FROM state WHERE kind IN ('batch','result')",transaction);Audit(record.Snapshot.BatchId.ToString("N"),SteamAuditAction.Archive,"Preserved",transaction);transaction.Commit();batchCache=null;
+    }
+    internal void SaveReprice(SteamRepriceIntent intent)
+    {
+        var previous = Reprice(intent.Key);
+        if (previous is not null && (previous.Account != intent.Account || previous.Listing != intent.Listing || previous.BuyerPrice != intent.BuyerPrice || previous.CreatedAt != intent.CreatedAt))
+            throw new InvalidDataException("RepriceSnapshotImmutable");
+        using var transaction=connection.BeginTransaction();Upsert("reprice",intent.Key,intent,transaction);Audit(intent.Key,SteamAuditAction.Reprice,intent.State.ToString(),transaction);transaction.Commit();
+    }
+    public SteamRepriceIntent? Reprice(string key) => Read<SteamRepriceIntent>("reprice", key);
+    public IReadOnlyList<SteamRepriceIntent> Reprices()
+    {
+        using var command=connection.CreateCommand();command.CommandText="SELECT value FROM state WHERE kind='reprice'";using var reader=command.ExecuteReader();var result=new List<SteamRepriceIntent>();
+        while(reader.Read())result.Add(JsonSerializer.Deserialize<SteamRepriceIntent>(reader.GetString(0))??throw new InvalidDataException("RepriceRecordInvalid"));return result;
+    }
+    public int Available(InventoryAsset current)
+        => AvailableAll([current])[current.Key];
+    public IReadOnlyDictionary<AssetKey,int> AvailableAll(IReadOnlyList<InventoryAsset> assets)
+    {
+        var groups=Commands().Where(x=>x.Kind=="sell").GroupBy(x=>x.Line.Asset.Key).ToDictionary(x=>x.Key,x=>x.ToArray());
+        using var query = connection.CreateCommand(); query.CommandText = "SELECT value FROM state WHERE kind='return'"; using var reader = query.ExecuteReader();
+        var released = new HashSet<string>(); while (reader.Read()) { var proof = JsonSerializer.Deserialize<SteamReturnProof>(reader.GetString(0))!; if (proof.SellKey is not null) released.Add(proof.SellKey); }
+        return assets.ToDictionary(x=>x.Key,x=>
+        {
+            if(!groups.TryGetValue(x.Key,out var commands))return x.Quantity;
+            var capacity=Math.Max(x.Quantity,commands.Max(c=>c.Line.Asset.Quantity));
+            var reserved=commands.Where(c=>c.State!=SaleState.Failed&&!released.Contains(c.RequestKey)).Sum(c=>c.Line.Quantity);
+            return Math.Max(0,Math.Min(x.Quantity,checked(capacity-reserved)));
+        });
     }
     private static void ValidateCommand(SteamCommandRecord command)
     {

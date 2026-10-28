@@ -1,5 +1,12 @@
 # Windows 배포 준비 — 3차 구현
 
+## 5차 추가 범위 (최신)
+
+- 일반 앱에 지연 연결 UI를 포함한다. startup/탭 생성은 Steam HTTP나 실저널을 열지 않으며 실제 거래 policy는 기본 Blocked다. 합성 테스트 이외의 인증/계정 시험을 하지 않는다.
+- Steam 전용 DB v1→v2 보존, audit/반환/재가격/배치 archive를 지원한다. Demo DB v2와 별개이며 실저널을 Demo 데이터 삭제에 연결하지 않는다. 실행파일/업데이트 버전과 데이터 폴더를 분리한다.
+- MIT QR 소스를 고정 버전으로 포함하고 원 LICENSE/저작권 고지를 보존한다. publish에 `licenses/QrCodeGenerator-LICENSE.txt`와 THIRD-PARTY-NOTICES를 복사하고 누락 검사를 추가했다. 신규 패키지/SDK 설치 없음.
+- Release 산출물 생성/정적 검사는 실제 설치/계정 연결/라이브 거래 검증이 아니다. 새 기기/모바일 QR 스캔/모니터 DPI/서명·설치·보안 감사는 미검증이다.
+
 ## 4차 추가 범위
 
 - 실험적 Steam 소스가 포함되지만 App startup은 계속 Demo이며 연결/토큰/실저널 생성이 자동 실행되지 않는다. 새 패키지/외부 소스 편입 없음.

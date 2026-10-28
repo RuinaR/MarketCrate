@@ -1,5 +1,21 @@
 # MarketCrate — 누적 작업 로그
 
+## 2026-10-28 — 5차 사용자 연결·KRW·스택·대조/재가격
+
+- 시작 HEAD/origin/main `73ad542`, 작업 트리 clean. AGENTS·현황·정의·QA·아키텍처·판매 계약·실연동 조사를 읽고 fetch했다. 실제 계정/거래·외부 앱·입력·화면 접근은 하지 않고 현재 저장소를 이어 수정했다.
+- 공식 최신 판매 번들에서 새로운 wallet floor/step + ajaxfeestructure rate/cap 및 amount 계약을 확인했다. 공개 소스만 읽었으며 authenticated fee 응답/실계정 계산은 확인하지 않았다. KRW/USD 정수 Money/wire, 정확한 fee와 역산 불가 금액 차단, 서버 응답 모순 중단을 독립 구현했다.
+- 새 Steam MVVM/UserControl에 로컬 QR·직접 로그인 확인·세션 종료/취소·실제 provider 갱신/게임/선택/시세·가격 검토·판매 관리·결과/증거/감사 이력·재가격 재개를 연결했다. 기본 policy Blocked 및 stack capability를 별도화, 사용자 동의로 Valve 허가를 가정하지 않는다. Mock과 실제 source/상태/합계를 분리했다.
+- MIT QR v2.0.0 소스 6파일을 고정 커밋으로 도입, 원 고지·LICENSE 유지 및 nullable 지시문만 추가. 순수 계산/무네트워크를 확인하고 output/publish에 LICENSE/고지를 함께 넣도록 했다. 패키지/SDK 설치 없음.
+- 공유 호가 key에서 context를 제거해 같은 장터 잔량의 중복 사용을 막았다. 보관함과 예약 반영 가용량, Unknown 보존, 동일 자산의 반환 proof로 해당 예약만 해제, 확정 배치 archive 후 새 배치를 처리한다. v1→v2 이관과 command/reprice audit는 별도 실저널에 보존한다.
+- 재가격은 승인 target 불변→취소→목록 부재+동일 자산 수량 반환→새 preflight→후속 key 먼저 저장→등록이다. 스택/외부 등록/ID 교체/불명/5분 stale/중복은 차단한다. listingid 없는 후보는 시각/기존 ID/수량·가격까지 보여 주되 인과관계 없이 확정하지 않는다.
+- 합성 HTTP 서버(소켓/listener 없음)와 동일 UI/어댑터로 로그인→KRW 스택 3/4/3→승인 대기, 서버 fee 충돌·currency mismatch, 비스택 취소/반환/재가격/재시작 및 스택 반환 추정 차단, logout 늦은 응답, 동의 철회, QR 만료/거부/CAPTCHA/네트워크, archive·부분 예약 해제·legacy 이관을 검사했다.
+- UI 검사에서 템플릿 생성 전 컨트롤 검색 실패를 이름 기반 접근으로 수정했다. 렌더에서 standalone 글자색, QR 빈 상태, 실험 화면의 Mock 문구/가로 폭 혼동을 발견해 실제 소스를 수정했다. 실제 창/사용자 입력 검증으로 확대하지 않는다.
+- 새 실험 목록에서도 반복 DB 조회/전체 선택 알림을 발견해 일괄 예약 조회·RangeObservableCollection·알림 batching을 적용했다. adapter-backed 10,000개 합성 목록으로 검사하며 장시간 성능/실서버 부하 검증은 하지 않는다.
+- 최종 안전 검토: 스택 수량 증가가 취소 반환의 인과 증명이 되지 않음을 발견했다. 원래 snapshot과 직접 연결된 비스택 단일 자산만 자동 반환 proof를 허용하고 스택/외부 등록은 Unknown·예약 유지로 제한했다. 긍정적인 스택 반환 추정 테스트를 안전한 차단/재시작 보존 회귀로 대체했으며 이 제한을 완료 보고에 공개한다.
+- 최종 회귀: `scripts/Verify.ps1`, 5프로젝트 Debug 경고0/오류0, 도메인/합성 HTTP **112/112**, detached STA WPF **20/20 PASS**, FAIL0. 마지막 변경 소스 이후 Release publish·PE/데이터 제외·QR MIT LICENSE/고지 포함 검사 PASS. 산출물 실행/설치/서명/공개 배포는 안 했다.
+- QR/검토/보관함/통합 PNG를 직접 검토했고 생성물은 ignored runtime/artifacts에만 둔다. 금지 API·민감값 패턴·diff 점검 후 소스/합성 테스트/문서/허가된 QR 소스만 commit/push한다. 미지원·제재 위험은 현황에 누적하며 실판매 완성을 선언하지 않는다.
+- 최종 검토: 금지 API 검색의 Process.Start는 이전 승인된 owned headless 테스트 자식뿐이며 새 타 앱 접근 없음. QR vendor 6파일은 내려받은 고정 원본과 nullable 지시문을 제외하고 문자 단위 일치 확인. upstream 주석/EOF 공백은 원본 보존으로 확인했고 자체 소스·테스트·문서 diff check는 PASS다. 새 소스 제한 이후 전체112/112·WPF20/20·Release/라이선스 검사도 다시 PASS했다.
+
 ## 2026-10-28 — 4차 조사·실험적 연동 구현
 
 - 시작 HEAD/origin/main `9455dc9`, 작업 트리 clean. AGENTS/현재 상태/정의/QA/아키텍처/실행 계약을 확인하고 fetch했다. 사용자 승인으로 비공식 **소스 구현** 범위를 확장했으며 계정 로그인/거래 시험은 승인 범위 밖으로 유지했다.

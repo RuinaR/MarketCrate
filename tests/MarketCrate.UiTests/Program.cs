@@ -121,6 +121,7 @@ internal static class Program
                 ((Button)stepper.Template.FindName("PART_Up", stepper)).RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent)); Check(stepper.Value == int.MaxValue);
             });
             ThirdStageUiTests.Run((name, test) => Test(name, test), Render);
+            FifthStageUiTests.Run((name, test) => Test(name, test), Render);
             Test("바인딩 오류 없음 (의도적 invalid 가격 변환 제외)", () =>
             {
                 listener.Flush(); var output = bindingOutput.ToString();

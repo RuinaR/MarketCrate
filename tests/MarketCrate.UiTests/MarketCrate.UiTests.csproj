@@ -6,5 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/MarketCrate.App/MarketCrate.App.csproj" />
+    <Compile Include="../MarketCrate.Tests/SteamContractServer.cs" Link="SteamContractServer.cs" />
   </ItemGroup>
 </Project>

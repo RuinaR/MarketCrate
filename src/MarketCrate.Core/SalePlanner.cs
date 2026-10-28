@@ -16,8 +16,8 @@ public static class SalePlanner
     {
         var selected = selections.ToArray();
         if (selected.Select(x => x.Asset.Key).Distinct().Count() != selected.Length) throw new ArgumentException("중복 선택 자산");
-        var remaining = new Dictionary<(int, string, string, string), List<BidLevel>>();
-        var books = new Dictionary<(int, string, string, string), ImmutableArray<BidLevel>>();
+        var remaining = new Dictionary<(int, string, string), List<BidLevel>>();
+        var books = new Dictionary<(int, string, string), ImmutableArray<BidLevel>>();
         var result = ImmutableArray.CreateBuilder<PlannedSale>();
         var unpriced = ImmutableArray.CreateBuilder<UnpricedSale>();
         var missing = 0;
@@ -28,7 +28,7 @@ public static class SalePlanner
             AllocationResult plan;
             if (immediate)
             {
-                var key = (entry.Asset.Key.AppId, entry.Asset.Key.ContextId, entry.Asset.MarketHashName, entry.Price.Currency);
+                var key = (entry.Asset.Key.AppId, entry.Asset.MarketHashName, entry.Price.Currency);
                 if (!remaining.TryGetValue(key, out var bids))
                 { books[key] = entry.Price.Bids; remaining[key] = bids = entry.Price.Bids.OrderByDescending(x => x.BuyerPays).ToList(); }
                 else if (!books[key].SequenceEqual(entry.Price.Bids)) throw new ArgumentException("동일 품목의 시세가 서로 다릅니다. 다시 갱신하세요.");

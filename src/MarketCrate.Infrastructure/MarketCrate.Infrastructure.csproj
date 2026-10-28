@@ -6,5 +6,6 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.31" />
     <ProjectReference Include="../MarketCrate.Core/MarketCrate.Core.csproj" />
+    <None Update="ThirdParty/QrCodeGenerator/LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" TargetPath="licenses/QrCodeGenerator-LICENSE.txt" />
   </ItemGroup>
 </Project>

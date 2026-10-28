@@ -1,5 +1,29 @@
 # MarketCrate — QA 체크리스트 (자동 검사 완료 / GUI 미실행)
 
+## 5차 최종 결과 — 2026-10-28 KST (최신)
+
+| 검사 | 실제 결과 | 경계 |
+|---|---|---|
+| 전체 Debug 빌드 | PASS, 경고0/오류0 | 5개 프로젝트, MSBuild1/공유 컴파일 OFF |
+| 도메인·SQLite·MVVM·합성 Steam HTTP | **112/112 PASS**, FAIL0 | 기존87 유지 + 신규25, 소켓/실네트워크 없는 handler |
+| 비표시 WPF | **20/20 PASS**, FAIL0 | 기존17 + QR/검토/통합 배치 3, 바인딩 오류 없음 |
+| 최신 Release publish | PASS | 실행파일·PE·데이터 제외·MIT LICENSE/고지 포함, 실행·설치 안 함 |
+| 실제 계정 QR/지갑/fee/보관함/등록/취소/Guard | **NOT VERIFIED** | 인증 세션/거래 요청을 실제 전송하지 않음 |
+
+- [x] KRW 원↔wire100·USD cent↔wire1 정수 타입, 미지원/분수 KRW/오버플로 거절, 서버 floor/step·rate/cap·최소/최근접 fee와 USD gap, 통화 불일치·서버 모순 중단.
+- [x] 같은 상품의 다른 asset/context 공유 잔량, 3/4/3 스택 분할·비스택 반환 예약 해제·확정 archive·스택 취소 불명 예약 유지·Unknown 재시작 보존·capability 없는 stack 제출0.
+- [x] 동일 UI/실제 어댑터에 합성 HTTP 주입: QR→인증 확인→데이터/선택 호가→KRW 편집/최종 단일 승인→전체 요청/승인 대기, 소유·통화·fee 검증 및 중복 차단.
+- [x] QR 만료/거부/CAPTCHA/네트워크·취소/로그아웃/늦은 응답 폐기·동의 철회·기본 policy 차단. 모바일 자동 승인 구현 없음.
+- [x] ID 없는 유일/복수 후보는 자동 Listed 불가, before IDs·요청/등록 시각·가격·수량·판정·감사 표시. 불명 요청 재전송0.
+- [x] 확정 접수+목록 부재+원래 비스택 단일 자산 반환 후 재가격, 반환 부족/취소 timeout·재시작/중복/만료 시 새 요청 차단. 기존 target/후속키 보존.
+- [x] 마지막 안전 검토에서 스택의 외부 증가/병합과 취소 반환을 혼동할 수 있음을 확인해, 스택/외부 등록은 인과 증거 없이 반환 proof 생성·예약 해제·재가격하지 않도록 제한. 합성 수량이 증가한 경우에도 Unknown/예약 유지 검사.
+- [x] Steam DB v1→v2의 legacy 불명 의도 보존, 원자적 command/reprice audit, 확정 archive로도 예약 보존. 기존 손상/rollback/헤드리스 종료 회귀 유지.
+- [x] 새 adapter-backed 10,000개 목록의 전체 선택→Totals 알림1회. 기존 Mock 10,000개 가상화/재활용 검사도 유지. 최대치/장시간/실서버 성능 인증 아님.
+- [x] 자체 `stage5-qr.png`, `stage5-review.png`, `stage5-inventory.png`, `stage5-main-integration.png`, invalid/DPI 출력 PNG 생성·시각 검토. 발견한 글자색/Mock 혼동을 수정했다. 코드/이미지/DB/로그 중 생성물은 Git 제외.
+- [ ] 실제 QR 모바일 스캔·계정별 모든 거래 자격/보류, ID가 바뀌는 스택·반환, 인과관계 없는 요청 강제 확정, stale 재가격 revision UI, live 확정 실패 retry, 실제 입력/Popup/모니터 DPI/설치·서명·보안 감사.
+
+초기 연결 검사에서 WPF 프로젝트의 Http using 누락 빌드 실패와 템플릿 전 검색 테스트 실패를 발견·수정했다. 마지막 전체 회귀는 FAIL0이다. 통과한 동일 검사를 이유 없이 반복하지 않고 새 구현/저장·상태 변경/발견 결함 범위에서 다시 검사했다. 아래는 이전 단계 기록이다.
+
 ## 4차 최종 결과 — 2026-10-28 KST (최신)
 
 | 검사 | 결과 | 검증 범위 |

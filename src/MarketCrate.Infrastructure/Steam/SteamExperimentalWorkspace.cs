@@ -2,27 +2,38 @@ using MarketCrate.Core;
 
 namespace MarketCrate.Infrastructure.Steam;
 
-// Developer composition only. App startup continues to construct DemoDataProvider.
-// Constructing this does not log in, open a browser, display a Window or send a request.
+// Session composition. The UI invokes its factory only on an explicit login action.
+// Construction opens the isolated journal but does not log in, show a Window or send a request.
 public sealed class SteamExperimentalWorkspace : IDisposable
 {
     private readonly SteamStateStore store;
     private readonly SteamHttp http;
     public SteamAccess Access { get; } = new();
     public SteamQrAuthentication Authentication { get; }
-    public SteamInventoryProvider Inventory { get; }
+    public SteamInventoryProvider Inventory { get; private set; }
     public SteamMarketDataProvider Prices { get; }
     public SteamOrdersProvider Orders { get; }
-    public SteamListingExecutor Executor { get; }
-    public SaleBatchCoordinator Batches { get; }
-    public SteamExperimentalWorkspace(string isolatedDataDirectory, int appId, string contextId, string game)
+    public SteamListingExecutor Executor { get; private set; }
+    public SaleBatchCoordinator Batches { get; private set; }
+    public SteamStateStore Store => store;
+    public SteamTradingPolicy Policy { get; }
+    public SteamFailure? Failure => http.Halted;
+    public SteamExperimentalWorkspace(string isolatedDataDirectory, int appId, string contextId, string game,
+        SteamTradingPolicy? policy = null, HttpMessageHandler? contractHandler = null, TimeProvider? clock = null)
     {
         store = new(isolatedDataDirectory);
-        http = new(Access); Authentication = new(http);
+        Policy = policy ?? SteamTradingPolicy.Blocked;
+        http = new(Access, contractHandler); Authentication = new(http, clock);
         Inventory = new(http, Authentication, appId, contextId, game);
         Prices = new(http, Authentication); Orders = new(http, Authentication);
-        Executor = new(http, Authentication, store, Inventory, Prices, Orders);
+        Executor = new(http, Authentication, store, Inventory, Prices, Orders, Policy);
         Batches = new(Executor, store);
     }
+    public void SetGame(int appId, string contextId, string game)
+    {
+        Inventory = new(http, Authentication, appId, contextId, game);
+        Executor = new(http, Authentication, store, Inventory, Prices, Orders, Policy); Batches = new(Executor, store);
+    }
+    public Task<SteamFeeSchedule> FeesAsync(int appId, CancellationToken token = default) => SteamFees.FetchAsync(http, appId, token);
     public void Dispose() { Authentication.Dispose(); http.Dispose(); store.Dispose(); }
 }

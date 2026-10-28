@@ -1,5 +1,14 @@
 # MarketCrate — 보안·Steam 계정·메이플 동시 실행
 
+## 5차 연결 UI 및 검증 경계 (최신)
+
+- 실제 사용자 기능의 읽기 UI를 연결했지만 앱 시작/탭 열기는 HTTP/로그인/실저널 생성 없음. 현 작업은 factory 주입 합성 HTTP만 사용했다. 실제 계정/쿠키/클라이언트/외부 창·입력·화면은 접근하지 않았다.
+- 실제 거래는 기본 `SteamTradingPolicy.Blocked`; risk/trading 체크는 정책 허가의 대체가 아니다. source capability와 account opt-in을 모두 요구한다. 무허가 자동화의 제재 위험과 인증 탈취 위험은 별도이며 0으로 보장하지 않는다.
+- 로컬 QR 순수 계산·공식 모바일 수동 확인·메모리 cookie session만 사용한다. 외부 QR 서비스/브라우저 쿠키 추출/비밀번호/maFile/Guard secret 수집/DPAPI token persistence/덤프/telemetry 없음. 메모리/외부 OS 침해까지 방어한다고 주장하지 않는다.
+- 로그아웃/동의 철회가 작업을 취소하고 화면·QR을 비우며 늦은 데이터 응답을 버린다. 미전송 중단은 이미 서버가 받은 요청의 취소 보장이 아니므로 불명 의도는 보존·대조한다. 401/403/429/CAPTCHA/형식 변경 우회나 자동 retry 없음.
+- audit는 계정 reference·자산/확정 가격/수량·request key·시각·enum state만 보존한다. raw 응답/쿠키/QR URI/token/자유 예외 메시지는 저장하지 않는다. 실저널은 Demo 삭제 UI와 분리, 배치 archive는 거래 감사 자료를 삭제하지 않는다.
+- QA는 자체 STA controls/RenderTargetBitmap 및 owned headless 테스트만. 실제 QR 스캔/사용자 입력/모니터 DPI/Popup/Steam 계정/장시간 장애·설치·보안 감사 미검증. MIT QR 소스와 고지는 함께 배포한다.
+
 ## 4차 구현·검증 경계 (최신)
 
 - 이번 사용자 지시로 비공식 구현 후보를 별도 소스로 작성했다. 이것은 Valve 허가나 실계정 테스트 승인이 아니다. 일반 App 구성/실거래는 IntegrationBlocked이며 로그인·거래·취소·Guard 세션 요청을 실행하지 않았다.

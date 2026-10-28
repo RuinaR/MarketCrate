@@ -1,5 +1,13 @@
 # MarketCrate — Sale Execution Product Contract
 
+## 5차 통화·스택·관리 계약 (최신)
+
+- 단일 최종 승인 전체 배치 목표 유지. 앱 초기값은 조회 연결 UI만 제공하며 실제 거래는 policy Blocked. 실제 Steam 로그인·등록·취소·Guard는 이번 개발에서 실행하지 않는다.
+- KRW/USD의 정수 금액/wire를 구분하고 실제 wallet floor/step와 앱별 fee rate/cap을 새로 확인한다. snapshot의 통화·수령/수수료/구매자 합과 서버 profile이 다르면 첫 전송 전 거절한다. 사후 서버 반환 모순은 Unknown/후속 중단이며 이미 보낸 요청을 되돌린다는 뜻은 아니다.
+- 여러 asset/context도 동일 App/hash/currency 호가를 공유한다. stack capability가 허용된 계약에서만 amount 분할, full intent와 결과별 예약을 유지한다. 실패가 확정되지 않은 수량은 해제하지 않고, 재시작/새 key로 재등록하지 않는다. 실제 스택 ID 변경은 추측하지 않는다.
+- 취소 응답만으로 Cancelled 아님. 접수+목록 부재+원래 비스택 단일 자산의 반환 증거에 해당하는 원래 예약만 해제한다. 재가격 target·취소키·replacement키를 영구 보존하며 재개/이중 클릭/재시작 시 새 replacement를 중복 전송하지 않는다. 5분 경과 target은 새 검토가 필요하고 현재 가격 revision UI는 미지원이다.
+- listingid 없는 후보는 메타데이터가 1건 일치해도 자신의 요청으로 자동 확정하지 않는다. 수동 도구는 증거를 보여 주며, 인과관계 증명이 없는 건 pending/Unknown 유지한다. 확정 배치 보관도 저널·증거·예약은 유지한다.
+
 ## 4차: 비활성 실험 어댑터 계약 (최신)
 
 - 사용자 승인 범위는 비공식 어댑터 소스/합성 HTTP 검증까지다. 이번 작업에서 실계정 로그인/판매/취소/Guard를 실행하지 않는다. App은 Demo이며 필수 실등록 제품 목표가 달성되었다고 보고하지 않는다.

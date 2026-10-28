@@ -41,13 +41,16 @@ public sealed class SteamQrAuthentication(SteamHttp http, TimeProvider? timeProv
     public Task<bool> CheckAsync(CancellationToken token = default) => GuardAsync(() => CheckCoreAsync(token));
     private async Task<bool> CheckCoreAsync(CancellationToken token)
     {
-        if (Challenge is null || clock.GetUtcNow() > expires) throw new SteamException(SteamFailure.Authentication);
+        if (Challenge is null || clock.GetUtcNow() > expires) throw new SteamException(SteamFailure.Expired);
         if (clock.GetUtcNow() < nextPoll) return false;
         nextPoll = clock.GetUtcNow() + interval;
         using var form = AuthForm("PollAuthSessionStatus", Proto.Number(1, clientId).Concat(Proto.Bytes(2, requestId)).ToArray());
         using var document = SteamHttp.Json(await http.SendAsync(form, token));
         var root = document.RootElement.GetProperty("response");
-        if (root.TryGetProperty("new_client_id", out var id)) clientId = ulong.Parse(id.GetString()!, CultureInfo.InvariantCulture);
+        if(root.TryGetProperty("captcha_needed",out var captcha)&&captcha.ValueKind==JsonValueKind.True)throw new SteamException(SteamFailure.Challenge);
+        if(root.TryGetProperty("agreement_session_url",out var agreement)&&!string.IsNullOrEmpty(agreement.GetString()))throw new SteamException(SteamFailure.Restricted);
+        if(root.EnumerateObject().Any(x=>x.Name is not("new_client_id" or "new_challenge_url" or "refresh_token" or "access_token" or "had_remote_interaction" or "account_name" or "new_guard_data" or "agreement_session_url")))throw new SteamException(SteamFailure.ContractChanged);
+        if (root.TryGetProperty("new_client_id", out var id) && ulong.Parse(id.GetString()!, CultureInfo.InvariantCulture) is >0 and var nextId) clientId = nextId;
         if (root.TryGetProperty("new_challenge_url", out var challenge)) Challenge = ValidateChallenge(challenge.GetString()!);
         if (!root.TryGetProperty("refresh_token", out var refresh) || string.IsNullOrEmpty(refresh.GetString())) return false;
         // Refresh token exists only in this stack/response. No disk persistence, JWT logging or third-party transfer.

@@ -6,7 +6,7 @@ using MarketCrate.Core;
 namespace MarketCrate.Infrastructure.Steam;
 
 public sealed record SteamInventoryPage(ImmutableArray<InventoryAsset> Assets, string? Next, ImmutableDictionary<AssetKey, int>? PublisherFees = null);
-public sealed record SteamListing(string ListingId, AssetKey Asset, string HashName, int Quantity, string Currency, long SellerReceives, long Fees, SaleState State);
+public sealed record SteamListing(string ListingId, AssetKey Asset, string HashName, int Quantity, string Currency, long SellerReceives, long Fees, SaleState State, DateTimeOffset? CreatedAt = null);
 public sealed record SteamListingsPage(ImmutableArray<SteamListing> Listings, int TotalActive);
 public sealed record SteamHistoryPoint(DateTimeOffset At, decimal MedianMajor, int Volume);
 public sealed record SteamOrderBook(string Currency, ImmutableArray<BidLevel> Bids);
@@ -50,7 +50,7 @@ public static class SteamContract
             if (d.TryGetProperty("market_fee", out var fee))
             {
                 var rate = decimal.Parse(fee.ValueKind == JsonValueKind.String ? fee.GetString()! : fee.GetRawText(), CultureInfo.InvariantCulture) * 10000;
-                if (rate is < 0 or > 1000 || decimal.Truncate(rate) != rate) throw new SteamException(SteamFailure.ContractChanged);
+                if (rate is < 0 or > 10000 || decimal.Truncate(rate) != rate) throw new SteamException(SteamFailure.ContractChanged);
                 fees.Add(result[^1].Key, (int)rate);
             }
         }
@@ -104,7 +104,8 @@ public static class SteamContract
                 var seller = FromWire(Integer(row.GetProperty("price")), currency); var fee = FromWire(Integer(row.GetProperty("fee")), currency);
                 var quantity = checked((int)Integer(a.GetProperty("amount")));
                 if (key.AppId < 1 || quantity < 1 || seller < 1 || fee < 0) throw new SteamException(SteamFailure.ContractChanged);
-                rows.Add(new(Id(row.GetProperty("listingid")), key, d.GetProperty("market_hash_name").GetString()!, quantity, currency, seller, fee, state));
+                rows.Add(new(Id(row.GetProperty("listingid")), key, d.GetProperty("market_hash_name").GetString()!, quantity, currency, seller, fee, state,
+                    row.TryGetProperty("time_created", out var created) ? DateTimeOffset.FromUnixTimeSeconds(Integer(created)) : null));
             }
         }
         var total = root.GetProperty("total_count").GetInt32();

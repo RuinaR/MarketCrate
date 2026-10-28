@@ -60,7 +60,7 @@ internal static class FourthStageTests
     }
     private static SaleLineSnapshot Line() => new("0",new(new(730,"2","101"),"Fixture game","Fixture item","Fixture item",1,false,true,true),1,"USD",Pricing.FromSeller(100,new()),DateTimeOffset.UtcNow);
     private static SaleBatchSnapshot Batch() => new(Guid.NewGuid(),"76561198000000001",DateTimeOffset.UtcNow,[Line()]);
-    private const string Wallet="<script>var g_rgWalletInfo = {\"wallet_fee\":1,\"wallet_currency\":1,\"wallet_fee_percent\":0.05,\"wallet_fee_minimum\":1,\"wallet_fee_base\":0};</script>";
+    private const string Wallet="<script>var g_rgWalletInfo = {\"wallet_market_minimum\":1,\"wallet_currency_increment\":1,\"wallet_fee\":1,\"wallet_currency\":1,\"wallet_fee_percent\":0.05,\"wallet_fee_minimum\":1,\"wallet_fee_base\":0};</script>";
     private static string Inventory(bool more=false) => "{\"success\":1,\"total_inventory_count\":1,\"assets\":[{\"appid\":730,\"contextid\":\"2\",\"assetid\":\"101\",\"classid\":\"1\",\"instanceid\":\"0\",\"amount\":\"1\"}],\"descriptions\":[{\"appid\":730,\"classid\":\"1\",\"instanceid\":\"0\",\"name\":\"Fixture item\",\"market_hash_name\":\"Fixture item\",\"marketable\":1,\"tradable\":1,\"market_fee\":\"0.1\"}]"+(more?",\"more_items\":1,\"last_assetid\":\"101\"":"")+"}";
     private static string Book(int currency,long[] pairs)=>JsonSerializer.Serialize(new{data=new{success=true,data=new{eCurrency=currency,rgCompactBuyOrders=pairs}}});
     private sealed class Clock:TimeProvider {private DateTimeOffset now=DateTimeOffset.UtcNow;public override DateTimeOffset GetUtcNow()=>now;public void Advance()=>now=now.AddSeconds(2);}
@@ -76,7 +76,7 @@ internal static class FourthStageTests
         {
             Directory=directory??Path.Combine(System.IO.Directory.GetCurrentDirectory(),"runtime","steam-tests-"+Guid.NewGuid().ToString("N"));
             var access=new SteamAccess();if(enable)access.Acknowledge(true,true,true,true);
-            Http=new(access,new Handler(Respond));Auth=new(Http,Clock);Store=new(Directory);Inventory=new(Http,Auth,730,"2","Fixture game");Orders=new(Http,Auth);Executor=new(Http,Auth,Store,Inventory,new(Http,Auth),Orders);
+            Http=new(access,new Handler(Respond));Auth=new(Http,Clock);Store=new(Directory);Inventory=new(Http,Auth,730,"2","Fixture game");Orders=new(Http,Auth);Executor=new(Http,Auth,Store,Inventory,new(Http,Auth),Orders,SteamTradingPolicy.ContractTest);
         }
         public async Task Connect(){await Auth.BeginAsync();Clock.Advance();Check(await Auth.CheckAsync());}
         private async Task<HttpResponseMessage> Respond(HttpRequestMessage request)
@@ -90,6 +90,7 @@ internal static class FourthStageTests
             else if(path.StartsWith("/inventory/"))body=InventoryBody??FourthStageTests.Inventory();
             else if(path=="/market/orderbook")body=BookBody??Book(1,[115,10]);
             else if(path=="/market/")body=Wallet;
+            else if(path=="/market/ajaxfeestructure/")body="{\"steam_fee\":{\"fee_rate\":0.05},\"publisher_fee\":{\"fee_rate\":0.1}}";
             else if(path=="/market/sellitem/"){Sells++;SellForm=await request.Content!.ReadAsStringAsync();SellForms.Add(SellForm);if(TimeoutSell)throw new HttpRequestException("synthetic timeout");body=Sells>1?SellBody.Replace("501",(500+Sells).ToString()):SellBody;}
             else if(path.StartsWith("/market/removelisting/")){Cancels++;if(TimeoutCancel)throw new HttpRequestException("synthetic timeout");body="[]";}
             else if(path=="/market/mylistings/render/")

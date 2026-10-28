@@ -8,6 +8,7 @@ namespace MarketCrate.App.ViewModels;
 
 public sealed class MainViewModel : Observable, IDisposable
 {
+    public SteamWorkspaceViewModel Steam { get; } = new();
     private IInventoryProvider inventoryProvider;
     private IMarketDataProvider marketProvider;
     private readonly IDemoJournal journal;
@@ -275,7 +276,7 @@ public sealed class MainViewModel : Observable, IDisposable
         Review?.Refresh(); Submit?.Refresh(); CloseReview?.Refresh(); Cancel?.Refresh(); Recover?.Refresh(); ClearDemo?.Refresh(); Refresh?.Refresh(); SelectAll?.Refresh(); ClearSelection?.Refresh(); CancelPlan?.Refresh(); CloseCancelReview?.Refresh(); ConfirmCancellation?.Refresh(); PublishMockEvidence?.Refresh(); LoadLargeDemo?.Refresh(); DeleteLocalDemoData?.Refresh();
         SelectAllListings?.Refresh(); ClearListings?.Refresh(); RepricePlan?.Refresh(); RetryListingPlan?.Refresh(); SelectFailedResults?.Refresh(); RetryFailedPlan?.Refresh(); RefreshReviewStatus?.Refresh(); Raise(nameof(AnyDialog));
     }
-    public void Dispose() { lifetime.Cancel(); lifetime.Dispose(); }
+    public void Dispose() { Steam.Dispose(); lifetime.Cancel(); lifetime.Dispose(); }
 }
 internal sealed class InlineProgress<T>(Action<T> report) : IProgress<T> { public void Report(T value) => report(value); }
 public sealed class ResultViewModel(string name, int quantity, long price, LineResult result, Action changed) : Observable

@@ -1,5 +1,12 @@
 # MarketCrate — 외부 자료·레퍼런스
 
+## 5차 조사 (2026-10-28 KST, 최신)
+
+- 공식 Market/main.js가 불러오는 [marketselldialog.js](https://community.fastly.steamstatic.com/public/javascript/applications/community/marketselldialog.js)를 무인증으로 다운로드·정적 열람했다. wallet minimum/increment, ajaxfeestructure의 fee rate/cap, amount 전송/확인 대기 계약을 추가 확인했다. 원문 SHA256/구체적인 채택·확인 한계는 [연동 조사](STEAM-INTEGRATION-FEASIBILITY.md)의 5차 절 참조. 원 소스는 복사하지 않고 정수 계산·파서를 독립 작성했다.
+- 공식 [global.js](https://community.fastly.steamstatic.com/public/javascript/global.js?l=english)의 통화 ID/whole unit와 판매 입력 wire/100 표시를 대조했다. 실제 지갑/인증된 fee API/거래는 호출하지 않았다. 비교 프로젝트의 과거 반올림 설명보다 최신 공식 소비 코드를 우선했다.
+- [QrCodeGenerator v2.0.0 고정 커밋](https://github.com/manuelbl/QrCodeGenerator/tree/11cf58fe6cec5bc44f70aa360e84b8d37570e37d), MIT / Manuel Bleichenbacher / Project Nayuki. QR 순수 계산 6파일만 원 저작권/MIT 전문·LICENSE와 함께 포함, nullable 지시문 외 변경 없음. 새 SDK/패키지 설치/외부 이미지 서비스는 없다. THIRD-PARTY-NOTICES와 배포 복사·누락 검사를 추가했다.
+- 경쟁 프로그램의 코드·시각 자산은 도입하지 않는다. 이전 단계의 “외부 소스 편입 없음” 문구는 당시 기록이며 5차에서는 위 허가된 QR 소스만 예외다. 기술적으로 동작 가능한 경로/합성 검사와 Valve 허가/실계정 검증을 구분한다.
+
 ## 4차 조사 (2026-10-28 KST, 최신)
 
 - 지정한 CSlytics `b8a6be3`, SteamMarketHelper `e186d51`, todd-elvers/steam-bulk-seller `9de9e5c` default HEAD의 인증/세션/보관함/가격·판매/취소 관련 소스를 읽었다. 기능별 확인 한계·고정 permalink·라이선스·독립 구현/미채택 이유는 [실연동 조사](STEAM-INTEGRATION-FEASIBILITY.md)의 4차 표 참조.

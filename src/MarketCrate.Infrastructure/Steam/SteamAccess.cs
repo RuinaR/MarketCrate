@@ -19,7 +19,12 @@ public sealed class SteamAccess
     public override string ToString() => "SteamAccess (session-only)";
 }
 
-public enum SteamFailure { Disabled, Authentication, Forbidden, RateLimited, Challenge, ContractChanged, Transport, Restricted }
+public enum SteamFailure { Disabled, Authentication, Forbidden, RateLimited, Challenge, ContractChanged, Transport, Restricted, Expired, Denied, StaleReview }
+public sealed record SteamTradingPolicy(bool Enabled, string EvidenceReference, bool StackAmountsSupported = false)
+{
+    public static SteamTradingPolicy Blocked { get; } = new(false, "Valve permission not established");
+    internal static SteamTradingPolicy ContractTest { get; } = new(true, "synthetic contract only", true);
+}
 public sealed class SteamException(SteamFailure code) : IOException(code.ToString())
 {
     public SteamFailure Code { get; } = code;
@@ -51,7 +56,7 @@ public sealed class SteamHttp : IDisposable
         {
             "api.steampowered.com" => path is "/IAuthenticationService/BeginAuthSessionViaQR/v1/" or "/IAuthenticationService/PollAuthSessionStatus/v1/",
             "login.steampowered.com" => path == "/jwt/finalizelogin",
-            "steamcommunity.com" => path is "/login/settoken" or "/market/" or "/market/orderbook" or "/market/pricehistory/" or "/market/mylistings/render/" or "/market/sellitem/" ||
+            "steamcommunity.com" => path is "/login/settoken" or "/market/" or "/market/ajaxfeestructure/" or "/market/orderbook" or "/market/pricehistory/" or "/market/mylistings/render/" or "/market/sellitem/" ||
                 path.StartsWith("/inventory/", StringComparison.Ordinal) || path.StartsWith("/market/removelisting/", StringComparison.Ordinal),
             _ => false
         };
@@ -73,6 +78,11 @@ public sealed class SteamHttp : IDisposable
             if (!Access.ResearchRiskAccepted) throw new SteamException(SteamFailure.Disabled);
             last = DateTimeOffset.UtcNow;
             using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);
+            if (response.Headers.TryGetValues("Set-Cookie", out var cookies))
+            {
+                try { foreach (var cookie in cookies) Cookies.SetCookies(request.RequestUri!,cookie); }
+                catch (CookieException) { Stop(SteamFailure.ContractChanged); throw new SteamException(SteamFailure.ContractChanged); }
+            }
             var status = (int)response.StatusCode;
             if (status != 200)
             {
@@ -80,8 +90,8 @@ public sealed class SteamHttp : IDisposable
                     >= 300 and < 400 => SteamFailure.Authentication, _ => SteamFailure.Transport };
                 Stop(failure); throw new SteamException(failure);
             }
-            if (response.Headers.TryGetValues("x-eresult", out var results) && results.Any(x => x != "1"))
-            { Stop(SteamFailure.Authentication); throw new SteamException(SteamFailure.Authentication); }
+            if (response.Headers.TryGetValues("x-eresult", out var results) && results.FirstOrDefault() is { } result && result != "1")
+            { var failure = result == "15" ? SteamFailure.Denied : result == "27" ? SteamFailure.Expired : SteamFailure.Authentication; Stop(failure); throw new SteamException(failure); }
             // Bounded reads prevent unexpected HTML/large payloads from consuming unbounded memory.
             await using var stream = await response.Content.ReadAsStreamAsync(token);
             using var bytes = new MemoryStream(); var buffer = new byte[8192]; int read;

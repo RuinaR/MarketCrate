@@ -1,4 +1,18 @@
-# MarketCrate — 현재 상태 (2026-10-28 KST, 4차)
+# MarketCrate — 현재 상태 (2026-10-28 KST, 5차)
+
+## 5차 최신 상태: 사용자 시작 연결 UI / 실거래 기본 차단
+
+- `Steam 실험 연동`의 QR 연결·읽기·선택·가격 검토·판매 관리·수동 대조를 실제 어댑터와 연결했다. Mock의 보관함/합계/상태와 섞지 않으며 앱 시작·탭 생성은 네트워크나 실저널을 열지 않는다. 실제 거래는 `SteamTradingPolicy.Blocked`, 체크만으로 활성화되지 않는다.
+- KRW/USD `Money`와 서버 지갑 최소/증분·앱별 fee rate/cap 계산, 수령/수수료/구매자 금액 분리·정확한 역산·모순 중단. 공식 최신 판매 번들의 구조에 근거하며 **인증된 서버 응답/실계정 계산과 비교한 것은 아니다**.
+- 동일 상품의 호가를 asset/context 간 공유, 스택 분할·부족 수량 검토·예약/반환 증거·재시작을 구현했다. 스택 제출 capability는 별도다. 외부 수량 증가/ID 변경 불확실성은 보수적 가용량/차단으로 처리한다.
+- listingid 없는 후보의 이전 ID/시각/가격/수량/판정 및 감사 이력을 수동 도구로 제공한다. 후보 1개여도 자동 소유 요청 확정 없음. 취소 접수+목록 부재+원래 비스택 단일 자산의 동일 ID 반환을 확인한 경우만 재가격한다. target/후속키 저장·명시적 재개·중복 차단, 5분 stale은 거절한다.
+- Steam DB v2는 v1 불명 의도를 보존한다. command/reprice audit 원자 저장, 확정 batch archive 후에도 의도·증거·예약을 보존하고 다음 배치를 처리한다. 실저널 삭제 UX는 제공하지 않는다.
+- 최종 `scripts/Verify.ps1`: 전체 Debug 빌드 경고0/오류0, **112/112** 도메인·합성 HTTP와 **20/20** 비표시 WPF PASS, FAIL0. 새 adapter-backed 10,000개 목록/알림 batching과 이전 회귀도 통과했다. [QA-CHECKLIST](QA-CHECKLIST.md).
+- 최신 Release publish·PE·로컬 데이터 제외·QR MIT LICENSE/고지 포함 검사 PASS. 자체 QR/가격 검토/보관함/통합 화면 PNG를 생성·검토했다. 실행파일 실행/설치·실제 입력·모니터 DPI·실계정 검증은 수행하지 않았다.
+- 남은 제한: 실계정 QR 스캔/인증/보관함/지갑/fee/등록/취소/Guard, 정책 허용 근거, 게임 scope 자동 발견, 같은 ID로 반환되지 않는 취소/스택, ID 없는 인과관계 확정, stale 재가격 target revision UI·live 확정 실패 retry, 실제 입력/Popup/모니터 DPI/설치·보안 감사.
+- **실제 단일 승인 전체 판매등록의 제품 목표는 미완료**다. 합성 성공은 실판매 성공이 아니며 LIVE_READY/RELEASE_READY가 아니다. [최신 근거·지원 범위](STEAM-INTEGRATION-FEASIBILITY.md).
+
+## 4차 상태 기록 (당시 기준)
 
 ## 4차 최신 상태: 실험적 HTTP 소스 구현 / 실계정 제품 흐름 미완성
 

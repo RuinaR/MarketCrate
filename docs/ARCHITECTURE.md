@@ -1,5 +1,17 @@
 # MarketCrate — 아키텍처 (최초 Mock 구현 / 후속 계획)
 
+## 5차 UI/통화/예약/대조 — 2026-10-28 (최신)
+
+- 기존 Demo MainViewModel을 재작성하지 않고 지연 factory의 `SteamWorkspaceViewModel`/독립 UserControl을 추가했다. 시작/탭 생성은 네트워크·실저널을 생성하지 않는다. 실제 연결 화면은 Mock 사이드바/합계/상태를 숨기고 별도 출처/시각을 사용한다.
+- QR은 MIT 고정 소스의 순수 module matrix를 자체 DrawingContext로 렌더한다. URI를 외부 서비스/바인딩 로그에 내보내지 않는다. 인증 확인/갱신은 사용자 요청이며 background timer 없음. 취소·로그아웃·늦은 응답 및 거래 동의 철회를 처리한다.
+- Core `Money`: KRW 원/USD cent, wire 변환 별도. `SteamFeeSchedule`: 서버 floor/increment·정수 millionths·cap, checked 계산, floor/nearest increment 규칙, 정확한 역산 불가 금액 거절. SteamFees는 공식 최신 ajaxfeestructure 소비 코드 기반이며 미확인 응답/추가 fee는 차단한다. 기존 Demo Pricing은 별도 유지한다.
+- `SalePlanner` 공유 호가 key에서 context를 제거했다(App/상품/통화가 동일하면 같은 장터 잔량). AssetKey의 소유권 식별은 App/context/asset로 유지한다. stack quantity·로컬 의도/반환 증거·서버 보관함 상한을 함께 사용해 보수적 가용 수량을 계산한다.
+- `SteamTradingPolicy`: 실제 실행 근거/capability와 session risk/trading 동의를 분리, 기본 Blocked. 스택 amount capability 별도. 테스트 policy는 합성 handler에만 사용한다. 사용자 체크를 Valve 허가로 해석하지 않는다.
+- Steam store v2는 v1 보존 이관, 기본값이 없는 과거 correlation 증거는 없는 것으로 처리한다. command/reprice transition audit를 같은 transaction에 저장한다. 확정 batch archive는 snapshot을 보관하고 command/evidence/reservation을 삭제하지 않는다. 모호한 활성 배치는 archive하지 않는다.
+- 제출 전 wallet/fee/current assets/book 재검증, 서버 price/fee 모순 시 해당 요청 Unknown 및 후속 중단. listingid 없는 요청은 before IDs/SentAt/자산·수량·가격·시각별 후보 report를 보존하지만 인과관계 증명 없이 자동 확정하지 않는다.
+- 취소는 접수·완전한 목록 부재·원래 비스택 단일 자산의 동일 ID 반환 proof로만 예약 해제한다. 재가격은 immutable target→취소→반환 proof→새 preflight→replacement key 선행 저장→제출. 불명/ID 교체/5분 stale은 중단, 명시적 재개에서도 기존 replacement를 중복 실행하지 않는다.
+- 한 game/context의 활성 배치, 명시적인 세 게임 scope, stale 재가격 target revision/새 ID 매핑/실제 계정 eligibility/라이브 실패 retry 분류는 남은 제한이다. 자세한 최신 근거는 STEAM-INTEGRATION-FEASIBILITY.
+
 ## 4차 실험적 Steam 경계 — 2026-10-28 (최신)
 
 - Infrastructure/Steam에 독립 구현. `SteamExperimentalWorkspace`는 개발자 composition이며 App.OnStartup은 여전히 Demo만 구성한다. 새 패키지/외부 소스 복사 없음.
