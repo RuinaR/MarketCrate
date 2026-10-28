@@ -1,5 +1,11 @@
 # 진단 시스템 (10차, 2026-10-28 KST)
 
+## 0.15.1 Wallet 리다이렉트 증거
+
+구버전 OtherRedirect만으로는 목적지·지갑미설정·인증문제를 구분할 수 없었다. ReadContract4202에 고정category를 추가: PreviousState=RedirectCommunity/Store/LoginHost/External/UnsafeAuthority, Reason=RedirectMarketSlash/MarketNoSlash/MarketOther/LoginPath/Account/Security/Root/OtherPath, NewState=RedirectNoQuery/LanguageQuery/OtherQuery/Fragment, Count=hop0/1. 모든 값은 내부화이트리스트 상수이며 원본host·Location·path·query이름/값·fragment·계정식별자는 기록하지 않는다. OperationId/CorrelationId 유지.
+
+예: Wallet302→RedirectCommunity/RedirectMarketNoSlash/RedirectNoQuery→한번GET→HTTP200→WalletContract. 지원하지않는경로·임의query면 위분류후 OtherRedirect/Unsupported로중단하고 세션을 지우지 않는다. 2번째302면 새분류를 남기고 추가요청0. 이 category는 URL분류이며 실제 제한의 의미를 추측하지 않는다. 사용자 ZIP은 버전/커밋과이분류만공유, 원문URL/인증응답 수집금지.
+
 ## 15차 — 활성화·호가 변경·요청 증거
 
 기존 OperationId→BatchId→OperationItemId→HTTP/SQLite 상태 연결 유지. FinalValidation의 TradingReadiness/TradingEnabled/AccountMismatch/OrderbookChanged와 HTTP MarketCanonicalRedirect는 화이트리스트 고정코드만 기록한다. 계정값은 메모리에서 일치만 비교하고 g_steamID/HTML·Location·QR·쿠키·토큰을 로그에 넣지 않는다.

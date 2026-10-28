@@ -38,6 +38,7 @@ public sealed class SteamException(SteamFailure code, int? apiResult = null) : I
     public int? ApiResult { get; } = apiResult;
     public string? Endpoint { get; internal set; }
     public DiagnosticError? Diagnostic { get; internal set; }
+    public bool Redirected { get; internal set; }
 }
 
 // No browser cookie import, external host, redirects, automatic retries or response-body logging.
@@ -120,7 +121,7 @@ public sealed partial class SteamHttp : IDisposable
                 var login=official&&(target.AbsolutePath=="/login"||target.AbsolutePath.StartsWith("/login/",StringComparison.Ordinal)||target.Host=="login.steampowered.com");
                 DiagnosticHub.Emit(DiagnosticEvent.ReadContract,DiagnosticArea.Data,DiagnosticOutcome.Blocked,LogLevel.Warning,login?DiagnosticError.Authorization:DiagnosticError.Unsupported,endpoint:endpoint,reason:login?"LoginRedirect":official?"OtherRedirect":"UnsafeRedirect",status:status);
                 if(login){BlockFeature(endpoint);throw new SteamException(SteamFailure.Authorization){Endpoint=endpoint};}
-                if(official)throw new SteamException(SteamFailure.Unsupported){Endpoint=endpoint};
+                if(official)throw new SteamException(SteamFailure.Unsupported){Endpoint=endpoint,Redirected=true};
                 Stop(SteamFailure.Challenge);throw new SteamException(SteamFailure.Challenge){Endpoint=endpoint};
             }
             if (status != 200)

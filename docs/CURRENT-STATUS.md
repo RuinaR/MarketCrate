@@ -1,5 +1,15 @@
 # MarketCrate — 현재 상태 (2026-10-29 KST, 15차)
 
+## 0.15.1 — 사용자 진단 ZIP의 Wallet302 후속 수정
+
+검증: 기능227/227·비표시WPF48/48·배포계약14/14 PASS, FAIL0·경고오류0. 정리검사7 PASS/1 NOT VERIFIED(실제junction 환경제약) 유지. runtime/wallet-patch-verify.txt 및 최종core 재검사 증거. 실제Steam지갑 성공은 미검증이며 Codex 실계정/앱/거래 실행0. 최초75개 판정과 거래보호 변경없음.
+
+제공된 두 ZIP은 각각0.14.0/0.15.0의 동일경로를 보여준다: 세션기록 성공→판매목록8→CS2 명시적자산0→Wallet HTTP302/OtherRedirect/Unsupported. WalletContract/ResponseBody 단계에 도달하지 않았으므로 지갑파싱·지갑미설정·인증만료로 단정할 수 없다. 실제 Location은 구버전 로그에서 제거되어 목적지 미확정이다. 사용자 ZIP은 제자리에서 읽기만 했고 원문·계정자료를 저장소/외부로 전송하지 않았다.
+
+공식 공개 /market 및 /market/를 쿠키없이 확인했으며 둘다200·익명wallet없음이다. /market도유효한데 기존단일이동허용목록은 /market/만받던 누락을 수정했다. 같은origin/HTTPS·고정언어query·한번만 허용, 임의query/인증/보안/다른host/반복이동과401/403/429/CAPTCHA 제한은 유지한다. **실제 사용자목적지가 /market이었는지는 미확정이며 실지갑 해결완료를 주장하지 않는다.**
+
+새 진단은 Host역할/Path유형/Query유형과hop0/1만화이트리스트로 남긴다. 원본Location/host/path/query값/fragment·인증정보는 저장하지 않는다. 미지원302 결과는 ‘다른페이지로 이동해 중단’으로 설명하고 로그인실패나 지갑없음으로 오인하지 않게 한다. 기존세션·독립조회·거래OFF·저널/Unknown 보호 유지. 사용자 직접 지갑범위만1회확인이 다음단계다.
+
 ## 15차 — 조건부 비공식 실거래 경로·최종 승인 보호 (2026-10-29 KST)
 
 ### 0.15.0 배포 확정

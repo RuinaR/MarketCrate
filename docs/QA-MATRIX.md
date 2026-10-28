@@ -1,5 +1,13 @@
 # 정상·오류·복구 QA 매트릭스 — 10차 (2026-10-28 KST)
 
+## 0.15.1 Wallet302 패치
+
+검증: 기능227/227·비표시WPF48/48·배포계약14/14 PASS, FAIL0·경고오류0. 정리검사7 PASS/1 NOT VERIFIED(실제junction 환경제약) 유지. runtime/wallet-patch-verify.txt 및 최종core 재검사 증거. 실제Steam지갑 성공은 미검증이며 Codex 실계정/앱/거래 실행0. 최초75개 판정과 거래보호 변경없음.
+
+사용자증거:0.14/0.15 세션기록·목록8·CS2자산0·Wallet302/OtherRedirect, 실제Location 없음. 실계정원인 UNVERIFIED. 기존로그가목적지까지진단하지못한한계를기록한다.
+
+WalletRedirectPatchTests4개는 /market 단일이동 성공, 합성8/0/302 후세션/독립조회보존·이동실패문구, 동일작업ID의정제분류·URL/계정/secret canary미노출, /market↔/market/루프2요청중단을검증한다. 실제Steam계정·지갑실행검증이아니다. 전체최종집계는배포확정기록을따른다.
+
 ## 15차 — 실제 어댑터 경로 검증
 
 ### 15차 최종 자동 검증

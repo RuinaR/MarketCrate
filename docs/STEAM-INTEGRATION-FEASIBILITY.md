@@ -1,5 +1,9 @@
 # Steam 연동 가능성 조사 — 2026-10-29 KST (13차)
 
+## 0.15.1 Wallet302 증거 갱신
+
+사용자제공진단0.14/0.15 모두HTTP302/OtherRedirect·HTML파싱전중단, 정확한Location은미기록이다. 로그인실패나wallet미설정을입증하지않는다. [공식 /market](https://steamcommunity.com/market)과 [/market/](https://steamcommunity.com/market/)를쿠키/리다이렉트없이GET하여각200을확인했다. 공개wallet marker부재는익명응답의관측일뿐사용자원인이아니다. 두공식Marketroot 간단일GET과기존고정언어query만지원하며다른이동은분류후차단한다. 실계정의302가이경로였는지와지갑금액계약은여전히미검증이다.
+
 ## 15차 공개 근거와 정책 구분 (2026-10-29 KST)
 
 [공식 Market](https://steamcommunity.com/market/), [market.js](https://community.fastly.steamstatic.com/public/javascript/market.js), [marketselldialog.js](https://community.fastly.steamstatic.com/public/javascript/applications/community/marketselldialog.js)를 무인증 GET. JS gzip을 해제해 확인한 SHA는14차와 동일(AC938119E82C7D4C8D0F7843EF168483EFA4AF3E45DC987C068F340BB5AF72EC / CB84BB8A9B2970F71D277626A0B4E922B47CCE90BF437F704CF8F5100FA66726). 공개 footer 언어query와 Market주소, g_steamID=false·wallet metadata 소비를 확인했다. 공개 modern fee 최소/증분 default는 실계정KRW 계약으로 채택하지 않았다.

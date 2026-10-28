@@ -1,5 +1,13 @@
 7차 Release 검사 수정: SQLite 파일명 제외 정규식이 정상 의존성 Microsoft.Data.Sqlite.dll까지 거부했다. DB/sidecar 확장자 끝으로 한정해 수정하고 DLL 허용·sqlite/sqlite3-wal/db-shm/.env/session.json/private.key 차단 7개 파일명 회귀를 확인했다. 실제 비밀파일·DB는 생성하지 않았다. 최초 publish는 이 정적 검사에서 FAIL이며 실행파일은 실행하지 않았다.
 
+## 2026-10-29 — 0.15.1 Wallet302 진단 후속
+
+검증: 기능227/227·비표시WPF48/48·배포계약14/14 PASS, FAIL0·경고오류0. 정리검사7 PASS/1 NOT VERIFIED(실제junction 환경제약) 유지. runtime/wallet-patch-verify.txt 및 최종core 재검사 증거. 실제Steam지갑 성공은 미검증이며 Codex 실계정/앱/거래 실행0. 최초75개 판정과 거래보호 변경없음.
+
+두 사용자 ZIP을 직접OpenRead하여 화이트리스트 이벤트만 분석. 0.14/0.15 모두 Wallet302/OtherRedirect, 파싱전실패이며 실제Location 미기록 확인. raw 로그·ZIP·개인정보는 복사/커밋하지 않았다. 공식공개 두Market주소를 무인증GET했고 둘다200. /market 단일이동지원 누락을 수정하고 목적지유형·hop의 안전진단 및 사용자원인안내를 추가했다. 실제계정원인은 미확정, 임의리다이렉트나통화추정으로우회하지 않았다.
+
+WalletRedirectPatchTests4개: slashless단일이동, 사용자관측8/0/302와독립세션, 안전진단/작업ID/비밀canary차단, 왕복루프2요청중단. 실제계정/브라우저/앱·타프로세스/전역입력·거래 실행0. 사용자파일/SQLite/저널/롤백본 변경0.
+
 ## 2026-10-29 — 15차 비공식 조건부 실행과 승인 정합성
 
 ### 0.15.0 배포 확정
