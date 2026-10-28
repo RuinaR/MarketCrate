@@ -7,7 +7,7 @@
 - QR 갱신 빈 선택필드 처리와 취소 Schema 오분류, HTTP 사용자 취소→Transport halt 및 VM 로그인 상태 소실을 수정. 승인 flag 0/1 외 정수는 계약 오류로 제한. AuthState endpoint/원인/operation 연결과 secret sentinel 누출0 단언 추가. Unknown·예약·반환 인과 기준 완화 없음.
 - 게스트 전용24 case/manifest/해시/런타임 확인 수동 launcher와 host packaging-only script, offline App profile/분리 데이터·Steam factory 차단 구현. marker/env는 운영자 선언이며 VM 보증 아님. guest launcher/실앱은 미실행.
 - 공식 판매 JS 재다운로드 hash는5차와 동일; 공개 auth proto/maintainer source·MIT 확인, 코드/의존성 도입 없음. 실제 인증 응답·계정/API/이미지·거래/Guard 미실행.
-- 전체 기능/합성 HTTP/SQLite/진단 165/165 PASS, 비표시 WPF 31/31 PASS, FAIL0, Debug 경고0/오류0. Release·게스트 패키지 정적 마감은 소스 커밋 후 반영. Release/패키징 정적 결과와 commit은 마감 후 반영. 최초75개 판정47/15/0/4/9 유지, 실제 입력·Popup·DPI·스크린리더·장기누수·설치·서명은 미검증.
+- 전체 기능/합성 HTTP/SQLite/진단 165/165 PASS, 비표시 WPF 31/31 PASS, FAIL0, Debug 경고0/오류0. 구현 `f672120` origin/main push 완료. 해당 커밋 Release publish PASS(경고0/오류0), apphost/SQLite x64 PE·Desktop Runtime10 의존성·데이터 제외·라이선스 고지·Core Git metadata 확인. 격리 QA package39개 SHA256 전부 일치, 24개 결과는 NOT VERIFIED. 실제 앱/guest/설치·서명 미실행. 최종 문서 마감 커밋은 완료 보고 참조. 최초75개 판정47/15/0/4/9 유지, 실제 입력·Popup·DPI·스크린리더·장기누수·설치·서명은 미검증.
 
 # MarketCrate — 누적 작업 로그
 

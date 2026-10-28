@@ -2,7 +2,7 @@
 
 ## 8차 검증 범위 (2026-10-28 KST)
 
-**실제 격리 게스트 미확보 / 실제 GUI 미실행.** 호스트 Window/Popup/입력으로 대체하지 않는다. 자동 결과는 합성 HTTP·자체 SQLite·detached STA만 뜻한다. 전체 기능/합성 HTTP/SQLite/진단 165/165 PASS, 비표시 WPF 31/31 PASS, FAIL0, Debug 경고0/오류0. Release·게스트 패키지 정적 마감은 소스 커밋 후 반영.
+**실제 격리 게스트 미확보 / 실제 GUI 미실행.** 호스트 Window/Popup/입력으로 대체하지 않는다. 자동 결과는 합성 HTTP·자체 SQLite·detached STA만 뜻한다. 전체 기능/합성 HTTP/SQLite/진단 165/165 PASS, 비표시 WPF 31/31 PASS, FAIL0, Debug 경고0/오류0. 구현 `f672120` origin/main push 완료. 해당 커밋 Release publish PASS(경고0/오류0), apphost/SQLite x64 PE·Desktop Runtime10 의존성·데이터 제외·라이선스 고지·Core Git metadata 확인. 격리 QA package39개 SHA256 전부 일치, 24개 결과는 NOT VERIFIED. 실제 앱/guest/설치·서명 미실행.
 
 | 경로 | 단언/증거 | 범위 |
 |---|---|---|

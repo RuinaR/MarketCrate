@@ -2,6 +2,8 @@
 
 ## 8차 게스트 전용 하네스 — 호스트에서는 실행 금지
 
+구현 `f672120` Release 정적 검사 PASS, `artifacts/isolated-gui-qa` 39개 파일 SHA256·빌드 Git metadata 확인. 패키징만 실행했으며 게스트 launcher는 AST 구문 확인만 수행했다. GUI-01~24는 전부 NOT VERIFIED.
+
 현재 전용 Windows VM/접속 정보는 제공되지 않았다. VM 목록/프로세스 탐색, Windows 기능 설치·활성화, Sandbox/VM 시작은 수행하지 않았다. **격리 환경 미확보/실제 GUI·런타임 실행·설치 전부 NOT VERIFIED.** 아래 구성은 대체 호스트 실행을 허용하지 않는다.
 
 1. 호스트의 `scripts/Publish.ps1`로 실행 없이 정적 배포 검사 후 `pwsh -File scripts/Prepare-IsolatedGuiQa.ps1`로 **새** artifacts 폴더에 package를 만든다. app/guest-local launcher/24 case 결과표/전체 SHA256 manifest만 포함한다. manifest PackagingCommit은 패키징 기준이며 실제 DLL source commit metadata를 함께 기록한다. 이 스크립트는 guest/app을 시작하지 않는다.
