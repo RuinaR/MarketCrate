@@ -81,3 +81,5 @@ WPF 검사는 MainView/UserControl을 직접 Measure/Arrange하고 RenderTargetB
 ### 선택적 Windows x64 self-contained QA 배포
 
 `scripts/Publish-SelfContained.ps1`는 Windows에 .NET을 설치하지 않고 CLR/WPF 런타임을 포함하는 새 artifacts 폴더를 만듭니다. 공식 NuGet 접근과 build pack 복원이 필요할 수 있으며 기존 FDD `scripts/Publish.ps1`도 유지합니다. `Prepare-IsolatedGuiQa.ps1 -Deployment SelfContained`와 **실제 생성한** `-SourceDirectory/-OutputDirectory`를 사용해 기존 guest QA 패키지를 만드세요. 호스트에서 앱/guest launcher를 실행하지 않습니다. 실제 게스트가 없어서 GUI24개는 여전히 NOT VERIFIED입니다. OS/native 전제·런타임 업데이트·라이선스·게스트 수동 절차는 [ISOLATED-GUI-QA](docs/ISOLATED-GUI-QA.md)를 확인하세요.
+
+0.12.0 로컬 배포본: `artifacts/MarketCrate-0.12.0-stage12-49a3ffa-win-x64.zip` (78.30MiB,412파일). 구현 커밋49a3ffa. 기능187/187·비표시 WPF42/42·배포계약14/14 PASS, 실제 현재 GUI/Steam 인증·조회는 미검증입니다. Release 빌드/파일 검사는 실계정·설치·서명 검증을 뜻하지 않습니다.
