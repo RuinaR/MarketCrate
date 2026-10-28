@@ -2,6 +2,8 @@
 
 ## 0.15.1 — 사용자 진단 ZIP의 Wallet302 후속 수정
 
+0.15.1 배포: 소스 d2ee9a4679e24854102f09355ff2d5f125f8c05a, `artifacts/releases/MarketCrate-0.15.1-wallet-d2ee9a4-win-x64.zip` (66,507,841바이트/412파일). SHA256 `106E89E7C801250C1C264F92DDC2BE87710A70CD3591BD09B38ADDFD9BE820F2`. Release/전체entry SHA/SourceCommit·CLR/WPF/SQLite·민감/개발파일 제외검사 PASS, 경고오류0. 실제EXE/지갑/계정은 미실행이며 해결완료 판정 아님. 0.15.0을rollback으로등록하고0.14/0.13·기존추출본/진단ZIP·DB/저널/인증/설정은보존했다.
+
 검증: 기능227/227·비표시WPF48/48·배포계약14/14 PASS, FAIL0·경고오류0. 정리검사7 PASS/1 NOT VERIFIED(실제junction 환경제약) 유지. runtime/wallet-patch-verify.txt 및 최종core 재검사 증거. 실제Steam지갑 성공은 미검증이며 Codex 실계정/앱/거래 실행0. 최초75개 판정과 거래보호 변경없음.
 
 제공된 두 ZIP은 각각0.14.0/0.15.0의 동일경로를 보여준다: 세션기록 성공→판매목록8→CS2 명시적자산0→Wallet HTTP302/OtherRedirect/Unsupported. WalletContract/ResponseBody 단계에 도달하지 않았으므로 지갑파싱·지갑미설정·인증만료로 단정할 수 없다. 실제 Location은 구버전 로그에서 제거되어 목적지 미확정이다. 사용자 ZIP은 제자리에서 읽기만 했고 원문·계정자료를 저장소/외부로 전송하지 않았다.
