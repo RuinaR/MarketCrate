@@ -2,6 +2,8 @@
 
 ## 9차 실행 조건 및 배포 선택 (실제 GUI 미실행)
 
+최종 준비 산출물(ignored, 코드 `d19dcc9`): `artifacts/stage9-release-qa-self-contained`414개 hash/142.02MiB와 `artifacts/stage9-release-qa-framework-dependent`40개 hash/33.51MiB. SourceCommit/PackagingCommit/Core metadata 일치, 두 Release 경고0/오류0. 패키지 생성·해시·아키텍처/고지/데이터 제외만 PASS, guest launcher/실제 GUI24개는 미실행.
+
 제공된 guest 없음. 최소 시스템 조회: Core(Home계열)/build26200.9711/X64, WindowsSandbox.exe 없음. CIM capability는 권한으로 미확인. [공식 Sandbox 에디션 표](https://learn.microsoft.com/en-us/windows/security/application-security/application-isolation/windows-sandbox/)상 Home 미지원. 가상화 활성/SLAT/사용 RAM을 추정하지 않으며 기능 활성화·BIOS·호스트 재부팅/VM 설치·실행은 별도 승인 항목이다. 현재는 환경 제공 전 실제 QA BLOCKED이며 host 실행을 대안으로 사용하지 않는다.
 
 기존24개 scenario ID/NOT VERIFIED를 그대로 사용한다. **아래 새 동작이 이전8차의 Runtime 필수/기존 App 폴더 거부 문구를 대체한다.** 새 하네스를 만들지 않고 기존 스크립트를 확장했다.
