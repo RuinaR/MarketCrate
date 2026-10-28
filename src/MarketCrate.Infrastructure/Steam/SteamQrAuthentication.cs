@@ -18,7 +18,7 @@ public sealed class SteamQrAuthentication(SteamHttp http, TimeProvider? timeProv
     public string? SteamId { get; private set; }
     internal string? SessionId { get; private set; }
     public bool Connected => SteamId is not null && SessionId is not null && http.Halted is null && http.Access.AuthenticatedReads;
-    public Task<Uri> BeginAsync(CancellationToken token = default) => GuardAsync(() => BeginCoreAsync(token));
+    public Task<Uri> BeginAsync(CancellationToken token = default) => GuardAsync(() => BeginCoreAsync(token), "AuthBegin");
     private async Task<Uri> BeginCoreAsync(CancellationToken token)
     {
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.Login,DiagnosticArea.Authentication,"A01");
@@ -40,7 +40,7 @@ public sealed class SteamQrAuthentication(SteamHttp http, TimeProvider? timeProv
         return Challenge;
     }
     // No background polling. Each call must be made by an explicit user login/check action.
-    public Task<bool> CheckAsync(CancellationToken token = default) => GuardAsync(() => CheckCoreAsync(token));
+    public Task<bool> CheckAsync(CancellationToken token = default) => GuardAsync(() => CheckCoreAsync(token), "AuthPoll");
     private async Task<bool> CheckCoreAsync(CancellationToken token)
     {
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.LoginCheck,DiagnosticArea.Authentication,"A03");
@@ -54,7 +54,7 @@ public sealed class SteamQrAuthentication(SteamHttp http, TimeProvider? timeProv
         if(root.TryGetProperty("agreement_session_url",out var agreement)&&!string.IsNullOrEmpty(agreement.GetString()))throw new SteamException(SteamFailure.Restricted);
         if(root.EnumerateObject().Any(x=>x.Name is not("new_client_id" or "new_challenge_url" or "refresh_token" or "access_token" or "had_remote_interaction" or "account_name" or "new_guard_data" or "agreement_session_url")))throw new SteamException(SteamFailure.ContractChanged);
         if (root.TryGetProperty("new_client_id", out var id) && ulong.Parse(id.GetString()!, CultureInfo.InvariantCulture) is >0 and var nextId) clientId = nextId;
-        if (root.TryGetProperty("new_challenge_url", out var challenge)) Challenge = ValidateChallenge(challenge.GetString()!);
+        if (root.TryGetProperty("new_challenge_url", out var challenge) && !string.IsNullOrEmpty(challenge.GetString())) Challenge = ValidateChallenge(challenge.GetString()!);
         if (!root.TryGetProperty("refresh_token", out var refresh) || string.IsNullOrEmpty(refresh.GetString())) return false;
         // Refresh token exists only in this stack/response. No disk persistence, JWT logging or third-party transfer.
         await FinalizeAsync(refresh.GetString()!, token);
@@ -83,19 +83,22 @@ public sealed class SteamQrAuthentication(SteamHttp http, TimeProvider? timeProv
     }
     private static HttpRequestMessage AuthForm(string method, byte[] data) => SteamHttp.Form(new($"https://api.steampowered.com/IAuthenticationService/{method}/v1/"),
         new Dictionary<string, string> { ["input_protobuf_encoded"] = Convert.ToBase64String(data) });
-    private static Uri ValidateChallenge(string value)
+    private static Uri ValidateChallenge(string? value)
     {
-        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri) || uri.Scheme != "https" || uri.Host != "s.team" || uri.Port != 443 || !uri.AbsolutePath.StartsWith("/q/", StringComparison.Ordinal) || uri.UserInfo.Length != 0)
+        if (string.IsNullOrEmpty(value) || value.Length > 4096 || !Uri.TryCreate(value, UriKind.Absolute, out var uri) || uri.Scheme != "https" || uri.Host != "s.team" || uri.Port != 443 || !uri.AbsolutePath.StartsWith("/q/", StringComparison.Ordinal) || uri.UserInfo.Length != 0 || uri.Query.Length != 0 || uri.Fragment.Length != 0)
             throw new SteamException(SteamFailure.ContractChanged);
         return uri;
     }
-    private async Task<T> GuardAsync<T>(Func<Task<T>> action)
+    private async Task<T> GuardAsync<T>(Func<Task<T>> action, string endpoint)
     {
         try { return await action(); }
-        catch (Exception error) when (error is SteamException or JsonException or InvalidOperationException or KeyNotFoundException or FormatException or OverflowException or ArgumentException or OperationCanceledException)
+        catch (OperationCanceledException) { Dispose(); DiagnosticHub.Emit(DiagnosticEvent.AuthState, DiagnosticArea.Authentication, DiagnosticOutcome.Cancelled, LogLevel.Warning, DiagnosticError.Cancelled, requirement: "A03", endpoint: endpoint); throw; }
+        catch (Exception error) when (error is SteamException or JsonException or InvalidOperationException or KeyNotFoundException or FormatException or OverflowException or ArgumentException)
         {
             var code = error is SteamException steam ? steam.Code : SteamFailure.ContractChanged;
-            Dispose(); http.Stop(code); throw new SteamException(code);
+            Dispose(); http.Stop(code);
+            DiagnosticHub.Emit(DiagnosticEvent.AuthState, DiagnosticArea.Authentication, DiagnosticOutcome.Blocked, LogLevel.Error, SteamDiagnostics.Classify(code), requirement: "A03", endpoint: endpoint, reason: code.ToString(), exception: error);
+            throw new SteamException(code);
         }
     }
     public void Dispose()

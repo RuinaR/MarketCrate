@@ -9,7 +9,7 @@ namespace MarketCrate.App.ViewModels;
 public sealed class MainViewModel : Observable, IDisposable
 {
     public DiagnosticsViewModel Diagnostics {get;}
-    public SteamWorkspaceViewModel Steam { get; } = new();
+    public SteamWorkspaceViewModel Steam { get; }
     private IInventoryProvider inventoryProvider;
     private IMarketDataProvider marketProvider;
     private readonly IDemoJournal journal;
@@ -55,9 +55,10 @@ public sealed class MainViewModel : Observable, IDisposable
     public AsyncCommand PublishMockEvidence { get; }
     public AsyncCommand LoadLargeDemo { get; }
     public Command DeleteLocalDemoData { get; }
-    public MainViewModel(DemoDataProvider provider, IDemoJournal journal) : this(provider, provider, journal) { }
-    public MainViewModel(IInventoryProvider inventory, IMarketDataProvider market, IDemoJournal journal)
+    public MainViewModel(DemoDataProvider provider, IDemoJournal journal, bool offlineOnly = false) : this(provider, provider, journal, offlineOnly) { }
+    public MainViewModel(IInventoryProvider inventory, IMarketDataProvider market, IDemoJournal journal, bool offlineOnly = false)
     {
+        Steam = new(offlineOnly: offlineOnly);
         inventoryProvider = inventory; marketProvider = market; this.journal = journal; data = journal as IDemoDataStore;
         Diagnostics=new(DiagnosticHub.Current as MarketCrate.Infrastructure.Diagnostics.JsonDiagnosticLog,saveMode:value=>Persist("diagnostic-mode",value?"true":"false"));
         if(data?.ReadSetting("diagnostic-mode")=="true")Diagnostics.DiagnosticMode=true;

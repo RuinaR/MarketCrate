@@ -1,0 +1,205 @@
+{
+  "Schema": 1,
+  "Mode": "OfflineMockOnly",
+  "Environment": {
+    "Windows": null,
+    "Runtime": null,
+    "SourceCommit": null,
+    "Dpi": null,
+    "Operator": null
+  },
+  "Cases": [
+    {
+      "Id": "GUI-01",
+      "Action": "최초 실행/일반 권한/종료",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-02",
+      "Action": "창 이동/크기/최소화/복원",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-03",
+      "Action": "게임 전환/선택 수량 보존",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-04",
+      "Action": "개별/전체 선택/해제",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-05",
+      "Action": "수량 스테퍼/직접 입력/범위 오류",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-06",
+      "Action": "검색/필터/정렬/빈 목록",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-07",
+      "Action": "가격 전략/기간/수동 수정/합계",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-08",
+      "Action": "검토 열기/닫기/Tab 경계/복귀",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-09",
+      "Action": "한 번 승인 전체 Mock 배치/중복 클릭",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-10",
+      "Action": "Mock 개별/일괄 취소/재가격",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-11",
+      "Action": "부분 실패/승인 대기/Unknown 구분",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-12",
+      "Action": "재시작/저널/설정 복원",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-13",
+      "Action": "진단 검색/작업 ID/검토 ZIP",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-14",
+      "Action": "Hover/Pressed/Selected/Focus/Disabled",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-15",
+      "Action": "ComboBox/ContextMenu/Tooltip/Popup Esc",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-16",
+      "Action": "Tab/Shift+Tab/Enter/Esc/방향키/휠",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-17",
+      "Action": "접근성 이름/역할/상태/스크린리더",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-18",
+      "Action": "고정 게스트 DPI100/125/150/200/긴 텍스트",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-19",
+      "Action": "10000개 목록/스크롤/게임 전환",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-20",
+      "Action": "이미지 재활용/실패/종료 (네트워크OFF, 실이미지 별도 미검증)",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-21",
+      "Action": "시간 제한 장기 반복/자체 자원/종료",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-22",
+      "Action": "이전 합성 DB/새 publish 교체/보존/비정상 종료",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-23",
+      "Action": "Steam 로그인 비활성/직접 경로 차단",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    },
+    {
+      "Id": "GUI-24",
+      "Action": "SQLite 네이티브 x64/사용자별 격리 저장",
+      "Result": "NOT VERIFIED",
+      "Observed": null,
+      "OperationId": null,
+      "Evidence": null
+    }
+  ]
+}

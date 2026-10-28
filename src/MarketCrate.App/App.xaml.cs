@@ -16,9 +16,12 @@ public partial class App : Application
     private readonly BindingDiagnostics bindingDiagnostics=new();
     protected override void OnStartup(StartupEventArgs e)
     {
-        diagnostics=new(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"MarketCrate","Logs"));
+        AppRunProfile profile;
+        try { profile = AppRunProfile.Create(e.Args, Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Environment.GetEnvironmentVariable("MARKETCRATE_ISOLATED_QA")); }
+        catch (ArgumentException) { Shutdown(4); return; }
+        diagnostics=new(Path.Combine(profile.DataRoot,"Logs"));
         DiagnosticHub.SetDefault(diagnostics);
-        DiagnosticHub.Emit(DiagnosticEvent.AppStart,DiagnosticArea.Lifecycle,requirement:"LOG-01");
+        DiagnosticHub.Emit(DiagnosticEvent.AppStart,DiagnosticArea.Lifecycle,requirement:"LOG-01",reason:profile.OfflineQa?"IsolatedQa":"Demo");
         DispatcherUnhandledException+=(_,args)=>Fault(args.Exception);
         AppDomain.CurrentDomain.UnhandledException+=(_,args)=>{if(args.ExceptionObject is Exception error)Fault(error);};
         TaskScheduler.UnobservedTaskException+=(_,args)=>{DiagnosticHub.Emit(DiagnosticEvent.AppFault,DiagnosticArea.Lifecycle,DiagnosticOutcome.Failed,LogLevel.Error,DiagnosticError.Unhandled,exception:args.Exception);};
@@ -28,12 +31,13 @@ public partial class App : Application
         base.OnStartup(e);
         RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
         // No forced activation. A second instance exits without touching the first instance.
-        var dataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MarketCrate", "Demo");
+        var dataDirectory = Path.Combine(profile.DataRoot, "Demo");
         try { journal = new SqliteDemoStore(dataDirectory); }
         catch (IOException error) { Fault(error); Shutdown(2); return; }
         catch (Exception error) when (error is Microsoft.Data.Sqlite.SqliteException or System.Text.Json.JsonException or InvalidDataException) { Fault(error); SafeStartupDiagnostics.StorageFailure(dataDirectory); Shutdown(3); return; }
-        var vm = new MainViewModel(new DemoDataProvider(), journal);
+        var vm = new MainViewModel(new DemoDataProvider(), journal, offlineOnly: profile.OfflineQa);
         var window = new MainWindow { DataContext = vm };
+        if (profile.OfflineQa) window.Title = "MarketCrate · ISOLATED GUI QA · Mock only / Steam disabled";
         MainWindow = window;
         window.Closed += (_, _) => vm.Dispose();
         window.Show();

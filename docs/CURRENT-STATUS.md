@@ -1,4 +1,14 @@
-# MarketCrate — 현재 상태 (2026-10-28 KST, 7차)
+# MarketCrate — 현재 상태 (2026-10-28 KST, 8차)
+
+## 8차 — 격리 GUI 실행 준비 / 제품 결함 수정 (2026-10-28 KST)
+
+기준 main/origin `4a18077` clean/fetch 일치. 제공된 전용 VM/게스트 접속·실행 환경은 없으며 다른 프로세스/VM/창을 검색하지 않았다. **독립 Windows 확보 및 실제 GUI·설치 실행은 NOT VERIFIED**. 호스트 대체 실행 없음. 최초 75개 ID/판정 **47 COMPLETE / 15 PARTIAL / 0 MISSING / 4 BLOCKED / 9 UNVERIFIED** 유지.
+
+- 게스트 전용 수동 실행 하네스 + 해시 manifest 패키저 + 24개 NOT VERIFIED 시나리오. 패키저는 VM/앱을 실행하지 않는다. `--isolated-qa`는 명시적 게스트 운영자 확인이 없으면 종료4, 별도 사용자 데이터/로그 루트와 Steam factory/로그인 명령 차단을 적용한다. 확인 문자열은 VM 탐지·격리 보증이 아니며 호스트에서 실행하면 안 된다.
+- 실제 결함: Steam AnyReview 알림 누락으로 배경 IsEnabled 바인딩 미갱신 → 알림 복구. Mock/Steam 모달의 자체 포커스 scope/Tab·Ctrl+Tab 경계·기존 자체 요소 복귀, 활성 자기 Window에서만 처리. 실제 focus/Popup/키 입력은 여전히 미검증. ComboBox focus/open 테두리, disabled stepper peer 표준 예외 보완.
+- 취소된 HTTP/QR을 Transport/Schema 오류로 변환하던 경로 수정. 보관함 조회 취소 후 인증 세션 유지. QR 새 challenge 빈 기본값은 기존 challenge 유지, 비정상 URL/알 수 없는 필드는 차단. 승인 플래그는 bool/정수0·1만 허용, 모호한 응답은 추측하지 않는다.
+- 공식 판매 JS 재조회 SHA256은 기존5차와 같음. 공개 proto/maintainer 소스로 QR 선택 필드 근거 대조. 인증된 실제 응답은 미확보. KRW·스택·반환 인과/ID-less/외부 동시 등록은 이전 차단·Unknown 보존.
+- 최종 검증: 전체 기능/합성 HTTP/SQLite/진단 165/165 PASS, 비표시 WPF 31/31 PASS, FAIL0, Debug 경고0/오류0. Release·게스트 패키지 정적 마감은 소스 커밋 후 반영. 실제 계정/로그인/거래/Guard, 호스트 입력·포커스·화면·타 프로세스 조사는 수행하지 않았다. 디지털 서명/장시간·실제 DPI/설치·업데이트·제거 미검증.
 
 7차 추가 반환 제한: 원래 단일 수량이었어도 취소 후 returned.Stackable/수량 증가·기존 가용 수량이 있으면 proof로 확정하지 않는다. 동일 ID라도 현재 정확히1개/기존0개인 제한 경로만 합성 대조하며 나머지는 Unknown/예약 유지. 실제 nonstack/스택·ID 의미와 인과 증거는 여전히 미검증이다.
 

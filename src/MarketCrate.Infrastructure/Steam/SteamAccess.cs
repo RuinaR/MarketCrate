@@ -122,6 +122,8 @@ public sealed class SteamHttp : IDisposable
             DiagnosticHub.Emit(DiagnosticEvent.ResponseBody,DiagnosticArea.HTTP,DiagnosticOutcome.Completed,endpoint:endpoint,method:request.Method.Method,started:started,elapsed:watch.ElapsedMilliseconds);
             return text;
         }
+        catch (OperationCanceledException error) when (token.IsCancellationRequested)
+        { DiagnosticHub.Emit(DiagnosticEvent.HttpFailure, DiagnosticArea.HTTP, DiagnosticOutcome.Cancelled, LogLevel.Warning, DiagnosticError.Cancelled, endpoint: endpoint, reason: phase, exception: error, started: started, elapsed: watch.ElapsedMilliseconds); throw; }
         catch(SteamException error)
         { SteamDiagnostics.Failure(error,endpoint,watch.ElapsedMilliseconds);throw; }
         catch (Exception error) when (error is HttpRequestException or TaskCanceledException || error is IOException and not SteamException)

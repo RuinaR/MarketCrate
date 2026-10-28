@@ -254,7 +254,7 @@
       <Setter.Value>
         <ControlTemplate TargetType="ComboBox">
           <Grid>
-            <p:ToggleButton Focusable="False" BorderBrush="{TemplateBinding BorderBrush}" IsChecked="{Binding IsDropDownOpen,RelativeSource={RelativeSource TemplatedParent},Mode=TwoWay}" Content="⌄" HorizontalContentAlignment="Right" />
+            <p:ToggleButton x:Name="DropButton" Focusable="False" BorderBrush="{TemplateBinding BorderBrush}" IsChecked="{Binding IsDropDownOpen,RelativeSource={RelativeSource TemplatedParent},Mode=TwoWay}" Content="⌄" HorizontalContentAlignment="Right" />
             <ContentPresenter Margin="12,8,30,8" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" IsHitTestVisible="False" />
             <Popup x:Name="PART_Popup" Placement="Bottom" StaysOpen="False" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False">
               <Border Background="{StaticResource Panel}" BorderBrush="{StaticResource Edge}" BorderThickness="1" MinWidth="{Binding ActualWidth,RelativeSource={RelativeSource TemplatedParent}}">
@@ -265,6 +265,8 @@
             </Popup>
           </Grid>
           <ControlTemplate.Triggers>
+            <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="DropButton" Property="BorderBrush" Value="{StaticResource Accent}" /></Trigger>
+            <Trigger Property="IsDropDownOpen" Value="True"><Setter TargetName="DropButton" Property="BorderBrush" Value="{StaticResource Accent}" /></Trigger>
             <Trigger Property="IsEnabled" Value="False">
               <Setter Property="Opacity" Value="0.4" />
             </Trigger>

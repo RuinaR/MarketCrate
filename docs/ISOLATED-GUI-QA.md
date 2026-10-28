@@ -1,5 +1,18 @@
 # 실제 GUI 후속 검사 구성 — 준비만 완료, 실행 NOT VERIFIED
 
+## 8차 게스트 전용 하네스 — 호스트에서는 실행 금지
+
+현재 전용 Windows VM/접속 정보는 제공되지 않았다. VM 목록/프로세스 탐색, Windows 기능 설치·활성화, Sandbox/VM 시작은 수행하지 않았다. **격리 환경 미확보/실제 GUI·런타임 실행·설치 전부 NOT VERIFIED.** 아래 구성은 대체 호스트 실행을 허용하지 않는다.
+
+1. 호스트의 `scripts/Publish.ps1`로 실행 없이 정적 배포 검사 후 `pwsh -File scripts/Prepare-IsolatedGuiQa.ps1`로 **새** artifacts 폴더에 package를 만든다. app/guest-local launcher/24 case 결과표/전체 SHA256 manifest만 포함한다. manifest PackagingCommit은 패키징 기준이며 실제 DLL source commit metadata를 함께 기록한다. 이 스크립트는 guest/app을 시작하지 않는다.
+2. 사람이 별도 전용 Windows x64 VM의 오프라인 snapshot을 준비한다. .NET10 **Windows Desktop x64** Runtime, 일반 사용자, 운영 DB/계정/Steam 클라이언트 없음. 네트워크·vGPU·클립보드·장치 전달 OFF, VM RAM/시간 제한을 검토한다. 고정 DPI별 snapshot을 따로 사용하고 호스트 설정은 바꾸지 않는다. 제공된 Sandbox 예제는 준비 자료이지 설치·격리 보증이 아니다.
+3. 검토한 package만 읽기 전용 share 또는 offline media로 게스트에 전달한다. 사용자 홈/저장소/운영 로그를 공유하지 않는다. **게스트 내부에서만** `C:\MarketCrateQa\guest-only.ack`에 `dedicated-offline-windows-guest` 한 줄을 사람이 작성한다. 이 파일은 VM 탐지가 아닌 운영자 확인이므로 호스트에 만들지 않는다.
+4. 게스트 내부 PowerShell에서 package의 `Start-IsolatedGuiQa.ps1`을 수동 실행한다. ack/manifest hash/Runtime을 검사하고 새 guest app 폴더로 복사한다(기존 폴더 덮어쓰기 거부). 눈에 보이는 자체 앱만 실행, 입력/캡처 자동화 없음. 사전 검사를 통과한 것이 GUI PASS는 아니다.
+5. App은 `--isolated-qa`와 해당 process env 확인이 모두 필요하다. 미확인/오타 args는 종료4, 일반 실행으로 조용히 fallback하지 않는다. QA Steam factory/로그인 UI와 직접 BeginAsync도 차단하며 정상 Mock 서비스만 사용한다. 데이터/로그는 `%LOCALAPPDATA%/MarketCrate/IsolatedGuiQa/{Demo,Logs}`로 분리, 운영 Demo/SteamExperimental과 격리. env 확인은 보안 sandbox가 아니며 실제 격리는 VM 운영에 달려 있다.
+6. `scenarios.json`의 GUI-01~24를 게스트 내부에서 관찰해 결과/OperationId/빌드/OS/Runtime/DPI/증거를 기록한다. 기본값은 전부 NOT VERIFIED. 실제 Tab/ShiftTab/Enter/Esc/휠/Popup/스크린리더/최소화·복원·실행/종료·24개 경로를 수동 검증한다. Steam/실이미지 네트워크는 이 offline 프로필에서 시험하지 않는다.
+7. 이전 **합성 DB 복사본만** guest QA 루트에 두고 앱 종료→기존 publish 보존→새 폴더 publish 교체→재실행으로 schema/예약/Unknown 보존을 검사한다. 강제 종료는 게스트의 대상 MarketCrate 자체에 한정해 별도 수동 시나리오로만 수행한다. 호스트 PID/다른 앱 조사 없음. 설치/제거 프로그램은 현재 없으므로 해당 검사는 NOT VERIFIED, 서명 미적용.
+8. 진단 ZIP은 앱 내부에서 범위 검토 후 로컬 내보낸다. package share로 자동 복사/외부 전송하지 않는다. 검증 후 snapshot 복원/자료 반출은 사람이 검토한다. 장시간 검사는 별도 시간/자원 예산과 자체 프로세스 측정만 허용하며 이번 짧은 자동 검사로 대체하지 않는다.
+
 이번 개발은 실제 Window/Popup/입력/DPI/VM을 실행하지 않았다. 이 문서는 **추후 사용자가 별도 승인한 격리 Windows 환경**에서 사람이 수행할 절차다. 현재 호스트의 포커스·배율·해상도·Windows 기능/설정을 바꾸거나 Sandbox/VM을 자동 실행하는 스크립트는 없다.
 
 ## 환경 준비 (미실행)

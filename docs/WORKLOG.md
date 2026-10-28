@@ -1,5 +1,14 @@
 7차 Release 검사 수정: SQLite 파일명 제외 정규식이 정상 의존성 Microsoft.Data.Sqlite.dll까지 거부했다. DB/sidecar 확장자 끝으로 한정해 수정하고 DLL 허용·sqlite/sqlite3-wal/db-shm/.env/session.json/private.key 차단 7개 파일명 회귀를 확인했다. 실제 비밀파일·DB는 생성하지 않았다. 최초 publish는 이 정적 검사에서 FAIL이며 실행파일은 실행하지 않았다.
 
+## 2026-10-28 KST — 8차 GUI·실연동 계약 검증 준비
+
+- 기준 HEAD/origin `4a18077` clean/fetch 확인. AGENTS/정의/상태/75개·QA/진단/Steam/격리 GUI 문서 검토. 전용 guest 제공 정보 없음. 호스트 대체 GUI/VM 탐색/Windows 기능 변경/다른 프로세스·입력·화면 접근 안 함.
+- Steam AnyReview 알림 누락을 실제 binding 상태 테스트로 확인·수정. 모달 focus boundary 및 active own-window guard, ComboBox focus/open trigger, disabled NumericStepper peer 표준 예외 보완. UI 테스트의 standalone style 미설정으로 FAIL1을 확인한 뒤 fixture를 수정해 관련31개 PASS; 물리 GUI 문제로 가장하지 않음.
+- QR 갱신 빈 선택필드 처리와 취소 Schema 오분류, HTTP 사용자 취소→Transport halt 및 VM 로그인 상태 소실을 수정. 승인 flag 0/1 외 정수는 계약 오류로 제한. AuthState endpoint/원인/operation 연결과 secret sentinel 누출0 단언 추가. Unknown·예약·반환 인과 기준 완화 없음.
+- 게스트 전용24 case/manifest/해시/런타임 확인 수동 launcher와 host packaging-only script, offline App profile/분리 데이터·Steam factory 차단 구현. marker/env는 운영자 선언이며 VM 보증 아님. guest launcher/실앱은 미실행.
+- 공식 판매 JS 재다운로드 hash는5차와 동일; 공개 auth proto/maintainer source·MIT 확인, 코드/의존성 도입 없음. 실제 인증 응답·계정/API/이미지·거래/Guard 미실행.
+- 전체 기능/합성 HTTP/SQLite/진단 165/165 PASS, 비표시 WPF 31/31 PASS, FAIL0, Debug 경고0/오류0. Release·게스트 패키지 정적 마감은 소스 커밋 후 반영. Release/패키징 정적 결과와 commit은 마감 후 반영. 최초75개 판정47/15/0/4/9 유지, 실제 입력·Popup·DPI·스크린리더·장기누수·설치·서명은 미검증.
+
 # MarketCrate — 누적 작업 로그
 
 7차 추가 반환 제한: 원래 단일 수량이었어도 취소 후 returned.Stackable/수량 증가·기존 가용 수량이 있으면 proof로 확정하지 않는다. 동일 ID라도 현재 정확히1개/기존0개인 제한 경로만 합성 대조하며 나머지는 Unknown/예약 유지. 실제 nonstack/스택·ID 의미와 인과 증거는 여전히 미검증이다.

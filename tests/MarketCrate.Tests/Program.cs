@@ -45,7 +45,8 @@ var fourth = await FourthStageTests.RunAsync(); failed += fourth.Failed;
 var fifth = await FifthStageTests.RunAsync(); failed += fifth.Failed;
 var sixth=await SixthStageTests.RunAsync();failed+=sixth.Failed;
 var seventh=await SeventhStageTests.RunAsync();failed+=seventh.Failed;
-var total = seventh.Passed+seventh.Failed+sixth.Passed+sixth.Failed+tests.Length + next.Passed + next.Failed + third.Passed + third.Failed + fourth.Passed + fourth.Failed + fifth.Passed + fifth.Failed;
+var eighth=await EighthStageTests.RunAsync();failed+=eighth.Failed;
+var total = eighth.Passed+eighth.Failed+seventh.Passed+seventh.Failed+sixth.Passed+sixth.Failed+tests.Length + next.Passed + next.Failed + third.Passed + third.Failed + fourth.Passed + fourth.Failed + fifth.Passed + fifth.Failed;
 Console.WriteLine($"RESULT {total - failed}/{total} PASS; {failed} FAIL · synthetic data only, no GUI/network (Steam HTTP replaced by test handler)");
 return failed == 0 ? 0 : 1;
 

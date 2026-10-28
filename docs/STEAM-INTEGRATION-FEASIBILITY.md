@@ -1,5 +1,24 @@
 # Steam 연동 가능성 조사 — 2026-10-28 KST (7차)
 
+## 8차 공개 계약 근거 대조 (2026-10-28 KST)
+
+실제 인증/판매 API 호출 없음. 공개 문서와 source GET만 수행했고 다운로드한 JS를 실행·복사하지 않았다. 실제 서버 응답 기반 계약/실계정 판정은 여전히 N이다. 실제 전체 일괄 등록이 최종 목표지만 IntegrationBlocked·KRW/stack/median capability 기본 제한은 유지한다.
+
+- [SteamDatabase 공개 auth proto](https://github.com/SteamDatabase/Protobufs/blob/master/steam/steammessages_auth.steamclient.proto): QR Begin의 client_id/request_id/interval/challenge_url, Poll의 optional new_client_id/new_challenge_url/refresh_token 등을 확인. Valve 문서/실응답/허가가 아닌 공개 프로토콜 전사 자료다. 코드 도입 없음. [node-steam-session AuthenticationClient](https://github.com/DoctorMcKay/node-steam-session/blob/master/src/AuthenticationClient.ts)와 [MIT license](https://github.com/DoctorMcKay/node-steam-session/blob/master/LICENSE)를 직접 읽었다. device_details 기반 Begin과 갱신 필드 전달을 대조했다. 제3자 코드/의존성/인증·자동 승인 기능 도입 없음.
+- 이 근거로 선택 URL의 빈 기본값을 유효 challenge 교체로 처리하지 않도록 수정. 새ID/URL 회전과 다음 요청ID, malformed/unknown schema/취소 정리 경로는 합성 HTTP로 검증한다. 실제 JSON 직렬화의 기본값 포함 정책/interval 만료/세션 finalize·transfer는 미검증이다.
+- [공식 판매 bundle](https://community.fastly.steamstatic.com/public/javascript/applications/community/marketselldialog.js) 재조회 SHA256 `CB84BB8A9B2970F71D277626A0B4E922B47CCE90BF437F704CF8F5100FA66726`은 5차 확인 값과 같다. wallet_market_minimum/currency_increment, fee_rate/cap, appid/contextid/assetid/amount/price, requires_confirmation·needs_mobile_confirmation/listingid 소비 코드 재확인. bytes 일치가 서버 계약/정책 허용을 보증하지 않는다. 응답 flags 모호한 형식은 Unknown/중단하며 추측 coercion 안 함.
+
+| 계약군 | 현재 근거 / 다음에 필요한 증거 |
+|---|---|
+| QR·세션 | 공개 proto/유지보수자 소스 + 합성; 별도 승인 후 최소 비밀제거 필드/상태 근거 필요 |
+| inventory/descriptions/paging/images | 이전 공식 공개 JS/합성 매칭·페이지 계약; 실제 인증 응답·CDN bytes 미확보 |
+| listings/ID/orderbook/history | 이전 소비 코드/합성; ID 의미·완전성·호가/버킷 통화/가격 역할·서버변경 미확인 |
+| KRW/USD/fee | 공식 bundle 계산 규칙 확인; 실제 지갑 min/increment·게임fee·서버 계산 대조 필요 |
+| stack/취소/반환 | amount 입력의 기술 근거만; 부분 판매/ID변경/수량합산의 인과 증거 없음, Unknown 유지 |
+| submit/cancel/Guard | 공개 flags/합성; 실제 결과/승인 후 게시/모바일 장기대기·인증만료 후 대조 미검증 |
+
+미래 계약 증거는 계정 연결 별도 승인 및 허용 경로 검토 후 최소 화이트리스트 필드만 정제해 담당 계약과 비교한다. 인증 HTTP 원문/토큰/QR/쿠키를 수집·Git·ZIP에 넣지 않는다. 동일 조건 외부등록·listingID 부재·반환ID 변경·스택 합산은 새 근거가 없어 보수적 Unknown/예약/중복 차단 유지. 실제 응답 없이 통과 capability를 켜지 않는다.
+
 7차 추가 반환 제한: 원래 단일 수량이었어도 취소 후 returned.Stackable/수량 증가·기존 가용 수량이 있으면 proof로 확정하지 않는다. 동일 ID라도 현재 정확히1개/기존0개인 제한 경로만 합성 대조하며 나머지는 Unknown/예약 유지. 실제 nonstack/스택·ID 의미와 인과 증거는 여전히 미검증이다.
 
 7차 추가 보호: 기간 중앙값의 구매자/판매자 결제액 역할과 통화 해석은 live 미검증이므로 `SteamTradingPolicy.MedianPriceContractSupported`가 별도로 필요하며 기본 false다. 사용자의 최종 클릭/정수 계산 성공으로 이를 true로 추정하지 않는다. 합성 positive 경로에서만 명시적으로 켜 검증했다.

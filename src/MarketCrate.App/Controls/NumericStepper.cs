@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Automation;
 using System.Windows.Automation.Peers;
 using System.Windows.Automation.Provider;
 
@@ -22,7 +23,7 @@ public sealed class NumericStepper : Control
         public double Minimum => 1; public double Maximum => owner.Maximum; public double Value => owner.Value;
         public void SetValue(double value)
         {
-            if (IsReadOnly) throw new InvalidOperationException("비활성 수량 입력");
+            if (IsReadOnly) throw new ElementNotEnabledException();
             if (!double.IsFinite(value) || value < 1 || value > owner.Maximum || value != Math.Truncate(value)) throw new ArgumentOutOfRangeException(nameof(value));
             owner.SetCurrentValue(ValueProperty, (int)value);
         }

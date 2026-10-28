@@ -269,7 +269,7 @@
     <Border Grid.Row="2" Style="{StaticResource Toast}" Margin="0,14,0,0" AutomationProperties.LiveSetting="Polite">
       <TextBlock Foreground="{StaticResource Warning}"><TextBlock.Style><Style TargetType="TextBlock" BasedOn="{StaticResource {x:Type TextBlock}}"><Setter Property="Text" Value="{Binding Status}"/><Style.Triggers><DataTrigger Binding="{Binding SelectedIndex,ElementName=WorkspaceTabs}" Value="4"><Setter Property="Text" Value="{Binding Steam.Status}"/></DataTrigger><DataTrigger Binding="{Binding SelectedIndex,ElementName=WorkspaceTabs}" Value="5"><Setter Property="Text" Value="{Binding Diagnostics.Status}"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
     </Border>
-    <Grid Grid.RowSpan="3" Background="#C00A0E16" Visibility="{Binding IsReviewOpen,Converter={StaticResource BoolVisibility}}" x:Name="ReviewOverlay" KeyboardNavigation.TabNavigation="Cycle" PreviewKeyDown="ReviewKeyDown">
+    <Grid Grid.RowSpan="3" Background="#C00A0E16" Visibility="{Binding IsReviewOpen,Converter={StaticResource BoolVisibility}}" c:ModalNavigation.IsOpen="{Binding IsReviewOpen}" FocusManager.IsFocusScope="True" KeyboardNavigation.ControlTabNavigation="Cycle" KeyboardNavigation.DirectionalNavigation="Contained" x:Name="ReviewOverlay" KeyboardNavigation.TabNavigation="Cycle" PreviewKeyDown="ReviewKeyDown">
       <Border Style="{StaticResource Dialog}" Margin="30" MaxWidth="1100" AutomationProperties.Name="최종 Mock 가격 검토">
         <Grid>
           <Grid.RowDefinitions>
@@ -335,7 +335,7 @@
         </Grid>
       </Border>
     </Grid>
-    <Grid x:Name="ManagementOverlay" Grid.RowSpan="3" Background="#D00A0E16" Visibility="{Binding IsCancelReviewOpen,Converter={StaticResource BoolVisibility}}" KeyboardNavigation.TabNavigation="Cycle" PreviewKeyDown="ReviewKeyDown">
+    <Grid x:Name="ManagementOverlay" Grid.RowSpan="3" Background="#D00A0E16" Visibility="{Binding IsCancelReviewOpen,Converter={StaticResource BoolVisibility}}" c:ModalNavigation.IsOpen="{Binding IsCancelReviewOpen}" FocusManager.IsFocusScope="True" KeyboardNavigation.ControlTabNavigation="Cycle" KeyboardNavigation.DirectionalNavigation="Contained" KeyboardNavigation.TabNavigation="Cycle" PreviewKeyDown="ReviewKeyDown">
       <Border Style="{StaticResource Dialog}" MaxWidth="850" MaxHeight="550" Margin="30">
         <Grid>
           <Grid.RowDefinitions>

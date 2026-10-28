@@ -141,7 +141,7 @@ public static class SteamContract
             if (root.TryGetProperty(name, out var flag))
             {
                 if (flag.ValueKind is not (JsonValueKind.True or JsonValueKind.False or JsonValueKind.Number)) throw new SteamException(SteamFailure.ContractChanged);
-                pending |= flag.ValueKind == JsonValueKind.True || flag.ValueKind == JsonValueKind.Number && flag.GetInt32() != 0;
+                pending |= flag.ValueKind switch { JsonValueKind.True => true, JsonValueKind.False => false, JsonValueKind.Number when flag.TryGetInt32(out var value) && value is 0 or 1 => value == 1, _ => throw new SteamException(SteamFailure.ContractChanged) };
             }
         return (pending ? SaleState.AwaitingSteamGuard : SaleState.Submitted, root.TryGetProperty("listingid", out var id) ? Id(id) : null);
     });

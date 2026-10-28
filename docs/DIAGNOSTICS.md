@@ -1,4 +1,14 @@
-# 진단 시스템 (7차, 2026-10-28 KST)
+# 진단 시스템 (8차, 2026-10-28 KST)
+
+## 8차 GUI·계약 진단 연결
+
+기존 보존/회전/화이트리스트/사용자 검토 ZIP 정책 유지. AppStart.reason=Demo 또는 IsolatedQa로 실행 모드 구분, QA 로그는 별도 사용자 루트. VM 여부를 추측·로그하지 않는다.
+
+- 모달 binding → ModalNavigation → 기존 UiCommand의 OperationId로 Modal9005 Opened/Closed/FocusDeferred(Debug)/FocusRejected(Warning). 실제 자기 Window가 활성·Loaded인 경우만 자체 탐색/복귀. detached는 FocusDeferred이며 focus 성공으로 해석하지 않는다. 마우스/키 입력 내용·요소 텍스트·타 앱 정보 없음.
+- AuthState2004: QR 계약 오류는 endpoint AuthBegin/AuthPoll + Error.Schema + Blocked + 같은 작업ID. 취소는 Cancelled. 원본 URL/QR/토큰/메시지 제외. 공개 선택 필드가 기본 빈값일 때 오류로 취급하지 않는다.
+- HttpFailure3002: 요청 토큰의 사용자 취소는 Cancelled와 현재 Queue/Headers/Body 단계. 세션을 Transport halt로 바꾸지 않는다. 진짜 timeout/transport/403/429는 기존 중단 규칙 그대로. 판매·취소 응답 유실은 여전히 Unknown; read 취소 보완이 쓰기 재전송을 허용하지 않는다.
+- 대표 합성 추적: UiCommand(OperationId X) → Inventory request(CorrelationId Y) → HttpFailure[Cancelled, phase] → VM Busy=false/Connected 유지. UiCommand(OperationId Z) → Modal[Opened] → Modal[FocusDeferred, detached] → Modal[Closed]. ZIP은 기존 operation filter/UTC 순서로 검토한다.
+- Dispatcher/AppDomain/UnobservedTask·BindingDiagnostics는 기존 release handler 유지. 실제 Window/Popup focus 오류를 재현한 것은 아니며 관련 동작은 게스트 시나리오에 NOT VERIFIED로 남긴다.
 
 7차 추가 보호: 기간 중앙값의 구매자/판매자 결제액 역할과 통화 해석은 live 미검증이므로 `SteamTradingPolicy.MedianPriceContractSupported`가 별도로 필요하며 기본 false다. 사용자의 최종 클릭/정수 계산 성공으로 이를 true로 추정하지 않는다. 합성 positive 경로에서만 명시적으로 켜 검증했다.
 

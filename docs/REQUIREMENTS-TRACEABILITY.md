@@ -1,4 +1,14 @@
-# 요구사항–구현–검증 추적표 (7차, 2026-10-28 KST)
+# 요구사항–구현–검증 추적표 (8차, 2026-10-28 KST)
+
+## 8차 판정 유지 및 추가 코드 경로
+
+기존75개 ID/행/이전 판정은 삭제·병합하지 않았다. **47/15/0/4/9 유지**, 새 COMPLETE 없음. 실서버/실계정/실제 GUI 검증 승격 없음.
+
+- A03: SteamHttp.SendAsync 취소 분류 → SteamQrAuthentication.GuardAsync 선택 필드/취소 → VM.Run Connected 보존. E8.QrDefaults/QrInvalid/QrCancel/ReadCancel 합성 검증 추가.
+- F05/F07: SteamContract.Sell 모호한 confirmation flag 거부 → 기존 Unknown/저널/예약 유지. E8.Confirmation. 공개 판매 코드와 서버 계약은 별개다.
+- G03/G04/G08(PARTIAL): Steam VM.Changed AnyReview 알림 → SteamBody.IsEnabled → ModalNavigation 자체 focus scope/탐색 → Modal9005 연결. ComboBox focus/open trigger, NumericStepper disabled peer 예외. U8.modal/peers. 실제 focus/Popup/UIA/키 입력은 미검증이라 승격 안 함.
+- G09(PARTIAL): U8.offline 자체 픽셀 배율 렌더 추가는 물리 DPI 증거가 아니다.
+- 실제 실행 준비: AppRunProfile→App→독립 QA 데이터/로그→offlineOnly MainVM/SteamVM→Steam factory차단. Prepare-IsolatedGuiQa→manifest/24개NV→게스트 수동 launcher. 하네스 존재는 GUI 실행/환경 확보의 증거가 아니다.
 
 ## 7차 변경과 감사 기준
 

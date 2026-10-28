@@ -37,9 +37,7 @@ public partial class MainView : UserControl
         WorkspaceBody.IsEnabled = !vm.AnyDialog;
         invalidInputs.RemoveWhere(x => x is System.Windows.Media.Visual visual && ((!vm.IsReviewOpen && ReviewOverlay.IsAncestorOf(visual)) || (!vm.IsCancelReviewOpen && ManagementOverlay.IsAncestorOf(visual))));
         vm.HasInputErrors = invalidInputs.Count > 0;
-        // No focus operation in detached tests and no window activation.
-        if (Window.GetWindow(this)?.IsActive == true)
-        { if (vm.IsCancelReviewOpen) ManagementBackButton.Focus(); else if (vm.IsReviewOpen) ReviewList.Focus(); else ReviewButton.Focus(); }
+
     }
     private void ReviewKeyDown(object sender, KeyEventArgs e)
     {

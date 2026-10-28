@@ -1,4 +1,22 @@
-# 정상·오류·복구 QA 매트릭스 — 7차 (2026-10-28 KST)
+# 정상·오류·복구 QA 매트릭스 — 8차 (2026-10-28 KST)
+
+## 8차 검증 범위 (2026-10-28 KST)
+
+**실제 격리 게스트 미확보 / 실제 GUI 미실행.** 호스트 Window/Popup/입력으로 대체하지 않는다. 자동 결과는 합성 HTTP·자체 SQLite·detached STA만 뜻한다. 전체 기능/합성 HTTP/SQLite/진단 165/165 PASS, 비표시 WPF 31/31 PASS, FAIL0, Debug 경고0/오류0. Release·게스트 패키지 정적 마감은 소스 커밋 후 반영.
+
+| 경로 | 단언/증거 | 범위 |
+|---|---|---|
+| 게스트 profile/오류 args | 게스트 확인 누락·다른 args 거부, 운영 데이터와 별도 경로 | E8.Profile, 실제 프로세스 launch 아님 |
+| offline Steam 경로 | UI CanExecute=false, 직접 BeginAsync도 factory 호출0/연결0 | E8.Offline/U8.offline |
+| QR 선택 기본값/갱신 | 새ID0/빈URL 유지, 새ID124·새URL 반영 후 다음 protobuf ID124 | E8.QrDefaults, 공개 proto 기반 합성 |
+| QR URL/추가필드/취소 | session 정리/스키마 차단, 원문누출0, 작업ID+AuthPoll+Schema; 취소를 Schema로 오인하지 않음 | E8.QrInvalid/QrCancel |
+| 보관함 취소 | Connected 유지/Busy 해제/HttpFailure.Cancelled+동일 OperationId/거래0 | E8.ReadCancel |
+| 모바일 승인 flags | bool/0·1 해석, 문자열/null/다른 숫자·객체 거부 | E8.Confirmation |
+| Steam 검토 열고 닫기 | 배경 실제 IsEnabled false→true, scope/Tab/CtrlTab/자체 렌더·동일 operation Modal logs | U8.modal, focus 실제 이동 아님 |
+| ComboBox/stepper 접근성 | 커스텀 trigger 존재/managed Name·Role, disabled RangeValue setter 거부/수량 불변 | U8.peers, OS UIA/스크린리더 아님 |
+| x64/런타임/게스트 패키지 | apphost/nativeSQLite PE machine/Runtime dependency/manifest hash/데이터 제외/24 NV 시나리오 | 정적 검사, 실행·설치 아님 |
+
+초기 신규 detached ComboBox 검사는 standalone fixture에 Style 미적용으로 FAIL1. 기존 앱 경로의 바인딩 문제와 구분해 fixture에 커스텀 Style을 명시하고 관련 UI 검사를 재실행했다. 최종 결과는 위 마감 기록에 반영한다. 기존158개와 UI28개를 삭제/완화하지 않았다. 장시간/native memory/자원 누수·실제 Popup/물리 DPI는 이번 단기 검사로 PASS 처리하지 않는다.
 
 ### 7차 자동 검증 마감
 

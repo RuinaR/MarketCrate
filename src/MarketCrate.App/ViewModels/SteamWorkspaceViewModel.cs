@@ -61,12 +61,12 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         Raise(nameof(EmptyAssets));Raise(nameof(EmptyListings));
         DiagnosticHub.Emit(DiagnosticEvent.UiSelection,DiagnosticArea.UI,level:LogLevel.Debug,reason:"Filter",count:VisibleAssets.Count,requirement:"C12");
     }
-    public SteamWorkspaceViewModel(Func<SteamGameScope, SteamExperimentalWorkspace>? factory = null, bool contractTest = false)
+    public SteamWorkspaceViewModel(Func<SteamGameScope, SteamExperimentalWorkspace>? factory = null, bool contractTest = false, bool offlineOnly = false)
     {
-        ModeText=contractTest?"CONTRACT TEST · 합성 서버 · 실제 Steam 요청 없음":"STEAM EXPERIMENTAL · 실제 계정 읽기 · Mock과 분리";
-        this.factory = factory ?? (scope => new(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MarketCrate", "SteamExperimental"), scope.AppId, scope.ContextId, scope.Name));
+        ModeText=offlineOnly?"ISOLATED GUI QA · Mock 전용 · Steam 네트워크 차단":contractTest?"CONTRACT TEST · 합성 서버 · 실제 Steam 요청 없음":"STEAM EXPERIMENTAL · 실제 계정 읽기 · Mock과 분리";
+        this.factory = offlineOnly ? (_ => throw new SteamException(SteamFailure.Disabled)) : factory ?? (scope => new(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MarketCrate", "SteamExperimental"), scope.AppId, scope.ContextId, scope.Name));
         game = Games[0];InitializeCatalog();
-        BeginLogin = new(BeginAsync, Error, () => !Busy && RiskAccepted && CredentialsAccepted);
+        BeginLogin = new(BeginAsync, Error, () => !offlineOnly && !Busy && RiskAccepted && CredentialsAccepted);
         CheckLogin = new(CheckAsync, Error, () => !Busy && LoginState == SteamLoginState.AwaitingMobile);
         Logout = new(LogoutNow);
         Load = new(LoadAsync, Error, () => !Busy && Connected && !AnyReview);
@@ -138,7 +138,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         LastOperationId=DiagnosticHub.Context?.OperationId;Raise(nameof(LastOperationId));
         if (Busy) return; Busy = true; operation = new();
         try { await action(operation.Token); }
-        catch (OperationCanceledException) { if (!logoutRequested) { LoginState = SteamLoginState.Cancelled; Status = "미전송 중단 요청 · 이미 접수된 요청은 저널 대조 필요"; } }
+        catch (OperationCanceledException) { if (!logoutRequested) { if (workspace?.Authentication.Connected != true) LoginState = SteamLoginState.Cancelled; Status = "미전송 중단 요청 · 이미 접수된 요청은 저널 대조 필요"; } }
         catch(Exception error) { if(stage==nameof(LoadAsync)&&!logoutRequested&&!operation.IsCancellationRequested){Game.Update(error is SteamException sx&&sx.Code==SteamFailure.Unsupported?InventoryScopeState.Unsupported:error is SteamException ax&&ax.Code==SteamFailure.Forbidden?InventoryScopeState.PrivateOrDenied:Assets.Count>0?InventoryScopeState.Partial:InventoryScopeState.Failed,Assets.Count==0?null:Assets.Count(x=>x.Asset.Marketable));Raise(nameof(ScopeSummary));}if(!logoutRequested) { if(operation.IsCancellationRequested){LoginState=SteamLoginState.Cancelled;Status="미전송 중단 요청 · 결과 불명은 재전송하지 않습니다.";}else Error(error); } }
         finally
         {
@@ -253,6 +253,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     private void Changed()
     {
         if(bulkUpdate)return;
+        Raise(nameof(AnyReview));
         Raise(nameof(Totals));Raise(nameof(TradingText));Raise(nameof(CanTrade));Raise(nameof(CanTradeReview));Raise(nameof(PricingContractText));
         BeginLogin?.Refresh();CheckLogin?.Refresh();Load?.Refresh();RefreshPrices?.Refresh();SelectAll?.Refresh();Review?.Refresh();CloseReview?.Refresh();Submit?.Refresh();EnableTrading?.Refresh();Recover?.Refresh();Inspect?.Refresh();MedianHistory?.Refresh();ReviewCancel?.Refresh();ReviewReprice?.Refresh();ConfirmManagement?.Refresh();
         ResumeReprice?.Refresh();ReviewStoredReprice?.Refresh();RefreshReviewStatus?.Refresh();ListingMetrics?.Refresh();
