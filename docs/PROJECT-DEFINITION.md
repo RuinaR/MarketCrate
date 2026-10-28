@@ -33,3 +33,9 @@ Windows에서 사용자의 여러 Steam 게임 보관함과 Community Market 판
 
 ## 우선순위
 다른 게임 비간섭 > Steam 인증정보·계정 보호 > 실제 거래의 정확성 > UI/UX > 성능 > 속도.
+
+## 최초 구현 판정 (2026-10-28 KST)
+- App/Core/Infrastructure/Tests 솔루션, 핵심 커스텀 템플릿, 합성 보관함·검토·배치 결과 UI를 구현했다.
+- 계산·배치·MVVM·파일 복구 자동 검사 25개 PASS. GUI 실행은 사용자 경계에 따라 하지 않았으므로 전체 `MOCK_READY`는 미확정이다.
+- 실제 데이터 어댑터/Steam 계정 연결은 없다. `READ_ONLY_READY`, `LIVE_READY`, `RELEASE_READY`가 아니다.
+- 최종 단일 승인 실등록 계약은 유지한다. 현재 버튼은 `Mock 배치 전체 실행`이며 실제 거래로 표시하지 않는다.

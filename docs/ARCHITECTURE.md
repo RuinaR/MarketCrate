@@ -1,4 +1,4 @@
-# MarketCrate — 권장 아키텍처 (초기 설계, 미구현)
+# MarketCrate — 아키텍처 (최초 Mock 구현 / 후속 계획)
 
 ## 솔루션
 - `src/MarketCrate.App`: WPF UI, MVVM/ViewModels, 커스텀 ControlTemplates, 애니메이션 및 라우팅.
@@ -37,3 +37,19 @@
 
 ## 문서/검증 원칙
 아키텍처 변경은 이 문서와 WORKLOG에 근거 포함 갱신. 작은 단위로 구현하며 코드가 구현되지 않은 기능은 CURRENT-STATUS에서 `NOT_IMPLEMENTED` 유지.
+
+## 구현된 경계 (2026-10-28)
+- Core: immutable record/ImmutableArray, `Pricing`, `BatchValidation`, `SaleBatchCoordinator`, provider/executor/journal 인터페이스. 네트워크/GUI 의존성 없음.
+- Infrastructure: `DemoDataProvider`가 inventory/market/orders 계약 제공, `MockListingExecutor`, `BlockedListingExecutor`, `FileBatchJournal`. HTTP/로그인/SQLite 의존성 없음.
+- App: 직접 구현한 Observable/ICommand 기반 MVVM, WPF 바인딩, 커스텀 NumericStepper, 중앙 토큰/컨트롤 ResourceDictionary. 프레임워크 추가 없음. 상태 변경의 UI 갱신은 await된 UI 컨텍스트에서 인라인 진행 통지를 사용하여 뒤늦은 Progress 큐가 완료 상태를 덮어쓰지 않게 한다.
+- Tests: App ViewModel 소스를 링크한 순수 콘솔 러너. Windows 창을 만들지 않고 실제 선택→검토→최종 명령 및 중복 실행을 검사한다. 별도 테스트 SDK/네트워크 설치 없이 종료 코드로 판정한다.
+- `NuGet.Config`는 온라인 소스를 비우고, 설치된 SDK/참조 팩만 사용한다. 추가 의존성 도입 때 별도 재검토한다.
+
+## 저널·수명 설계와 제한
+- 현 단계 SQLite 도입을 유보하고 **합성 Demo 데이터만** JSON 스키마 v1에 저장한다. 임시 파일 직렬화→WriteThrough/Flush(true)→동일 디렉터리 rename, 앱 수명 동안 독점 파일 잠금. 손상/지원하지 않는 스키마는 실행 차단.
+- coordinator는 앱당 하나. semaphore로 실행/대조를 직렬화하고, 기존 저널이 있으면 새 배치를 제출하지 않는다. `Submitting`을 디스크에 먼저 저장한 뒤 요청한다. 저장 실패면 제출하지 않는다.
+- 하나의 활성 Mock 배치만 보존한다. 앱 재시작·취소·불명 이후 자동 재개/재시도 없음. 데모 기록 삭제로 새 배치를 시작할 수 있으나 실거래에서 이 정책을 재사용하면 안 된다.
+- 타임아웃/취소/IO 불확실성은 Unknown 후 후속 제출 중단. 준비되지 않은 개별 수동 재시도 기능을 된다고 표시하지 않는다.
+- Mock 대조는 실제 서버 증거가 없으므로 Unknown으로 남긴다. 공식 모바일 승인을 시뮬레이션해 Listed로 만들지 않는다.
+- 앱 종료는 진행 중 쓰기가 끝나기 전 보류한다. 작업별 취소 토큰은 앱 수명 토큰과 분리하여 취소가 이후 모든 갱신을 영구적으로 막지 않는다.
+- 향후 live 경계에는 허용 증거·옵트인·자산/계정 재검증·실제 서버 대조·다중 배치 저장/원자적 전이·데이터 보호·통화별 수수료 검증이 추가로 필요하다.

@@ -1,5 +1,16 @@
 # MarketCrate — UI/UX & Custom Controls
 
+> 2026-10-28: 아래는 목표 명세와 최초 구현의 공통 기준이다. GUI를 실행하지 않았으므로 렌더링/입력/접근성 완료 판정이 아니다.
+
+## 최초 구현 범위
+- 좌측 게임·중앙 보관함/판매 중/배치 결과/기록·안전 탭·우측 계획·인앱 검토 레이어. 기본 OS 창 프레임은 명세의 예외로 유지한다. ShowActivated=false, 외부 창 활성화 호출 없음.
+- Tokens/Colors.xaml 및 Controls/Controls.xaml: Button/RepeatButton/Toggle/Check/Radio/TextBox/SearchBox/Combo/Stepper/Tab/List/Scroll/Tooltip/ContextMenu/Dialog/Toast/Skeleton 템플릿. 입력·바인딩·포커스·가상화는 WPF를 유지한다. DataGrid 대신 ListBox 행 템플릿 사용.
+- normal/hover/pressed/focus/selected/disabled는 해당 컨트롤 trigger, 입력 error는 커스텀 border, loading은 명령 잠금·정적 skeleton/취소 레이어. Button의 선택적 120ms hover 전환은 축소 모션 기본 ON 및 OS 설정에서 비활성화된다. 전체 컨트롤의 전환·오류·loading 상태 완성은 후속 GUI 감사 대상이다.
+- 검토: 가격 구간별 수량, 자산 식별·게임, 시세 시각·원천, 추천/편집 단가, 구매자 지불·Demo 수수료·실수령. 편집 오류는 최종 명령 차단. 시세 만료·잔량 부족은 제출 차단.
+- 검토 레이어는 Tab 순환, Esc/외부 영역 클릭 닫기, 활성 앱 내부 포커스 복구를 코드로 연결했다. 실제 키보드 동작은 미검증.
+- 카드 WrapPanel은 소량 Mock용. 목록은 recycling virtualization. 대량 카드 가상화/다중 범위 선택/드래그·상세 취소 검토는 미구현이다.
+- 실제 스크린샷/렌더링 QA, 100/125/150/200% DPI, 긴 이름/작은 창/스크린리더/대비/팝업 동작은 NOT VERIFIED. 자동 테스트를 GUI 실검증으로 확대 해석하지 않는다.
+
 ## 시각 콘셉트
 - **자체 브랜드**: 세련된 PC 게임 인벤토리 + 트레이딩 워크스페이스. Steam 및 타 제품 화면/아이콘/브랜드를 그대로 복제하지 않음.
 - 다크 베이스, 충분한 계층/간격, 숫자 정렬(Tabular numerals), 일관된 라운딩/그림자/구분선. 고가 아이템/경고 상태는 의미 있는 색으로만 강조.

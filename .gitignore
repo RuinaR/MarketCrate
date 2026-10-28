@@ -11,8 +11,7 @@
 *.pdb
 
 # Sensitive local config, auth, credentials and responses
-.env
-.env.*
+.env*
 !.env.example
 *secret*
 *credential*
@@ -27,6 +26,7 @@
 *.sqlite
 *.sqlite3
 *.sqlite-*
+*.sqlite*
 **/local_data/
 **/secrets/
 **/runtime/

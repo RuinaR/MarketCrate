@@ -39,3 +39,14 @@
 
 - https://store.steampowered.com/agreement/ : Steam Subscriber Agreement, 자동화 관련 제한.
 - https://help.steampowered.com/en/faqs/view/2E6E-A02C-5581-8904 : 미확인 판매 등록은 게시되지 않음.
+
+## 최초 Mock 구현 계약 (2026-10-28)
+- ViewModel의 `Submit` 최종 명령 1회→모든 검토 행을 `ImmutableArray`로 복사해 스냅샷 고정→coordinator 순차 처리. 명령 잠금/프로세스 내 semaphore/프로세스 간 journal 파일 lease로 중복 진입을 제한한다.
+- 스냅샷은 BatchId/AccountReference(고정 합성 ID)/FinalizedAt 및 LineId/개별 AssetKey/marketable·tradable·stackable·수량/통화/단위 수수료 견적/MarketTime을 보존한다. 검토의 사용자 가격 수정값을 사용한다.
+- 현재 KRW만 허용, 5분 만료, 미래 시세·중복 LineId·자산 총량 초과·서로 모순되는 동일 자산·보류/비판매·잘못된 수수료 차단. 서버 잔고와 대조한 실제 자산 검증은 아니다.
+- 동일 market hash 자산의 구매주문 깊이를 공유해 검토 시 잔량을 차감한다. 수량 부족이면 검토 전체를 중단하고 수량/전략 변경을 안내한다. 자동으로 가격을 만들어 나머지를 채우지 않는다.
+- 요청 키는 `BatchId:LineId`. `Ready` 저널과 항목별 `Submitting`을 디스크에 기록한 이후에만 Mock executor를 호출한다. 타임아웃/응답 불명은 Unknown으로 기록하고 후속 행 전송을 멈춘다.
+- 일부 `Failed`는 다른 확정 결과를 유지한다. `Submitted`/`AwaitingSteamGuard`는 `Listed`와 다르다. 앱의 mock executor는 게시/승인 증거를 만들지 않는다.
+- 복구는 Submitting/Unknown/Submitted/AwaitingSteamGuard만 대조한다. Mock 서버 증거가 없으므로 Unknown으로 남긴다. Ready를 포함해 자동 재제출하지 않는다. 취소 후 명시적 항목별 안전 재시도·거절/만료 상세 흐름은 미구현이다.
+- 스키마 v1 단일 Mock 배치 저널은 합성 ID만 기록한다. 테스트는 저장·재시작·파일 lease를 검증하지만 OS 강제 전원 차단·실제 네트워크/계정·장시간 안정성을 인증하지 않는다.
+- **현재 UI의 `Mock 배치 전체 실행`은 실제 등록이 아니다.** 최종 제품의 `전체 판매등록` 단일 승인 계약은 그대로 남아 있으며 허용된 실연동 확보 전 LIVE_INTEGRATION_BLOCKED.
