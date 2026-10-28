@@ -1,4 +1,8 @@
-# 요구사항–구현–검증 추적표 (10차, 2026-10-28 KST)
+# 요구사항–구현–검증 추적표 (11차, 2026-10-28 KST)
+
+## 11차 사용자 결함 보완 — 판정 유지
+
+75개 ID/기준과 **COMPLETE47/PARTIAL15/MISSING0/BLOCKED4/UNVERIFIED9** 유지. A01/A03: SteamWorkspaceVM.Begin→SteamQrAuthentication.BeginCore→AuthForm→SteamHttp→ReadResponse→UI stage 경로의 최상위 요청/정수JSON/실패분류 수정, T11.RequestContract/NumericResponse/ResponseFailures/ApiFailures/Cancellation 근거. 실서버 성공 검증 N. G03/G04/G08: Controls.xaml/FocusCue의 VSM·Trigger 단일소유/키보드점선/Checked·Selected 구분, U11 상태왕복·자체PNG 근거. 물리 입력·Popup·현재 배포 GUI는 NOT VERIFIED이며 이 보완으로 실환경 COMPLETE를 추가하지 않는다.
 
 ## 10차 판정과 사용자 보고
 

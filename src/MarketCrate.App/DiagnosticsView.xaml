@@ -1,4 +1,4 @@
-<UserControl x:Class="MarketCrate.App.DiagnosticsView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Background="{StaticResource Canvas}" Foreground="{StaticResource Ink}">
+<UserControl x:Class="MarketCrate.App.DiagnosticsView" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:c="clr-namespace:MarketCrate.App.Controls" c:FocusCue.Enabled="True" Background="{StaticResource Canvas}" Foreground="{StaticResource Ink}">
  <Grid Margin="8"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
   <StackPanel><TextBlock Text="진단 / 로그 관리" Style="{StaticResource Heading}"/>
    <TextBlock Text="{Binding Policy}" Style="{StaticResource MutedText}"/>

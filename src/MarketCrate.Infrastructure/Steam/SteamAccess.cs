@@ -27,9 +27,10 @@ public sealed record SteamTradingPolicy(bool Enabled, string EvidenceReference, 
     public static SteamTradingPolicy Blocked { get; } = new(false, "Valve permission not established");
     internal static SteamTradingPolicy ContractTest { get; } = new(true, "synthetic contract only", true);
 }
-public sealed class SteamException(SteamFailure code) : IOException(code.ToString())
+public sealed class SteamException(SteamFailure code, int? apiResult = null) : IOException(code.ToString())
 {
     public SteamFailure Code { get; } = code;
+    public int? ApiResult { get; } = apiResult;
 }
 
 // No browser cookie import, external host, redirects, automatic retries or response-body logging.
@@ -97,8 +98,8 @@ public sealed class SteamHttp : IDisposable
             }
             var status = (int)response.StatusCode;
             int? steamCode=response.Headers.TryGetValues("x-eresult",out var codes)&&int.TryParse(codes.FirstOrDefault(),out var numeric)?numeric:null;
-            DiagnosticHub.Emit(DiagnosticEvent.HttpResponse,DiagnosticArea.HTTP, status==200?DiagnosticOutcome.Succeeded:DiagnosticOutcome.Failed,
-                status==200?LogLevel.Information:LogLevel.Warning, status switch{401=>DiagnosticError.Authentication,403=>DiagnosticError.Forbidden,429=>DiagnosticError.RateLimited,>=500=>DiagnosticError.Server,>=400=>DiagnosticError.ClientRequest,_=>DiagnosticError.None},
+            DiagnosticHub.Emit(DiagnosticEvent.HttpResponse,DiagnosticArea.HTTP, status==200&&(steamCode is null or 1)?DiagnosticOutcome.Succeeded:DiagnosticOutcome.Failed,
+                status==200&&(steamCode is null or 1)?LogLevel.Information:LogLevel.Warning, steamCode is not (null or 1)?DiagnosticError.Authentication:status switch{401=>DiagnosticError.Authentication,403=>DiagnosticError.Forbidden,429=>DiagnosticError.RateLimited,>=500=>DiagnosticError.Server,>=400=>DiagnosticError.ClientRequest,_=>DiagnosticError.None},
                 endpoint:endpoint,method:request.Method.Method,status:status,serverCode:steamCode,started:started,elapsed:watch.ElapsedMilliseconds);
             if (status != 200)
             {
@@ -107,7 +108,7 @@ public sealed class SteamHttp : IDisposable
                 if(failure!=SteamFailure.Unsupported)Stop(failure); throw new SteamException(failure);
             }
             if (response.Headers.TryGetValues("x-eresult", out var results) && results.FirstOrDefault() is { } result && result != "1")
-            { var failure = result == "15" ? SteamFailure.Denied : result == "27" ? SteamFailure.Expired : SteamFailure.Authentication; Stop(failure); throw new SteamException(failure); }
+            { var failure = result == "15" ? SteamFailure.Denied : result == "27" ? SteamFailure.Expired : SteamFailure.Authentication; Stop(failure); throw new SteamException(failure,steamCode); }
             // Bounded reads prevent unexpected HTML/large payloads from consuming unbounded memory.
             phase="Body";
             await using var stream = await response.Content.ReadAsStreamAsync(token);

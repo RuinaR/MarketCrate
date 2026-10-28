@@ -1,5 +1,13 @@
 7차 Release 검사 수정: SQLite 파일명 제외 정규식이 정상 의존성 Microsoft.Data.Sqlite.dll까지 거부했다. DB/sidecar 확장자 끝으로 한정해 수정하고 DLL 허용·sqlite/sqlite3-wal/db-shm/.env/session.json/private.key 차단 7개 파일명 회귀를 확인했다. 실제 비밀파일·DB는 생성하지 않았다. 최초 publish는 이 정적 검사에서 FAIL이며 실행파일은 실행하지 않았다.
 
+## 2026-10-28 KST — 11차 실제 사용자 QR·상태 강조 결함
+
+- main/origin62663c5 clean에서 시작. AGENTS/현재 상태/QA/설계·관련 소스 확인. 공개 metadata/proto/공식WebAPI/공개 구현 대조, 인증 네트워크 실행0.
+- 수정 전 독립 decoder/숫자JSON 계약2개 실패 증거 저장(ignored runtime/stage11-before-fix.txt). 요청 최상위 device_friendly_name/platform_type 보완, WebBrowser2/중첩구분/명시JSON/uint64·interval 유효성 검증. HTTP200 API 거절 성공 오표시 수정,2005단계 진단/OperationId/정제 유지.
+- Action VSM/Trigger 중복 구조 검사 실패를 수정. 물리 ghost-hover 및 shared brush 오염은 재현되지 않았다. FocusCue는 자체 routed subtree만 관찰하며 전역 입력/포커스 변경 없음. 선택·체크·Hover·키보드점선 분리, Disabled 우선순위/Combo 이중 opacity 수정. 단순 테스트 수 증가가 아닌 두 사용자 결함의 계약·시각 원인 정리에 집중.
+- detached WPF 입력장치 부재 때문에 DP 주입과 CLR 상태 getter가 달랐다. 명시적 VSM 전이와 DP Trigger 검사를 분리하고 실제 입력으로 주장하지 않음. 자체 PNG 시각 검토에서 Normal/Hover/Pressed/Focus/Disabled와 Checked/Selected의 구분 확인.
+- 앱/브라우저/Popup/실계정/거래/Guard/타 프로세스·화면·입력 접근0. SQLite/저널/사용자 데이터 초기화0. 최초75개 판정변경0. 실서버 장애 재현·서버 QR 성공은 미검증.
+
 ## 2026-10-28 KST — 10차 실제 사용자 경로 보완
 
 - 시작 main/origin `a0e7c95` clean/fetch. 기존 AGENTS/정의/상태/구조·QA·저널·진단 확인. 사용자보고9차 기본GUI7PASS를별도기록, 상세24개/10차GUI/실계정PASS로변환안함. 타프로세스·OS입력·화면/실앱·계정작업없음.
@@ -144,3 +152,6 @@
 - 미검증/차단: 실제 입력·모니터 DPI·열린 팝업·스크린리더·장시간/전원 차단·설치·가격 변경·수동 재시도. 실제 Steam 로그인/조회/판매/Guard·타 앱 조사/조작/데스크톱 캡처 없음. 실등록 필수 목표는 LIVE_INTEGRATION_BLOCKED 유지.
 - Git: 소스/테스트/누적 문서/패키지 잠금·고지만 커밋한다. 생성 이미지·DB·로그·빌드 바이너리·인증정보는 제외한다. 구현 및 push 결과는 아래 후속 기록에 추가한다.
 - 완료 기록: 구현 커밋 `35ffbb4` (`feat: validate detached WPF UI and persist safe mock workflows in SQLite`), 기존 `origin/main`으로 정상 push 성공 (`65e3ef4..35ffbb4`). staged diff 공백 검사 PASS, 금지 API/민감정보 패턴 검색 일치 없음. 허용된 일반 앱의 자체 Show/Focus 코드는 남아 있으나 detached 테스트에서 호출하지 않았음을 실행 경로/Window 미생성 검사로 확인했다. 결과 기록은 별도 문서 커밋으로 누적한다.
+11차 최종 회귀: **기능177/177 PASS · 비표시 WPF39/39 PASS · 배포 파일 계약14/14 PASS · FAIL0 · Debug 경고0/오류0**. 기존172/33/14 전부 유지. `scripts/Verify.ps1`, ignored `runtime/stage11-verify.txt` 근거. 실제 서버/물리입력/Popup/설치·서명 미실행.
+
+사용자 최소 재확인: (1) 새 ZIP 버전·커밋 확인 후 Steam 탭에서 명시적 QR 시작으로 QR 표시 여부만 확인(실거래 금지), 실패하면 표시된 단계와 검토한 진단ZIP 확인. QR 원문은 공유하지 않는다. (2) 진단 탭/최근 오류 체크를 클릭한 뒤 포인터를 밖으로 이동: 선택 밑줄·체크 표시만 유지되는지 확인. (3) Tab/Shift+Tab의 점선 포커스, 빠른 탭 전환, 비활성→활성, 드롭다운 열기·닫기를 직접 확인. Codex는 이 작업을 실행하지 않았다.

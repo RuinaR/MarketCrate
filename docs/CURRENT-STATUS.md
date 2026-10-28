@@ -1,4 +1,15 @@
-# MarketCrate — 현재 상태 (2026-10-28 KST, 10차)
+# MarketCrate — 현재 상태 (2026-10-28 KST, 11차)
+
+## 11차 — 사용자 발견 QR 계약·상태 강조 결함 수정 (2026-10-28 KST)
+
+기준 main/origin `62663c5` clean/fetch 일치. 실제 인증·앱·Popup·포커스·입력·타 프로세스 접근 없이 공개 정의 GET 및 합성/비표시 검사만 수행했다. IntegrationBlocked/기존 SQLite·저널·수량 예약 계약 변경 없음.
+
+- QR 요청: 공개 HTTP API 메타데이터가 required로 선언한 최상위 device_friendly_name(1,string), platform_type(2,enum WebBrowser=2)을 device_details(3,message)의 내부1/2와 함께 명시. input_protobuf_encoded 표준 base64→UTF8 form 인코딩, 별도 format=json/Accept를 독립 decoder로 검증. uint64 client_id는 문자열·정확한 정수 JSON 모두 처리하고 소수 interval 허용. 누락·범위·URL 이상은 차단한다.
+- 확인된 코드 결함: 최상위1/2 누락, 숫자 JSON client_id 거부. 사용자 ContractFailure가 어느 원인인지는 사용자 진단/인증 응답 없이 확정 불가. 실제 BeginAuth 호출/QR 인증은 실행하지 않았으므로 서버에서 해결됐다고 판정하지 않는다.
+- AuthContract2005: AuthBegin/HTTP/ApiResult/ResponseParse/ResponseFields/ChallengeValidation 실패 구분, 고정 endpoint/OperationId/안전한 x-eresult만 기록. HTTP200 API 거절을 성공으로 기록하던 문제 수정. QR·토큰·쿠키·원문 본문 제외.
+- UI: Action VSM과 Trigger의 중복 속성 제어 제거. Hover/Pressed 배경, Selected 밑줄·선택면, Checked 체크마크, KeyboardFocus 점선 분리. 자체 subtree 입력 방식만 관찰해 마우스 클릭 포커스와 키보드 탐색 구분. Disabled 포인터 효과 차단, ComboBox 이중 opacity 제거. 기본 스타일·키보드 접근성 유지.
+- 기존 DP 상태 왕복에서는 사용자 물리 Hover 잔류를 재현하지 못했다. 중복 제어와 상태 시각 혼동은 확인했으며, 실제 IsMouseOver 오작동/브러시 공유 오염을 확인된 원인으로 주장하지 않는다. 비표시 검사는 제어된 DP Trigger와 명시적 VSM 전이이며 물리 입력 검증이 아니다.
+- 최초75개 **47 COMPLETE / 15 PARTIAL / 0 MISSING / 4 BLOCKED / 9 UNVERIFIED** 유지. 실계정·현재 GUI·물리 DPI·Popup·실판매는 미검증/차단. 사용자 기존7개 수동 PASS를 이번 빌드 전체 PASS로 재사용하지 않는다.
 
 ## 10차 — Steam 사용자 경로 연결 / 즉시거래가능가 (2026-10-28 KST)
 
@@ -144,3 +155,6 @@
 ## Git
 
 시작 `9ce53df`와 fetch한 origin/main 일치, 기존 미커밋 변경 없음. 조사 마일스톤 `db8a55c` push 완료. 3차 구현/검증 커밋 `1e6c280`도 origin/main push 완료. 최종 기록 동기화 커밋은 최종 보고에서 확인한다.
+11차 최종 회귀: **기능177/177 PASS · 비표시 WPF39/39 PASS · 배포 파일 계약14/14 PASS · FAIL0 · Debug 경고0/오류0**. 기존172/33/14 전부 유지. `scripts/Verify.ps1`, ignored `runtime/stage11-verify.txt` 근거. 실제 서버/물리입력/Popup/설치·서명 미실행.
+
+사용자 최소 재확인: (1) 새 ZIP 버전·커밋 확인 후 Steam 탭에서 명시적 QR 시작으로 QR 표시 여부만 확인(실거래 금지), 실패하면 표시된 단계와 검토한 진단ZIP 확인. QR 원문은 공유하지 않는다. (2) 진단 탭/최근 오류 체크를 클릭한 뒤 포인터를 밖으로 이동: 선택 밑줄·체크 표시만 유지되는지 확인. (3) Tab/Shift+Tab의 점선 포커스, 빠른 탭 전환, 비활성→활성, 드롭다운 열기·닫기를 직접 확인. Codex는 이 작업을 실행하지 않았다.

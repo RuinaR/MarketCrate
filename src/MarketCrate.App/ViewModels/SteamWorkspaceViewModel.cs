@@ -250,7 +250,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         DiagnosticHub.Emit(DiagnosticEvent.UiFailure,DiagnosticArea.UI,DiagnosticOutcome.Failed,LogLevel.Error,error is SteamException se?se.Code switch{SteamFailure.Authentication or SteamFailure.Expired=>DiagnosticError.Authentication,SteamFailure.RateLimited=>DiagnosticError.RateLimited,SteamFailure.Transport=>DiagnosticError.Transport,SteamFailure.ContractChanged=>DiagnosticError.Schema,_=>DiagnosticError.Validation}:DiagnosticError.Validation,exception:error);
         QrMatrix=null;
         LoginState=error is ArgumentException or FormatException or OverflowException?LoginState:error is SteamException e ? e.Code switch{SteamFailure.Expired or SteamFailure.Authentication=>SteamLoginState.Expired,SteamFailure.Denied=>SteamLoginState.Denied,SteamFailure.Transport=>SteamLoginState.NetworkFailure,SteamFailure.Forbidden or SteamFailure.RateLimited or SteamFailure.Challenge=>SteamLoginState.AccessBlocked,SteamFailure.Disabled or SteamFailure.StaleReview or SteamFailure.Restricted or SteamFailure.Unsupported=>LoginState,_=>SteamLoginState.ContractFailure}:SteamLoginState.ContractFailure;
-        Status=error is SteamException steam ? "Steam 작업 중단 · "+steam.Code : "입력/계약 검증 실패 · 세부 응답/인증정보는 기록하지 않습니다.";Changed();
+        Status=error is SteamException steam ? "Steam 작업 중단 · "+steam.Code+(workspace?.Authentication.LastFailureStage is {} failureStage?" · "+failureStage:"") : "입력/계약 검증 실패 · 세부 응답/인증정보는 기록하지 않습니다.";Changed();
     }
     private void Changed()
     {

@@ -6,11 +6,16 @@ using System.Text.Json;
 
 namespace MarketCrate.Infrastructure.Steam;
 
+public enum SteamAuthStage { AuthBegin, RequestEncoding, HTTP, ApiResult, ResponseParse, ResponseFields, ChallengeValidation }
+
 // Intentionally not a record: secrets must not be included in generated ToString/debug output.
 public sealed class SteamQrAuthentication(SteamHttp http, TimeProvider? timeProvider = null) : IDisposable
 {
     private readonly TimeProvider clock = timeProvider ?? TimeProvider.System;
     private ulong clientId;
+    private SteamAuthStage stage;
+    private string activeEndpoint="AuthBegin";
+    public SteamAuthStage? LastFailureStage {get;private set;}
     private byte[] requestId = [];
     private DateTimeOffset expires, nextPoll;
     private TimeSpan interval;
@@ -21,40 +26,45 @@ public sealed class SteamQrAuthentication(SteamHttp http, TimeProvider? timeProv
     public Task<Uri> BeginAsync(CancellationToken token = default) => GuardAsync(() => BeginCoreAsync(token), "AuthBegin");
     private async Task<Uri> BeginCoreAsync(CancellationToken token)
     {
-        using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.Login,DiagnosticArea.Authentication,"A01");
         if (!http.Access.AuthenticatedReads) throw new SteamException(SteamFailure.Disabled);
         Dispose();
         // Minimal independent encoding of public protocol field numbers; no protobuf dependency/source copying.
-        var details = Proto.Text(1, "MarketCrate experimental").Concat(Proto.Number(2, 2)).ToArray();
-        var request = Proto.Bytes(3, details);
+        stage=SteamAuthStage.RequestEncoding;
+        const string friendlyName="MarketCrate experimental";
+        const ulong webBrowser=2; // EAuthTokenPlatformType.WebBrowser, not OS or SteamClient.
+        var details = Proto.Text(1, friendlyName).Concat(Proto.Number(2, webBrowser)).ToArray();
+        var request = Proto.Text(1,friendlyName).Concat(Proto.Number(2,webBrowser)).Concat(Proto.Bytes(3,details)).Concat(Proto.Text(4,"Community")).ToArray();
         using var form = AuthForm("BeginAuthSessionViaQR", request);
-        using var document = SteamHttp.Json(await http.SendAsync(form, token));
+        using var document = await ReadResponseAsync(form,token,"AuthBegin");
         var root = document.RootElement.GetProperty("response");
-        clientId = ulong.Parse(root.GetProperty("client_id").GetString()!, CultureInfo.InvariantCulture);
-        requestId = Convert.FromBase64String(root.GetProperty("request_id").GetString()!);
+        clientId = ReadClientId(root.GetProperty("client_id"));
+        var encoded=root.GetProperty("request_id").GetString();
+        if(string.IsNullOrEmpty(encoded)||encoded.Length>348)throw new SteamException(SteamFailure.ContractChanged);
+        requestId = Convert.FromBase64String(encoded);
         if (requestId.Length is < 1 or > 256 || clientId == 0) throw new SteamException(SteamFailure.ContractChanged);
+        stage=SteamAuthStage.ChallengeValidation;
         Challenge = ValidateChallenge(root.GetProperty("challenge_url").GetString()!);
+        stage=SteamAuthStage.ResponseFields;
         var seconds = root.GetProperty("interval").GetDouble();
-        if (!double.IsFinite(seconds) || seconds < 1 || seconds > 60) throw new SteamException(SteamFailure.ContractChanged);
-        interval = TimeSpan.FromSeconds(seconds); nextPoll = clock.GetUtcNow() + interval; expires = clock.GetUtcNow().AddMinutes(2);
+        if (!double.IsFinite(seconds) || seconds <= 0 || seconds > 60) throw new SteamException(SteamFailure.ContractChanged);
+        interval = TimeSpan.FromSeconds(seconds); if(interval<=TimeSpan.Zero)throw new SteamException(SteamFailure.ContractChanged); nextPoll = clock.GetUtcNow() + interval; expires = clock.GetUtcNow().AddMinutes(2);
         return Challenge;
     }
     // No background polling. Each call must be made by an explicit user login/check action.
     public Task<bool> CheckAsync(CancellationToken token = default) => GuardAsync(() => CheckCoreAsync(token), "AuthPoll");
     private async Task<bool> CheckCoreAsync(CancellationToken token)
     {
-        using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.LoginCheck,DiagnosticArea.Authentication,"A03");
         if (Challenge is null || clock.GetUtcNow() > expires) throw new SteamException(SteamFailure.Expired);
         if (clock.GetUtcNow() < nextPoll) return false;
         nextPoll = clock.GetUtcNow() + interval;
         using var form = AuthForm("PollAuthSessionStatus", Proto.Number(1, clientId).Concat(Proto.Bytes(2, requestId)).ToArray());
-        using var document = SteamHttp.Json(await http.SendAsync(form, token));
+        using var document = await ReadResponseAsync(form,token,"AuthPoll");
         var root = document.RootElement.GetProperty("response");
         if(root.TryGetProperty("captcha_needed",out var captcha)&&captcha.ValueKind==JsonValueKind.True)throw new SteamException(SteamFailure.Challenge);
         if(root.TryGetProperty("agreement_session_url",out var agreement)&&!string.IsNullOrEmpty(agreement.GetString()))throw new SteamException(SteamFailure.Restricted);
         if(root.EnumerateObject().Any(x=>x.Name is not("new_client_id" or "new_challenge_url" or "refresh_token" or "access_token" or "had_remote_interaction" or "account_name" or "new_guard_data" or "agreement_session_url")))throw new SteamException(SteamFailure.ContractChanged);
-        if (root.TryGetProperty("new_client_id", out var id) && ulong.Parse(id.GetString()!, CultureInfo.InvariantCulture) is >0 and var nextId) clientId = nextId;
-        if (root.TryGetProperty("new_challenge_url", out var challenge) && !string.IsNullOrEmpty(challenge.GetString())) Challenge = ValidateChallenge(challenge.GetString()!);
+        if (root.TryGetProperty("new_client_id", out var id) && ReadClientId(id) is >0 and var nextId) clientId = nextId;
+        if (root.TryGetProperty("new_challenge_url", out var challenge) && !string.IsNullOrEmpty(challenge.GetString())) {stage=SteamAuthStage.ChallengeValidation;Challenge = ValidateChallenge(challenge.GetString()!);stage=SteamAuthStage.ResponseFields;}
         if (!root.TryGetProperty("refresh_token", out var refresh) || string.IsNullOrEmpty(refresh.GetString())) return false;
         // Refresh token exists only in this stack/response. No disk persistence, JWT logging or third-party transfer.
         await FinalizeAsync(refresh.GetString()!, token);
@@ -67,7 +77,7 @@ public sealed class SteamQrAuthentication(SteamHttp http, TimeProvider? timeProv
         var csrf = Convert.ToHexString(RandomNumberGenerator.GetBytes(12)).ToLowerInvariant();
         using var form = SteamHttp.Form(new("https://login.steampowered.com/jwt/finalizelogin"), new Dictionary<string, string>
         { ["nonce"] = refresh, ["sessionid"] = csrf, ["redir"] = "https://steamcommunity.com/login/home/?goto=" });
-        using var document = SteamHttp.Json(await http.SendAsync(form, token));
+        using var document = await ReadResponseAsync(form,token,"AuthFinalize");
         var root = document.RootElement;
         var steamId = SteamContract.Id(root.GetProperty("steamID"));
         var transfers = root.GetProperty("transfer_info").EnumerateArray().Where(x => x.GetProperty("url").GetString() == "https://steamcommunity.com/login/settoken").ToArray();
@@ -75,14 +85,33 @@ public sealed class SteamQrAuthentication(SteamHttp http, TimeProvider? timeProv
         var parameters = transfers[0].GetProperty("params");
         var fields = new Dictionary<string, string> { ["steamID"] = steamId, ["nonce"] = parameters.GetProperty("nonce").GetString()!, ["auth"] = parameters.GetProperty("auth").GetString()! };
         using var transfer = SteamHttp.Form(new("https://steamcommunity.com/login/settoken"), fields);
-        using var result = SteamHttp.Json(await http.SendAsync(transfer, token));
+        using var result = await ReadResponseAsync(transfer,token,"AuthTransfer");
         if (result.RootElement.GetProperty("result").GetInt32() != 1 || http.Cookies.GetCookies(new("https://steamcommunity.com/"))["steamLoginSecure"] is null)
             throw new SteamException(SteamFailure.Authentication);
         http.Cookies.Add(new System.Net.Cookie("sessionid", csrf, "/", "steamcommunity.com") { Secure = true });
         SessionId = csrf; SteamId = steamId;
     }
-    private static HttpRequestMessage AuthForm(string method, byte[] data) => SteamHttp.Form(new($"https://api.steampowered.com/IAuthenticationService/{method}/v1/"),
-        new Dictionary<string, string> { ["input_protobuf_encoded"] = Convert.ToBase64String(data) });
+    private static HttpRequestMessage AuthForm(string method, byte[] data)
+    {
+        var request=SteamHttp.Form(new($"https://api.steampowered.com/IAuthenticationService/{method}/v1/"),
+            new Dictionary<string,string>{["input_protobuf_encoded"]=Convert.ToBase64String(data),["format"]="json"});
+        request.Headers.Accept.ParseAdd("application/json");return request;
+    }
+    private async Task<JsonDocument> ReadResponseAsync(HttpRequestMessage request,CancellationToken token,string endpoint)
+    {
+        activeEndpoint=endpoint;stage=SteamAuthStage.HTTP;
+        string body;
+        try{body=await http.SendAsync(request,token);}catch(SteamException error)when(error.ApiResult is not null){stage=SteamAuthStage.ApiResult;throw;}
+        stage=SteamAuthStage.ResponseParse;
+        var document=JsonDocument.Parse(body,new JsonDocumentOptions{MaxDepth=32});
+        stage=SteamAuthStage.ResponseFields;return document;
+    }
+    private static ulong ReadClientId(JsonElement value)=>value.ValueKind switch
+    {
+        JsonValueKind.String when ulong.TryParse(value.GetString(),NumberStyles.None,CultureInfo.InvariantCulture,out var id)=>id,
+        JsonValueKind.Number when value.TryGetUInt64(out var id)=>id,
+        _=>throw new SteamException(SteamFailure.ContractChanged)
+    };
     private static Uri ValidateChallenge(string? value)
     {
         if (string.IsNullOrEmpty(value) || value.Length > 4096 || !Uri.TryCreate(value, UriKind.Absolute, out var uri) || uri.Scheme != "https" || uri.Host != "s.team" || uri.Port != 443 || !uri.AbsolutePath.StartsWith("/q/", StringComparison.Ordinal) || uri.UserInfo.Length != 0 || uri.Query.Length != 0 || uri.Fragment.Length != 0)
@@ -91,14 +120,19 @@ public sealed class SteamQrAuthentication(SteamHttp http, TimeProvider? timeProv
     }
     private async Task<T> GuardAsync<T>(Func<Task<T>> action, string endpoint)
     {
+        using var operation=DiagnosticHub.Operation(endpoint=="AuthBegin"?DiagnosticEvent.Login:DiagnosticEvent.LoginCheck,DiagnosticArea.Authentication,endpoint=="AuthBegin"?"A01":"A03");
+        activeEndpoint=endpoint;stage=SteamAuthStage.AuthBegin;LastFailureStage=null;
         try { return await action(); }
         catch (OperationCanceledException) { Dispose(); DiagnosticHub.Emit(DiagnosticEvent.AuthState, DiagnosticArea.Authentication, DiagnosticOutcome.Cancelled, LogLevel.Warning, DiagnosticError.Cancelled, requirement: "A03", endpoint: endpoint); throw; }
         catch (Exception error) when (error is SteamException or JsonException or InvalidOperationException or KeyNotFoundException or FormatException or OverflowException or ArgumentException)
         {
             var code = error is SteamException steam ? steam.Code : SteamFailure.ContractChanged;
+            LastFailureStage=stage;
+            var classification=error is JsonException?DiagnosticError.Parsing:SteamDiagnostics.Classify(code);
+            DiagnosticHub.Emit(DiagnosticEvent.AuthContract,DiagnosticArea.Authentication,DiagnosticOutcome.Blocked,LogLevel.Error,classification,requirement:"A03",endpoint:activeEndpoint,reason:stage.ToString(),serverCode:(error as SteamException)?.ApiResult,exception:error);
             Dispose(); http.Stop(code);
-            DiagnosticHub.Emit(DiagnosticEvent.AuthState, DiagnosticArea.Authentication, DiagnosticOutcome.Blocked, LogLevel.Error, SteamDiagnostics.Classify(code), requirement: "A03", endpoint: endpoint, reason: code.ToString(), exception: error);
-            throw new SteamException(code);
+            DiagnosticHub.Emit(DiagnosticEvent.AuthState, DiagnosticArea.Authentication, DiagnosticOutcome.Blocked, LogLevel.Error, classification, requirement: "A03", endpoint: activeEndpoint, reason: code.ToString(), exception: error);
+            throw new SteamException(code,(error as SteamException)?.ApiResult);
         }
     }
     public void Dispose()

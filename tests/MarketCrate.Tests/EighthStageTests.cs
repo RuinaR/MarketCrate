@@ -123,7 +123,7 @@ public static class EighthStageTests
             if(request.RequestUri!.AbsolutePath.Contains("PollAuthSession"))
             {
                 var body = await request.Content!.ReadAsStringAsync(token);
-                LastAuthBytes = Convert.FromBase64String(Uri.UnescapeDataString(body.Split('=',2)[1]));
+                LastAuthBytes = Convert.FromBase64String(body.Split('&').Select(x=>x.Split('=',2)).Where(x=>x[0]=="input_protobuf_encoded").Select(x=>Uri.UnescapeDataString(x[1])).Single());
                 if(CancelPoll) throw new OperationCanceledException(token);
                 if(Poll is not null) return new(HttpStatusCode.OK){Content=new StringContent(Poll)};
             }

@@ -1,5 +1,15 @@
 # Steam 연동 가능성 조사 — 2026-10-28 KST (7차)
 
+## 11차 QR 계약 수정 근거 (2026-10-28 KST)
+
+[Valve 공개 API 메타데이터](https://api.steampowered.com/ISteamWebAPIUtil/GetSupportedAPIList/v1/) GET에서 IAuthenticationService.BeginAuthSessionViaQR v1 POST의 device_friendly_name/string, platform_type/enum, device_details/message는 optional:false, website_id/string은 optional:true임을 확인했다. 인증 endpoint는 호출하지 않았다. 이 required HTTP 선언과 공개 protobuf의 optional 문법은 서로 다른 조건이다.
+
+[공개 protobuf 정의](https://github.com/SteamDatabase/Protobufs/blob/master/steam/steammessages_auth.steamclient.proto)의 최상위1/2/3/4와 DeviceDetails 내부1/2를 구분했다. WebBrowser=2는 OS 값이 아니며 SteamClient=1/MobileApp=3과 다르다. 응답1client_id(uint64),2challenge_url(string),3request_id(bytes),4interval(float)을 JSON 표현에 맞춰 파싱한다. [공식 WebAPI 개요](https://partner.steamgames.com/doc/webapi_overview)의 UTF8 form POST/format 조건을 참고해 format=json을 별도 form 필드로 요청한다.
+
+[node-steam-session AuthenticationClient](https://github.com/DoctorMcKay/node-steam-session/blob/master/src/AuthenticationClient.ts)와 [WebApiTransport](https://github.com/DoctorMcKay/node-steam-session/blob/master/src/transports/WebApiTransport.ts)는 QR Begin에서 device_details 위주로 전송하고 base64 protobuf form을 사용한다. [SteamKit Authentication](https://github.com/SteamRE/SteamKit/blob/master/SteamKit2/SteamKit2/Steam/Authentication/SteamAuthentication.cs)도 CM 경로에서 details/website를 사용한다. 이 사례만으로 HTTP 최상위 조건이 불필요하다고 단정하지 않았다. 어느 자료도 사용자 실패의 실응답 증거 또는 자동화 허가가 아니다. 소스 직접 복사·새 패키지 도입 없음.
+
+확인된 기존 요청 불일치와 numeric JSON 파서 결함을 수정했지만, Valve 서버의 실제 직렬화·QR 발급·승인·finalize/transfer/cookie는 실계정 미검증이다. READ_ONLY_READY/LIVE_READY로 승격하지 않는다. IntegrationBlocked 및 비공식 자동화 제재 위험은 그대로다.
+
 ## 10차 실사용 연결 보완 (2026-10-28 KST)
 
 실계정/API/인증/등록/취소/Guard는Codex가실행하지않았다. [공개auth proto](https://github.com/SteamDatabase/Protobufs/blob/master/steam/steammessages_auth.steamclient.proto)와[node-steam-session AuthenticationClient](https://github.com/DoctorMcKay/node-steam-session/blob/master/src/AuthenticationClient.ts)를재확인했다. optional new_client_id/new_challenge_url 전달근거가있어이미구현된auth회전에UI QR도연결했다. 패키지/타소스직접도입없음. 실JSON/토큰finalize/cookie/기간·만료의실계정계약은미검증.

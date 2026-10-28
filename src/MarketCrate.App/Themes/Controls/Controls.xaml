@@ -55,52 +55,23 @@
           <VisualState x:Name="Unfocused" />
           <VisualState x:Name="Focused">
             <Storyboard>
-              <ObjectAnimationUsingKeyFrames Storyboard.TargetName="B" Storyboard.TargetProperty="BorderBrush">
-                <DiscreteObjectKeyFrame KeyTime="0" Value="{StaticResource Accent}" />
-              </ObjectAnimationUsingKeyFrames>
+              <DoubleAnimation Storyboard.TargetName="FocusRing" Storyboard.TargetProperty="Opacity" To="1" Duration="0" />
             </Storyboard>
           </VisualState>
         </VisualStateGroup>
       </VisualStateManager.VisualStateGroups>
-      <ContentPresenter x:Name="ActionContent" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" RecognizesAccessKey="True" />
+      <Grid>
+        <Rectangle x:Name="FocusRing" Stroke="{StaticResource Warning}" StrokeThickness="1" StrokeDashArray="2,2" RadiusX="4" RadiusY="4" Margin="-6" Opacity="0" IsHitTestVisible="False" />
+        <ContentPresenter x:Name="ActionContent" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" RecognizesAccessKey="True" />
+      </Grid>
     </Border>
     <ControlTemplate.Triggers>
-      <MultiTrigger>
-        <MultiTrigger.Conditions>
-          <Condition Property="IsMouseOver" Value="True" />
-          <Condition Property="c:Motion.Reduced" Value="False" />
-        </MultiTrigger.Conditions>
-        <MultiTrigger.EnterActions>
-          <BeginStoryboard>
-            <Storyboard>
-              <DoubleAnimation Storyboard.TargetName="ActionContent" Storyboard.TargetProperty="Opacity" To="0.92" Duration="0:0:0.12" />
-            </Storyboard>
-          </BeginStoryboard>
-        </MultiTrigger.EnterActions>
-        <MultiTrigger.ExitActions>
-          <BeginStoryboard>
-            <Storyboard>
-              <DoubleAnimation Storyboard.TargetName="ActionContent" Storyboard.TargetProperty="Opacity" To="1" Duration="0:0:0.12" />
-            </Storyboard>
-          </BeginStoryboard>
-        </MultiTrigger.ExitActions>
-      </MultiTrigger>
-      <Trigger Property="IsMouseOver" Value="True">
-        <Setter TargetName="B" Property="Background" Value="{StaticResource Hover}" />
-      </Trigger>
-      <Trigger Property="IsPressed" Value="True">
-        <Setter TargetName="B" Property="Background" Value="#405775" />
-      </Trigger>
-      <Trigger Property="IsKeyboardFocusWithin" Value="True">
-        <Setter TargetName="B" Property="BorderBrush" Value="{StaticResource Accent}" />
-        <Setter TargetName="B" Property="BorderThickness" Value="2" />
-      </Trigger>
-      <Trigger Property="IsEnabled" Value="False">
-        <Setter TargetName="B" Property="Opacity" Value="0.4" />
-      </Trigger>
+      <Trigger Property="c:FocusCue.KeyboardMode" Value="False"><Setter TargetName="FocusRing" Property="Visibility" Value="Collapsed" /></Trigger>
+      <Trigger Property="IsEnabled" Value="False"><Setter TargetName="FocusRing" Property="Visibility" Value="Collapsed" /></Trigger>
     </ControlTemplate.Triggers>
   </ControlTemplate>
   <Style x:Key="ActionBase" TargetType="p:ButtonBase">
+    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
     <Setter Property="HorizontalContentAlignment" Value="Center" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
     <Setter Property="Foreground" Value="{StaticResource Ink}" />
@@ -121,19 +92,22 @@
   <Style TargetType="p:ToggleButton" BasedOn="{StaticResource ActionBase}">
     <Style.Triggers>
       <Trigger Property="IsChecked" Value="True">
-        <Setter Property="Background" Value="#28554E" />
+        <Setter Property="Background" Value="#18322E" />
         <Setter Property="BorderBrush" Value="{StaticResource Accent}" />
       </Trigger>
     </Style.Triggers>
   </Style>
   <ControlTemplate x:Key="CheckTemplate" TargetType="p:ToggleButton">
     <Border x:Name="Frame" Background="Transparent" Padding="6" BorderBrush="Transparent" BorderThickness="1" CornerRadius="4">
+      <Grid>
+      <Rectangle x:Name="FocusRing" Stroke="{StaticResource Warning}" StrokeThickness="1" StrokeDashArray="2,2" RadiusX="3" RadiusY="3" IsHitTestVisible="False" Visibility="Collapsed" />
       <StackPanel Orientation="Horizontal">
         <Border x:Name="Box" Width="18" Height="18" Background="{StaticResource Surface}" BorderBrush="{StaticResource Edge}" BorderThickness="1" CornerRadius="3">
           <TextBlock x:Name="Mark" Text="✓" Visibility="Collapsed" Foreground="{StaticResource Accent}" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Border>
         <ContentPresenter Margin="8,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="True" />
       </StackPanel>
+      </Grid>
     </Border>
     <ControlTemplate.Triggers>
       <Trigger Property="Tag" Value="Radio">
@@ -148,30 +122,31 @@
         <Setter TargetName="Mark" Property="Text" Value="−" />
         <Setter TargetName="Mark" Property="Visibility" Value="Visible" />
       </Trigger>
-      <Trigger Property="IsMouseOver" Value="True">
+      <MultiTrigger><MultiTrigger.Conditions><Condition Property="IsMouseOver" Value="True"/><Condition Property="IsEnabled" Value="True"/></MultiTrigger.Conditions>
         <Setter TargetName="Frame" Property="Background" Value="{StaticResource Hover}" />
-      </Trigger>
-      <Trigger Property="IsPressed" Value="True">
+      </MultiTrigger>
+      <MultiTrigger><MultiTrigger.Conditions><Condition Property="IsPressed" Value="True"/><Condition Property="IsEnabled" Value="True"/></MultiTrigger.Conditions>
         <Setter TargetName="Frame" Property="Opacity" Value="0.65" />
-      </Trigger>
-      <Trigger Property="IsKeyboardFocused" Value="True">
-        <Setter TargetName="Frame" Property="BorderBrush" Value="{StaticResource Accent}" />
-      </Trigger>
+      </MultiTrigger>
+      <MultiTrigger><MultiTrigger.Conditions><Condition Property="IsKeyboardFocused" Value="True"/><Condition Property="c:FocusCue.KeyboardMode" Value="True"/><Condition Property="IsEnabled" Value="True"/></MultiTrigger.Conditions><Setter TargetName="FocusRing" Property="Visibility" Value="Visible"/></MultiTrigger>
       <Trigger Property="IsEnabled" Value="False">
         <Setter TargetName="Frame" Property="Opacity" Value="0.4" />
       </Trigger>
     </ControlTemplate.Triggers>
   </ControlTemplate>
   <Style TargetType="CheckBox">
+    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
     <Setter Property="Foreground" Value="{StaticResource Ink}" />
     <Setter Property="Template" Value="{StaticResource CheckTemplate}" />
   </Style>
   <Style TargetType="RadioButton">
+    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
     <Setter Property="Tag" Value="Radio" />
     <Setter Property="Foreground" Value="{StaticResource Ink}" />
     <Setter Property="Template" Value="{StaticResource CheckTemplate}" />
   </Style>
   <Style TargetType="TextBox">
+    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
     <Setter Property="Validation.ErrorTemplate" Value="{x:Null}" />
     <Setter Property="ContextMenu">
       <Setter.Value>
@@ -193,18 +168,16 @@
       <Setter.Value>
         <ControlTemplate TargetType="TextBox">
           <Border x:Name="B" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="5" Padding="{TemplateBinding Padding}">
-            <Grid>
+            <Grid><Rectangle x:Name="FocusRing" Stroke="{StaticResource Warning}" StrokeThickness="1" StrokeDashArray="2,2" RadiusX="3" RadiusY="3" IsHitTestVisible="False" Visibility="Collapsed"/>
               <ScrollViewer x:Name="PART_ContentHost" />
               <TextBlock x:Name="Placeholder" Text="{TemplateBinding Tag}" Foreground="{StaticResource Muted}" IsHitTestVisible="False" Visibility="Collapsed" />
             </Grid>
           </Border>
-          <ControlTemplate.Triggers>
-            <Trigger Property="IsMouseOver" Value="True">
+          <ControlTemplate.Triggers><MultiTrigger><MultiTrigger.Conditions><Condition Property="IsKeyboardFocusWithin" Value="True"/><Condition Property="c:FocusCue.KeyboardMode" Value="True"/><Condition Property="IsEnabled" Value="True"/></MultiTrigger.Conditions><Setter TargetName="FocusRing" Property="Visibility" Value="Visible"/></MultiTrigger>
+            <MultiTrigger><MultiTrigger.Conditions><Condition Property="IsMouseOver" Value="True"/><Condition Property="IsEnabled" Value="True"/></MultiTrigger.Conditions>
               <Setter TargetName="B" Property="BorderBrush" Value="{StaticResource Muted}" />
-            </Trigger>
-            <Trigger Property="IsKeyboardFocusWithin" Value="True">
-              <Setter TargetName="B" Property="BorderBrush" Value="{StaticResource Accent}" />
-            </Trigger>
+            </MultiTrigger>
+
             <Trigger Property="Text" Value="">
               <Setter TargetName="Placeholder" Property="Visibility" Value="Visible" />
             </Trigger>
@@ -226,19 +199,20 @@
     <Setter Property="AutomationProperties.Name" Value="아이템 검색" />
   </Style>
   <Style TargetType="ComboBoxItem">
+    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
     <Setter Property="Foreground" Value="{StaticResource Ink}" />
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="ComboBoxItem">
-          <Border x:Name="B" Background="{StaticResource Panel}" Padding="10">
+          <Border x:Name="B" Background="{StaticResource Panel}" Padding="10"><Grid><Rectangle x:Name="FocusRing" Stroke="{StaticResource Warning}" StrokeThickness="1" StrokeDashArray="2,2" RadiusX="3" RadiusY="3" IsHitTestVisible="False" Visibility="Collapsed"/>
             <ContentPresenter />
-          </Border>
-          <ControlTemplate.Triggers>
-            <Trigger Property="IsHighlighted" Value="True">
+          </Grid></Border>
+          <ControlTemplate.Triggers><Trigger Property="IsEnabled" Value="False"><Setter TargetName="B" Property="Opacity" Value="0.4"/></Trigger><MultiTrigger><MultiTrigger.Conditions><Condition Property="IsHighlighted" Value="True"/><Condition Property="c:FocusCue.KeyboardMode" Value="True"/><Condition Property="IsEnabled" Value="True"/></MultiTrigger.Conditions><Setter TargetName="FocusRing" Property="Visibility" Value="Visible"/></MultiTrigger><MultiTrigger><MultiTrigger.Conditions><Condition Property="IsKeyboardFocused" Value="True"/><Condition Property="c:FocusCue.KeyboardMode" Value="True"/><Condition Property="IsEnabled" Value="True"/></MultiTrigger.Conditions><Setter TargetName="FocusRing" Property="Visibility" Value="Visible"/></MultiTrigger>
+            <MultiTrigger><MultiTrigger.Conditions><Condition Property="IsMouseOver" Value="True"/><Condition Property="IsEnabled" Value="True"/></MultiTrigger.Conditions>
               <Setter TargetName="B" Property="Background" Value="{StaticResource Hover}" />
-            </Trigger>
+            </MultiTrigger>
             <Trigger Property="IsSelected" Value="True">
-              <Setter TargetName="B" Property="Background" Value="#28554E" />
+              <Setter TargetName="B" Property="Background" Value="#18322E" />
             </Trigger>
           </ControlTemplate.Triggers>
         </ControlTemplate>
@@ -246,6 +220,7 @@
     </Setter>
   </Style>
   <Style TargetType="ComboBox">
+    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
     <Setter Property="BorderBrush" Value="{StaticResource Edge}" />
     <Setter Property="Foreground" Value="{StaticResource Ink}" />
     <Setter Property="Margin" Value="3" />
@@ -254,10 +229,11 @@
       <Setter.Value>
         <ControlTemplate TargetType="ComboBox">
           <Grid>
+            <Rectangle x:Name="FocusRing" Panel.ZIndex="2" Stroke="{StaticResource Warning}" StrokeThickness="1" StrokeDashArray="2,2" Margin="3" RadiusX="4" RadiusY="4" IsHitTestVisible="False" Visibility="Collapsed"/>
             <p:ToggleButton x:Name="DropButton" Focusable="False" BorderBrush="{TemplateBinding BorderBrush}" IsChecked="{Binding IsDropDownOpen,RelativeSource={RelativeSource TemplatedParent},Mode=TwoWay}" Content="⌄" HorizontalContentAlignment="Right" />
-            <ContentPresenter Margin="12,8,30,8" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" IsHitTestVisible="False" />
+            <ContentPresenter x:Name="SelectionContent" Margin="12,8,30,8" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" IsHitTestVisible="False" />
             <Popup x:Name="PART_Popup" Placement="Bottom" StaysOpen="False" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False">
-              <Border Background="{StaticResource Panel}" BorderBrush="{StaticResource Edge}" BorderThickness="1" MinWidth="{Binding ActualWidth,RelativeSource={RelativeSource TemplatedParent}}">
+              <Border c:FocusCue.Enabled="True" Background="{StaticResource Panel}" BorderBrush="{StaticResource Edge}" BorderThickness="1" MinWidth="{Binding ActualWidth,RelativeSource={RelativeSource TemplatedParent}}">
                 <ScrollViewer MaxHeight="260">
                   <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Contained" />
                 </ScrollViewer>
@@ -265,10 +241,10 @@
             </Popup>
           </Grid>
           <ControlTemplate.Triggers>
-            <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="DropButton" Property="BorderBrush" Value="{StaticResource Accent}" /></Trigger>
+            <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter TargetName="FocusRing" Property="Visibility" Value="Visible" /></Trigger><Trigger Property="c:FocusCue.KeyboardMode" Value="False"><Setter TargetName="FocusRing" Property="Visibility" Value="Collapsed" /></Trigger>
             <Trigger Property="IsDropDownOpen" Value="True"><Setter TargetName="DropButton" Property="BorderBrush" Value="{StaticResource Accent}" /></Trigger>
             <Trigger Property="IsEnabled" Value="False">
-              <Setter Property="Opacity" Value="0.4" />
+              <Setter TargetName="SelectionContent" Property="Opacity" Value="0.4" /><Setter TargetName="FocusRing" Property="Visibility" Value="Collapsed" />
             </Trigger>
           </ControlTemplate.Triggers>
         </ControlTemplate>
@@ -276,6 +252,7 @@
     </Setter>
   </Style>
   <Style TargetType="c:NumericStepper">
+    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
     <Setter Property="Focusable" Value="True" />
     <Setter Property="Template">
       <Setter.Value>
@@ -285,12 +262,12 @@
               <ColumnDefinition Width="32" />
               <ColumnDefinition Width="58" />
               <ColumnDefinition Width="32" />
-            </Grid.ColumnDefinitions>
+            </Grid.ColumnDefinitions><Rectangle x:Name="FocusRing" Grid.ColumnSpan="3" Panel.ZIndex="2" Stroke="{StaticResource Warning}" StrokeThickness="1" StrokeDashArray="2,2" IsHitTestVisible="False" Visibility="Collapsed"/>
             <Button x:Name="PART_Down" Content="−" Padding="0" AutomationProperties.Name="수량 줄이기" />
             <TextBox Grid.Column="1" Text="{Binding Value,RelativeSource={RelativeSource TemplatedParent},UpdateSourceTrigger=LostFocus,ValidatesOnExceptions=True,NotifyOnValidationError=True}" HorizontalContentAlignment="Center" AutomationProperties.Name="선택 수량" />
             <Button x:Name="PART_Up" Grid.Column="2" Content="+" Padding="0" AutomationProperties.Name="수량 늘리기" />
           </Grid>
-        </ControlTemplate>
+        <ControlTemplate.Triggers><MultiTrigger><MultiTrigger.Conditions><Condition Property="IsKeyboardFocusWithin" Value="True"/><Condition Property="c:FocusCue.KeyboardMode" Value="True"/><Condition Property="IsEnabled" Value="True"/></MultiTrigger.Conditions><Setter TargetName="FocusRing" Property="Visibility" Value="Visible"/></MultiTrigger></ControlTemplate.Triggers></ControlTemplate>
       </Setter.Value>
     </Setter>
   </Style>
@@ -300,12 +277,12 @@
         <ControlTemplate TargetType="p:Thumb">
           <Border x:Name="B" Background="{StaticResource Edge}" CornerRadius="4" Margin="2" />
           <ControlTemplate.Triggers>
-            <Trigger Property="IsMouseOver" Value="True">
+            <MultiTrigger><MultiTrigger.Conditions><Condition Property="IsMouseOver" Value="True"/><Condition Property="IsEnabled" Value="True"/></MultiTrigger.Conditions>
               <Setter TargetName="B" Property="Background" Value="{StaticResource Muted}" />
-            </Trigger>
-            <Trigger Property="IsDragging" Value="True">
+            </MultiTrigger>
+            <MultiTrigger><MultiTrigger.Conditions><Condition Property="IsDragging" Value="True"/><Condition Property="IsEnabled" Value="True"/></MultiTrigger.Conditions>
               <Setter TargetName="B" Property="Background" Value="{StaticResource Accent}" />
-            </Trigger>
+            </MultiTrigger>
           </ControlTemplate.Triggers>
         </ControlTemplate>
       </Setter.Value>
@@ -364,26 +341,25 @@
     </Setter>
   </Style>
   <Style TargetType="ListBoxItem">
+    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
     <Setter Property="HorizontalContentAlignment" Value="Stretch" />
     <Setter Property="Padding" Value="8" />
     <Setter Property="Margin" Value="0,3" />
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="ListBoxItem">
-          <Border x:Name="B" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="7" Padding="{TemplateBinding Padding}">
+          <Border x:Name="B" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="7" Padding="{TemplateBinding Padding}"><Grid><Rectangle x:Name="FocusRing" Stroke="{StaticResource Warning}" StrokeThickness="1" StrokeDashArray="2,2" RadiusX="3" RadiusY="3" IsHitTestVisible="False" Visibility="Collapsed"/>
             <ContentPresenter />
-          </Border>
-          <ControlTemplate.Triggers>
-            <Trigger Property="IsMouseOver" Value="True">
+          </Grid></Border>
+          <ControlTemplate.Triggers><MultiTrigger><MultiTrigger.Conditions><Condition Property="IsKeyboardFocusWithin" Value="True"/><Condition Property="c:FocusCue.KeyboardMode" Value="True"/><Condition Property="IsEnabled" Value="True"/></MultiTrigger.Conditions><Setter TargetName="FocusRing" Property="Visibility" Value="Visible"/></MultiTrigger>
+            <MultiTrigger><MultiTrigger.Conditions><Condition Property="IsMouseOver" Value="True"/><Condition Property="IsEnabled" Value="True"/></MultiTrigger.Conditions>
               <Setter TargetName="B" Property="Background" Value="{StaticResource Hover}" />
-            </Trigger>
+            </MultiTrigger>
             <Trigger Property="IsSelected" Value="True">
               <Setter TargetName="B" Property="BorderBrush" Value="{StaticResource Accent}" />
               <Setter TargetName="B" Property="Background" Value="#203C3B" />
             </Trigger>
-            <Trigger Property="IsKeyboardFocusWithin" Value="True">
-              <Setter TargetName="B" Property="BorderBrush" Value="{StaticResource Accent}" />
-            </Trigger>
+
             <Trigger Property="IsEnabled" Value="False">
               <Setter TargetName="B" Property="Opacity" Value="0.4" />
             </Trigger>
@@ -420,24 +396,23 @@
     </Setter>
   </Style>
   <Style TargetType="TabItem">
+    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
     <Setter Property="Foreground" Value="{StaticResource Muted}" />
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="TabItem">
-          <Border x:Name="B" Padding="16,12" BorderThickness="0,0,0,2" BorderBrush="Transparent" Background="Transparent">
+          <Border x:Name="B" Padding="16,12" BorderThickness="0,0,0,2" BorderBrush="Transparent" Background="Transparent"><Grid><Rectangle x:Name="FocusRing" Stroke="{StaticResource Warning}" StrokeThickness="1" StrokeDashArray="2,2" RadiusX="3" RadiusY="3" IsHitTestVisible="False" Visibility="Collapsed"/>
             <ContentPresenter ContentSource="Header" RecognizesAccessKey="True" />
-          </Border>
-          <ControlTemplate.Triggers>
+          </Grid></Border>
+          <ControlTemplate.Triggers><Trigger Property="IsEnabled" Value="False"><Setter TargetName="B" Property="Opacity" Value="0.4"/></Trigger><MultiTrigger><MultiTrigger.Conditions><Condition Property="IsKeyboardFocused" Value="True"/><Condition Property="c:FocusCue.KeyboardMode" Value="True"/><Condition Property="IsEnabled" Value="True"/></MultiTrigger.Conditions><Setter TargetName="FocusRing" Property="Visibility" Value="Visible"/></MultiTrigger>
             <Trigger Property="IsSelected" Value="True">
               <Setter TargetName="B" Property="BorderBrush" Value="{StaticResource Accent}" />
               <Setter Property="Foreground" Value="{StaticResource Ink}" />
             </Trigger>
-            <Trigger Property="IsMouseOver" Value="True">
+            <MultiTrigger><MultiTrigger.Conditions><Condition Property="IsMouseOver" Value="True"/><Condition Property="IsEnabled" Value="True"/></MultiTrigger.Conditions>
               <Setter TargetName="B" Property="Background" Value="{StaticResource Hover}" />
-            </Trigger>
-            <Trigger Property="IsKeyboardFocused" Value="True">
-              <Setter TargetName="B" Property="BorderBrush" Value="{StaticResource Warning}" />
-            </Trigger>
+            </MultiTrigger>
+
           </ControlTemplate.Triggers>
         </ControlTemplate>
       </Setter.Value>
@@ -467,7 +442,7 @@
       </Setter.Value>
     </Setter>
   </Style>
-  <Style TargetType="ContextMenu">
+  <Style TargetType="ContextMenu"><Setter Property="c:FocusCue.Enabled" Value="True"/>
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="ContextMenu">
@@ -479,17 +454,18 @@
     </Setter>
   </Style>
   <Style TargetType="MenuItem">
+    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
     <Setter Property="Foreground" Value="{StaticResource Ink}" />
     <Setter Property="Template">
       <Setter.Value>
         <ControlTemplate TargetType="MenuItem">
-          <Border x:Name="B" Background="Transparent" Padding="12,8">
+          <Border x:Name="B" Background="Transparent" Padding="12,8"><Grid><Rectangle x:Name="FocusRing" Stroke="{StaticResource Warning}" StrokeThickness="1" StrokeDashArray="2,2" RadiusX="3" RadiusY="3" IsHitTestVisible="False" Visibility="Collapsed"/>
             <ContentPresenter ContentSource="Header" RecognizesAccessKey="True" />
-          </Border>
-          <ControlTemplate.Triggers>
-            <Trigger Property="IsHighlighted" Value="True">
+          </Grid></Border>
+          <ControlTemplate.Triggers><MultiTrigger><MultiTrigger.Conditions><Condition Property="IsHighlighted" Value="True"/><Condition Property="c:FocusCue.KeyboardMode" Value="True"/><Condition Property="IsEnabled" Value="True"/></MultiTrigger.Conditions><Setter TargetName="FocusRing" Property="Visibility" Value="Visible"/></MultiTrigger><MultiTrigger><MultiTrigger.Conditions><Condition Property="IsKeyboardFocused" Value="True"/><Condition Property="c:FocusCue.KeyboardMode" Value="True"/><Condition Property="IsEnabled" Value="True"/></MultiTrigger.Conditions><Setter TargetName="FocusRing" Property="Visibility" Value="Visible"/></MultiTrigger>
+            <MultiTrigger><MultiTrigger.Conditions><Condition Property="IsMouseOver" Value="True"/><Condition Property="IsEnabled" Value="True"/></MultiTrigger.Conditions>
               <Setter TargetName="B" Property="Background" Value="{StaticResource Hover}" />
-            </Trigger>
+            </MultiTrigger>
             <Trigger Property="IsEnabled" Value="False">
               <Setter TargetName="B" Property="Opacity" Value="0.4" />
             </Trigger>

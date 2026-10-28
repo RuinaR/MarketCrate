@@ -1,5 +1,13 @@
 # 진단 시스템 (10차, 2026-10-28 KST)
 
+## 11차 QR 계약 실패 분류
+
+AuthContract **EventId2005**, Area Authentication, Requirement A03. Reason은 고정 enum만 허용한다: AuthBegin(사전조건), RequestEncoding, HTTP(상태/통신), ApiResult(HTTP200이지만 x-eresult 거절), ResponseParse(JSON 문법), ResponseFields(필수 필드·형식·범위), ChallengeValidation(허용 QR URL). UI ContractFailure에도 LastFailureStage를 표시한다. AuthBegin/AuthPoll/AuthFinalize/AuthTransfer는 고정 Endpoint 식별자이며 실제 URL·계정·request_id를 기록하지 않는다.
+
+예: `Login(Operation O) → HttpRequest(AuthBegin,Correlation R) → HttpResponse(200,Failed,ServerCode8,R) → AuthContract(2005,ApiResult,Authentication,O) → AuthState(Blocked,O)`. malformed JSON은 HTTP 성공 후 AuthContract(ResponseParse,Parsing), 필드 누락은 ResponseFields/Schema, 잘못된 challenge host는 ChallengeValidation/Schema다. 로그가 거래 저널을 대체하지 않으며 자동 재요청을 유발하지 않는다.
+
+EleventhStageTests.ResponseFailures/ApiFailures는 동일 OperationId, 고정 endpoint, 실패 분류, HTTP200 API 오류 성공 오표시 방지 및 QR/응답 sentinel 부재를 검증한다. 원본 HTTP/QR을 내보내지 않으므로 사용자 ZIP만으로 응답 전체를 복원할 수는 없다. 이번 사용자 오류의 실제 단계는 새 빌드에서 사용자가 관찰해야 한다.
+
 ## 10차 실제 연결 계약 관측
 
 ReadContract **4202**: 기존UI operation 안에서 파싱이 끝난 AuthTransfer/Inventory/Listings/Fees/Orderbook/History의 고정endpoint·건수·KRW/USD·UTC·OperationId를기록한다. HTTP는같은operation의서로다른CorrelationId로연결한다. Synthetic/Observed를구분하고Observed는라이브계약검증완료가아니다. QR갱신은QrReady/SourceChanged만, URI/셀/토큰로그없음.

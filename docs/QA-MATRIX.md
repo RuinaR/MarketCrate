@@ -1,5 +1,19 @@
 # 정상·오류·복구 QA 매트릭스 — 10차 (2026-10-28 KST)
 
+## 11차 — 사용자 결함 재현 및 회귀 (2026-10-28 KST)
+
+| 경로 | 수정 전 증거 → 수정 및 합성/비표시 검증 |
+|---|---|
+| QR 요청 | 독립 decoder 정상계약 테스트 FAIL(최상위1 누락); API 메타데이터에서 최상위1/2 required 확인. EleventhStageTests.RequestContract: field번호/wiretype/상위·내부 구분/WebBrowser2/base64 form/format·Accept/인증완료 안 함 |
+| QR JSON | 숫자 uint64 client_id 합성 응답 FAIL → NumericResponse 정확한 ulong 파싱/0.5초 interval PASS. float 변환으로 정밀도 손실 안 함 |
+| 실패 단계/민감정보 | ResponseFailures/ApiFailures: malformed JSON, 누락, 잘못된 base64, uint64 overflow, 잘못된 host, interval0, 200+x-eresult8/401/403/429. 각 단계·원인·OperationId·세션정리·요청1회·secret sentinel 부재 검증 |
+| 취소/갱신/만료 | Cancellation: 사전취소 전송0/로그아웃 QR 제거. 기존 T10.QrRotation 및 5차 로그인 만료·거절·로그아웃·늦은 응답 회귀 유지 |
+| UI 상태 소유 | 이전 ActionTemplate VSM/Trigger 중복 검사 FAIL, DP 왕복 검사는 PASS. 실제 물리 ghost-hover 재현 아님. VSM 단일 소유+별도 FocusRing으로 수정 |
+| 상태 전이 | U11: Button/Toggle/Repeat VSM Normal/Hover/Pressed/Focus/Disabled 왕복; Check/Radio DP Checked/Hover/Pressed/Focus/Disabled; Tab/List/ComboItem/Menu 선택·focus·hover 재활용; Text/Search/Combo/Stepper focus/modality; Thumb hover/drag/disabled. 각각8회, Background/BorderBrush/BorderThickness/Opacity/현재 VSM·ring·mark 확인 |
+| 자체 렌더 | runtime/ui-tests/control-states.png 및 stage11-*.png. RenderTargetBitmap만 생성, 실제 Window/Popup/PresentationSource 없음. 실제 입력·Popup·물리 모니터 DPI NOT VERIFIED |
+
+초기 재현: 기능172/174 PASS·2FAIL, UI34PASS·1FAIL(구조 중복). 테스트 개발 중 detached CLR 상태 getter와 DP 상태 주입의 차이로 버튼 테스트가 실패했다. 이를 실제 입력으로 해석하지 않고 공개 VSM API 전이를 별도 구동하며 Trigger는 DP로 검사하도록 분리했다. 합격 기준의 시각 속성/복원 단언은 유지했다.
+
 ## 10차 검증 및 사용자 증거
 
 사용자 직접 보고의 9차 기본7항목: **7 PASS/0 FAIL**. 실제 Windows에서 실행/hover·click/보관함선택·수량/가격전환·검토/Mock배치/취소·재가격·진단/재시작 보존을 묶은7개다. 개별 테스트시각·빌드hash·OS·DPI 미제공. 상세 GUI-01~24 전항목 PASS로 변환하지 않으며, 10차 코드의 물리 GUI·읽기연동 결과로도 사용하지 않는다.
@@ -161,3 +175,6 @@
 - 실제 창·Popup 표시, 강제 포커스, 전역 입력, 물리 키보드/마우스, 모니터별 DPI, 스크린리더, 실제 Explorer 열기, 앱 설치·배포 후 실행은 **NOT VERIFIED**. RenderTargetBitmap 배율은 실제 per-monitor DPI 시험이 아니다.
 - 실제 Steam 로그인·인벤토리/가격/fee 응답·판매·취소·모바일 승인·요청 제한은 **NOT VERIFIED/BLOCKED**. 합성 테스트에서 정책 capability를 켠 것은 live 활성화가 아니다.
 - 실제 오류를 전부 재현/진단할 수 있다고 보장하지 않는다. 특히 OS 강제 종료 tail, storage 환경 장애, 변경된 외부 계약, 인과 증거 없는 요청은 불확실성을 보존한다.
+11차 최종 회귀: **기능177/177 PASS · 비표시 WPF39/39 PASS · 배포 파일 계약14/14 PASS · FAIL0 · Debug 경고0/오류0**. 기존172/33/14 전부 유지. `scripts/Verify.ps1`, ignored `runtime/stage11-verify.txt` 근거. 실제 서버/물리입력/Popup/설치·서명 미실행.
+
+사용자 최소 재확인: (1) 새 ZIP 버전·커밋 확인 후 Steam 탭에서 명시적 QR 시작으로 QR 표시 여부만 확인(실거래 금지), 실패하면 표시된 단계와 검토한 진단ZIP 확인. QR 원문은 공유하지 않는다. (2) 진단 탭/최근 오류 체크를 클릭한 뒤 포인터를 밖으로 이동: 선택 밑줄·체크 표시만 유지되는지 확인. (3) Tab/Shift+Tab의 점선 포커스, 빠른 탭 전환, 비활성→활성, 드롭다운 열기·닫기를 직접 확인. Codex는 이 작업을 실행하지 않았다.
