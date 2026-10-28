@@ -1,5 +1,17 @@
 # MarketCrate — 아키텍처 (최초 Mock 구현 / 후속 계획)
 
+## 3차 구현 — 2026-10-28 (최신)
+
+- 기존 계층/뷰를 유지했다. `ReviewLineViewModel`은 미산정 행·개별 단가/Steam·게임 수수료/실수령·수동 여부·조회 신선도를 표시한다. 합계는 편집 이벤트에서 갱신하며 프레임별 폴링은 없다.
+- `SalePlanner.Unpriced`로 원래 선택 수량 전체를 보존한다. 부족 가격은 생성하지 않고 직접 입력 전 최종 명령을 막는다. 전략 변경/검토 닫기/갱신은 초안과 수동값을 폐기한다.
+- `LineResult.Attempt`와 `SaleBatchCoordinator.RetryFailedAsync`: 확정 Failed + 검토한 기존 시도 번호가 일치할 때만 명시적으로 Failed→Submitting을 허용한다. 원래 스냅샷은 불변, 키는 `BatchId:LineId:attempt:N`. 대조는 현재 시도 키를 사용하고 성공/Unknown/Guard 대기는 제출하지 않는다.
+- `MockListingManagement`: 취소 확인→새 SubmitRequested→AwaitingSteamGuard의 재가격 saga. intent 직후 중단은 Unknown, 취소 확인 이후 후속 intent가 없는 경우만 사용자 검토로 재개. 교체 목록의 최종 취소까지 원래 자산 예약을 유지한다.
+- `ListingAction.Registration`과 관리 작업의 Action을 구분한다. 구형 Unknown(Action=None)을 과거 등록 증거로 덮어쓰지 않는다. 성공 응답을 게시 증거로 취급하지 않는다.
+- SQLite schema v2: v1 보존 이관, quick_check, 고정 스키마 diagnostics. `objects`의 batch/journal 불변 헤더와 result/listing별 변경 행을 트랜잭션으로 저장한다. 전체 배치/판매 배열의 반복 JSON 쓰기를 제거했다. 단일 writer 아래의 불변 레코드 캐시이며 Clear/Delete 후 무효화한다.
+- `ReadRecord`는 헤더와 최신 결과 행을 합쳐 복구한다. 복수 결과 갱신 중 실패하면 모든 변경을 rollback한다. 이전 v1 헤더/결과도 읽는다. `ReadBatches` 역시 최신 결과를 재구성해 예약 검사에 사용한다.
+- 구조화 진단은 코드/시각/건수만 최대500개, UI는 최근12개를 표시한다. 앱 시작 DB 오류는 별도 bounded 고정 코드 로그. 자유 텍스트 예외/키/쿠키/아이템/계정 문자열을 수집하지 않는다.
+- 테스트 전용 headless 프로세스는 프로젝트 DLL만 실행하고 자체 Exit한다. 실제 창/다른 프로세스/전역 입력은 대상이 아니다. 배포는 framework-dependent publish만 수행한다.
+
 ## 2차 구현 — 2026-10-28 (아래 최초 구현 설명보다 우선)
 
 - `MainWindow`는 일반 앱 실행 시의 호스트만 담당하고 실제 화면은 `MainView : UserControl`로 분리했다. `MarketCrate.UiTests`는 plain Application의 리소스만 로드해 MainView를 직접 생성하며 App.OnStartup/Window/Popup을 실행하지 않는다.

@@ -43,9 +43,10 @@ internal static class NextStageTests
                 {
                     using var db=new SqliteDemoStore(folder); var original=Ready(Batch()); await db.SaveAsync(original,default);
                     using var other=new SqliteConnection($"Data Source={Path.Combine(folder,"demo.sqlite")};Pooling=False"); other.Open();
-                    using var command=other.CreateCommand(); command.CommandText="CREATE TRIGGER block_batch BEFORE UPDATE ON objects WHEN NEW.kind='batch' BEGIN SELECT RAISE(ABORT,'synthetic failure'); END;"; command.ExecuteNonQuery();
-                    await ThrowsAsync<SqliteException>(()=>db.SaveAsync(original with { Results=original.Results.SetItem(0,new("0",SaleState.Submitting,"intent")) },default));
+                    using var command=other.CreateCommand(); command.CommandText="CREATE TRIGGER block_result BEFORE INSERT ON objects WHEN NEW.kind='result' AND NEW.id LIKE '%:1' BEGIN SELECT RAISE(ABORT,'synthetic failure'); END;"; command.ExecuteNonQuery();
+                    await ThrowsAsync<SqliteException>(()=>db.SaveAsync(original with { Results=original.Results.SetItem(0,new("0",SaleState.Submitting,"intent")).SetItem(1,new("1",SaleState.Submitting,"intent")) },default));
                     Check((await db.LoadAsync(default))!.Results[0].State==SaleState.Ready);
+                    command.CommandText="SELECT count(*) FROM objects WHERE kind='result'"; Check(Convert.ToInt32(command.ExecuteScalar())==0);
                 });
             }),
             ("JSON 이관 1회/원본 보존/삭제 후 부활 금지",async()=>

@@ -1,5 +1,19 @@
 # MarketCrate — 누적 작업 로그
 
+## 2026-10-28 — 3차 구현·검증 마일스톤
+- 조사 커밋 `db8a55c`를 origin/main에 정상 push한 뒤 기존 WPF/MVVM/Core/SQLite 구조를 이어 구현했다. 새로운 라이브 연동/의존성 설치/원격 변경 없음.
+- 검토: 개별 등록 단위 가격 편집, Steam/게임 수수료·실수령/양쪽 합계 갱신, 부족 잔량 빈 단가 행·예상 미체결 안내, 수동 가격 전략/닫기/갱신 초기화, 조회 시각/신선도 및 최종 재검증.
+- 관리: 개별/전체 선택, 취소 후 재등록 가격 변경, 확정 실패 배치·관리 작업만 명시적 재시도. 시도 번호별 요청 키·기존 성공 보존·stale/double 승인 차단. 재가격 취소 확인 이후 후속 미전송만 재개하고 Unknown은 재전송하지 않는다. 후속 교체의 취소 전까지 원래 예약을 유지한다.
+- 안전 결함 수정: 구형 관리 Unknown(Action=None)을 과거 등록 증거가 덮어쓰지 않게 Registration/Cancel/Reprice 출처를 구분. 모달/배경 작업 동시 조작과 닫힌 모달 입력 오류 잔류를 보완. Mock 재시도 결과 대조도 현재 시도 키를 사용한다.
+- SQLite: v2 보존 이관·quick_check·설정 보존·고정 진단. 대량 배치/관리에서 전체 JSON 반복 쓰기를 발견해 불변 헤더+결과/listing 변경 행 transaction 저장으로 보완. 캐시는 단일 writer의 immutable 레코드이며 초기화 시 무효화. 전체 rollback/재열기 검증 유지.
+- UI: 신규 검토/재가격/재시도/로딩·조회 실패/대량 재활용 자체 PNG 생성·직접 시각 검토. 로딩 중단 버튼 clipping을 발견해 패널 여유를 늘리고 위치 검사를 추가했다. 실제 창/포커스·전역 입력/다른 화면은 사용하지 않았다.
+- 검증: 마지막 전체 회귀 `scripts/Verify.ps1`, 빌드 경고0/오류0, 도메인/SQLite/MVVM **58/58**, WPF **16/16 PASS**. 이후 UI 오류 수집 범위를 새 화면까지 확장한 관련 UI 검사도 16/16 PASS. FAIL 0. 재실행은 새로운 기능/저장 구조/발견 결함/추가 검사 확인에 한정했다.
+- 장애 검증: 프로젝트 테스트 DLL만 CreateNoWindow headless 자식으로 순차 실행하고 자식이 자기 Exit. intent 저장 후 재시작 Unknown/재전송0 및 미커밋 SQLite transaction rollback 확인. 타 앱 검색/종료/메모리/화면/입력 접근 없음. 실제 전원 차단/GUI 강제종료 시험은 아니다.
+- 부하/배포: 10,000개 뷰 컨테이너 시작9/끝7 및 반복 스크롤 선택 보존, 128행 SQLite 배치와 저장 payload <1MB 검사. 장시간/최대 규모 실행 인증은 아니다. `scripts/Publish.ps1` 최신 Release framework-dependent exe 생성/PE/DB·로그·키 제외 PASS, 산출물 실행·설치 안 함. 데이터 경로는 기존 LocalAppData 유지.
+- 진단: timestamp/enum code/count만 DB 최대500개, 시작 DB 오류는 앱 전용 bounded 고정 코드 파일. 임의 예외 메시지·계정/아이템·비밀정보를 기록하지 않는 검사 추가. 이미지/DB/로그/빌드 결과는 Git 제외.
+- 미검증/차단: 실제 입력·열린 팝업·모니터 DPI·스크린리더·설치/서명·장시간/전원 차단·실제 Steam 로그인/거래/Guard. 관리 Unknown의 외부 증거 없는 재전송은 차단. 필수 실제 일괄 등록 목표는 IntegrationBlocked 유지.
+- 후속: 허용된 실연동 경로/권한 확보 전 실제 어댑터 금지, 다중 배치 탐색·외부 대조 도구·대량 UI 선택 확장·배포 감사. 최종 diff/민감정보 점검 후 구현 및 기록을 commit/push한다.
+
 ## 2026-10-28 — 3차 조사 마일스톤
 - 시작 HEAD `9ce53df`, 작업 트리 clean. fetch한 origin/main과 일치, AGENTS/현황/QA/아키텍처/판매 계약 확인.
 - 공식 Steam OpenID·Web API 인증·Inventory/Economy/Market API 및 약관을 조회. publisher/소유 앱/secure server 제한과 개인용 장터 권한을 구분했다. 공식 Support 직접 본문 접근 실패 후 공식 검색 색인의 확인 절차 본문을 확인했다.

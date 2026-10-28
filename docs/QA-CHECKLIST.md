@@ -1,5 +1,30 @@
 # MarketCrate — QA 체크리스트 (자동 검사 완료 / GUI 미실행)
 
+## 3차 최종 결과 — 2026-10-28 KST (최신)
+
+| 검사 | 실제 결과 | 제한 |
+|---|---|---|
+| 전체 빌드 | PASS, 경고0/오류0 | 단일 MSBuild 작업 |
+| 도메인·SQLite·MVVM | **58/58 PASS** | 순차 synthetic 검사, FAIL 0 |
+| 비표시 WPF | **16/16 PASS** | 실제 창/입력/Popup 사용 안 함 |
+| Release publish | PASS | PE/로컬 데이터 제외, 실행·설치·공개 배포 안 함 |
+| 실제 Steam/Guard | BLOCKED / NOT VERIFIED | 문서 조사만 수행 |
+
+- [x] 개별 단가/Steam·게임 수수료·실수령·검토/우측 합계 즉시 갱신, 수동 가격 전략 전환 초기화, 가격 오류 시 합계/명령 차단.
+- [x] 매수 잔량 부족 수량을 빈 단가 행으로 유지, 입력 전 제출 차단, 명시적 직접 단가 후 전체 수량 스냅샷에 보존. 즉시 체결 보장 아님.
+- [x] 확정 실패만 현재 시도 번호로 승인→새 시도 키/intent 저장→결과 대조. 기존 성공 유지, stale/double 승인/승인 대기/불명 재전송 거절.
+- [x] 판매 전체 선택·개별 선택·가격 변경 검토, 취소 확인→재등록·대기, 취소/관리 실패 수동 재시도, 취소 직후 미전송 재개, 후속 intent 불명 차단·예약 보존.
+- [x] v1→v2 설정 보존·마이그레이션 실패 rollback, 손상 SQLite 원본 보호, 두 결과 행 변경 중 두 번째 실패 시 전체 rollback을 실제 DB로 확인.
+- [x] headless 소유 자식 Exit 후 committed intent→Unknown/재전송0, 미커밋 SQLite 변경 rollback. OS 전원 차단 시험 아님.
+- [x] 128행 SQLite 배치 저장·재열기·최신 결과/이력 복원, 헤더/결과 payload <1MB. 10,000개 UI 반복 스크롤 후 선택 보존·컨테이너 범위 제한.
+- [x] 고정 스키마 진단에 임의 설정값/예외·아이템 문자열 없음, DB 최대500개·조회30개, 앱 시작 오류 고정 코드 파일.
+- [x] 신규 UI를 포함한 예상치 못한 바인딩 오류 없음. 의도적인 invalid 가격 변환만 제외. 로딩 버튼 영역 검증, Mock 조회 실패의 기존 데이터 보존.
+- [ ] 실제 키보드/휠/포커스·열린 팝업/스크린리더/모니터 DPI, 설치·서명·다른 PC, 장시간 부하·전원 차단·실계정. 승인 범위 밖이거나 미실행.
+
+새 자체 렌더: `runtime/ui-tests/stage3-shortage.png`, `stage3-manual-price.png`, `stage3-strategy-reset.png`, `stage3-reprice-review.png`, `stage3-reprice-edited.png`, `stage3-reprice-pending.png`, `stage3-retry-review.png`, `stage3-retry-result.png`, `stage3-cancel-retry.png`, `stage3-loading.png`, `stage3-network-error.png`, `stage3-load-return.png`. 대표 이미지를 직접 열어 검토했고 로딩 패널에서 중단 버튼이 잘리던 문제를 수정했다. 생성물은 Git 제외.
+
+기존 SQLite rollback 검사는 저장 구조가 변경되어 result 행의 두 번째 쓰기에 실패를 주입하도록 조정했다. 실패를 무시하거나 보호 기준을 완화한 변경이 아니다.
+
 ## 2차 최종 결과 — 2026-10-28 KST
 
 이 절이 아래 최초 구현 기록보다 최신이다. 실제 창은 표시하지 않았으며 WPF 컨트롤 렌더링은 수행했다.

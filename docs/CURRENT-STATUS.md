@@ -1,43 +1,46 @@
-# MarketCrate — 현재 상태 (2026-10-28 KST, 2차 구현)
+# MarketCrate — 현재 상태 (2026-10-28 KST, 3차 구현)
 
-**Mock 기능과 창 없는 WPF 자체 렌더 검증 완료. 실제 사용자 입력·팝업·모니터 DPI·실거래는 미검증/차단. 실등록 제품 완료가 아니다.**
+**핵심 판매·관리 Mock UX와 비표시 렌더·복구 검증 완료. 실제 Steam 등록 기능 완료가 아니며 LIVE_INTEGRATION_BLOCKED를 유지한다.**
 
-| 기능 | 현재 상태 | 근거 |
+| 기능 | 상태 | 구현/검증 범위 |
 |---|---|---|
-| WPF 커스텀 UI | DETACHED_RENDER_VERIFIED | MainView/컨트롤을 STA에서 렌더, 실제 Window 미생성 |
-| 대량 카드/목록 | MOCK / PASS | 10,000개 카드, 생성 9개→끝 7개, 목록 recycling·필터 Reset |
-| 가격/공유 호가 분배 | MOCK / PASS | 합계/검토 동일 SalePlanner, 잔량 부족·수량 보존 |
-| 최종 승인→전체 배치 | MOCK / PASS | 분할 단가·수량/가격 편집/직전 정합성/부분 결과 |
-| 중복·미확정 결과 관리 | MOCK / PASS | intent 저장, 재전송 금지, 이력 예약 수량/상태 역행 차단 |
-| SQLite 영속화 | MOCK / PASS | 설정/합성 inventory/배치 이력/증거/판매 목록, 트랜잭션·v1 이관 |
-| 판매 목록 개별 선택/취소 | MOCK / PASS | 배치 결과 연결, 별도 검토, 취소/실패, 취소 불명 복구 |
-| 재시작/승인 대기/결과 확인 | MOCK / PASS | 합성 증거 대조, 명시적 fixture→Listed, 실제 승인 아님 |
-| 실제 Steam 읽기·계정 연결 | Unavailable | 허용 경로·권한 미확보, 네트워크 어댑터 없음 |
-| 실제 전체 판매등록·취소·재등록 | LIVE_INTEGRATION_BLOCKED | Valve 허용 연동·활성화·실환경 검증 필요 |
-| 가격 변경·불명 항목 수동 재시도·배포 | NOT_IMPLEMENTED | 후속 작업 |
+| 최종 개별 가격 검토 | MOCK / PASS | 구매자 단가·수량·Steam/게임 수수료·실수령·합계 즉시 갱신 |
+| 호가별 분배/부족 잔량 | MOCK / PASS | 공유 잔량, 미산정 수량 별도 빈 가격 행, 직접 입력 전 전체 제출 차단 |
+| 수동 가격/전략/신선도 | MOCK / PASS | 열린 검토만 유효, 전략/닫기/갱신 초기화, 5분 신선도·최종 정합성 검사 |
+| 단일 승인 전체 등록 | MOCK / PASS | 불변 스냅샷, 전체 선택·개별 결과, 실제 Steam 제출 아님 |
+| 판매 목록 개별/전체 선택·취소 | MOCK / PASS | 별도 검토, 부분 취소 실패·불명·승인 대기 구분 |
+| 판매 가격 변경 | MOCK / PASS | 취소 확인→새 가격 재등록, intent/부분 실패/Guard 대기 |
+| 수동 재시도 | MOCK / PASS | 확정 실패만 검토, 시도 번호·새 요청 키, 기존 성공/Unknown 재전송 차단 |
+| 재가격 중단 후 재개 | LIMITED / PASS | 취소 확인 및 후속 미전송 증거가 있을 때만 명시적 재개 |
+| SQLite v2·진단 | MOCK / PASS | v1 보존 이관, quick_check, 변경 결과/판매 행 저장, 고정 코드 최대500개 |
+| 대량 표시/배치 | MOCK / PASS | 10,000개 뷰, 반복 스크롤 선택 보존, 128행 실제 SQLite 배치 재열기 |
+| Windows 실행파일 생성 | GENERATED / STATIC PASS | Release framework-dependent publish, PE/데이터 제외 검사, 실행/설치 안 함 |
+| 실제 로그인·보관함·장터 조회 | Unavailable | 허용 경로/권한·실계정 검증 없음 |
+| 실제 등록·취소·재등록 | LIVE_INTEGRATION_BLOCKED | 일반 개인용 쓰기 허용 근거 미확보 |
 
-## 실제 검증
+## 실제 검증 결과
 
-- `scripts/Verify.ps1`: 5개 프로젝트, 단일 빌드 작업, **경고 0 / 오류 0**. 도메인/SQLite/MVVM **41/41 PASS**, 창 없는 WPF **10/10 PASS**.
-- 1100×700 / 1280×800 / 1380×820 / 1600×900 DIP, 비트맵 출력 밀도 100/125/150/200%. 실제 모니터 DPI 전환 시험이 아니다.
-- 상태 시트의 Button CommonStates/FocusStates, Check/Radio/Toggle 선택, 가격 오류 바인딩/명령 차단, NumericStepper 범위/managed peer, Tooltip 자체 템플릿, 예상치 못한 바인딩 오류 및 Window/PresentationSource 미생성 검사.
-- 보관함·검토·가격 오류·배치 대기/완료·취소 검토/결과·대량/빈 상태·컨트롤 PNG를 `runtime/ui-tests/`에 생성하고 직접 시각 검토했다. Git 제외.
-- 10,000개 카드에서 viewport 주변 컨테이너 9개, 끝 7개. 한 번의 fixture+복수 렌더 관측 259ms는 비교 벤치마크나 장시간 성능 인증이 아니다.
-- SQLite 실제 파일 재열기·독점 lease·JSON 일회 이관·삭제 후 재이관 방지·저장 실패 롤백·응답 유실 대조·확정 상태 보존·예약 수량 중복 차단 검증.
+- `scripts/Verify.ps1`: 5개 프로젝트 빌드 경고0/오류0, 도메인/SQLite/MVVM **58/58 PASS**, detached STA WPF **16/16 PASS**, FAIL 0.
+- 새 관리 화면까지 포함한 바인딩 오류 검사, 수동 가격/부족 수량/전략 초기화/가격 변경·재시도/로딩·Mock 조회 실패 렌더 검사. 자체 PNG를 생성하고 직접 시각 검토했다.
+- 1100×700~1600×900 DIP, 비트맵 출력 밀도 100/125/150/200%. 실제 모니터 DPI 전환 시험이 아니다. Application.Windows=0 및 PresentationSource=null 검사.
+- 10,000개 카드 viewport 생성 9개→끝7개, 반복 스크롤 후 선택 보존. 마지막 fixture+복수 렌더 관측282ms는 비교 벤치마크/장기 안정성 인증이 아니다.
+- 128행 Mock 배치를 실제 SQLite로 처리·재열기하고 헤더/결과 DB payload <1MB를 검사했다. 대량 전체 JSON 반복 쓰기를 변경 행 저장으로 교체했다.
+- 실제 SQLite 손상 거절·스키마 이관 실패 rollback·복수 결과 변경 rollback·설정 보존. 프로젝트 headless 테스트 자식만 자기 Exit하여 intent 복구/미커밋 transaction rollback을 확인했다.
+- `scripts/Publish.ps1`: 최신 Release 실행파일 생성/PE 헤더·출력 DB/로그/키 제외 PASS. 앱·설치 프로그램은 실행하지 않았다.
 
-## 안전/미검증
+## Steam 조사
 
-- **실제 최상위 창 표시·활성화, 포커스 이동, 전역 입력, 데스크톱 캡처, 타 프로그램 열거/조사/조작, Steam 로그인/연결/거래는 수행하지 않았다.** 테스트는 MainView의 자체 렌더와 모의 상태/명령만 사용했다.
-- 실제 마우스/키보드/휠/Tab/Esc, 열린 ComboBox/ContextMenu/ToolTip, 스크린리더, 모니터별 DPI, 긴 이름/폰트 확대의 전체 검증, 장시간 부하·강제 전원 차단은 NOT VERIFIED.
-- 신규 실제 데이터/인증비밀을 저장하지 않는다. SQLite도 합성 Demo 전용이다. 실제 서버 결과를 Mock 증거로 대체할 수 없다.
+[STEAM-INTEGRATION-FEASIBILITY.md](STEAM-INTEGRATION-FEASIBILITY.md)에 공식 인증/API/약관/호출 제한·Support 확인 절차·오픈소스/라이선스·해제 조건을 기록했다. publisher/소유 앱/secure server 제한을 개인 계정의 쓰기 권한으로 사용할 수 없었다. 기술적 사례는 존재하지만 Valve 허가로 해석하지 않는다. 이번 조사로 실연동을 활성화하지 않았다.
 
-## 다음 우선순위
+## 안전 및 남은 제한
 
-1. 승인 범위가 확대된 경우에만 실제 앱 입력·팝업·모니터 DPI·접근성 검증. 현재 범위를 넘어 실행하지 않는다.
-2. 가격 변경·재등록 Mock 검토, 불명 항목 수동 대조/재시도 UX, 다중 배치 이력 탐색, 임의 높이/긴 이름 카드·범위 선택/드래그.
-3. 허용된 실제 읽기·쓰기 경로와 권한 확보. 확보 전 LIVE_READY/RELEASE_READY 차단 유지.
-4. 의존성/라이선스·설치/배포 감사, 장시간 안정성 및 추가 저장소 스키마 마이그레이션.
+- 실제 최상위 앱 창·활성화·전역 입력·타 앱 조사/종료·전체 화면 캡처·실제 Steam 로그인/거래/Guard는 수행하지 않았다. Process.Start는 검증 대상인 프로젝트 headless 자식뿐이며 CreateNoWindow로 실행 후 자식이 자기 프로세스에서 종료했다.
+- 실제 사용자 입력/Tab/휠/포커스, 열린 팝업, 모니터 DPI, 스크린리더, 클린 Windows 설치·업데이트/서명/배포, 전원 차단·장시간 장애는 NOT VERIFIED.
+- 관리 요청이 Unknown이면 외부 증거 없이 성공/실패 확정·재전송하지 않는다. 현재 Mock에 근거 없는 불명 관리 요청을 수동 확정하는 도구는 없다. 목적을 알 수 없는 구형 실패/불명도 차단한다.
+- 단일 활성 배치 및 고정 높이 카드 유지. 다중 배치 탐색·임의 높이/범위 선택/드래그·실제 온라인 페이징/요청 제한은 후속 작업이다.
+- 재시도 가격은 원래 승인 가격/수량이며 새 검토·현재 자산/시세 확인을 요구한다. 실제 Steam 통화별 수수료·체결을 검증한 것이 아니다.
+- 실제 단일 승인 실등록 목표는 미완료다. READ_ONLY_READY/LIVE_READY/RELEASE_READY가 아니다.
 
 ## Git
 
-시작 HEAD `65e3ef4`와 fetch한 `origin/main` 일치, 기존 미커밋 변경 없음. 이번 구현 커밋 `35ffbb4`를 `origin/main`에 정상 push했다. 이후 결과 기록용 문서 커밋은 `git log -2 --oneline`과 최종 보고에서 확인한다.
+시작 `9ce53df`와 fetch한 origin/main 일치, 기존 미커밋 변경 없음. 조사 마일스톤 `db8a55c` push 완료. 3차 구현/검증/기록 커밋 결과는 WORKLOG와 최종 보고에서 확인한다.

@@ -4,7 +4,11 @@ namespace MarketCrate.Core;
 
 public record SaleSelection(InventoryAsset Asset, PriceSnapshot Price, int Quantity);
 public record PlannedSale(SaleSelection Selection, Allocation Allocation);
-public record SalePlan(ImmutableArray<PlannedSale> Lines, int UnpricedQuantity);
+public record UnpricedSale(SaleSelection Selection, int Quantity);
+public record SalePlan(ImmutableArray<PlannedSale> Lines, int UnpricedQuantity)
+{
+    public ImmutableArray<UnpricedSale> Unpriced { get; init; } = [];
+}
 
 public static class SalePlanner
 {
@@ -15,6 +19,7 @@ public static class SalePlanner
         var remaining = new Dictionary<(int, string, string, string), List<BidLevel>>();
         var books = new Dictionary<(int, string, string, string), ImmutableArray<BidLevel>>();
         var result = ImmutableArray.CreateBuilder<PlannedSale>();
+        var unpriced = ImmutableArray.CreateBuilder<UnpricedSale>();
         var missing = 0;
         foreach (var entry in selected)
         {
@@ -34,9 +39,10 @@ public static class SalePlanner
             }
             else plan = Pricing.WeightedAverage(entry.Price.Trades) is long average ? new([new(average, entry.Quantity)], 0) : new([], entry.Quantity);
             missing = checked(missing + plan.UnpricedQuantity);
+            if (plan.UnpricedQuantity > 0) unpriced.Add(new(entry, plan.UnpricedQuantity));
             foreach (var allocation in plan.Lines) result.Add(new(entry, allocation));
         }
-        return new(result.ToImmutable(), missing);
+        return new(result.ToImmutable(), missing) { Unpriced = unpriced.ToImmutable() };
     }
 
     public static void ValidateCurrent(SaleBatchSnapshot batch, IReadOnlyList<InventoryAsset> current)
@@ -46,7 +52,7 @@ public static class SalePlanner
             if (!assets.TryGetValue(group.Key, out var asset) || asset != group.First().Asset || group.Sum(x => x.Quantity) > asset.Quantity)
                 throw new ArgumentException("보관함 수량/상태가 변경되었습니다. 검토를 다시 여세요.");
     }
-    public static void ValidateReservations(SaleBatchSnapshot batch, IReadOnlyList<BatchRecord> history, IReadOnlySet<string>? cancelledListings=null)
+    public static void ValidateReservations(SaleBatchSnapshot batch, IReadOnlyList<BatchRecord> history, IReadOnlySet<string>? cancelledListings = null)
     {
         var reserved = new Dictionary<AssetKey, int>();
         foreach (var previous in history.Where(x => x.Snapshot.BatchId != batch.BatchId))
@@ -54,7 +60,7 @@ public static class SalePlanner
             {
                 if (previous.Results[i].State is SaleState.Ready or SaleState.Failed or SaleState.Draft) continue;
                 var line = previous.Snapshot.Lines[i];
-                if(cancelledListings?.Contains(SaleBatchCoordinator.RequestKey(previous.Snapshot,line))==true) continue;
+                if (cancelledListings?.Contains(SaleBatchCoordinator.RequestKey(previous.Snapshot, line)) == true) continue;
                 reserved[line.Asset.Key] = checked(reserved.GetValueOrDefault(line.Asset.Key) + line.Quantity);
             }
         foreach (var group in batch.Lines.GroupBy(x => x.Asset.Key))

@@ -26,6 +26,7 @@ internal static class Program
     {
         // This entry point never constructs Window/HwndSource, opens Popup, activates focus, or injects OS input.
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+        SynchronizationContext.SetSynchronizationContext(new DispatcherSynchronizationContext(Dispatcher.CurrentDispatcher));
         RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
         Directory.CreateDirectory(Folder);
         try
@@ -108,6 +109,7 @@ internal static class Program
                 stepper.Maximum = int.MaxValue; stepper.Value = int.MaxValue;
                 ((Button)stepper.Template.FindName("PART_Up", stepper)).RaiseEvent(new RoutedEventArgs(ButtonBase.ClickEvent)); Check(stepper.Value == int.MaxValue);
             });
+            ThirdStageUiTests.Run((name, test) => Test(name, test), Render);
             Test("바인딩 오류 없음 (의도적 invalid 가격 변환 제외)", () =>
             {
                 listener.Flush(); var output = bindingOutput.ToString();

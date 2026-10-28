@@ -26,7 +26,7 @@ public record SaleBatchSnapshot(Guid BatchId, string AccountReference, DateTimeO
     public long Gross => Lines.Sum(x => checked(x.UnitQuote.BuyerPays * x.Quantity));
     public long Net => Lines.Sum(x => checked(x.UnitQuote.SellerReceives * x.Quantity));
 }
-public record LineResult(string LineId, SaleState State, string Message);
+public record LineResult(string LineId, SaleState State, string Message, int Attempt = 0);
 public record BatchRecord(int SchemaVersion, SaleBatchSnapshot Snapshot, ImmutableArray<LineResult> Results);
 
 public interface IInventoryProvider
@@ -57,8 +57,13 @@ public interface IBatchJournal
 }
 
 public interface IDemoJournal : IBatchJournal { void ClearDemo(); }
-public enum ListingState { Listed, AwaitingSteamGuard, CancelRequested, Cancelled, Failed, Unknown, Submitted }
-public record MockListing(string ListingId, string Name, int Quantity, long BuyerPays, ListingState State);
+public enum ListingState { Listed, AwaitingSteamGuard, CancelRequested, Cancelled, Failed, Unknown, Submitted, SubmitRequested }
+public enum ListingAction { None, Cancel, Reprice, Registration }
+public record MockListing(string ListingId, string Name, int Quantity, long BuyerPays, ListingState State,
+    ListingAction Action = ListingAction.None, long? PendingPrice = null, int Attempt = 0, string? ReplacementId = null);
+public enum DiagnosticCode { StoreOpened, BatchSaved, RetryStarted, ListingsSaved, ManagementRecovered, SettingsSaved, UiFailure, StorageFailure }
+public record DiagnosticEntry(DateTimeOffset At, DiagnosticCode Code, int Count);
+public interface IDiagnosticStore { void RecordDiagnostic(DiagnosticCode code, int count = 0); IReadOnlyList<DiagnosticEntry> ReadDiagnostics(); }
 public interface IDemoDataStore
 {
     string? ReadSetting(string key);

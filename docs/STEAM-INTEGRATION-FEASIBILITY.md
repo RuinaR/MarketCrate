@@ -36,6 +36,8 @@ Support URL의 직접 open은 본문 대신 이미지/접근 실패를 반환했
 | [node-steamcommunity](https://github.com/DoctorMcKay/node-steamcommunity/wiki/SteamCommunity), [LICENSE](https://github.com/DoctorMcKay/node-steamcommunity/blob/master/LICENSE) | Community 기능 구현 라이브러리와 MIT 고지 확인 | 인증/확인 비밀을 요구하는 흐름은 프로젝트 안전 계약과 맞지 않아 미도입. 특정 메서드나 계정 안전성을 보증하지 않음 |
 | [CSlytics](https://cslytics.com/), [SteamHelper](https://steamhelper.app/) | 공개 사이트에서 일괄 관리·가격 수정/검토·활동 내역 소개. CSlytics는 AGPL로 명시 | 사용 흐름만 참고. 실행·로그인·그래픽/코드 복사 안 함. 사이트 홍보를 정책 준수의 증거로 사용하지 않음 |
 
+CSlytics 사이트가 연결한 실제 저장소 [Xpar65/cslytics-desktop](https://github.com/Xpar65/cslytics-desktop)의 README/AGPL-3.0 표기도 추가 확인했다. Electron UI, engine/ports/Steam adapter 분리를 소개하며 로그인 토큰의 로컬 암호화 저장과 휴대폰 확인을 설명한다. 이는 해당 프로젝트의 설명이며 Valve 허가 확인이 아니다. MarketCrate는 그 인증 저장 방식·코드·자산을 도입하지 않는다. 응답과 사후 관측을 구분하는 구조만 비교했다.
+
 ## 향후 안전한 개발 계획과 해제 조건
 
 1. **현재:** 로컬 합성 데이터·SQLite·Mock 제출/취소/재시도/재가격·불명 상태 대조를 검증한다. 기능 상태는 Mock/Unavailable/IntegrationBlocked로 표시한다.

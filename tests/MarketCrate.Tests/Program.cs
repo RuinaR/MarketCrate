@@ -3,6 +3,8 @@ using MarketCrate.Core;
 using MarketCrate.Infrastructure;
 using MarketCrate.App.ViewModels;
 
+if (args.Length > 0 && args[0].StartsWith("--crash-", StringComparison.Ordinal)) return ThirdStageTests.CrashHelper(args);
+
 var tests = new (string Name, Func<Task> Run)[] {
  ("호가 3/4/3 배분",()=>Sync(()=> { var p=Pricing.Allocate(10,[new(1000,3),new(980,4),new(950,3)]); Equal("3,4,3",string.Join(',',p.Lines.Select(x=>x.Quantity))); Equal(0,p.UnpricedQuantity); })),
  ("호가 부족/빈 주문",()=>Sync(()=> { Equal(4,Pricing.Allocate(7,[new(1000,3)]).UnpricedQuantity); Equal(7,Pricing.Allocate(7,[]).UnpricedQuantity); })),
@@ -34,7 +36,9 @@ var failed = 0;
 foreach (var test in tests) { try { await test.Run(); Console.WriteLine($"PASS {test.Name}"); } catch (Exception e) { failed++; Console.WriteLine($"FAIL {test.Name}: {e}"); } }
 var next = await NextStageTests.RunAsync();
 failed += next.Failed;
-Console.WriteLine($"RESULT {tests.Length + next.Passed + next.Failed - failed}/{tests.Length + next.Passed + next.Failed} PASS; {failed} FAIL · synthetic data only, no GUI/network");
+var third = await ThirdStageTests.RunAsync(); failed += third.Failed;
+var total = tests.Length + next.Passed + next.Failed + third.Passed + third.Failed;
+Console.WriteLine($"RESULT {total - failed}/{total} PASS; {failed} FAIL · synthetic data only, no GUI/network");
 return failed == 0 ? 0 : 1;
 
 static InventoryAsset Asset() => new(new(730, "2", "synthetic"), "Synthetic Game", "Synthetic Item", "Synthetic Hash", 10, true, true, false);

@@ -14,9 +14,10 @@ public partial class App : Application
         base.OnStartup(e);
         RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
         // No forced activation. A second instance exits without touching the first instance.
-        try { journal = new SqliteDemoStore(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MarketCrate", "Demo")); }
+        var dataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MarketCrate", "Demo");
+        try { journal = new SqliteDemoStore(dataDirectory); }
         catch (IOException) { Shutdown(2); return; }
-        catch (Exception error) when (error is Microsoft.Data.Sqlite.SqliteException or System.Text.Json.JsonException or InvalidDataException) { Shutdown(3); return; }
+        catch (Exception error) when (error is Microsoft.Data.Sqlite.SqliteException or System.Text.Json.JsonException or InvalidDataException) { SafeStartupDiagnostics.StorageFailure(dataDirectory); Shutdown(3); return; }
         var vm = new MainViewModel(new DemoDataProvider(), journal);
         var window = new MainWindow { DataContext = vm };
         MainWindow = window;

@@ -50,7 +50,7 @@ public sealed class MockListingExecutor(IDemoDataStore? evidence = null) : IMark
         cancellationToken.ThrowIfCancellationRequested();
         if (evidence?.ReadEvidence(requestKey) is { } known) return Task.FromResult(known);
         SubmitCount++;
-        var state = line.Asset.Key.AssetId switch { "demo-2" => SaleState.Failed, "demo-4" => SaleState.Submitted, _ => SaleState.AwaitingSteamGuard };
+        var state = line.Asset.Key.AssetId switch { "demo-2" when !requestKey.Contains(":attempt:", StringComparison.Ordinal) => SaleState.Failed, "demo-4" => SaleState.Submitted, _ => SaleState.AwaitingSteamGuard };
         var result = new LineResult(line.LineId, state, state == SaleState.Failed ? "Mock 거절 · 이미 성공한 항목 재실행 금지" : "Mock 접수 · 실제 Steam 요청 없음");
         evidence?.WriteEvidence(requestKey, result);
         return Task.FromResult(result);

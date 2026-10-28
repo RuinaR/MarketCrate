@@ -76,7 +76,7 @@
       </StackPanel>
       <Button Grid.Column="2" Content="Mock 데이터 갱신" Command="{Binding Refresh}" />
     </Grid>
-    <Grid Grid.Row="1">
+    <Grid Grid.Row="1" x:Name="WorkspaceBody">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="190" />
         <ColumnDefinition Width="16" />
@@ -162,7 +162,7 @@
                 <DataTemplate>
                   <Border Style="{StaticResource PanelStyle}" Margin="0,4">
                     <StackPanel>
-                      <CheckBox Content="{Binding Name}" IsChecked="{Binding Selected}" IsEnabled="{Binding CanCancel}" />
+                      <CheckBox Content="{Binding Name}" IsChecked="{Binding Selected}" IsEnabled="{Binding CanSelect}" />
                       <TextBlock Text="{Binding Detail}" Margin="6,8" />
                     </StackPanel>
                   </Border>
@@ -170,8 +170,16 @@
               </ListBox.ItemTemplate>
             </ListBox>
             <StackPanel Grid.Row="2">
+              <WrapPanel>
+                <Button Content="게시 항목 전체 선택" Command="{Binding SelectAllListings}" />
+                <Button Content="선택 해제" Command="{Binding ClearListings}" />
+              </WrapPanel>
               <Button Content="선택 판매 취소 검토 / Mock" Command="{Binding CancelPlan}" />
-              <TextBlock Text="가격 변경·실제 판매 취소는 IntegrationBlocked입니다." Style="{StaticResource MutedText}" Margin="8" />
+              <WrapPanel>
+                <Button Content="선택 가격 변경 검토 / Mock" Command="{Binding RepricePlan}" />
+                <Button Content="확정 실패 관리 작업 재시도" Command="{Binding RetryListingPlan}" />
+              </WrapPanel>
+              <TextBlock Text="확정 실패는 별도 재시도 검토, 불명/처리 중은 먼저 대조. 실제 Steam 쓰기는 IntegrationBlocked입니다." Style="{StaticResource MutedText}" Margin="8" />
             </StackPanel>
           </Grid>
         </TabItem>
@@ -189,6 +197,7 @@
               <ListBox.ItemTemplate>
                 <DataTemplate>
                   <StackPanel Margin="4,8">
+                    <CheckBox Content="재시도 대상" IsChecked="{Binding Selected}" IsEnabled="{Binding CanRetry}" />
                     <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
                     <TextBlock Text="{Binding Detail}" Style="{StaticResource MutedText}" />
                   </StackPanel>
@@ -196,6 +205,10 @@
               </ListBox.ItemTemplate>
             </ListBox>
             <StackPanel Grid.Row="3">
+              <WrapPanel>
+                <Button Content="확정 실패 전체 선택" Command="{Binding SelectFailedResults}" />
+                <Button Content="선택 실패 등록 재시도 검토" Command="{Binding RetryFailedPlan}" />
+              </WrapPanel>
               <Button Content="저널 복구 / Mock 상태 대조" Command="{Binding Recover}" />
               <Button Content="Mock 서버 게시 fixture 반영 후 대조" Command="{Binding PublishMockEvidence}" ToolTip="합성 서버 결과만 변경. Steam Guard 승인·실거래가 아닙니다." />
               <Button Content="확정 Mock 배치 보관 / 새 배치" Command="{Binding ClearDemo}" ToolTip="미확정/승인 대기 배치는 먼저 대조하세요. 이전 요청 증거와 예약 수량은 보존합니다." />
@@ -211,6 +224,8 @@
               <CheckBox Content="모션 축소 (기본 ON, 현재 정적 상태 사용)" IsChecked="{Binding ReducedMotion}" />
               <TextBlock Text="백그라운드 폴링·자동 시작·타 앱 입력·프로세스 조사 없음. 수수료는 Demo 정책 추정이며 실제 Steam 통화별 산식은 미검증입니다." Margin="0,12" />
               <ItemsControl ItemsSource="{Binding History}" />
+              <TextBlock Text="비밀정보 없는 로컬 진단 (시각/코드/건수, 최대 500개)" Margin="0,12" />
+              <TextBlock Text="{Binding DiagnosticsText}" Style="{StaticResource MutedText}" />
               <Button Content="대량 합성 보관함 10,000개 불러오기" Command="{Binding LoadLargeDemo}" />
               <Button Content="SQLite 합성 데이터·설정·저널 삭제 (JSON 원본 보존)" Command="{Binding DeleteLocalDemoData}" />
               <TextBlock Text="창 없는 STA 렌더 검증 지원 · 실제 사용자 입력/모니터 DPI는 미검증" Style="{StaticResource MutedText}" Margin="0,16" />
@@ -255,9 +270,19 @@
           <StackPanel>
             <TextBlock Text="최종 검토 / MOCK BATCH" Style="{StaticResource Heading}" />
             <TextBlock Text="{Binding ReviewTotals}" FontSize="17" Foreground="{StaticResource Accent}" />
+            <Grid Margin="0,8">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition Width="Auto" />
+              </Grid.ColumnDefinitions>
+              <ComboBox ItemsSource="{Binding Strategies}" SelectedItem="{Binding SelectedStrategy}" AutomationProperties.Name="검토 가격 전략" />
+              <Button Grid.Column="1" Content="신선도 확인" Command="{Binding RefreshReviewStatus}" />
+            </Grid>
+            <TextBlock Text="{Binding PriceEditRule}" Style="{StaticResource MutedText}" />
+            <TextBlock Text="{Binding ReviewLiquidity}" Foreground="{StaticResource Warning}" Margin="0,6" />
             <TextBlock Text="수수료 Demo 정책: 판매자 수령 기준 Steam 5% + 게임 10%, 각 최소 1원 · 정수 절사 · 실제 Steam 산식 미검증" Style="{StaticResource MutedText}" Margin="0,8" />
           </StackPanel>
-          <TextBlock Grid.Row="1" Text="자산 · 시세 시각/원천  |  수량 × 구매자 지불 단가(편집)  |  총 수수료 / 실수령" Style="{StaticResource MutedText}" Margin="0,12" />
+          <TextBlock Grid.Row="1" Text="자산·조회 시각·가격 근거  |  판매 수량 × 구매자 단가(편집)  |  Steam / 게임 수수료  |  실수령" Style="{StaticResource MutedText}" Margin="0,12" />
           <ListBox Grid.Row="2" ItemsSource="{Binding ReviewLines}" x:Name="ReviewList">
             <ListBox.ItemTemplate>
               <DataTemplate>
@@ -275,11 +300,15 @@
                       <TextBlock Text="{Binding Identity}" Style="{StaticResource MutedText}" />
                       <TextBlock Text="{Binding MarketTimeDisplay}" Style="{StaticResource MutedText}" />
                       <TextBlock Text="{Binding Source}" Style="{StaticResource MutedText}" />
-                      <TextBlock Text="{Binding SuggestedPrice,StringFormat=추천 단가 ₩{0:N0}}" Style="{StaticResource MutedText}" />
+                      <TextBlock Text="{Binding PriceBasis}" Style="{StaticResource MutedText}" />
+                      <TextBlock Text="{Binding Gross}" Style="{StaticResource MutedText}" />
                     </StackPanel>
                     <TextBlock Grid.Column="1" Text="{Binding Quantity,StringFormat={}{0}개}" VerticalAlignment="Center" />
-                    <TextBox Grid.Column="2" Text="{Binding Price,UpdateSourceTrigger=PropertyChanged,ValidatesOnExceptions=True,NotifyOnValidationError=True}" AutomationProperties.Name="구매자 지불 단가" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="3" Text="{Binding Fee}" VerticalAlignment="Center" Margin="10,0" />
+                    <TextBox Grid.Column="2" Text="{Binding PriceText,UpdateSourceTrigger=PropertyChanged,ValidatesOnExceptions=True,NotifyOnValidationError=True}" Tag="단가 입력" AutomationProperties.Name="구매자 지불 단가" VerticalAlignment="Center" />
+                    <StackPanel Grid.Column="3" VerticalAlignment="Center" Margin="10,0">
+                      <TextBlock Text="{Binding SteamFee}" />
+                      <TextBlock Text="{Binding GameFee}" Style="{StaticResource MutedText}" />
+                    </StackPanel>
                     <TextBlock Grid.Column="4" Text="{Binding Net}" VerticalAlignment="Center" Foreground="{StaticResource Accent}" />
                   </Grid>
                 </Border>
@@ -294,8 +323,8 @@
         </Grid>
       </Border>
     </Grid>
-    <Grid Grid.RowSpan="3" Background="#D00A0E16" Visibility="{Binding IsCancelReviewOpen,Converter={StaticResource BoolVisibility}}" KeyboardNavigation.TabNavigation="Cycle" PreviewKeyDown="ReviewKeyDown">
-      <Border Style="{StaticResource Dialog}" MaxWidth="700" MaxHeight="480" Margin="30">
+    <Grid x:Name="ManagementOverlay" Grid.RowSpan="3" Background="#D00A0E16" Visibility="{Binding IsCancelReviewOpen,Converter={StaticResource BoolVisibility}}" KeyboardNavigation.TabNavigation="Cycle" PreviewKeyDown="ReviewKeyDown">
+      <Border Style="{StaticResource Dialog}" MaxWidth="850" MaxHeight="550" Margin="30">
         <Grid>
           <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -303,19 +332,28 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
           </Grid.RowDefinitions>
-          <TextBlock Text="선택 판매 취소 검토 / MOCK" Style="{StaticResource Heading}" />
-          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <TextBlock Text="{Binding CancellationSummary}" Margin="0,16" />
-          </ScrollViewer>
-          <TextBlock Grid.Row="2" Text="선택 전체의 합성 판매 상태를 변경합니다. 일부 실패는 개별 표시하며 실제 Steam 취소 요청은 보내지 않습니다." Foreground="{StaticResource Warning}" Margin="0,16" />
+          <TextBlock Text="{Binding ManagementTitle}" Style="{StaticResource Heading}" />
+          <ListBox Grid.Row="1" ItemsSource="{Binding ManagementRows}">
+            <ListBox.ItemTemplate>
+              <DataTemplate>
+                <StackPanel Margin="0,8">
+                  <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Detail}" Style="{StaticResource MutedText}" />
+                  <TextBox Width="160" HorizontalAlignment="Left" IsReadOnly="{Binding Editable,Converter={StaticResource InverseBool}}" Text="{Binding Price,UpdateSourceTrigger=PropertyChanged,ValidatesOnExceptions=True,NotifyOnValidationError=True}" AutomationProperties.Name="변경 구매자 단가" />
+                  <TextBlock Text="{Binding QuoteText}" Foreground="{StaticResource Accent}" />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <TextBlock Grid.Row="2" Text="{Binding ManagementNote}" Foreground="{StaticResource Warning}" Margin="0,16" />
           <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
-            <Button Content="돌아가기" Command="{Binding CloseCancelReview}" />
-            <Button Content="선택 Mock 판매 취소" Command="{Binding ConfirmCancellation}" Style="{StaticResource Primary}" />
+            <Button x:Name="ManagementBackButton" Content="돌아가기" Command="{Binding CloseCancelReview}" />
+            <Button Content="{Binding ManagementAction}" Command="{Binding ConfirmCancellation}" Style="{StaticResource Primary}" />
           </StackPanel>
         </Grid>
       </Border>
     </Grid>
-    <Border Grid.RowSpan="3" Background="#EA151C29" Visibility="{Binding Busy,Converter={StaticResource BoolVisibility}}" Padding="40" MaxWidth="480" MaxHeight="260" VerticalAlignment="Center">
+    <Border x:Name="BusyPanel" Grid.RowSpan="3" Background="#EA151C29" Visibility="{Binding Busy,Converter={StaticResource BoolVisibility}}" Padding="24" MaxWidth="480" MaxHeight="360" VerticalAlignment="Center">
       <StackPanel>
         <ContentControl Content="처리 중" ContentTemplate="{StaticResource LoadingSkeleton}" />
         <Button Content="미전송 항목 중단 요청" Command="{Binding Cancel}" />

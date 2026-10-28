@@ -1,5 +1,13 @@
 # MarketCrate — 보안·Steam 계정·메이플 동시 실행
 
+## 3차 검증 경계
+
+- 실제 Steam 로그인/키 발급/API/거래/모바일 승인은 하지 않는다. 공개 문서/약관·오픈소스 설명 조사만 수행했다. publisher 경로의 권한·보안 서버 제한은 개인용 장터 권한과 다르며 조사 보고서의 IntegrationBlocked 결론을 유지한다.
+- WPF는 계속 비표시 MainView·RenderTargetBitmap·내부 상태/명령만 검사한다. 실제 창 활성화·Focus/OS 입력·전체 화면 캡처·타 프로세스 조사는 없다.
+- 강제 종료/복구 재현을 위한 유일한 Process.Start는 **프로젝트 테스트 DLL의 headless 자식**이다. CreateNoWindow/UseShellExecute=false로 생성한 자식이 자기 프로세스에서 Environment.Exit한다. 다른 프로세스의 PID를 찾거나 메모리/입력/창을 조사·종료하지 않는다. 두 자식 검사도 순차 실행한다.
+- 진단 API는 timestamp/DiagnosticCode/count만 받는다. 임의 예외 문자열·계정·아이템명·토큰·쿠키를 로그로 넘기지 않는다. SQLite 진단 최대500개, 시작 DB 오류는 앱 전용 bounded 고정 코드 파일이다. 이 파일/DB/이미지/바이너리는 Git에서 제외한다.
+- Release publish/PE 검사만 했으며 생성 앱을 실행·설치·자동 시작·공개 배포하지 않았다. 실제 다른 프로그램 비간섭/제재 위험 0을 인증하는 검사는 아니다.
+
 ## 2차 작업의 명시적 승인과 실행 경계
 
 사용자는 MarketCrate 컨트롤을 별도 STA 환경에서 생성하고 RenderTargetBitmap으로 자체 렌더링하는 검증을 승인했다. 이 승인은 실제 창 표시/활성화·전역 입력·타 앱 접근·화면 캡처·Steam 연결로 확장하지 않는다.

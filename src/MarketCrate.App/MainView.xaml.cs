@@ -16,6 +16,7 @@ public partial class MainView : UserControl
         {
             if (e.OriginalSource == ReviewOverlay && DataContext is MainViewModel vm && vm.CloseReview.CanExecute(null)) vm.CloseReview.Execute(null);
         };
+        ManagementOverlay.MouseDown += (_, e) => { if (e.OriginalSource == ManagementOverlay && DataContext is MainViewModel vm && vm.CloseCancelReview.CanExecute(null)) vm.CloseCancelReview.Execute(null); };
         AddHandler(Validation.ErrorEvent, new EventHandler<ValidationErrorEventArgs>(InputError));
         DataContextChanged += (_, e) =>
         {
@@ -30,16 +31,13 @@ public partial class MainView : UserControl
     }
     private void ReviewChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName != nameof(MainViewModel.IsReviewOpen) || sender is not MainViewModel vm) return;
-        WorkspaceTabs.IsEnabled = !vm.IsReviewOpen;
-        if (!vm.IsReviewOpen)
-        {
-            invalidInputs.RemoveWhere(x => x is System.Windows.Media.Visual visual && ReviewOverlay.IsAncestorOf(visual));
-            vm.HasInputErrors = invalidInputs.Count > 0;
-        }
+        if (e.PropertyName is not (nameof(MainViewModel.IsReviewOpen) or nameof(MainViewModel.IsCancelReviewOpen)) || sender is not MainViewModel vm) return;
+        WorkspaceBody.IsEnabled = !vm.AnyDialog;
+        invalidInputs.RemoveWhere(x => x is System.Windows.Media.Visual visual && ((!vm.IsReviewOpen && ReviewOverlay.IsAncestorOf(visual)) || (!vm.IsCancelReviewOpen && ManagementOverlay.IsAncestorOf(visual))));
+        vm.HasInputErrors = invalidInputs.Count > 0;
         // No focus operation in detached tests and no window activation.
         if (Window.GetWindow(this)?.IsActive == true)
-        { if (vm.IsReviewOpen) ReviewList.Focus(); else ReviewButton.Focus(); }
+        { if (vm.IsCancelReviewOpen) ManagementBackButton.Focus(); else if (vm.IsReviewOpen) ReviewList.Focus(); else ReviewButton.Focus(); }
     }
     private void ReviewKeyDown(object sender, KeyEventArgs e)
     {
