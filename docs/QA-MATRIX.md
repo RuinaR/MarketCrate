@@ -2,9 +2,9 @@
 
 ## 실행 범위
 
-결과 집계는 최종 실행 후 아래에 기록한다. PASS는 **합성/Mock/격리 SQLite/비표시 WPF 범위**다. 실제 Steam 계정/응답 수집/거래/Guard 작업은 전혀 실행하지 않았다. 테스트 HTTP는 소켓 없는 HttpMessageHandler다. 이전 112개 기능 검사와 20개 UI 검사를 제거하지 않았다. 새로운 진단/누락 수정 검사는 상태·전송 횟수·영속 상태·연결 이벤트/정제 결과까지 확인한다.
+아래는 최종 마감 실행 결과다. PASS는 **합성/Mock/격리 SQLite/비표시 WPF 범위**다. 실제 Steam 계정/응답 수집/거래/Guard 작업은 전혀 실행하지 않았다. 테스트 HTTP는 소켓 없는 HttpMessageHandler다. 이전 112개 기능 검사와 20개 UI 검사를 제거하지 않았다. 새로운 진단/누락 수정 검사는 상태·전송 횟수·영속 상태·연결 이벤트/정제 결과까지 확인한다.
 
-최종 Debug 집계: **139/139 기능·합성 HTTP·저장소·진단 PASS, FAIL0; 23/23 비표시 WPF PASS, FAIL0; 빌드 경고0/오류0**. 기존112+신규27, UI기존20+신규3. Steam schema v3 변경 후 전체 회귀도 통과했다. Release 산출물 검사는 별도 마감 기록 참조. `scripts/Verify.ps1` 순차 빌드/전체 테스트, `scripts/Publish.ps1` Release PE/로컬 데이터 제외/고지 검사. 실제 앱 실행·설치는 포함하지 않는다. 콘솔 출력과 PNG는 ignored `runtime/stage6-*.txt`, `runtime/ui-tests/stage6-*.png`에만 보관한다.
+최종 Debug 집계: **139/139 기능·합성 HTTP·저장소·진단 PASS, FAIL0; 23/23 비표시 WPF PASS, FAIL0; 빌드 경고0/오류0**. 기존112+신규27, UI기존20+신규3. Steam schema v3 변경 후 전체 회귀도 통과했다. 최종 구현 `fab286a`의 Release 산출물도 PASS, 경고0/오류0, PE/data exclusion/MIT notices 확인. Core DLL에 해당 소스 commit metadata 존재를 정적으로 확인했다. 앱 실행·설치 미실행. `scripts/Verify.ps1` 순차 빌드/전체 테스트, `scripts/Publish.ps1` Release PE/로컬 데이터 제외/고지 검사. 실제 앱 실행·설치는 포함하지 않는다. 콘솔 출력과 PNG는 ignored `runtime/stage6-*.txt`, `runtime/ui-tests/stage6-*.png`에만 보관한다.
 
 약칭은 REQUIREMENTS-TRACEABILITY의 초기/F3/F4/F5/S6/U2/U3/U5/U6와 동일. 기능 PASS라도 해당 오류의 상세 로그를 직접 assert하지 않았다면 **진단 PARTIAL**로 표기한다. 모든 가능한 장애 조합을 검증했다는 의미가 아니다.
 

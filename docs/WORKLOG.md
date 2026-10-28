@@ -2,6 +2,8 @@
 
 ## 2026-10-28 KST — 6차 요구사항 감사 및 실사용 진단
 
+- 최종 마감: 구현 `5b44e0d`, 진단 보완 `fab286a` 각각 origin/main push 완료. 보완 후 전체 **139/139 + WPF 23/23 PASS**, FAIL0/경고0/오류0. `fab286a` Release PE/데이터 제외/MIT 고지 PASS, Core DLL의 소스 commit 포함 정적 확인. 최신 진단/최종 검토 PNG 육안 재확인, 실제 Window/앱/계정/타 프로세스 접근 없음. 남은 항목은 추적표 PARTIAL/MISSING/BLOCKED/UNVERIFIED로 유지한다. 최종 문서 커밋은 완료 보고 참조.
+
 - 구현/감사 커밋 `5b44e0d` origin/main push 및 Release PE/데이터 제외/라이선스 검사 PASS. 마감 점검에서 writer 실패의 원인 분류/OperationId가 health에 부족하고 변조 null stack 프레임이 export를 중단할 수 있음을 발견해 후속 보완했다. 원문 없이 typed 실패/OS 숫자 코드/작업 ID를 화면·manifest에 제공하고 null 프레임은 제외한다.
 
 - origin/main `33cd152` fetch/clean 기준, AGENTS/정의/설계/기록/QA/실연동 자료와 관련 코드 경로를 대조했다. 75개 ID 추적표를 작성했고 COMPLETE44/PARTIAL16/MISSING1/BLOCKED5/UNVERIFIED9(로컬/합성 범위)을 분리했다. 실계정/실제 응답 수집은 전부 미실행이다.

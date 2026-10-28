@@ -1,8 +1,8 @@
-# MarketCrate — QA 체크리스트 (자동 검사 완료 / GUI 미실행)
+# MarketCrate — QA 체크리스트 (자동/비표시 WPF 검증, 실제 창 미실행)
 
 ## 6차 최신 QA
 
-전체 경로/예외/복구/진단의 상세 판정은 [QA-MATRIX](QA-MATRIX.md), 최초 요구 범위는 [REQUIREMENTS-TRACEABILITY](REQUIREMENTS-TRACEABILITY.md). 전체 Debug **139/139**, 비표시 WPF **23/23**, FAIL0, 빌드 경고0/오류0. Steam v3 변경 후 재회귀 포함. Release 결과는 최종 마감 기록 참조. 아래 5차 수치는 이전 기록이다. 앱/Window/Popup/전역 입력/실계정 작업은 실행하지 않았고 자체 STA 렌더만 수행한다.
+전체 경로/예외/복구/진단의 상세 판정은 [QA-MATRIX](QA-MATRIX.md), 최초 요구 범위는 [REQUIREMENTS-TRACEABILITY](REQUIREMENTS-TRACEABILITY.md). 전체 Debug **139/139**, 비표시 WPF **23/23**, FAIL0, 빌드 경고0/오류0. Steam v3 변경 후 재회귀 포함. 구현 `fab286a` Release PASS(경고0/오류0), PE·DB/로그 제외·라이선스 고지 확인. 앱 실행·설치 미실행. 아래 5차 수치는 이전 기록이다. 앱/Window/Popup/전역 입력/실계정 작업은 실행하지 않았고 자체 STA 렌더만 수행한다.
 
 ## 5차 최종 결과 — 2026-10-28 KST (최신)
 
