@@ -15,6 +15,7 @@
 - 최종 회귀: `scripts/Verify.ps1`, 5프로젝트 Debug 경고0/오류0, 도메인/합성 HTTP **112/112**, detached STA WPF **20/20 PASS**, FAIL0. 마지막 변경 소스 이후 Release publish·PE/데이터 제외·QR MIT LICENSE/고지 포함 검사 PASS. 산출물 실행/설치/서명/공개 배포는 안 했다.
 - QR/검토/보관함/통합 PNG를 직접 검토했고 생성물은 ignored runtime/artifacts에만 둔다. 금지 API·민감값 패턴·diff 점검 후 소스/합성 테스트/문서/허가된 QR 소스만 commit/push한다. 미지원·제재 위험은 현황에 누적하며 실판매 완성을 선언하지 않는다.
 - 최종 검토: 금지 API 검색의 Process.Start는 이전 승인된 owned headless 테스트 자식뿐이며 새 타 앱 접근 없음. QR vendor 6파일은 내려받은 고정 원본과 nullable 지시문을 제외하고 문자 단위 일치 확인. upstream 주석/EOF 공백은 원본 보존으로 확인했고 자체 소스·테스트·문서 diff check는 PASS다. 새 소스 제한 이후 전체112/112·WPF20/20·Release/라이선스 검사도 다시 PASS했다.
+- 구현·조사·검증 커밋 `f7bd8aa`을 origin/main에 정상 push했다 (`73ad542..f7bd8aa`). 실제 로그인/거래/Guard·타 앱/전역 입력/화면 접근 없음. 다음 우선순위는 별도 승인된 실제 QR/읽기 검증, 정책 근거, 통화/게임별 검증 및 스택/외부 등록의 취소 인과 증거 어댑터다. 실제 일괄 등록 지원 완료/릴리즈 준비 완료를 선언하지 않는다.
 
 ## 2026-10-28 — 4차 조사·실험적 연동 구현
 
