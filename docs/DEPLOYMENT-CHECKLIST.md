@@ -2,6 +2,12 @@
 
 ## 0.15.0 배포 정책
 
+### 0.15.0 배포 확정
+
+소스 **eb9ebd7ff79585dfbcd20ba17374eb4c4e155031** origin/main push. portable **artifacts/releases/MarketCrate-0.15.0-stage15-eb9ebd7-win-x64.zip** (66,506,796바이트/412파일), SHA256 **EF520920413636DC1456C30A3C94F6ADAD03C08D0082156ED0544983520F43D5**. 전체 ZIP entry SHA와 원본/SourceCommit 일치, x64 CLR/WPF10.0.9·SQLite 네이티브·라이선스 포함, DB/로그/인증정보/개발파일 제외, Release 경고·오류0. 실제 EXE·설치·실계정은 미실행, 디지털서명 미적용.
+
+최신/롤백은 ignored artifacts/releases.json에 기록. 롤백은0.14 ZIP(SHA E1A001291F4AE0F6BE0C5410FA51421BD95E52612472BD9C187890CBED034680), 기존0.13 ZIP·모든추출본/진단/SQLite/저널/설정/인증/캐시는 그대로 보존했다. 이번 차수의 기존산출물 삭제0(성공한 신규합성fixture 자체정리만). 마지막 생성자 권한검사를 DB열기 앞으로 옮겨 차단시 lease잔류를 막고 활성화재요청은 먼저 권한철회하도록 한 뒤 전체기능223/223 재검사(runtime/stage15-last-core.txt), 기존48WPF/14배포검사와 새Release검사 유지. 동의해제·재로그인/계정변경 활성화보존 없음.
+
 새고유버전/커밋폴더에 x64 self-contained publish, 전체ZIP entry hash/SourceCommit/아키텍처/CLR·WPF·SQLite·고지/개발·민감파일 제외검사. 실제창·설치·서명·실계정은 미실행. 0.14 최신본과0.13 이전사용자관측본/추출폴더·진단·저널·설정·계정파일 보존. 새latest index의rollback은0.14이며 구0.13도삭제하지 않는다. 정리는 기존 exact합성fixture dry-run 규칙외 추가없음. optional snapshot/reprice digest는 기존SQLite v3 자료를 초기화하지 않으며 구불명요청을 재실행하지 않는다.
 
 ## 0.14.0 배포·정리·롤백

@@ -2,6 +2,12 @@
 
 ## 2026-10-29 — 15차 비공식 조건부 실행과 승인 정합성
 
+### 0.15.0 배포 확정
+
+소스 **eb9ebd7ff79585dfbcd20ba17374eb4c4e155031** origin/main push. portable **artifacts/releases/MarketCrate-0.15.0-stage15-eb9ebd7-win-x64.zip** (66,506,796바이트/412파일), SHA256 **EF520920413636DC1456C30A3C94F6ADAD03C08D0082156ED0544983520F43D5**. 전체 ZIP entry SHA와 원본/SourceCommit 일치, x64 CLR/WPF10.0.9·SQLite 네이티브·라이선스 포함, DB/로그/인증정보/개발파일 제외, Release 경고·오류0. 실제 EXE·설치·실계정은 미실행, 디지털서명 미적용.
+
+최신/롤백은 ignored artifacts/releases.json에 기록. 롤백은0.14 ZIP(SHA E1A001291F4AE0F6BE0C5410FA51421BD95E52612472BD9C187890CBED034680), 기존0.13 ZIP·모든추출본/진단/SQLite/저널/설정/인증/캐시는 그대로 보존했다. 이번 차수의 기존산출물 삭제0(성공한 신규합성fixture 자체정리만). 마지막 생성자 권한검사를 DB열기 앞으로 옮겨 차단시 lease잔류를 막고 활성화재요청은 먼저 권한철회하도록 한 뒤 전체기능223/223 재검사(runtime/stage15-last-core.txt), 기존48WPF/14배포검사와 새Release검사 유지. 동의해제·재로그인/계정변경 활성화보존 없음.
+
 ### 15차 최종 자동 검증
 
 기능 **223/223 PASS**, 자체비표시WPF **48/48 PASS**, 배포파일계약 **14/14 PASS**, FAIL0, Debug 경고/오류0. 안전정리 **7 PASS/0 FAIL/1 NOT VERIFIED**(실제junction 생성불가, 기존경계/잠금/변조검사유지). 신규16기능/2WPF는 실제어댑터의 합성HTTP 주입이며 사용자모드의 조건부활성화→Guard대기→수동게시대조→취소반환→재가격·감사저널도 검증했다. runtime/stage15-release-verify.txt가 최종전체회귀 증거이고 runtime/stage15-focused-final.txt는 추가user-mode saga 검사 증거다. RTB stage15-trading-controls.png·stage15-multi-game-review.png 직접검토. Codex 실계정/거래·실제창/물리입력/Popup/DPI/설치·서명 미실행. 최초75개판정47/15/0/4/9 유지. 실제 Wallet302/등록취소/KRW/스택 계약·LIVE_VERIFIED는 미확정.
