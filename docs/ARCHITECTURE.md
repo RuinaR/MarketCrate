@@ -2,6 +2,12 @@
 
 ## 14차 읽기 증거 계층
 
+### 15차 세션 조건부 거래
+
+SteamTradingViewModel.PrepareTradingAsync→Workspace.EnableUserTradingAsync는 **읽기 전용 preflight**이며 POST를 보내지 않는다. 기본policyBlocked를 세션별 UserInitiated/VerifiedApps로 바꾸는 유일한 일반앱경로다. Access.TradingAccount와 QR계정이 일치해야 Executor.CanExecute가 참이다. ContractTest는 일반UI에 노출하지 않고 enabled policy 생성자 주입도 합성 handler 경계에서만 허용한다. 동의철회·인증재시작·로그아웃은 binding을 제거하고 활성화/인증비밀은 SQLite에 저장하지 않는다.
+
+executor는 scope별 inventory/provider와 앱별fee를 검증한 뒤 한 coordinator/저널로 처리한다. optional OrderbookDigest는 SaleLineSnapshot 및 SteamRepriceIntent에 저장하며 가격/잔량/통화의 불변증거다. 기존JSON의 누락필드는 null로 복원하고 실제 사용자모드에서 새검토 없이 실행하지 않는다. SQLite v3 schema/기존거래 데이터 초기화 없음. 계정이 다른 활성저널은 새배치로 덮어쓰지 않는다. 기존 계정의 예약이 보수적으로 새계정 가용량을 제한할 수 있어 완전한 다계정 전환 제품지원으로 주장하지 않는다.
+
 QR기록/메모리세션, SteamHttp 전역Halted, endpoint별 FeatureFailure(Authorization), 개별ReadState/ReadCheck를 분리한다. WalletObservation→strict SteamWallet 승격은 완전한 단위/증분정보가 있어야 가능. rates-only fee는 strict contract 대체 불가. InventoryPage VerifiedEmpty/ReportedTotal/More로 오류·빈·부분페이지 구분. UI→SelfCheck→Provider→HTTP→고정진단→요약/상세 경로이며 거래저널·복구구조 변경 없음.
 
 ## 13차 읽기 자가검증 경계

@@ -1,4 +1,8 @@
-# 요구사항–구현–검증 추적표 (14차, 2026-10-29 KST)
+# 요구사항–구현–검증 추적표 (15차, 2026-10-29 KST)
+
+## 15차 판정 유지 및 경로
+
+최초75개 ID/판정47 COMPLETE/15 PARTIAL/0 MISSING/4 BLOCKED/9 UNVERIFIED 유지. F01–F12/B08–B10/C09–C13/D09–D10: SteamTradingViewModel.PrepareTradingAsync→SteamExperimentalWorkspace.EnableUserTradingAsync→Wallet/Inventory/Orders→세션계정binding/VerifiedApps→BuildReview→SaleBatchCoordinator→SteamListingExecutor.ValidateBatchAsync→SteamStateStore→Submit/Reconcile/Cancel/Reprice→UI. OrderbookFingerprint/선택게임별fee/context·whole-cancelpreflight·intent호가지문 보호 추가. 새FifteenthStageTests16개와UiTests2개 합성증거. IMPLEMENTED는 조건부코드 범위, CONTRACT_VERIFIED는 합성과 실서버를 구분, LIVE_VERIFIED 없음. 활성화정책 변경만으로 미검증 원요구사항을 COMPLETE로 바꾸지 않는다.
 
 ## 14차 재평가
 

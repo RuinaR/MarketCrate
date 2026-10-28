@@ -64,6 +64,16 @@ public static class SteamFees
     }
     public static async Task<SteamWallet> FetchWalletAsync(SteamHttp http,CancellationToken token)
     {var result=await FetchWalletObservationAsync(http,token);if(result.Currency is null)throw new SteamException(SteamFailure.WalletUnavailable);return result.PricingWallet();}
+    internal static async Task<SteamWallet> FetchTradingWalletAsync(SteamHttp http,string account,CancellationToken token)
+    {
+        using var request=new HttpRequestMessage(HttpMethod.Get,"https://steamcommunity.com/market/");
+        var html=await http.SendAsync(request,token,true);
+        // Compare in memory only; account content is never a diagnostic field.
+        var identity=Regex.Match(html,@"\bg_steamID\s*=\s*['"" ]?([0-9]{17})['""]?\s*;",RegexOptions.CultureInvariant,TimeSpan.FromMilliseconds(100));
+        if(!identity.Success||identity.Groups[1].Value!=account){DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,DiagnosticOutcome.Blocked,LogLevel.Warning,DiagnosticError.Authorization,endpoint:"Wallet",reason:"AccountMismatch");throw new SteamException(SteamFailure.Authorization){Endpoint="Wallet"};}
+        var wallet=ObserveWallet(html);if(wallet.LoggedIn!=true)throw new SteamException(SteamFailure.Authorization){Endpoint="Wallet"};
+        try{return wallet.PricingWallet();}catch(SteamException error){error.Endpoint="Wallet";throw;}
+    }
     public static async Task<SteamFeeStructure> FetchStructureObservationAsync(SteamHttp http,int appId,CancellationToken token)
     {using var correlation=DiagnosticHub.Scope(correlation:true);using var request=new HttpRequestMessage(HttpMethod.Get,$"https://steamcommunity.com/market/ajaxfeestructure/?appid={appId}");return ObserveStructure(await http.SendAsync(request,token));}
     public static async Task<SteamFeeSchedule> FetchStructureAsync(SteamHttp http,int appId,SteamWallet wallet,CancellationToken token)

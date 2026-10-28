@@ -1,5 +1,17 @@
 # 정상·오류·복구 QA 매트릭스 — 10차 (2026-10-28 KST)
 
+## 15차 — 실제 어댑터 경로 검증
+
+### 15차 최종 자동 검증
+
+기능 **223/223 PASS**, 자체비표시WPF **48/48 PASS**, 배포파일계약 **14/14 PASS**, FAIL0, Debug 경고/오류0. 안전정리 **7 PASS/0 FAIL/1 NOT VERIFIED**(실제junction 생성불가, 기존경계/잠금/변조검사유지). 신규16기능/2WPF는 실제어댑터의 합성HTTP 주입이며 사용자모드의 조건부활성화→Guard대기→수동게시대조→취소반환→재가격·감사저널도 검증했다. runtime/stage15-release-verify.txt가 최종전체회귀 증거이고 runtime/stage15-focused-final.txt는 추가user-mode saga 검사 증거다. RTB stage15-trading-controls.png·stage15-multi-game-review.png 직접검토. Codex 실계정/거래·실제창/물리입력/Popup/DPI/설치·서명 미실행. 최초75개판정47/15/0/4/9 유지. 실제 Wallet302/등록취소/KRW/스택 계약·LIVE_VERIFIED는 미확정.
+
+FifteenthStageTests: canonical/locale단일redirect·unsafe/임의query/loop/401, 계정불일치·가격metadata/기존fee증거부족 활성화차단, 동의철회/로그아웃binding해제, 호가잔량지문변경시 첫intent전차단, 다중App/context 단일배치/중복승인, 미검증App전체차단, 취소전체사전대조, 기존listingID 재사용Unknown, KRW10개3/4/3 공유잔량, stale재가격 취소전거절, 개발용/사용자모드 분리. 모두 합성HTTP이며 서버 계약 충분성/LIVE_VERIFIED로 확대하지 않는다.
+
+FifteenthStageUiTests: 초기OFF/입력확인/실제명령 바인딩·개발도구분리, 게임전환 선택보존→전체가격→두게임검토→한번승인으로2요청. RTB 전용, Window/HwndSource/전역입력 없음. 렌더에서 빈 확인입력의 폭·안내 누락을 발견해320px/입력문구로 수정했다.
+
+초기 통합11FAIL은 새인증이 기존거래동의를 해제하는 올바른경계에 맞지 않은 구합성setup(로그인전동의)과 재가격 Game표시/provider 비교 변경으로 발생했다. setup은 인증후 합성승인으로 갱신하고 scope와Game에 맞는provider를 선택해 수정했다. 검증기준/성공assertion을 낮추지 않았다. 최종집계는 확정결과에서 확인한다.
+
 ## 14차 결과 (2026-10-29)
 
 |경로|결과|

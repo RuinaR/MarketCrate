@@ -1,5 +1,15 @@
 # MarketCrate — Sale Execution Product Contract
 
+## 15차 조건부 실행 계약 (이전 차수 제한을 대체하는 현재 범위)
+
+제품 기본값은 SteamTradingPolicy.Blocked. 사용자가 비공식 위험을 검토하고 이번 세션을 명시적으로 선택한 경우에만 EnableUserTradingAsync가 읽기 preflight를 수행한다. Valve 허가 여부와 기술적 조건은 별개다. 단순 체크박스/ContractTest/과거설정은 계정에 바인딩된 실행권한을 만들지 않는다. QR 새시작/로그아웃/동의해제는 binding을 제거한다. 활성화는 저장하지 않는다. 같은 게임 기존 등록fee 비교가 없으면 first-bootstrap도 차단하며 미확인KRW/스택 계약을 상수로 대체하지 않는다.
+
+모든 선택게임은 scope별 자산·fee·통화를 검증한다. SaleLineSnapshot.OrderbookDigest는 순서있는 가격/잔량/통화 SHA256이며 계정정보가 아니다. 최신호가가 달라지면 전체배치 intent 전 거부하고 VM의 이전승인을 폐기한다. 미지원 항목을 누락시키거나 자동저가로 바꾸지 않는다. reprice intent에도 optional digest를 고정하고 취소 전/반환 후 재비교한다. 구digest없는 실제사용 의도는 새검토 없이 실행 불가, 기존 합성 fixture 호환은 실제권한으로 쓰지 않는다.
+
+CancelBatchAsync는 불변 취소대상 전체를 서버목록과 비교한 뒤 시작한다. 실행중 서버변경/부분실패는 가능하며 원자성을 주장하지 않는다. 별도 reprice의 다중항목 작업은 개별 saga이므로 전체원자성 없음. listing ID 응답이 요청전 목록에 존재하면 Unknown. 일치하는 외부후보/목록부재/스택증가만으로 자신의등록·반환을 확정하지 않는다.
+
+한 최종 승인으로 모든 확정 단위를 intent→직렬요청→개별결과로 처리하며 추가아이템별 판매클릭 없음. Submitted/Guard대기와 Listed는 별개. 공식 모바일 앱의 여러 항목 승인은 Steam 정책에 따라 사용자가 별도로 확인해야 할 수 있다. 로컬키는 서버idempotency 보장이 아니며 JSONL은 SQLite 복구의 authority가 아니다.
+
 ## 6차 추가 계약: 승인 revision과 진단 authority
 
 - 최종 전체 한 번 승인/immutable batch/분할 가격·수량/Guard 수동 승인/기본 live 차단 목표를 그대로 유지한다. 상세 요구 ID F01–F12는 REQUIREMENTS-TRACEABILITY에 고정한다.

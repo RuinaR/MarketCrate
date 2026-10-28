@@ -35,26 +35,26 @@ public sealed partial class SteamWorkspaceViewModel
     public string AuthenticationText=>LoginState switch{SteamLoginState.Connected when Connected=>"Steam 인증 완료",SteamLoginState.AwaitingMobile=>"QR 승인 대기",SteamLoginState.RequestingQr=>"QR 요청 중",SteamLoginState.Expired=>"세션 만료 · 다시 로그인하세요",SteamLoginState.Denied=>"인증 거절됨",SteamLoginState.AccessBlocked=>"인증 요청 제한",SteamLoginState.NetworkFailure=>"인증 통신 실패",SteamLoginState.ContractFailure=>"인증 응답 확인 필요",SteamLoginState.Cancelled=>"인증 취소됨",_=>"연결 안 됨"};
     public string ConnectionSummary=>RequestsBlocked&&Connected?"Steam 인증 완료 · 요청은 안전을 위해 중단됨":!Connected?AuthenticationText:FeatureRestricted?"Steam 인증 완료 · 일부 조회 권한 확인 필요":Busy?"Steam 인증 완료 · 데이터 조회 중":ReadStatuses.Any(x=>x.State is SteamReadState.Failed or SteamReadState.Unsupported or SteamReadState.AccessBlocked)?"Steam 인증 완료 · 일부 조회 실패":"Steam 인증 완료 · 읽기 연결";
     public string RequestAccessText=>workspace?.Failure switch{SteamFailure.Forbidden=>"서버 접근 제한(403) · 요청을 중단했습니다. 제한을 우회하지 않습니다.",SteamFailure.RateLimited=>"서버 호출 제한(429) · 요청을 중단했습니다. 자동 재시도하지 않습니다.",SteamFailure.Authentication or SteamFailure.Expired=>"세션 만료 · 계정 연결에서 직접 다시 로그인하세요.",{}=>"안전 차단 · 진단에서 원인을 확인하세요. 재전송하지 않습니다.",_=>FeatureRestricted?"일부 조회의 권한 확인이 필요합니다. 제한된 요청은 차단하고 다른 독립 조회만 사용할 수 있습니다.":Connected?"조회 실패는 인증과 별개입니다. 실패한 조회만 직접 다시 시도할 수 있습니다.":"계정 연결에서 QR 인증을 직접 시작하세요."};
-    public string SelectionSummary=>$"선택 {Assets.Count(x=>x.Selected)}종 · {Assets.Where(x=>x.Selected).Sum(x=>(long)x.Quantity)}개";
+    public string SelectionSummary=>$"선택 {SelectedSteamRows().Length}종 · {SelectedSteamRows().Sum(x=>(long)x.Quantity)}개";
     public string SelectionEstimate
     {
         get
         {
             if(fees is null)return "지갑·수수료 조회 후 예상 정산을 계산합니다.";
-            var rows=Assets.Where(x=>x.Selected).ToArray();if(rows.Length==0)return "판매할 항목을 선택하세요.";
+            var rows=SelectedSteamRows();if(rows.Length==0)return "판매할 항목을 선택하세요.";
             if(rows.Any(x=>x.Price is null))return "선택 시세를 갱신한 뒤 최종 검토하세요.";
             try
             {
                 var basis=PricingMode switch{1=>PriceBasis.ExactAverage,2=>PriceBasis.MedianEstimate,_=>PriceBasis.Immediate};
                 var plan=SalePlanner.Build(rows.Select(x=>new SaleSelection(x.Asset,x.Price!,x.Quantity)),basis);
-                long buyer=0,fee=0,seller=0;foreach(var line in plan.Lines){var quote=fees.FromBuyer(line.Allocation.BuyerPays,false);buyer=checked(buyer+checked(quote.BuyerPays*line.Allocation.Quantity));fee=checked(fee+checked(quote.Fees*line.Allocation.Quantity));seller=checked(seller+checked(quote.SellerReceives*line.Allocation.Quantity));}
+                long buyer=0,fee=0,seller=0;foreach(var line in plan.Lines){var schedule=gameFees.GetValueOrDefault(line.Selection.Asset.Key.AppId)??throw new SteamException(SteamFailure.Restricted);if(schedule.Currency!=fees.Currency)throw new SteamException(SteamFailure.Restricted);var quote=schedule.FromBuyer(line.Allocation.BuyerPays,false);buyer=checked(buyer+checked(quote.BuyerPays*line.Allocation.Quantity));fee=checked(fee+checked(quote.Fees*line.Allocation.Quantity));seller=checked(seller+checked(quote.SellerReceives*line.Allocation.Quantity));}
                 return $"예상 결제액 {new Money(buyer,fees.Currency)}\n예상 수수료 {new Money(fee,fees.Currency)}\n예상 실수령 {new Money(seller,fees.Currency)}\n가격 미정 {plan.UnpricedQuantity}개 · 최종 검토에서 확정";
             }
             catch(Exception error)when(error is ArgumentException or InvalidOperationException or OverflowException or SteamException){return "시세·수수료 자료가 부족합니다. 갱신 후 검토하세요.";}
         }
     }
     private SteamReadStatus? ReadFor(string method)=>method switch{nameof(LoadAsync)=>InventoryRead,nameof(LoadListingsAsync) or nameof(RecoverAsync)=>ListingsRead,nameof(LoadFeesAsync)=>FeesRead,nameof(RefreshPricesAsync) or nameof(ListingMetricsAsync)=>PricesRead,nameof(HistoryAsync)=>HistoryRead,_=>null};
-    private void ReadFailed(SteamReadStatus read,Exception error){var code=error is SteamException e?e.Code:SteamFailure.ContractChanged;read.Update(code==SteamFailure.Unsupported?SteamReadState.Unsupported:code==SteamFailure.Authorization?SteamReadState.AccessBlocked:RequestsBlocked?SteamReadState.AccessBlocked:SteamReadState.Failed,code);if(ReferenceEquals(read,FeesRead)){fees=null;Raise(nameof(CurrencyText));}Changed();}
+    private void ReadFailed(SteamReadStatus read,Exception error){var code=error is SteamException e?e.Code:SteamFailure.ContractChanged;read.Update(code==SteamFailure.Unsupported?SteamReadState.Unsupported:code==SteamFailure.Authorization?SteamReadState.AccessBlocked:RequestsBlocked?SteamReadState.AccessBlocked:SteamReadState.Failed,code);if(ReferenceEquals(read,FeesRead)){fees=null;gameFees.Remove(Game.AppId);Raise(nameof(CurrencyText));}Changed();}
     private async Task IndependentRead(SteamReadStatus read,Func<Task> action)
     {
         if(!CanRead)return;read.Update(SteamReadState.Loading);

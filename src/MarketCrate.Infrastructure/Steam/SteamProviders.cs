@@ -7,6 +7,9 @@ namespace MarketCrate.Infrastructure.Steam;
 
 public sealed class SteamInventoryProvider(SteamHttp http, SteamQrAuthentication auth, int appId, string contextId, string game) : IInventoryProvider
 {
+    internal int AppId=>appId;
+    internal string ContextId=>contextId;
+    internal string GameName=>game;
     public Dictionary<AssetKey,ItemImageReference> Images{get;}=[];
     internal Dictionary<AssetKey, int> PublisherFees { get; } = [];
     public Capability Capability => auth.Connected && http.Halted is null ? Capability.Experimental : Capability.IntegrationBlocked;

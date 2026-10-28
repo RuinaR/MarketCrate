@@ -4,6 +4,7 @@ using MarketCrate.Core;
 using MarketCrate.Infrastructure;
 using MarketCrate.App.ViewModels;
 
+if(args.Contains("--stage15")){var focused=await FifteenthStageTests.RunAsync();return focused.Failed==0?0:1;}
 if(args.Contains("--stage14")){var focused=await FourteenthStageTests.RunAsync();return focused.Failed==0?0:1;}
 if(args.Contains("--stage13")){var focused=await ThirteenthStageTests.RunAsync();return focused.Failed==0?0:1;}
 if(args.Contains("--stage7")){var focused=await SeventhStageTests.RunAsync();Console.WriteLine($"STAGE7 RESULT {focused.Passed} PASS / {focused.Failed} FAIL");return focused.Failed==0?0:1;}
@@ -54,7 +55,8 @@ var eleventh=await EleventhStageTests.RunAsync();failed+=eleventh.Failed;
 var twelfth=await TwelfthStageTests.RunAsync();failed+=twelfth.Failed;
 var thirteenth=await ThirteenthStageTests.RunAsync();failed+=thirteenth.Failed;
 var fourteenth=await FourteenthStageTests.RunAsync();failed+=fourteenth.Failed;
-var total = fourteenth.Passed+fourteenth.Failed+ thirteenth.Passed+thirteenth.Failed+ twelfth.Passed+twelfth.Failed+ eleventh.Passed+eleventh.Failed+tenth.Passed+tenth.Failed+ninth.Passed+ninth.Failed+eighth.Passed+eighth.Failed+seventh.Passed+seventh.Failed+sixth.Passed+sixth.Failed+tests.Length + next.Passed + next.Failed + third.Passed + third.Failed + fourth.Passed + fourth.Failed + fifth.Passed + fifth.Failed;
+var fifteenth=await FifteenthStageTests.RunAsync();failed+=fifteenth.Failed;
+var total = fifteenth.Passed+fifteenth.Failed+fourteenth.Passed+fourteenth.Failed+ thirteenth.Passed+thirteenth.Failed+ twelfth.Passed+twelfth.Failed+ eleventh.Passed+eleventh.Failed+tenth.Passed+tenth.Failed+ninth.Passed+ninth.Failed+eighth.Passed+eighth.Failed+seventh.Passed+seventh.Failed+sixth.Passed+sixth.Failed+tests.Length + next.Passed + next.Failed + third.Passed + third.Failed + fourth.Passed + fourth.Failed + fifth.Passed + fifth.Failed;
 Console.WriteLine($"RESULT {total - failed}/{total} PASS; {failed} FAIL · synthetic data only, no GUI/network (Steam HTTP replaced by test handler)");
 return failed == 0 ? 0 : 1;
 

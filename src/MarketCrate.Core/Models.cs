@@ -21,7 +21,7 @@ public record Allocation(long BuyerPays, int Quantity);
 public record AllocationResult(ImmutableArray<Allocation> Lines, int UnpricedQuantity);
 public record SaleLineSnapshot(string LineId, InventoryAsset Asset, int Quantity, string Currency,
     FeeQuote UnitQuote, DateTimeOffset MarketTime)
-{ public PriceEvidence? Evidence{get;init;} }
+{ public PriceEvidence? Evidence{get;init;} public string? OrderbookDigest{get;init;} }
 public record SaleBatchSnapshot(Guid BatchId, string AccountReference, DateTimeOffset FinalizedAt,
     ImmutableArray<SaleLineSnapshot> Lines)
 {

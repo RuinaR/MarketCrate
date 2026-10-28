@@ -1,5 +1,9 @@
 # Windows 배포 준비 — 3차 구현
 
+## 0.15.0 배포 정책
+
+새고유버전/커밋폴더에 x64 self-contained publish, 전체ZIP entry hash/SourceCommit/아키텍처/CLR·WPF·SQLite·고지/개발·민감파일 제외검사. 실제창·설치·서명·실계정은 미실행. 0.14 최신본과0.13 이전사용자관측본/추출폴더·진단·저널·설정·계정파일 보존. 새latest index의rollback은0.14이며 구0.13도삭제하지 않는다. 정리는 기존 exact합성fixture dry-run 규칙외 추가없음. optional snapshot/reprice digest는 기존SQLite v3 자료를 초기화하지 않으며 구불명요청을 재실행하지 않는다.
+
 ## 0.14.0 배포·정리·롤백
 
 14차 배포 구현커밋 3e5201cd5980a4bf36fb25e7dbb6f7cb5e81960f origin/main push. 새 `artifacts/releases/MarketCrate-0.14.0-stage14-3e5201c-win-x64.zip`:66,498,491바이트/412파일, SHA256 E1A001291F4AE0F6BE0C5410FA51421BD95E52612472BD9C187890CBED034680. 원본전체entry SHA·SourceCommit·CLR/WPF10.0.9/SQLite x64/라이선스/민감·개발파일 제외 PASS, Release경고오류0. 실제EXE/설치·실계정 미실행/서명미적용. 최신·롤백은 artifacts/releases.json.

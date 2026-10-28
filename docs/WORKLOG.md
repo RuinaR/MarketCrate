@@ -1,5 +1,17 @@
 7차 Release 검사 수정: SQLite 파일명 제외 정규식이 정상 의존성 Microsoft.Data.Sqlite.dll까지 거부했다. DB/sidecar 확장자 끝으로 한정해 수정하고 DLL 허용·sqlite/sqlite3-wal/db-shm/.env/session.json/private.key 차단 7개 파일명 회귀를 확인했다. 실제 비밀파일·DB는 생성하지 않았다. 최초 publish는 이 정적 검사에서 FAIL이며 실행파일은 실행하지 않았다.
 
+## 2026-10-29 — 15차 비공식 조건부 실행과 승인 정합성
+
+### 15차 최종 자동 검증
+
+기능 **223/223 PASS**, 자체비표시WPF **48/48 PASS**, 배포파일계약 **14/14 PASS**, FAIL0, Debug 경고/오류0. 안전정리 **7 PASS/0 FAIL/1 NOT VERIFIED**(실제junction 생성불가, 기존경계/잠금/변조검사유지). 신규16기능/2WPF는 실제어댑터의 합성HTTP 주입이며 사용자모드의 조건부활성화→Guard대기→수동게시대조→취소반환→재가격·감사저널도 검증했다. runtime/stage15-release-verify.txt가 최종전체회귀 증거이고 runtime/stage15-focused-final.txt는 추가user-mode saga 검사 증거다. RTB stage15-trading-controls.png·stage15-multi-game-review.png 직접검토. Codex 실계정/거래·실제창/물리입력/Popup/DPI/설치·서명 미실행. 최초75개판정47/15/0/4/9 유지. 실제 Wallet302/등록취소/KRW/스택 계약·LIVE_VERIFIED는 미확정.
+
+origin/main445a868 clean/fetch0/0에서 시작. 사용자Wallet302 OtherRedirect·CS2명시0·목록8 관측을 반영, 실제Location/계정응답은 없어 원인미확정. 공식공개HTML/JS만GET, gzip해제후14차와동일hash확인, 오픈소스Market세션구조 참조만(복제없음).
+
+단일same-origin정규/언어Wallet이동, 세션조건부활성화/계정binding/앱allowlist, 다중scope최종검증·게임간선택/호가공유, 승인bookdigest변경거절, 취소대상전체사전대조·기존listingID응답Unknown, 재가격intent지문/취소전·반환후 재검증 구현. 구지침의허가Gate 제품정책 예외를명시하고 위험/미검증은유지. 사용자데이터/저널초기화0·실계정/거래/실제창/타프로세스/전역입력0.
+
+초기통합실패는 인증전합성동의setup과provider Game비교를수정해해결. RTB로신규입력폭/문구를발견·수정. 기존테스트유지, 최종집계와release/hash는 확정기록에추가.
+
 ## 2026-10-29 — 14차 읽기 계약 복구 및 안전 정리
 
 14차 배포 구현커밋 3e5201cd5980a4bf36fb25e7dbb6f7cb5e81960f origin/main push. 새 `artifacts/releases/MarketCrate-0.14.0-stage14-3e5201c-win-x64.zip`:66,498,491바이트/412파일, SHA256 E1A001291F4AE0F6BE0C5410FA51421BD95E52612472BD9C187890CBED034680. 원본전체entry SHA·SourceCommit·CLR/WPF10.0.9/SQLite x64/라이선스/민감·개발파일 제외 PASS, Release경고오류0. 실제EXE/설치·실계정 미실행/서명미적용. 최신·롤백은 artifacts/releases.json.

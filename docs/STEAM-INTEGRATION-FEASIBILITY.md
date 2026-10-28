@@ -1,5 +1,13 @@
 # Steam 연동 가능성 조사 — 2026-10-29 KST (13차)
 
+## 15차 공개 근거와 정책 구분 (2026-10-29 KST)
+
+[공식 Market](https://steamcommunity.com/market/), [market.js](https://community.fastly.steamstatic.com/public/javascript/market.js), [marketselldialog.js](https://community.fastly.steamstatic.com/public/javascript/applications/community/marketselldialog.js)를 무인증 GET. JS gzip을 해제해 확인한 SHA는14차와 동일(AC938119E82C7D4C8D0F7843EF168483EFA4AF3E45DC987C068F340BB5AF72EC / CB84BB8A9B2970F71D277626A0B4E922B47CCE90BF437F704CF8F5100FA66726). 공개 footer 언어query와 Market주소, g_steamID=false·wallet metadata 소비를 확인했다. 공개 modern fee 최소/증분 default는 실계정KRW 계약으로 채택하지 않았다.
+
+[공개 node-steamcommunity 구현](https://github.com/DoctorMcKay/node-steamcommunity/blob/master/components/market.js)의 Market GET/서버세션 사용도 비교했다. 코드 복제/의존성 도입 없음. 기술적 구현사례는 Valve의 자동화 허가가 아니다. 사용자 Wallet302의 Location/인증된 HTML은 미확보이며 익명200/공개JS로 원인을 단정하지 않는다. 허용하는 정규/언어 same-origin 이동 외의302는 차단한다.
+
+이번 명시적 사용자 요청으로 ‘허가확인 후에만 활성화’라는 기존 제품정책에 세션별 비공식 실험모드 예외를 추가했다. [Steam 약관](https://store.steampowered.com/subscriber_agreement/)의 허용을 확인한 것은 아니며 제재위험은 남는다. UI 위험동의뿐 아니라 계정일치·실제서버 metadata·기존등록fee 증거·자산 조건이 모두 필요하다. minimum/increment 없는계정·fee증거 없는첫등록·불명스택은 여전히차단한다. KRW/USD 코드는 합성검증, 인증된 서버금액·등록/취소/Guard/반환은 UNVERIFIED. LIVE_VERIFIED 없음.
+
 ## 14차 공개 계약 근거 (2026-10-29 KST)
 
 인증/쿠키 없이 공식 [Market](https://steamcommunity.com/market/), [market.js](https://community.fastly.steamstatic.com/public/javascript/market.js), [marketselldialog.js](https://community.fastly.steamstatic.com/public/javascript/applications/community/marketselldialog.js)를 GET 확인했다. g_rgWalletInfo.wallet_currency·wallet_fee_percent, 선택적 wallet_market_minimum/increment, 현대dialog fee_rate/fee_cap 및 추가필드가 관측됐다. JS default1을 검증된KRW wire계약으로 채택하지 않는다. currency-only/fee비율 관측과 strict 정수money계약을 분리한다.

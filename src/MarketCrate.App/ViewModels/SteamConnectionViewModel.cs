@@ -10,6 +10,7 @@ public sealed partial class SteamWorkspaceViewModel
     private Uri? displayedChallenge;
     private Action<Uri> officialPage = null!;
     private bool syntheticConnection;
+    public bool ContractToolsVisible=>syntheticConnection;
     public AsyncCommand LoadListings {get;private set;}=null!;
     public AsyncCommand LoadFees {get;private set;}=null!;
     public Command OpenOfficialMarket {get;private set;}=null!;
@@ -50,7 +51,7 @@ public sealed partial class SteamWorkspaceViewModel
     public Task LoadFeesAsync()=>Run(async token=>
     {
         RequireConnection();var schedule=await workspace!.FeesAsync(Game.AppId,token);token.ThrowIfCancellationRequested();
-        fees=schedule;Raise(nameof(CurrencyText));RecordCheck("Fees",1,schedule.Currency);Changed();
+        fees=schedule;gameFees[Game.AppId]=schedule;Raise(nameof(CurrencyText));RecordCheck("Fees",1,schedule.Currency);Changed();
         Status="지갑·게임 수수료 조회 완료 · 등록 전 다시 검증 · 실제 거래 활성화 아님";
     });
 }

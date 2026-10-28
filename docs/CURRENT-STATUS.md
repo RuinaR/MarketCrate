@@ -1,4 +1,20 @@
-# MarketCrate — 현재 상태 (2026-10-29 KST, 14차)
+# MarketCrate — 현재 상태 (2026-10-29 KST, 15차)
+
+## 15차 — 조건부 비공식 실거래 경로·최종 승인 보호 (2026-10-29 KST)
+
+### 15차 최종 자동 검증
+
+기능 **223/223 PASS**, 자체비표시WPF **48/48 PASS**, 배포파일계약 **14/14 PASS**, FAIL0, Debug 경고/오류0. 안전정리 **7 PASS/0 FAIL/1 NOT VERIFIED**(실제junction 생성불가, 기존경계/잠금/변조검사유지). 신규16기능/2WPF는 실제어댑터의 합성HTTP 주입이며 사용자모드의 조건부활성화→Guard대기→수동게시대조→취소반환→재가격·감사저널도 검증했다. runtime/stage15-release-verify.txt가 최종전체회귀 증거이고 runtime/stage15-focused-final.txt는 추가user-mode saga 검사 증거다. RTB stage15-trading-controls.png·stage15-multi-game-review.png 직접검토. Codex 실계정/거래·실제창/물리입력/Popup/DPI/설치·서명 미실행. 최초75개판정47/15/0/4/9 유지. 실제 Wallet302/등록취소/KRW/스택 계약·LIVE_VERIFIED는 미확정.
+
+0.15.0. 사용자0.14 관측: 세션 존재/목록 첫8건, CS2 HTTP200 명시0건, Wallet302 OtherRedirect/Unsupported. 목록·보관함 관측만 인정한다. Wallet 실제 Location/인증된 HTML 증거는 없으므로 원인과 전체읽기 계약은 미확정이다.
+
+- Wallet은 단일 same-origin HTTPS /market/ 정규/공개언어 이동만 지원(빈query 또는 l=english/koreana). POST/로그인/보안/지역·다른host/임의query는 따라가지 않고 두번째redirect도 중단한다. 401/403/429/CAPTCHA 우회 없음. 공개 Market은 익명200, 실제302 목적지라고 단정하지 않는다.
+- 사용자 요청으로 제품 정책을 변경: 실제 거래 기본OFF 유지, 고급설정의 위험동의+‘실제 거래’ 입력+사용자 시작 읽기 preflight를 거쳐 이 실행 세션만 비공식 거래모드를 선택 가능. Valve 허용 근거와 동일시하지 않는다. 기존 AGENTS의 허가확인 필수 규칙에 대한 이번 명시적 사용자 요청의 예외를 AGENTS에 기록했다.
+- 활성화 필수조건: QR Community 연결, Market g_steamID와 QR계정 일치/로그인플래그, 통화·명시적 minimum/increment, strict 앱fee, marketable/잠금없는 비스택자산, 같은게임 기존 실제등록의 수수료 비교. 증거 없으면 무전송 차단. 기존 등록이 없는 계정의 첫bootstrap은 아직 제한된다. 스택/중앙값 제출은 기본차단. 활성화 게임은 세션별 allowlist, 새게임은 별도 preflight. 개발용 합성모드/초기policy와 분리, 동의해제·로그아웃·새인증은 거래권한 철회. 실제서버 계약이 충분히 검증됐다는 판정은 아님.
+- 여러게임/context를 scope별 최신보관함·게임fee·통화/자산으로 전체검증하고 한 배치에서 직렬실행. UI는 방문한게임의 선택/수량을 보존해 전체 검토에 포함, 상품(App/hash)별 호가잔량 공유. 모든 품목의 호가지문을 승인snapshot에 고정하고 변경 시 첫intent 전 StaleReview·새검토 요구. 통화·fee·보유량/marketable·시간 불일치는 무전송. 낮은가격 자동대체 없음.
+- 취소배치 전체 대상 사전대조 후 개별전송. 응답이 요청전 기존listingID를 재사용하면 Unknown. 취소/반환 인과증거 없는 스택/ID변경은 Unknown·재등록 차단. 재가격의 승인호가지문을 intent에 저장하고 취소 전/반환 후 비교. 기존 journal v3에 optional필드만 추가, 구 요청/예약/증거 보존. 미확정/ID없는 요청 자동재전송 금지.
+- IMPLEMENTED: 조건부 활성화→검토→단일승인 배치·Guard대기→수동조회 대조·취소/조건부 재가격 코드와 UI. CONTRACT_VERIFIED: 합성계약만, 실제서버 금액/등록·취소·스택은 미검증. LIVE_VERIFIED: 없음. 실사용 제품 전체완료 선언 안 함. 기본OFF/실계정시험·GUI 실행0.
+- 검증 최종집계/배포결과는 아래 확정기록으로 갱신한다. 최초75개47 COMPLETE/15 PARTIAL/0 MISSING/4 BLOCKED/9 UNVERIFIED 유지. 물리GUI/DPI/설치·계정제재 위험/first-bootstrap·스택반환 인과증거·실서버302 및 KRW계약은 다음 차단요인이다.
 
 ### 14차 최종 배포·정리 결과
 

@@ -14,7 +14,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
     private readonly Dictionary<string, SaleLineSnapshot> approved = [];
     public Capability Capability => CanExecute ? Capability.Experimental : Capability.IntegrationBlocked;
     private readonly SteamTradingPolicy executionPolicy = policy ?? SteamTradingPolicy.Blocked;
-    public bool CanExecute => auth.Connected && http.Halted is null && http.Access.Trading && executionPolicy.Enabled && !string.IsNullOrWhiteSpace(executionPolicy.EvidenceReference);
+    public bool CanExecute => auth.Connected && http.Halted is null && http.Access.Trading && executionPolicy.Enabled && !string.IsNullOrWhiteSpace(executionPolicy.EvidenceReference) && (!executionPolicy.UserInitiated||http.Access.TradingAccount==auth.SteamId);
     public bool CanReconcile => auth.Connected && http.Halted is null;
     public async Task ValidateBatchAsync(SaleBatchSnapshot snapshot, CancellationToken token)
     {
@@ -23,22 +23,33 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         if (!CanExecute || snapshot.AccountReference != auth.SteamId) throw new SteamException(SteamFailure.Disabled);
         if(snapshot.Lines.Any(x=>x.Evidence is not null)&&!executionPolicy.MedianPriceContractSupported)throw new SteamException(SteamFailure.Restricted);
         BatchValidation.Validate(snapshot, DateTimeOffset.UtcNow);
-        if (snapshot.Lines.Select(x => x.Asset.Key.AppId).Distinct().Count() != 1 ||
-            snapshot.Lines.Any(x => x.Asset.Stackable && !executionPolicy.StackAmountsSupported))
+        if (snapshot.Lines.Any(x => x.Asset.Stackable && !executionPolicy.StackAmountsSupported) ||
+            executionPolicy.UserInitiated&&snapshot.Lines.Any(x=>x.OrderbookDigest is null||!executionPolicy.VerifiedApps.Contains(x.Asset.Key.AppId)))
             throw new SteamException(SteamFailure.Restricted);
-        var current = (await inventory.GetAsync(token)).ToDictionary(x => x.Key);
-        var schedule = await SteamFees.FetchAsync(http, snapshot.Lines[0].Asset.Key.AppId, token);
+        var current=new Dictionary<AssetKey,InventoryAsset>();var publisherFees=new Dictionary<AssetKey,int>();
+        foreach(var scope in snapshot.Lines.GroupBy(x=>(x.Asset.Key.AppId,x.Asset.Key.ContextId)))
+        {
+            var provider=inventory.AppId==scope.Key.AppId&&inventory.ContextId==scope.Key.ContextId&&inventory.GameName==scope.First().Asset.Game?inventory:new SteamInventoryProvider(http,auth,scope.Key.AppId,scope.Key.ContextId,scope.First().Asset.Game);
+            foreach(var asset in await provider.GetAsync(token))current.Add(asset.Key,asset);
+            foreach(var fee in provider.PublisherFees)publisherFees.Add(fee.Key,fee.Value);
+        }
+        var schedules=new Dictionary<int,SteamFeeSchedule>();
+        SteamWallet? wallet=executionPolicy.UserInitiated?await SteamFees.FetchTradingWalletAsync(http,auth.SteamId!,token):null;
+        foreach(var app in snapshot.Lines.Select(x=>x.Asset.Key.AppId).Distinct())schedules.Add(app,wallet is null?await SteamFees.FetchAsync(http,app,token):await SteamFees.FetchStructureAsync(http,app,wallet,token));
         foreach (var group in snapshot.Lines.GroupBy(x => x.Asset.Key))
             if (!current.TryGetValue(group.Key, out var found) || group.Sum(x => x.Quantity) > store.Available(found)) throw new SteamException(SteamFailure.Restricted);
         var validatedPrices=new Dictionary<(int,string,long),PriceSnapshot>();
         foreach (var line in snapshot.Lines)
         {
+            var schedule=schedules[line.Asset.Key.AppId];
             if (!current.TryGetValue(line.Asset.Key, out var asset) || asset != line.Asset || !asset.Marketable || asset.Locked ||
                 schedule.Currency != line.Currency || schedule.FromSeller(line.UnitQuote.SellerReceives) != line.UnitQuote) throw new SteamException(SteamFailure.Restricted);
-            if (!inventory.PublisherFees.TryGetValue(asset.Key, out var fee) || fee * 100L != schedule.Publisher.Millionths) throw new SteamException(SteamFailure.Restricted);
+            if (!publisherFees.TryGetValue(asset.Key, out var fee) || fee * 100L != schedule.Publisher.Millionths) throw new SteamException(SteamFailure.Restricted);
             var priceKey=(asset.Key.AppId,asset.MarketHashName,line.Evidence is {} source?(source.WindowEnd-source.WindowStart).Ticks:0);
             if(!validatedPrices.TryGetValue(priceKey,out var price))
             {price=line.Evidence is {} evidenceSource?await prices.RefreshEstimateAsync(asset,evidenceSource.WindowEnd-evidenceSource.WindowStart,token):await prices.RefreshAsync(asset,token);validatedPrices.Add(priceKey,price);}
+            if(line.OrderbookDigest is {} digest&&OrderbookFingerprint.Of(price)!=digest)
+            {DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,DiagnosticOutcome.Blocked,LogLevel.Warning,DiagnosticError.Validation,reason:"OrderbookChanged");throw new SteamException(SteamFailure.StaleReview);}
             if(line.Evidence is {} evidence)
             {
                 if(evidence.Currency!=line.Currency||!evidence.Fresh(DateTimeOffset.UtcNow))throw new SteamException(SteamFailure.StaleReview);
@@ -102,11 +113,11 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
                     root.TryGetProperty("price", out var serverPrice) && SteamContract.Integer(serverPrice) != new Money(line.UnitQuote.SellerReceives, line.Currency).Wire ||
                     root.TryGetProperty("fee", out var serverFee) && SteamContract.Integer(serverFee) != new Money(line.UnitQuote.Fees, line.Currency).Wire);
                 if (conflict) {DiagnosticHub.Emit(DiagnosticEvent.FeeValidated,DiagnosticArea.Sales,DiagnosticOutcome.Unknown,LogLevel.Error,DiagnosticError.Validation,reason:"FieldsMismatch",currency:line.Currency,quote:line.UnitQuote,requirement:"D10");response = (SaleState.Unknown, null);}
-                if (response.ListingId is not null && store.Commands().Any(x => x.Kind == "sell" && x.RequestKey != requestKey && x.ListingId == response.ListingId))
+                if (response.ListingId is not null && ((intent.BeforeListingIds??[]).Contains(response.ListingId)||store.Commands().Any(x => x.Kind == "sell" && x.RequestKey != requestKey && x.ListingId == response.ListingId)))
                     response = (SaleState.Unknown, null);
                 if (response.State == SaleState.Unknown) http.Stop(SteamFailure.ContractChanged);
                 store.SaveCommand(intent with { State = response.State, ListingId = response.ListingId, Accepted = response.State != SaleState.Unknown });
-                return new(line.LineId, response.State, response.State == SaleState.AwaitingSteamGuard ? "공식 Steam 앱/이메일 수동 확인 대기: 게시 완료 아님" : "접수 응답: 서버 게시 확인 필요");
+                return new(line.LineId, response.State, response.State == SaleState.Unknown?"응답 불일치 또는 증거 부족 · 재전송 금지":response.State == SaleState.AwaitingSteamGuard ? "공식 Steam 앱/이메일 수동 확인 대기: 게시 완료 아님" : "접수 응답: 서버 게시 확인 필요");
             }
             catch (Exception error) when (error is SteamException or OperationCanceledException or HttpRequestException)
             {
@@ -151,7 +162,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
             if (current != reviewed) throw new SteamException(SteamFailure.Restricted);
             var original = store.Commands().SingleOrDefault(x => x.Kind == "sell" && x.ListingId == reviewed.ListingId);
             var returnKey = original?.Line.Asset.Key ?? reviewed.Asset;
-            var available = (await inventory.GetAsync(token)).SingleOrDefault(x => x.Key == returnKey)?.Quantity ?? 0;
+            var available = (await new SteamInventoryProvider(http,auth,returnKey.AppId,returnKey.ContextId,original?.Line.Asset.Game??"Steam").GetAsync(token)).SingleOrDefault(x => x.Key == returnKey)?.Quantity ?? 0;
             var asset = new InventoryAsset(returnKey, "Steam", reviewed.HashName, reviewed.HashName, reviewed.Quantity, original?.Line.Asset.Stackable ?? reviewed.Quantity > 1, true, false);
             var line = new SaleLineSnapshot(reviewed.ListingId, asset, reviewed.Quantity, reviewed.Currency, new(reviewed.SellerReceives + reviewed.Fees, reviewed.SellerReceives, reviewed.Fees, 0), DateTimeOffset.UtcNow);
             var intent = new SteamCommandRecord(requestKey, auth.SteamId!, line, "cancel", SaleState.Submitting, reviewed.ListingId, DateTimeOffset.UtcNow, AvailableBefore: available);
@@ -171,9 +182,11 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
     }
     public async Task<IReadOnlyList<LineResult>> CancelBatchAsync(IReadOnlyList<SteamListing> reviewed, string batchKey, CancellationToken token = default)
     {
-        if (reviewed.Select(x => x.ListingId).Distinct().Count() != reviewed.Count) throw new SteamException(SteamFailure.Restricted);
+        if (!CanExecute||reviewed.Count==0||reviewed.Select(x => x.ListingId).Distinct().Count() != reviewed.Count) throw new SteamException(SteamFailure.Restricted);
+        var frozen=reviewed.ToImmutableArray();var current=(await orders.RefreshAsync(token)).ToDictionary(x=>x.ListingId);
+        if(frozen.Any(x=>!current.TryGetValue(x.ListingId,out var now)||now!=x))throw new SteamException(SteamFailure.StaleReview);
         var results = new List<LineResult>();
-        foreach (var row in reviewed.ToImmutableArray())
+        foreach (var row in frozen)
         {
             var result = await CancelAsync(row, batchKey + ":" + row.ListingId, token); results.Add(result);
             if (result.State == SaleState.Unknown) break;
@@ -187,7 +200,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
             throw new SteamException(SteamFailure.Restricted);
         if (store.Return(requestKey) is not null) return new(intent.Line.LineId, SaleState.Reconciled, "저널의 확정 자산 반환 증거 보존");
         var current = (await orders.RefreshAsync(token)).SingleOrDefault(x => x.ListingId == intent.ListingId);
-        var returned = (await inventory.GetAsync(token)).SingleOrDefault(x => x.Key == intent.Line.Asset.Key && x.MarketHashName == intent.Line.Asset.MarketHashName);
+        var returned = (await new SteamInventoryProvider(http,auth,intent.Line.Asset.Key.AppId,intent.Line.Asset.Key.ContextId,intent.Line.Asset.Game).GetAsync(token)).SingleOrDefault(x => x.Key == intent.Line.Asset.Key && x.MarketHashName == intent.Line.Asset.MarketHashName);
         var originalSell=store.Commands().SingleOrDefault(x=>x.Kind=="sell"&&x.ListingId==intent.ListingId);
         // Stack increases may be unrelated merges. Without a causal cancellation event, do not release them.
         var confirmed = originalSell is not null && !originalSell.Line.Asset.Stackable && intent.Line.Quantity==1 && current is null && intent.Accepted && returned is not null && !returned.Stackable && returned.Quantity==1 && intent.AvailableBefore==0;
@@ -219,15 +232,15 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         var verdict = candidates.Any(x => x.Reason == SteamEvidenceReason.ServerIdAndFields) ? SteamEvidenceReason.ServerIdAndFields : matches > 1 ? SteamEvidenceReason.MultipleCandidates : matches == 1 ? SteamEvidenceReason.CandidateOnly : SteamEvidenceReason.NoCandidate;
         var report = new SteamEvidenceReport(requestKey, DateTimeOffset.UtcNow, verdict, candidates); store.SaveEvidence(report); DiagnosticHub.Emit(DiagnosticEvent.EvidenceChecked,DiagnosticArea.Management,verdict==SteamEvidenceReason.ServerIdAndFields?DiagnosticOutcome.Reconciled:DiagnosticOutcome.Unknown,reason:verdict.ToString(),count:candidates.Length,requirement:"F06");return report;
     }
-    public async Task<SteamRepriceIntent> RepriceAsync(SteamListing listing, long buyer, string key, CancellationToken token = default)
+    public async Task<SteamRepriceIntent> RepriceAsync(SteamListing listing, long buyer, string key, CancellationToken token = default,string? reviewedOrderbook=null)
     {
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.Reprice,DiagnosticArea.Management,"B10");
         await repricing.WaitAsync(token);
-        try { return await RepriceCoreAsync(listing,buyer,key,token); }
+        try { return await RepriceCoreAsync(listing,buyer,key,token,reviewedOrderbook); }
         finally { repricing.Release(); }
     }
     // Explicit NEW approval, never mutate or replay the previous approval. Reuse only proven cancellation.
-    public async Task<SteamRepriceIntent> ReviseRepriceAsync(string previousKey,long buyer,string newKey,CancellationToken token=default)
+    public async Task<SteamRepriceIntent> ReviseRepriceAsync(string previousKey,long buyer,string newKey,CancellationToken token=default,string? reviewedOrderbook=null)
     {
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.Reprice,DiagnosticArea.Management,"B10");
         await repricing.WaitAsync(token);
@@ -241,35 +254,50 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
             var fees=await SteamFees.FetchAsync(http,old.Listing.Asset.AppId,token);
             if(fees.Currency!=old.Listing.Currency)throw new SteamException(SteamFailure.Restricted);
             _=fees.FromBuyer(buyer);
-            var next=new SteamRepriceIntent(newKey,old.Account,old.Listing,buyer,DateTimeOffset.UtcNow,SteamRepriceState.AwaitingReturn,CancellationKey:cancelKey);
+            if(executionPolicy.UserInitiated&&reviewedOrderbook is null)throw new SteamException(SteamFailure.StaleReview);
+            var next=new SteamRepriceIntent(newKey,old.Account,old.Listing,buyer,DateTimeOffset.UtcNow,SteamRepriceState.AwaitingReturn,CancellationKey:cancelKey){OrderbookDigest=reviewedOrderbook};
             store.SupersedeReprice(old,next);
             return await RepriceCoreAsync(next.Listing,buyer,newKey,token);
         }
         finally{repricing.Release();}
     }
-    private async Task<SteamRepriceIntent> RepriceCoreAsync(SteamListing listing, long buyer, string key, CancellationToken token)
+    private async Task<SteamRepriceIntent> RepriceCoreAsync(SteamListing listing, long buyer, string key, CancellationToken token,string? reviewedOrderbook=null)
     {
         if (!CanExecute) throw new SteamException(SteamFailure.Disabled);
         var intent = store.Reprice(key);
+        var resumed=intent is not null;
         if (intent is null)
         {
+            if(executionPolicy.UserInitiated&&reviewedOrderbook is null)throw new SteamException(SteamFailure.StaleReview);
+            if(reviewedOrderbook is not null)
+            {
+                var referenceAsset=new InventoryAsset(listing.Asset,"Steam",listing.HashName,listing.HashName,listing.Quantity,listing.Quantity>1,true,false);
+                var referencePrice=await prices.RefreshAsync(referenceAsset,token);
+                if(OrderbookFingerprint.Of(referencePrice)!=reviewedOrderbook)throw new SteamException(SteamFailure.StaleReview);
+            }
             if (store.Reprices().Any(x=>x.Account==auth.SteamId&&x.Listing.ListingId==listing.ListingId)) throw new SteamException(SteamFailure.Restricted);
             var schedule = await SteamFees.FetchAsync(http, listing.Asset.AppId, token); if (listing.Currency != schedule.Currency) throw new SteamException(SteamFailure.Restricted);
             _ = schedule.FromBuyer(buyer);
-            intent = new(key, auth.SteamId!, listing, buyer, DateTimeOffset.UtcNow, SteamRepriceState.AwaitingCancellation); store.SaveReprice(intent);
+            intent = new(key, auth.SteamId!, listing, buyer, DateTimeOffset.UtcNow, SteamRepriceState.AwaitingCancellation){OrderbookDigest=reviewedOrderbook}; store.SaveReprice(intent);
         }
         if (intent.Account != auth.SteamId || intent.Listing != listing || intent.BuyerPrice != buyer) throw new SteamException(SteamFailure.Restricted);
         if (intent.ReplacementKey is not null) return intent; // Never submit replacement twice after restart/timeout.
         if(intent.State==SteamRepriceState.Superseded||intent.SupersededBy is not null)throw new SteamException(SteamFailure.StaleReview);
         if(intent.CreatedAt>DateTimeOffset.UtcNow.AddSeconds(5)||DateTimeOffset.UtcNow-intent.CreatedAt>TimeSpan.FromMinutes(5))throw new SteamException(SteamFailure.StaleReview);
         var cancelKey = intent.CancellationKey??key + ":cancel";
+        if(resumed&&store.ReadCommand(cancelKey) is null&&intent.OrderbookDigest is {} beforeCancel)
+        {
+            var referenceAsset=new InventoryAsset(listing.Asset,"Steam",listing.HashName,listing.HashName,listing.Quantity,listing.Quantity>1,true,false);
+            if(OrderbookFingerprint.Of(await prices.RefreshAsync(referenceAsset,token))!=beforeCancel)throw new SteamException(SteamFailure.StaleReview);
+        }
         if (store.ReadCommand(cancelKey) is null) await CancelAsync(listing, cancelKey, token);
         var status = await ReconcileCancellationAsync(cancelKey, token);
         if (status.State != SaleState.Reconciled) { intent = intent with { State = SteamRepriceState.AwaitingReturn }; store.SaveReprice(intent); return intent; }
         if (DateTimeOffset.UtcNow - intent.CreatedAt > TimeSpan.FromMinutes(5)) throw new SteamException(SteamFailure.StaleReview);
-        var proof = store.Return(cancelKey)!; var asset = (await inventory.GetAsync(token)).Single(x => x.Key == proof.ReturnedAsset);
+        var proof = store.Return(cancelKey)!; var asset = (await new SteamInventoryProvider(http,auth,proof.ReturnedAsset.AppId,proof.ReturnedAsset.ContextId,intent.Listing.HashName).GetAsync(token)).Single(x => x.Key == proof.ReturnedAsset);
         var fees = await SteamFees.FetchAsync(http, asset.Key.AppId, token); var price = await prices.RefreshAsync(asset, token);
-        var replacement = new SaleLineSnapshot("replacement", asset, listing.Quantity, fees.Currency, fees.FromBuyer(buyer), price.CapturedAt);
+        if(executionPolicy.UserInitiated&&intent.OrderbookDigest is null||intent.OrderbookDigest is {} approvedBook&&OrderbookFingerprint.Of(price)!=approvedBook)throw new SteamException(SteamFailure.StaleReview);
+        var replacement = new SaleLineSnapshot("replacement", asset, listing.Quantity, fees.Currency, fees.FromBuyer(buyer), price.CapturedAt){OrderbookDigest=OrderbookFingerprint.Of(price)};
         var batch = new SaleBatchSnapshot(Guid.NewGuid(), auth.SteamId!, DateTimeOffset.UtcNow, [replacement]);
         await ValidateBatchAsync(batch, token); var replacementKey = SaleBatchCoordinator.RequestKey(batch, replacement);
         intent = intent with { State = SteamRepriceState.Submitting, ReplacementKey = replacementKey }; store.SaveReprice(intent);

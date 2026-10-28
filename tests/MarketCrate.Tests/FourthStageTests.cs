@@ -78,7 +78,8 @@ internal static class FourthStageTests
             var access=new SteamAccess();if(enable)access.Acknowledge(true,true,true,true);
             Http=new(access,new Handler(Respond));Auth=new(Http,Clock);Store=new(Directory);Inventory=new(Http,Auth,730,"2","Fixture game");Orders=new(Http,Auth);Executor=new(Http,Auth,Store,Inventory,new(Http,Auth),Orders,SteamTradingPolicy.ContractTest);
         }
-        public async Task Connect(){await Auth.BeginAsync();Clock.Advance();Check(await Auth.CheckAsync());}
+        // Authentication now revokes pre-login trading consent. Explicit synthetic approval belongs AFTER login.
+        public async Task Connect(){await Auth.BeginAsync();Clock.Advance();Check(await Auth.CheckAsync());Http.Access.Acknowledge(true,true,true,true);}
         private async Task<HttpResponseMessage> Respond(HttpRequestMessage request)
         {
             Calls++;var path=request.RequestUri!.AbsolutePath;string body;

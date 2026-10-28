@@ -12,18 +12,23 @@ public sealed class SteamAccess
     public bool ResearchRiskAccepted { get; private set; }
     public bool AuthenticatedReads { get; private set; }
     public bool Trading { get; private set; }
+    internal string? TradingAccount { get; private set; }
+    internal void BindTradingAccount(string account) => TradingAccount = account;
+    internal void RevokeTrading() { Trading=false; TradingAccount=null; }
     public void Acknowledge(bool unofficialAutomationRisk, bool credentialRisk, bool reads, bool trading)
     {
         if (!unofficialAutomationRisk || !credentialRisk) throw new InvalidOperationException("SteamRiskAcknowledgementRequired");
         ResearchRiskAccepted = true; AuthenticatedReads = reads; Trading = reads && trading;
+        if(!Trading)TradingAccount=null;
     }
-    public void Revoke() { ResearchRiskAccepted = AuthenticatedReads = Trading = false; }
+    public void Revoke() { ResearchRiskAccepted = AuthenticatedReads = false; RevokeTrading(); }
     public override string ToString() => "SteamAccess (session-only)";
 }
 
 public enum SteamFailure { Disabled, Authentication, Forbidden, RateLimited, Challenge, ContractChanged, Transport, Restricted, Expired, Denied, StaleReview, Unsupported, Authorization, WalletUnavailable }
-public sealed record SteamTradingPolicy(bool Enabled, string EvidenceReference, bool StackAmountsSupported = false,bool MedianPriceContractSupported = false)
+public sealed record SteamTradingPolicy(bool Enabled, string EvidenceReference, bool StackAmountsSupported = false,bool MedianPriceContractSupported = false, bool UserInitiated = false)
 {
+    public System.Collections.Immutable.ImmutableArray<int> VerifiedApps {get;init;}=[];
     public static SteamTradingPolicy Blocked { get; } = new(false, "Valve permission not established");
     internal static SteamTradingPolicy ContractTest { get; } = new(true, "synthetic contract only", true);
 }
@@ -36,7 +41,7 @@ public sealed class SteamException(SteamFailure code, int? apiResult = null) : I
 }
 
 // No browser cookie import, external host, redirects, automatic retries or response-body logging.
-public sealed class SteamHttp : IDisposable
+public sealed partial class SteamHttp : IDisposable
 {
     private readonly HttpClient client;
     private readonly SemaphoreSlim queue = new(1, 1);
@@ -45,7 +50,7 @@ public sealed class SteamHttp : IDisposable
     internal readonly CookieContainer Cookies = new();
     public SteamAccess Access { get; }
     public SteamFailure? Halted { get; private set; }
-    private readonly Dictionary<string,SteamFailure> featureBlocks=[];
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string,SteamFailure> featureBlocks=[];
     public SteamFailure? FeatureFailure(string endpoint)=>featureBlocks.TryGetValue(endpoint,out var failure)?failure:null;
     internal void BlockFeature(string endpoint)=>featureBlocks[endpoint]=SteamFailure.Authorization;
     public SteamHttp(SteamAccess access, HttpMessageHandler? testHandler = null, TimeSpan? testGap = null)
@@ -96,7 +101,7 @@ public sealed class SteamHttp : IDisposable
             if (!Access.ResearchRiskAccepted) throw new SteamException(SteamFailure.Disabled);
             last = DateTimeOffset.UtcNow;
             phase="ConnectOrHeaders";
-            using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);
+            using var response = await SendWalletHeadersAsync(request, token, allowWalletHtml);
             if (response.Headers.TryGetValues("Set-Cookie", out var cookies))
             {
                 try { foreach (var cookie in cookies) Cookies.SetCookies(request.RequestUri!,cookie); }

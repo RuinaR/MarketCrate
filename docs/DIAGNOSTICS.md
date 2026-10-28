@@ -1,5 +1,11 @@
 # 진단 시스템 (10차, 2026-10-28 KST)
 
+## 15차 — 활성화·호가 변경·요청 증거
+
+기존 OperationId→BatchId→OperationItemId→HTTP/SQLite 상태 연결 유지. FinalValidation의 TradingReadiness/TradingEnabled/AccountMismatch/OrderbookChanged와 HTTP MarketCanonicalRedirect는 화이트리스트 고정코드만 기록한다. 계정값은 메모리에서 일치만 비교하고 g_steamID/HTML·Location·QR·쿠키·토큰을 로그에 넣지 않는다.
+
+예: 사용자활성화→Wallet계정일치/metadata→Inventory→기존등록fee비교→TradingEnabled(거래POST없음). 최종승인→scope/fee/최신book 검증→지문변경이면 OrderbookChanged/StaleReview·intent0·POST0. 정상은 배치intent→항목intent→직렬sell→Guard대기→사용자 수동조회→ID/가격/수량 대조. 요청전 존재하던 listingID 응답은 Unknown/자동재전송금지다. 예외/로그실패로 저널을 성공확정하지 않는다.
+
 ## 14차 — 읽기 권한·빈 페이지 증거
 
 WalletContract **4205**는 shape·통화/최소가격/증분 필드존재·명시적로그인플래그만 기록한다. InventoryContract **4206**은 보고총계·description수·검증된0·부분페이지/모순·count만 기록한다. 원본HTML/JSON·계정/자산ID·redirectURL·인증정보는 기록하지 않는다. 기존 OperationId/HTTP요청ID/고정endpoint와 ZIP 검토·보존/회전 유지.

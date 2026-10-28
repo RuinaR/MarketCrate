@@ -138,6 +138,7 @@ public sealed class SteamQrAuthentication(SteamHttp http, TimeProvider? timeProv
     }
     public void Dispose()
     {
+        http.Access.RevokeTrading();
         SteamId = SessionId = null; Challenge = null; CryptographicOperations.ZeroMemory(requestId); requestId = [];
         foreach (System.Net.Cookie cookie in http.Cookies.GetAllCookies()) cookie.Expired = true;
     }
