@@ -70,3 +70,11 @@
 | https://learn.microsoft.com/en-us/windows/security/application-security/application-isolation/windows-sandbox/windows-sandbox-configure-using-wsb-file | offline/읽기 전용 mapping/장치·클립보드 차단 구성 예제 | 독립 XML/절차 작성, Windows 기능 설치/실행 안 함 |
 
 공식 JS 열기는 web 도구에서 실패해 공개 문서 GET을 승인된 shell 네트워크로 조회했다. 원본은 ignored runtime/research-stage7에만 보존. 새로운 라이브러리/SDK/경쟁사/AGPL 코드 편입 없음. 경로 사례/자료 의미와 Valve 자동화 허가는 서로 다른 문제다.
+
+## 9차 배포·환경 근거 (2026-10-28 KST)
+
+- Microsoft .NET publishing: https://learn.microsoft.com/en-us/dotnet/core/deploying/ — SCD/FDD·RID/native OS 전제 구분. runtime 포함과 실제 실행 PASS 분리.
+- Runtime patch selection: https://learn.microsoft.com/en-us/dotnet/core/deploying/runtime-patch-selection — SCD patch는 restore/publish 시 선택, 업데이트 재게시 필요.
+- Windows support: https://learn.microsoft.com/en-us/dotnet/core/install/windows — 지원 Windows11 desktop x64 guest 조건, 모든 Windows10/구형 OS 정상 동작 주장 안 함.
+- Windows Sandbox: https://learn.microsoft.com/en-us/windows/security/application-security/application-isolation/windows-sandbox/ — Home 미지원/별도 지원 에디션·가상화 조건. 현재 Core와 exe 부재만 확인, firmware/SLAT은 CIM 권한 제한으로 미확인. 활성화/설치/실행 미수행.
+- 문서 참고만 했고 Microsoft 예제 코드를 복사하지 않았다. self-contained runtime 원본 MIT/THIRD-PARTY는 팩에서 산출물에 보존한다.

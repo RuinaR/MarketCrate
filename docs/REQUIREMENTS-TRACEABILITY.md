@@ -1,4 +1,12 @@
-# 요구사항–구현–검증 추적표 (8차, 2026-10-28 KST)
+# 요구사항–구현–검증 추적표 (9차, 2026-10-28 KST)
+
+## 9차 판정 유지
+
+기존75개 ID/기대 동작 유지. **COMPLETE47 / PARTIAL15 / MISSING0 / BLOCKED4 / UNVERIFIED9**, 변경0. G03/G04/G08/G09의 실제 입력·Popup·키보드·물리 DPI는 guest 미제공으로 미검증. 실제 UI를 detached PASS로 승격하지 않았다.
+
+배포 경로 추가: Publish-SelfContained→공식 build팩→CLR/WPF/SQLite x64/고지/데이터 제외 검사→기존 Prepare-IsolatedGuiQa/manifest→기존 guest-local launcher(SCD 분기). AppRunProfile의 분리된 사용자 데이터·offline Steam factory는 그대로다. 24개 실제 GUI case는 NV24.
+
+진단 별도 LOG 경로: DiagnosticViewModel.ReviewPackage/Export→JsonDiagnosticLog.ReadSafe(Utc 정렬)→사용자 검토 불변 snapshot→로컬ZIP. NinthStageTests.OrderedExport는 mtime 역전 결함을 수정 전 FAIL로 재현하고 operation·원인·순서·로컬경로를 검증한다. 이 보완이 실계정/실제 GUI 기능 완료를 의미하지 않는다.
 
 ## 8차 판정 유지 및 추가 코드 경로
 

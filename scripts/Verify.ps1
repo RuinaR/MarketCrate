@@ -13,4 +13,7 @@ dotnet tests/MarketCrate.Tests/bin/Debug/net10.0/MarketCrate.Tests.dll
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 # Detached STA controls only. This does not run the desktop app or show a Window/Popup.
 dotnet tests/MarketCrate.UiTests/bin/Debug/net10.0-windows/MarketCrate.UiTests.dll
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+# Synthetic file contracts only; does not execute published app/guest binaries.
+pwsh -NoProfile -File scripts/Test-DistributionContracts.ps1
 exit $LASTEXITCODE

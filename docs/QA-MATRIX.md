@@ -1,4 +1,19 @@
-# 정상·오류·복구 QA 매트릭스 — 8차 (2026-10-28 KST)
+# 정상·오류·복구 QA 매트릭스 — 9차 (2026-10-28 KST)
+
+## 9차 결과 (2026-10-28 KST)
+
+**독립 guest 없음 / 실제 GUI 실행 없음. GUI-01~24: PASS0, FAIL0, NOT VERIFIED24.** 호스트 대체 GUI/입력/캡처/VM 실행 없음. 75개 판정47/15/0/4/9 유지.
+
+| 경로 | 증거/결과 | 한계 |
+|---|---|---|
+| 기존 회귀+ZIP 결함 | 기능166/166 PASS(기존165+재현1), Utc 순서·operation ID·Validation 원인·로컬2-entry ZIP/무DB | 합성 로그/격리 저장소만 |
+| detached WPF 기존31 | 31/31 PASS, 예상 밖 binding 오류0/최상위 Window·PresentationSource0 | 열린 Popup/실제 focus/물리 DPI 대체 아님 |
+| 배포 파일 오류 주입 | 14/14 PASS: x86 apphost/WPF/SQLite, FDD위장, 고지 누락, DB/sidecar/authJSON/JSONL/.env/key/PDB 차단 | fake PE HEADER/파일 검사, 실행 호환성 아님 |
+| self-contained | NINTH_RELEASE_PENDING | 실제 실행/설치/서명 미검증 |
+| guest 하네스 | SCD분기/동일build 재시작/사용자 결과경로 코드·AST 검사 | 실제 guest launcher 미실행; 모든 case NV |
+| OS 가능 조건 | registry Core/build26200.9711/X64, Sandbox exe 없음; 공식Home 미지원 | CPU 가상화/SLAT/CIM은 권한으로 미확인. 호스트 변경 없음 |
+
+실패→수정 증거: `runtime/stage9-before-fix.txt` 신규 ZIP 검사 FAIL1/기존165 PASS → `stage9-final-verify.txt`166/166. 최초 self-publish는 offline NuGet source로 NU1101 → self 명령에만 공식 source 추가. 복원 후 publish의 runtime license 누락을 정적 FAIL로 검출 → 원본 runtime pack license3개 복사. 파일 검사 .env case의 최초 FAIL1은 PowerShell 동적 변수 scope로 fixture 파일명이 바뀐 테스트 결함이었고 변수 분리 후14/14. 실패를 실행 환경 성공으로 축소하지 않는다.
 
 ## 8차 검증 범위 (2026-10-28 KST)
 

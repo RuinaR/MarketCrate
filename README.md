@@ -60,3 +60,7 @@ WPF 검사는 MainView/UserControl을 직접 Measure/Arrange하고 RenderTargetB
 `./scripts/Publish.ps1`은 framework-dependent Windows 실행파일을 `artifacts/windows-framework-dependent`에 만들고 PE 헤더/로컬 데이터 제외를 검사합니다. 앱을 실행하거나 설치/공개 배포하지 않습니다. [배포 검증 범위](docs/DEPLOYMENT-CHECKLIST.md)를 참조하세요.
 
 프로젝트 자체 배포 라이선스는 아직 선정하지 않았습니다. 비교 제품 코드·시각 자산은 포함하지 않습니다. QR 순수 계산 소스 6파일은 MIT 고지를 보존해 포함하며 배포 시 원 LICENSE를 함께 제공합니다.
+
+### 선택적 Windows x64 self-contained QA 배포
+
+`scripts/Publish-SelfContained.ps1`는 Windows에 .NET을 설치하지 않고 CLR/WPF 런타임을 포함하는 새 artifacts 폴더를 만듭니다. 공식 NuGet 접근과 build pack 복원이 필요할 수 있으며 기존 FDD `scripts/Publish.ps1`도 유지합니다. `Prepare-IsolatedGuiQa.ps1 -Deployment SelfContained`와 **실제 생성한** `-SourceDirectory/-OutputDirectory`를 사용해 기존 guest QA 패키지를 만드세요. 호스트에서 앱/guest launcher를 실행하지 않습니다. 실제 게스트가 없어서 GUI24개는 여전히 NOT VERIFIED입니다. OS/native 전제·런타임 업데이트·라이선스·게스트 수동 절차는 [ISOLATED-GUI-QA](docs/ISOLATED-GUI-QA.md)를 확인하세요.

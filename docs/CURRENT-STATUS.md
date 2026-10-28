@@ -1,4 +1,14 @@
-# MarketCrate — 현재 상태 (2026-10-28 KST, 8차)
+# MarketCrate — 현재 상태 (2026-10-28 KST, 9차)
+
+## 9차 — 배포·진단 보완, 실제 GUI QA 차단 유지 (2026-10-28 KST)
+
+기준 main/origin `9cc73a4` clean/fetch 일치. 제공된 게스트 없음. 허용된 조회에서 EditionID=Core(Home계열), build26200.9711, X64, Sandbox 실행파일 없음. CIM 가상화 capability 조회는 권한 제한(CimException)으로 미확인; 다른 경로로 반복·권한 상승·VM/프로세스 탐색하지 않음. 공식 지원표상 Home은 Sandbox 미지원. **환경 제공 전 실제 GUI QA BLOCKED, GUI-01~24 모두 NOT VERIFIED(PASS0/FAIL0/NV24).** 호스트 대체 실행/설정 변경/VM 실행 없음.
+
+- 기존 FDD 유지 + `Publish-SelfContained.ps1`: win-x64, CLR/WPF10.0.9·SQLite 포함, 비단일파일/trim·R2R OFF, app PDB/개발소스 제외. 런타임 팩은 공식 NuGet에서 ignored 프로젝트 cache에 복원했고 Windows SDK/Runtime 설치는 안 함. 원본 .NET MIT/제3자 고지 포함. 실제 OS/시작 호환성은 미검증.
+- 기존 guest 하네스 재사용: SCD는 시스템 dotnet 검사 안 함, 동일 hash build 재시작 허용/다른 build 덮어쓰기 거부, 결과표는 읽기전용 share 대신 사용자 QAResults에 GUID별 저장. 시작·종료/exit code가 case PASS를 만들지 않음. 이 guest 경로는 AST/정적 검토만, 미실행.
+- 실제 진단 결함 재현: 파일 mtime 역전 시 operation ZIP 이벤트 시간 역전(수정 전165/166, 신규1 FAIL) → Utc 정렬, 동일 operation·원인 분류·로컬 ZIP 경로·무DB 단언으로 수정 확인. 거래 저널/Unknown/예약/제출 정책 변경 없음.
+- 전체 회귀 **166/166 기능 PASS**, detached WPF **31/31 PASS**, 합성 파일 계약 **14/14 PASS**, FAIL0/Debug 경고0·오류0. 165+31 기존 검사 유지. 75개 판정47/15/0/4/9 유지. NINTH_RELEASE_PENDING.
+- Steam 인증/이미지/지갑·fee/스택/판매/취소/Guard는 실계정 미검증, IntegrationBlocked. 실제 입력·Popup·물리 DPI·설치·서명·장시간 안정성 미검증. 다음: 별도 Windows11 x64 오프라인 guest 제공/확인 후 기존24개 수동 QA.
 
 ## 8차 — 격리 GUI 실행 준비 / 제품 결함 수정 (2026-10-28 KST)
 

@@ -120,13 +120,13 @@ public sealed class JsonDiagnosticLog:IDiagnosticLog,IDisposable
             if(file.Length>policy.FileBytes+32768){skipped++;continue;}
             foreach(var line in ReadLines(file.FullName))
             {
-                readBytes+=line.Length;if(readBytes>policy.TotalBytes)return(records.ToArray(),skipped+1);
+                readBytes+=line.Length;if(readBytes>policy.TotalBytes)return(records.OrderBy(x=>x.Utc).ToArray(),skipped+1);
                 if(line.Length>32768){skipped++;continue;}
                 try{var value=JsonSerializer.Deserialize<DiagnosticRecord>(line,Json);var safe=value is null?null:DiagnosticRecordSafety.Clean(value);if(safe is null){skipped++;continue;}if(operation is null||safe.Context.OperationId==operation)records.Add(safe);}
                 catch(JsonException){skipped++;}
             }
         }
-        return(records.ToArray(),skipped);
+        return(records.OrderBy(x=>x.Utc).ToArray(),skipped);
     }
     private static IEnumerable<string> ReadLines(string path)
     {

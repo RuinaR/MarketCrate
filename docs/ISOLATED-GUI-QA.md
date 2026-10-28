@@ -1,5 +1,26 @@
 # 실제 GUI 후속 검사 구성 — 준비만 완료, 실행 NOT VERIFIED
 
+## 9차 실행 조건 및 배포 선택 (실제 GUI 미실행)
+
+제공된 guest 없음. 최소 시스템 조회: Core(Home계열)/build26200.9711/X64, WindowsSandbox.exe 없음. CIM capability는 권한으로 미확인. [공식 Sandbox 에디션 표](https://learn.microsoft.com/en-us/windows/security/application-security/application-isolation/windows-sandbox/)상 Home 미지원. 가상화 활성/SLAT/사용 RAM을 추정하지 않으며 기능 활성화·BIOS·호스트 재부팅/VM 설치·실행은 별도 승인 항목이다. 현재는 환경 제공 전 실제 QA BLOCKED이며 host 실행을 대안으로 사용하지 않는다.
+
+기존24개 scenario ID/NOT VERIFIED를 그대로 사용한다. **아래 새 동작이 이전8차의 Runtime 필수/기존 App 폴더 거부 문구를 대체한다.** 새 하네스를 만들지 않고 기존 스크립트를 확장했다.
+
+| 배포 | 호스트에서 생성만 | 게스트 요구 |
+|---|---|---|
+| FDD(기존) | `pwsh -File scripts/Publish.ps1`, Prepare-IsolatedGuiQa 기본 모드 | Windows11 x64 + .NET10 Windows Desktop x64 Runtime 사전 준비 |
+| SCD(추가) | `pwsh -File scripts/Publish-SelfContained.ps1 -OutputDirectory artifacts/qa-scd-BUILD`, 이어 Prepare-IsolatedGuiQa에 `-Deployment SelfContained -SourceDirectory artifacts/qa-scd-BUILD -OutputDirectory artifacts/qa-bundle-BUILD` | Windows11 x64/일반 사용자. 시스템 dotnet/SDK 설치 불필요; OS/native 전제조건·실제 실행은 별도 검증 |
+
+self publisher는 새 artifacts 폴더만 허용하며 덮어쓰기/정리를 하지 않는다. 누락 runtime **팩**은 공식 NuGet에서 프로젝트 runtime/self-contained-packages에 복원한다(Windows 설치 아님). 기존 offline NuGet.Config·전역 소스는 변경하지 않는다. runtime lock은 각 obj 아래로 분리해 원래 package lock을 바꾸지 않는다. WPF 때문에 trimming/single-file/R2R를 활성화하지 않았다. 실제 runtime patch는 distribution/runtimeconfig/manifest에 기록; self-contained는 전역 runtime 보안 패치를 자동 사용하는 것으로 가정하지 말고 새 runtime으로 재게시한다.
+
+검증된 bundle만 guest 내부로 전달하고 기존 ack/오프라인 운영자 절차를 따른다. ack/env는 VM 보증이 아니다. SCD 분기는 system dotnet을 호출하지 않고 bundled config/필수 파일을 확인한다. 같은 build는 설치된 app hash 일치 시 복사 없이 재실행한다. 다른 build는 자동 덮어쓰기/제거하지 않으며 guest에서 사람이 구 publish를 보존·폴더 변경 후 새 build를 준비한다. 기존 QA Demo/로그/저널은 사용자 루트에 그대로 남는다.
+
+수동 결과는 **게스트** `%LOCALAPPDATA%/MarketCrate/IsolatedGuiQa/QaResults/gui-GUID.json`. 시작 UTC/끝 UTC/exit code/OS/빌드/배포형태만 기록하고 24개 결과는 자동 PASS로 바꾸지 않는다. Operator/DPI/Observed/OperationId/Evidence는 사람이 관찰해 기록한다. 실제 runtime 값은 앱의 진단 ZIP manifest에서 대조한다. 읽기전용 share의 scenarios.json을 편집할 필요가 없다.
+
+진단 경로: guest 앱 Diagnostics → OperationId 입력/Refresh → package 범위 검토 → 사용자 Reviewed → Export. 로그/ZIP은 `%LOCALAPPDATA%/MarketCrate/IsolatedGuiQa/Logs/{session-*.jsonl,exports/*.zip}`. OS/Runtime/commit·정제 이벤트만 포함하고 case JSON/DB/QR/HTTP 원문은 자동 포함·외부 전송하지 않는다. 수동 결과JSON과 ZIP의 OperationId를 사람이 연결한다. 합성 테스트로 export/local path/order/원인 연결을 검증했으며 실제 guest UI/권한/팝업/설치는 미검증이다.
+
+공식 [.NET publish](https://learn.microsoft.com/en-us/dotnet/core/deploying/)와 [Windows 지원표](https://learn.microsoft.com/en-us/dotnet/core/install/windows)를 2026-10-28 KST 확인했다. self-contained가 native OS 의존성을 모두 제거하거나 지원하지 않는 Windows를 지원한다는 뜻은 아니다. 게스트는 지원되는 Windows11 x64 desktop 버전으로 준비하고 OS/DPI/권한·시간/자원 예산을 기록한다. 운영 Steam/실계정/거래는 제외한다.
+
 ## 8차 게스트 전용 하네스 — 호스트에서는 실행 금지
 
 구현 `f672120` Release 정적 검사 PASS, `artifacts/isolated-gui-qa` 39개 파일 SHA256·빌드 Git metadata 확인. 패키징만 실행했으며 게스트 launcher는 AST 구문 확인만 수행했다. GUI-01~24는 전부 NOT VERIFIED.

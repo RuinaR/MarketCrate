@@ -1,5 +1,14 @@
 7차 Release 검사 수정: SQLite 파일명 제외 정규식이 정상 의존성 Microsoft.Data.Sqlite.dll까지 거부했다. DB/sidecar 확장자 끝으로 한정해 수정하고 DLL 허용·sqlite/sqlite3-wal/db-shm/.env/session.json/private.key 차단 7개 파일명 회귀를 확인했다. 실제 비밀파일·DB는 생성하지 않았다. 최초 publish는 이 정적 검사에서 FAIL이며 실행파일은 실행하지 않았다.
 
+## 2026-10-28 KST — 9차 실행 조건 판단 / self-contained / 진단 ZIP 수정
+
+- 시작 main/origin `9cc73a4` clean/fetch. AGENTS/상태/QA/격리/정의/로그 검토. 명시 제공 guest 없음. registry Core/build26200.9711/X64·Sandbox exe 없음만 조회, CIM capability는 권한 제한으로 미확인. 다른 프로세스/창·입력·화면/VM 목록 탐색 없음. 시스템 변경/재부팅/가상화 설치·실행 없음. 공식Home 미지원/별도 Windows11 guest 필요를 기록.
+- 기존 FDD/하네스 유지, self-contained win-x64/CLR·WPF10.0.9/SQLite 패키징·정적 검사를 추가했다. 첫 offline-source NU1101은 self 명령의 공식 NuGet source로 해소(전역 source/SDK 설치 없음). runtime pack은 ignored project cache. runtime lock은 obj 별도 파일. 새 출력만 허용하고 기존 산출물/데이터 삭제 없음.
+- 실제 runtime 고지 누락 FAIL을 검출해 원본 LICENSE/THIRD-PARTY3개를 복사. x64 apphost/CLR·JIT·host/WPF·SQLite·runtimeconfig/RID·앱 자산·고지·로컬자료/PDB 제외 검증. framework-dependent는 별도 유지. 기존 guest launcher의 시스템 dotnet 강제/재시작 거부/RO scenario 기록 문제를 코드에서 수정, 실제guest경로는 미실행.
+- 신규 mtime 역전 재현: 기존165PASS+ZIP1FAIL → JsonDiagnosticLog.ReadSafe의 전체/제한 반환을 Utc 순서로 수정 →166/166PASS. 검토 동의/불변snapshot·정제·2-entry/localZIP/operation·원인·DB미포함 유지. Unknown/저널·예약·Steam 코드는 변경 안 함.
+- 최종 자동: 기능166/166, detached WPF31/31, 파일계약14/14 PASS, FAIL0/경고0/오류0. .env 파일 검사 최초FAIL은 fixture 동적 변수 scope를 분리해 해결. guest launcher는 AST만 확인. NINTH_RELEASE_PENDING. 새 obj lock 검증 중 NuGet 감사 자료의 네트워크 제한 NU1900을 확인했으며 검사를 비활성화하지 않고 공식 접근으로 재검증한다. FDD publish는 자체 기본 restore를 수행해 SCD용 RID/실패 assets가 남아도 이전 --no-restore 상태에 의존하지 않게 했다.
+- 실제 GUI24개NV/실앱·설치·서명·DPI·계정·거래·Guard 미실행. 75개47/15/0/4/9 그대로. 다음은 전용guest 제공 후 기존24개실행이며 환경 구성을 반복하지 않는다.
+
 ## 2026-10-28 KST — 8차 GUI·실연동 계약 검증 준비
 
 - 기준 HEAD/origin `4a18077` clean/fetch 확인. AGENTS/정의/상태/75개·QA/진단/Steam/격리 GUI 문서 검토. 전용 guest 제공 정보 없음. 호스트 대체 GUI/VM 탐색/Windows 기능 변경/다른 프로세스·입력·화면 접근 안 함.

@@ -1,4 +1,12 @@
-# 진단 시스템 (8차, 2026-10-28 KST)
+# 진단 시스템 (9차, 2026-10-28 KST)
+
+## 9차 진단 패키지 결함 수정
+
+파일 복사/복원으로 mtime 순서가 이벤트 UTC와 달라지면 기존 ReadSafe가 같은 OperationId의 실패를 시작보다 먼저 ZIP에 넣었다. 신규 재현 검사의 수정 전 FAIL을 확인했고, 크기 제한 조기 반환과 정상 반환 모두 `OrderBy(Utc)`로 수정했다. 동일 시각은 안정 정렬하며 UTC 순서가 clock skew나 모든 인과관계를 증명한다고 주장하지 않는다. 연결 ID·저널이 판단 기준이다.
+
+NinthStageTests.OrderedExport: 역전된 파일mtime/선택operation/오류분류/시간순2개 이벤트/정제2-entryZIP·로컬exports 경로·무DB를 확인한다. 기존 검토 동의/white list/보존·회전/상한/쓰기 실패·자동 외부송신 금지는 그대로다. 실제 guest 로그는 아직 없으며 합성 진단 테스트 결과만 있다.
+
+guest 수동24개 결과는 별도 `IsolatedGuiQa/QaResults/gui-GUID.json`이고 시작/종료/exitcode를 관찰 결과 PASS로 바꾸지 않는다. 앱 이벤트와 수동기록은 OperationId로 연결한다. 앱 진단 ZIP은 `IsolatedGuiQa/Logs/exports`에 남고 결과JSON·원본DB·HTTP/QR는 자동 포함하지 않는다.
 
 ## 8차 GUI·계약 진단 연결
 

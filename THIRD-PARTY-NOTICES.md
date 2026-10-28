@@ -13,3 +13,7 @@ QR 소스: `src/MarketCrate.Infrastructure/ThirdParty/QrCodeGenerator`. 각 파�
 판정 근거: 실제 로컬 패키지의 .nuspec license/copyright 메타데이터 및 packages.lock.json. 라이선스 본문: https://licenses.nuget.org/MIT , https://licenses.nuget.org/Apache-2.0 . native lib.e_sqlite3 패키지 역시 Apache-2.0으로 표기되어 있으며 내장 SQLite 상위 프로젝트 정보는 https://sqlite.org/copyright.html 에서 확인할 수 있습니다.
 
 로컬 캐시 패키지의 고정 버전을 사용했으며 최신 버전/전체 취약점·배포 라이선스 감사 완료를 주장하지 않습니다. SteamHelper/CSlytics 등 비교 제품 코드는 재사용하지 않았습니다.
+
+## 선택적 self-contained 배포
+
+Windows x64 self-contained 출력은 Microsoft.NETCore.App 및 Microsoft.WindowsDesktop.App 런타임을 포함합니다. 실제 버전은 출력의 distribution.json/runtimeconfig와 격리 QA manifest에 기록합니다. NuGet 런타임 팩 원본의 MIT LICENSE와 .NET THIRD-PARTY-NOTICES를 각각 `licenses/NETCore-LICENSE.txt`, `licenses/NETCore-THIRD-PARTY-NOTICES.txt`, `licenses/WindowsDesktop-LICENSE.txt`에 복사합니다. SDK/Windows 런타임 설치 없이 프로젝트 전용 build cache에 팩을 복원하며, 바이너리·팩·로컬 로그는 Git에 포함하지 않습니다. 런타임 보안 수정은 자동 roll-forward로 보장되지 않으며 새 버전으로 재게시해야 합니다. 이는 모든 제3자/지원 OS/실행 호환성 감사를 완료했다는 뜻이 아닙니다.
