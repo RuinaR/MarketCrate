@@ -2,9 +2,9 @@ using MarketCrate.Core;
 
 namespace MarketCrate.Infrastructure.Steam;
 
-internal static class SteamDiagnostics
+public static class SteamDiagnostics
 {
-    internal static DiagnosticError Classify(SteamFailure code)=>code switch
+    public static DiagnosticError Classify(SteamFailure code)=>code switch
     {
         SteamFailure.Authentication or SteamFailure.Expired or SteamFailure.Denied=>DiagnosticError.Authentication,
         SteamFailure.Forbidden=>DiagnosticError.Forbidden, SteamFailure.RateLimited=>DiagnosticError.RateLimited,

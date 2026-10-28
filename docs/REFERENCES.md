@@ -91,3 +91,8 @@
 - [Valve SupportedAPIList](https://api.steampowered.com/ISteamWebAPIUtil/GetSupportedAPIList/v1/): 비인증 metadata GET, BeginAuthSessionViaQR의 required 최상위 필드 확인. 문서·스키마 참조만, 코드/데이터 재배포 없음. 실제 Begin 호출·Valve 자동화 허가 아님.
 - [SteamDatabase proto](https://github.com/SteamDatabase/Protobufs/blob/master/steam/steammessages_auth.steamclient.proto), [node-steam-session AuthenticationClient](https://github.com/DoctorMcKay/node-steam-session/blob/master/src/AuthenticationClient.ts)/[WebApiTransport](https://github.com/DoctorMcKay/node-steam-session/blob/master/src/transports/WebApiTransport.ts), [SteamKit Authentication](https://github.com/SteamRE/SteamKit/blob/master/SteamKit2/SteamKit2/Steam/Authentication/SteamAuthentication.cs): field 번호·형식/플랫폼enum/base64 form/CM 대 HTTP 구분 참고. 제3자 소스 직접 도입·패키지 추가 없음. node-steam-session/SteamKit MIT, protobuf 전사자료를 구현 허가로 간주하지 않음; source 라이선스 의무를 회피해 복사하지 않았으며 독립 최소 encoder 유지.
 - [공식 WebAPI 개요](https://partner.steamgames.com/doc/webapi_overview): UTF8 form POST/format을 별도 요청 인자로 취급. JSON 응답 명시를 채택, 비밀 원문 로깅/응답 형식 추측 fallback 미채택. 실서버 인증 응답은 여전히 미검증.
+
+## 12차 UI·상태 조사 (2026-10-28 KST)
+
+- [Microsoft UIElement.IsMouseOver](https://learn.microsoft.com/en-us/dotnet/api/system.windows.uielement.ismouseover?view=windowsdesktop-10.0): 자식 요소 포함 상태임을 확인. Header Border만 Hover 소유자로 채택. 문서·원리 참조, 소스 도입 없음. 문서가 실제 사용자 환경의 물리 깜빡임 재현 증거는 아니다.
+- [SteamHelper](https://steamhelper.app/): 게임 전환·시세/검토 문맥을 공개 페이지에서 재확인. [CSlytics](https://cslytics.com/): inventory/listings/activity를 나누는 흐름 참고, 사이트는 AGPL을 명시. UI 자산·브랜드·코드 복사/제품 실행 없음. 문맥 분리만 독자적인 WPF 레이아웃으로 구현했고 인증·거래 허가 근거로 사용하지 않았다.

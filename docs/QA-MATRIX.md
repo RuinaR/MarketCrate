@@ -1,5 +1,23 @@
 # 정상·오류·복구 QA 매트릭스 — 10차 (2026-10-28 KST)
 
+## 12차 — 실제 사용자 발견 결함 재현과 수정
+
+12차 최종 회귀: **기능187/187 PASS · 비표시 WPF42/42 PASS · 배포 파일 계약14/14 PASS · FAIL0 · Debug 경고0/오류0** (`scripts/Verify.ps1`, ignored runtime/stage12-verified.txt). 기존177/39/14 검사와 거래/Unknown/SQLite 회귀 유지. 사용자 제보의 실제 Steam 보관함 실패 응답은 미확보이므로 해당 실서버 파서 계약이 해결됐다고 보장하지 않는다. 수정한 것은 실패의 범위·인증 소실·UI 동작이며 실계정 파서/응답 형식 검증은 별도다. 실제 앱/입력/Popup/물리 DPI/Steam 인증·거래·설치 미실행.
+
+| 경로 | 증거/결과 | 한계 |
+|---|---|---|
+| 수정 전 인증 소실 | T12 초기 5개 중 파서3종/503 총4 FAIL(178/182 PASS), 404 독립 경로는 기존 PASS | 사용자 실응답을 재현한 것이 아니라 합성 최소 재현 |
+| 탭 Header | U12 초기 Header 외부 TabItem.IsMouseOver가 선택 Header 배경을 바꿔 FAIL; SourceName=B로 변경 후 PASS | 물리 포인터/캡처·모니터 미실행 |
+| 인증·읽기 분리 | TwelfthStageTests.ReadFailure: inventory/fee/listings parse/404/503 후 인증 보존, 독립 조회 버튼 활성과 성공, 실등록0 | HTTP handler 대체·실서버 아님 |
+| 서버 제한 | Restrictions:401 세션 만료/재로그인,403/429 세션 존재와 요청 차단 분리, 직접 메서드 재호출에도 요청1회 | 실제 제한 유발·우회 없음 |
+| 부분 성공/재시도 | PartialLoad: inventory Ready + fee Failed + listings Ready, 수동 fee 재조회 복구, 게임 선택·수량 보존 | 자동 네트워크 재시도 없음 |
+| 네트워크/이력 | ReadNetwork GET timeout/transport 요청1회·독립 목록 성공. HistoryFailure parse/network를 History 실패로 연결하고 오래된 검토 차단 | 실제 네트워크 설정 변경 없음 |
+| 로그 | Diagnostics: 같은 OperationId의 ReadState4203→HTTP Correlation→ResponseParsed/Parsing, AuthState ContractFailure로 잘못 전이 없음, 원문 sentinel 부재 | 원문 응답/비밀 덤프 없음 |
+| UI | U12 Header/하위4종 Hover·Selected·포커스 구분,3열 배치/고급필드 이동/실제 명령 연결/100개 표시/게임·페이지 스크롤 및 선택 보존/모달 배경 차단 | 실제 Window/Popup/입력 없음 |
+| 자체 렌더 | runtime/ui-tests/stage12-*.png: account/inventory/listings/advanced/review.1100×700,1380×860,1600×900 및1/1.25/1.5/2 출력 밀도 직접 검토 | 출력 밀도는 물리 모니터 DPI 인증이 아님 |
+
+회귀 중 기존 DiagnosticUi가 exports 폴더 생성·명령 busy만 보고 ZIP 완성 전에 단언하는 경쟁을 확인했다. 저장 완료 Status와 실제 ZIP 존재를 함께 기다리도록 수정했고 합격 조건(검토 동의/필터/1개 ZIP)은 유지했다. 기존 UI 검사의 DockPanel 강제 cast는 FrameworkElement로 바꾸고, 고급 기능 이동은 새 고급 페이지에서 같은 명령/정제 요약을 검증한다. 탭 Hover 검사는 새 소유자인 Header B에 주입하고 콘텐츠 Hover 불변 검사를 별도로 추가했다.
+
 ## 11차 — 사용자 결함 재현 및 회귀 (2026-10-28 KST)
 
 11차 배포: 구현 커밋 `0705dc2874b64b521e86dd92b3847c1a1b63219c` origin/main push 완료. **0.11.0** self-contained Windows x64 Release 빌드·정적 검사 PASS, 출력 경고/오류0. CLR/WPF10.0.9, x64 apphost/SQLite 네이티브 DLL/라이선스 고지 포함, DB·로그·인증·PDB·개발파일 제외. `artifacts/MarketCrate-0.11.0-stage11-0705dc2-win-x64.zip` **78.29MiB/412파일**, ZIP 전 항목과 원본 SHA256 일치. SHA256 `C3A5AEC49ACB4B8FEA93D4496E49E4D7AB92F2FB7F409F5EA22F1E43A60AEE28`. distribution.json 및 ProductVersion=0.11.0+0705dc2…의 SourceCommit 확인. 실제 EXE/설치/서명/실서버 QR 발급은 미실행. 이전 배포본·사용자별 저장소를 덮어쓰거나 초기화하지 않았다.

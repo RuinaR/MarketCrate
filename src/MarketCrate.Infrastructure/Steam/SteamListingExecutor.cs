@@ -14,8 +14,8 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
     private readonly Dictionary<string, SaleLineSnapshot> approved = [];
     public Capability Capability => CanExecute ? Capability.Experimental : Capability.IntegrationBlocked;
     private readonly SteamTradingPolicy executionPolicy = policy ?? SteamTradingPolicy.Blocked;
-    public bool CanExecute => auth.Connected && http.Access.Trading && executionPolicy.Enabled && !string.IsNullOrWhiteSpace(executionPolicy.EvidenceReference);
-    public bool CanReconcile => auth.Connected;
+    public bool CanExecute => auth.Connected && http.Halted is null && http.Access.Trading && executionPolicy.Enabled && !string.IsNullOrWhiteSpace(executionPolicy.EvidenceReference);
+    public bool CanReconcile => auth.Connected && http.Halted is null;
     public async Task ValidateBatchAsync(SaleBatchSnapshot snapshot, CancellationToken token)
     {
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,"E09");

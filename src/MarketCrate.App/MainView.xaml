@@ -102,7 +102,7 @@
       </Border>
       <TabControl x:Name="WorkspaceTabs" AutomationProperties.Name="작업 화면">
         <TabControl.Style><Style TargetType="TabControl" BasedOn="{StaticResource {x:Type TabControl}}"><Setter Property="Grid.Column" Value="2"/><Style.Triggers><Trigger Property="SelectedIndex" Value="4"><Setter Property="Grid.Column" Value="0"/><Setter Property="Grid.ColumnSpan" Value="5"/></Trigger><Trigger Property="SelectedIndex" Value="5"><Setter Property="Grid.Column" Value="0"/><Setter Property="Grid.ColumnSpan" Value="5"/></Trigger></Style.Triggers></Style></TabControl.Style>
-        <TabItem Header="보관함">
+        <TabItem Header="Mock 보관함">
           <Grid>
             <Grid.RowDefinitions>
               <RowDefinition Height="Auto" />
@@ -148,7 +148,7 @@
             <TextBlock Grid.Row="3" Text="가격은 구매자 지불액 · 합성 KRW · 24시간 VWAP / 구매주문 잔량은 별개 · 체결 보장 없음" Style="{StaticResource MutedText}" Margin="4,10" />
           </Grid>
         </TabItem>
-        <TabItem Header="판매 중">
+        <TabItem Header="Mock 판매 중">
           <Grid>
             <Grid.RowDefinitions>
               <RowDefinition Height="Auto" />
@@ -185,7 +185,7 @@
             </StackPanel>
           </Grid>
         </TabItem>
-        <TabItem Header="배치 결과">
+        <TabItem Header="Mock 배치 결과">
           <Grid>
             <Grid.RowDefinitions>
               <RowDefinition Height="Auto" />
@@ -217,7 +217,7 @@
             </StackPanel>
           </Grid>
         </TabItem>
-        <TabItem Header="기록·안전">
+        <TabItem Header="Mock 안내">
           <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
             <StackPanel Margin="0,0,16,0">
               <TextBlock Text="투명한 기능 상태" Style="{StaticResource Heading}" />
@@ -241,7 +241,7 @@
             </StackPanel>
           </ScrollViewer>
         </TabItem>
-        <TabItem Header="Steam 계정·보관함"><DockPanel><Button DockPanel.Dock="Top" Content="현재 Steam 작업의 진단 보기" Click="SteamDiagnosticsClicked" HorizontalAlignment="Right"/><local:SteamWorkspaceView DataContext="{Binding Steam}" /></DockPanel></TabItem>
+        <TabItem Header="Steam 작업 공간"><DockPanel><Button DockPanel.Dock="Top" Content="현재 Steam 작업의 진단 보기" Click="SteamDiagnosticsClicked" HorizontalAlignment="Right"/><local:SteamWorkspaceView DataContext="{Binding Steam}" /></DockPanel></TabItem>
         <TabItem Header="진단 / 로그"><local:DiagnosticsView DataContext="{Binding Diagnostics}"/></TabItem>
       </TabControl>
       <Border Grid.Column="4">

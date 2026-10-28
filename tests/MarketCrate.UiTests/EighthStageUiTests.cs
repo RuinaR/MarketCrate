@@ -27,7 +27,7 @@ internal static class EighthStageUiTests
             {
                 log.DiagnosticMode=true;vm.RiskAccepted=vm.CredentialsAccepted=true;Complete(vm.BeginAsync());server.Clock.Advance();Complete(vm.CheckAsync());Complete(vm.LoadAsync());vm.SelectAll.Execute(null);Complete(vm.RefreshPricesAsync());
                 var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,800,1,"stage8-modal-before.png");
-                var body=(DockPanel)view.FindName("SteamBody");Check(body.IsEnabled);
+                var body=(FrameworkElement)view.FindName("SteamBody");Check(body.IsEnabled);
                 using(var operation=DiagnosticHub.Scope())
                 {
                     var id=DiagnosticHub.Context!.OperationId;vm.Review.Execute(null);render(view,1100,800,1,"stage8-modal-open.png");Check(!body.IsEnabled);

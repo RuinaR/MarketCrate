@@ -1,4 +1,8 @@
-# 요구사항–구현–검증 추적표 (11차, 2026-10-28 KST)
+# 요구사항–구현–검증 추적표 (12차, 2026-10-28 KST)
+
+## 12차 사용자 결함 보완 — 기존75개 판정 유지
+
+**47 COMPLETE / 15 PARTIAL / 0 MISSING / 4 BLOCKED / 9 UNVERIFIED**, ID/기준·판정변경0. A01/A03/A04/A05: SteamQrAuthentication.HasSession/Connected→VM.CanRead/ReadStatuses/Run/Error→UI 인증 카드 및 상태, TwelfthStageTests 10개 합성 검사. B01/C01/D01: provider parse는 독립 실패, HTTP 제한/실행기 latch는 유지. C13: game row/selection cache+ScrollMemory, U12 페이지·게임복원 검사. G03/G04/G08/G09: Header B hover/선택 밑줄·키보드 점선/5페이지 Grid/출력 배율·레이아웃/명령 경로 검사. 실계정 성공·실환경 GUI·물리 DPI가 검증됐다는 판정으로 확대하지 않는다.
 
 ## 11차 사용자 결함 보완 — 판정 유지
 

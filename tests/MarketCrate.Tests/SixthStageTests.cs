@@ -175,7 +175,7 @@ public static class SixthStageTests
     {
         using var f=new Fixture();DiagnosticHub.Emit(DiagnosticEvent.UiFailure,DiagnosticArea.UI,DiagnosticOutcome.Failed,LogLevel.Error);var opened=0;var vm=new DiagnosticsViewModel(f.Log,_=>opened++);Check(vm.Events.Count>0);vm.OpenFolder.Execute(null);Equal(1,opened);
         vm.OperationFilter="invalid";Check(!vm.ReviewPackage.CanExecute(null));vm.OperationFilter="";vm.ErrorsOnly=true;Check(vm.Events.All(x=>x.Record.Level>=LogLevel.Error));
-        vm.ReviewPackage.Execute(null);await Until(()=>vm.ReviewPackage.CanExecute(null));Check(!vm.Export.CanExecute(null));vm.Reviewed=true;Check(vm.Export.CanExecute(null));vm.Export.Execute(null);await Until(()=>!vm.Export.CanExecute(null)&&Directory.Exists(Path.Combine(f.Folder,"exports")));Check(Directory.GetFiles(Path.Combine(f.Folder,"exports"),"*.zip").Length==1);
+        vm.ReviewPackage.Execute(null);await Until(()=>vm.ReviewPackage.CanExecute(null));Check(!vm.Export.CanExecute(null));vm.Reviewed=true;Check(vm.Export.CanExecute(null));vm.Export.Execute(null);await Until(()=>!vm.Export.CanExecute(null)&&vm.Status.StartsWith("로컬 ZIP 저장:",StringComparison.Ordinal)&&Directory.Exists(Path.Combine(f.Folder,"exports"))&&Directory.GetFiles(Path.Combine(f.Folder,"exports"),"*.zip").Length==1);Check(Directory.GetFiles(Path.Combine(f.Folder,"exports"),"*.zip").Length==1);
     }
     private static async Task FeeMismatch()
     {

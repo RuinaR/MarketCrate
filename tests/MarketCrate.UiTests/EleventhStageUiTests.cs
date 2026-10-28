@@ -55,7 +55,7 @@ internal static class EleventhStageUiTests
                 Styled(c);render(c,280,60,1,"stage11-"+c.GetType().Name+".png");var b=(Border)c.Template.FindName("B",c);var baseline=Snapshot(b);
                 for(var n=0;n<8;n++)
                 {
-                    State(c,"IsMouseOver",true,typeof(UIElement));Check(Snapshot(b)!=baseline,"hover missing "+c.GetType().Name);State(c,"IsMouseOver",false,typeof(UIElement));Check(Snapshot(b)==baseline,"hover residue");
+                    State(c is TabItem?b:c,"IsMouseOver",true,typeof(UIElement));Check(Snapshot(b)!=baseline,"hover missing "+c.GetType().Name);State(c is TabItem?b:c,"IsMouseOver",false,typeof(UIElement));Check(Snapshot(b)==baseline,"hover residue");
                     var selection=c is TabItem?TabItem.IsSelectedProperty:c is ListBoxItem?ListBoxItem.IsSelectedProperty:null;
                     if(selection is not null){c.SetValue(selection,true);Check(Snapshot(b)!=baseline,"selected missing");render(c,280,60,1,"stage11-"+c.GetType().Name+"-selected.png");c.SetValue(selection,false);Check(Snapshot(b)==baseline,"selection recycling residue");}
                     var focus=c is ListBoxItem and not ComboBoxItem?"IsKeyboardFocusWithin":"IsKeyboardFocused";

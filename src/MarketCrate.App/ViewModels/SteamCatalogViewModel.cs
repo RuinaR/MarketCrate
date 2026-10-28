@@ -5,6 +5,7 @@ namespace MarketCrate.App.ViewModels;
 
 public sealed class SteamGameScope(int appId,string contextId,string name):Observable
 {
+    public string Key=>$"{AppId}/{ContextId}";
     public int AppId{get;}=appId;public string ContextId{get;}=contextId;public string Name{get;}=name;
     public ItemImageReference? Image{get;private set;}
     public InventoryScopeState State{get;private set;}
@@ -25,14 +26,14 @@ public sealed partial class SteamWorkspaceViewModel
     public AsyncCommand ListingMetrics{get;private set;}=null!;
     private void InitializeCatalog()
     {
-        ListingMetrics=new(ListingMetricsAsync,Error,()=>Connected&&!Busy&&!AnyReview&&Listings.Any(x=>x.Selected));
+        ListingMetrics=new(ListingMetricsAsync,Error,()=>CanRead&&!Busy&&!AnyReview&&Listings.Any(x=>x.Selected));
         AddScope=new(()=>{try
         {
             var scope=new InventoryScope(int.Parse(AppInput,System.Globalization.CultureInfo.InvariantCulture),ContextInput,NameInput);scope.Validate();
             if(Games.Count>=100||Games.Any(x=>x.AppId==scope.AppId&&x.ContextId==scope.ContextId))throw new ArgumentException("CatalogDuplicate");
             var next=new SteamGameScope(scope.AppId,scope.ContextId,scope.Name);Games.Add(next);try{SaveCatalog();}catch{Games.Remove(next);throw;}Game=next;Status="게임/context 추가 완료 · 직접 갱신할 때만 조회합니다.";
-        }catch(Exception error){Error(error);}},()=>Connected&&!Busy&&!AnyReview);
-        RemoveScope=new(()=>{try{var old=Game;var index=Games.IndexOf(old);Games.Remove(old);try{SaveCatalog();}catch{Games.Insert(index,old);throw;}Game=Games[0];Status="게임/context 목록에서 제거 · 거래 저널/예약은 보존합니다.";}catch(Exception error){Error(error);}},()=>Connected&&!Busy&&!AnyReview&&Games.Count>1);
+        }catch(Exception error){Error(error);}},()=>CanRead&&!Busy&&!AnyReview);
+        RemoveScope=new(()=>{try{var old=Game;var index=Games.IndexOf(old);Games.Remove(old);try{SaveCatalog();}catch{Games.Insert(index,old);throw;}Game=Games[0];Status="게임/context 목록에서 제거 · 거래 저널/예약은 보존합니다.";}catch(Exception error){Error(error);}},()=>CanRead&&!Busy&&!AnyReview&&Games.Count>1);
     }
     private Task ListingMetricsAsync()=>Run(async token=>
     {

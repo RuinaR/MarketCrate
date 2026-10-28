@@ -43,6 +43,6 @@ public static class SteamFees
         using var correlation=DiagnosticHub.Scope(correlation:true);
         using var feesRequest = new HttpRequestMessage(HttpMethod.Get, $"https://steamcommunity.com/market/ajaxfeestructure/?appid={appId}");
         try { return Structure(await http.SendAsync(feesRequest, token), wallet); }
-        catch (SteamException e) { http.Stop(e.Code); throw; }
+        catch (SteamException) { throw; }
     }
 }

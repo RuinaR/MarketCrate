@@ -18,7 +18,7 @@ public sealed class ItemThumbnail:UserControl
     public SteamImageCache? Loader{get=>(SteamImageCache?)GetValue(LoaderProperty);set=>SetValue(LoaderProperty,value);}
     public Guid? OperationId{get=>(Guid?)GetValue(OperationIdProperty);set=>SetValue(OperationIdProperty,value);}
     private readonly Image image=new(){MaxWidth=64,MaxHeight=64,Stretch=Stretch.Uniform,HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center};
-    private readonly TextBlock label=new(){Text="이미지 없음",TextWrapping=TextWrapping.Wrap,HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center,FontSize=10};
+    private readonly TextBlock label=new(){Text="—",TextWrapping=TextWrapping.NoWrap,TextTrimming=TextTrimming.CharacterEllipsis,HorizontalAlignment=HorizontalAlignment.Center,VerticalAlignment=VerticalAlignment.Center,FontSize=10};
     private readonly Button retry=new(){Content="다시",Padding=new Thickness(2),Visibility=Visibility.Collapsed};
     private CancellationTokenSource? loading;
     private int revision;
@@ -34,9 +34,9 @@ public sealed class ItemThumbnail:UserControl
     public void Release(){revision++;loading?.Cancel();loading?.Dispose();loading=null;image.Source=null;}
     private void State(string value)
     {
-        ImageState=value;label.Text=value switch{"Loading"=>"이미지 로딩…","Ready"=>"","Failed"=>"이미지 오류","Invalid"=>"이미지 미지원","Disabled"=>"이미지 꺼짐",_=>"이미지 없음"};
+        ImageState=value;label.Text=value switch{"Loading"=>"…","Ready"=>"","Failed"=>"!","Invalid"=>"—","Disabled"=>"—",_=>"—"};
         label.Visibility=value=="Ready"?Visibility.Collapsed:Visibility.Visible;retry.Visibility=value=="Failed"?Visibility.Visible:Visibility.Collapsed;
-        ToolTip=label.Text;System.Windows.Automation.AutomationProperties.SetHelpText(this,label.Text);
+        var description=value switch{"Loading"=>"이미지 로딩 중","Ready"=>"아이템 이미지","Failed"=>"이미지 로딩 실패 · 다시 시도할 수 있습니다","Invalid"=>"지원하지 않는 이미지","Disabled"=>"이미지 표시 꺼짐",_=>"이미지 없음"};ToolTip=description;System.Windows.Automation.AutomationProperties.SetHelpText(this,description);
     }
     public async Task RefreshAsync()
     {

@@ -34,7 +34,7 @@ internal static class TenthStageUiTests
             using(var vm=new SteamWorkspaceViewModel(scope=>new SteamExperimentalWorkspace(folder,scope.AppId,scope.ContextId,scope.Name,contractHandler:server.Connection(),clock:server.Clock),true))
             {
                 vm.RiskAccepted=vm.CredentialsAccepted=true;Complete(vm.BeginAsync());server.Clock.Advance();Complete(vm.CheckAsync());Complete(vm.LoadAsync());vm.SelectAll.Execute(null);Complete(vm.RefreshPricesAsync());
-                var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,700,1,"stage10-contract-summary.png");
+                var view=new SteamWorkspaceView{DataContext=vm};((TabControl)view.FindName("SteamPages")).SelectedIndex=4;render(view,1100,700,1,"stage10-contract-summary.png");
                 Check(Find<TextBlock>(view).Any(x=>x.Text.Contains("마지막 파싱 관측")&&x.Text.Contains("합성 계약")));
                 vm.BuildReview();render(view,1100,800,1.25,"stage10-review-terms.png");
                 Check(Find<TextBlock>(view).Any(x=>x.Text==PriceDisplay.ImmediateExplanation)&&vm.ReviewRows.All(x=>x.PriceBasis.Contains(PriceDisplay.Immediate)));

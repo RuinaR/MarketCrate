@@ -22,11 +22,12 @@ public sealed partial class SteamWorkspaceViewModel
         syntheticConnection=synthetic;
         officialPage=open??(uri=>System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri){UseShellExecute=true}));
         OpenOfficialMarket=new(()=>{DiagnosticHub.Emit(DiagnosticEvent.UiPage,DiagnosticArea.UI,requirement:"F01",reason:"OfficialMarket");officialPage(new("https://steamcommunity.com/market/"));},()=>!Busy&&!AnyReview);
-        LoadListings=new(LoadListingsAsync,Error,()=>Connected&&!Busy&&!AnyReview);
-        LoadFees=new(LoadFeesAsync,Error,()=>Connected&&!Busy&&!AnyReview);
+        LoadListings=new(LoadListingsAsync,Error,()=>CanRead&&!Busy&&!AnyReview);
+        LoadFees=new(LoadFeesAsync,Error,()=>CanRead&&!Busy&&!AnyReview);
     }
     private void RecordCheck(string endpoint,int count,string? currency=null)
     {
+        if(endpoint=="History")HistoryRead.Update(count==0?SteamReadState.Empty:SteamReadState.Ready);
         readChecks[endpoint]=(DateTimeOffset.UtcNow,count,currency,DiagnosticHub.Context?.OperationId);
         DiagnosticHub.Emit(DiagnosticEvent.ReadContract,DiagnosticArea.Data,requirement:"A04",endpoint:endpoint,count:count,currency:currency,reason:syntheticConnection?"Synthetic":"Observed");
         Raise(nameof(ContractSummary));

@@ -1,5 +1,13 @@
 # 진단 시스템 (10차, 2026-10-28 KST)
 
+## 12차 인증과 조회 상태 진단
+
+**ReadState4203**(Area Data,A04): Inventory/Listings/Fees/Orderbook/History 고정 Endpoint별 NotQueried→Loading→Ready/Empty/Failed/Unsupported/AccessBlocked/Cancelled/Stale 전이를 기록한다. OperationId는 GUI Run→provider→HTTP Correlation→UI state까지 공유하며 원본 URL/본문/계정·자산·인증자료는 없다. per-read 마지막 At/OperationId는 로컬 상태이며 복구 저널을 대체하지 않는다.
+
+합성 예: `UiCommand(O,LoadAsync) → ReadState(Inventory,Loading) → HTTP(R,200) → ResponseParsed(Parsing) → ReadState(Inventory,Failed,Schema,O) → UiFailure(O)`. **AuthState(ContractFailure)가 나와서는 안 된다.** 다른 사용자 작업의 Listings/Fees는 새 O에서 계속 조회 가능하다. 401은 AuthState(Expired)+세션 정리,403/429는 인증 상태와 별도로 요청 gate를 유지한다. RequestAccessText와 개별 실패 사유는 별개다.
+
+GET 통신 실패/일반 파싱은 개별 조회 결과만 실패시키고 자동 재시도하지 않는다. POST 응답 불명, auth 제한,403/429/CAPTCHA/쿠키 이상/초과 body/반복 pagination 등의 기존 안전 latch는 유지한다. History 예외에는 고정 endpoint만 전달해 composite 가격 조회 실패가 이력 문제인지도 추적한다. Read 파서의 문법은 ResponseParsed/Parsing, 스키마는 Schema, HTTP 상태·통신/timeout은 기존 HttpFailure로 구분한다.
+
 ## 11차 QR 계약 실패 분류
 
 AuthContract **EventId2005**, Area Authentication, Requirement A03. Reason은 고정 enum만 허용한다: AuthBegin(사전조건), RequestEncoding, HTTP(상태/통신), ApiResult(HTTP200이지만 x-eresult 거절), ResponseParse(JSON 문법), ResponseFields(필수 필드·형식·범위), ChallengeValidation(허용 QR URL). UI ContractFailure에도 LastFailureStage를 표시한다. AuthBegin/AuthPoll/AuthFinalize/AuthTransfer는 고정 Endpoint 식별자이며 실제 URL·계정·request_id를 기록하지 않는다.

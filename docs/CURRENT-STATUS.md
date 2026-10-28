@@ -1,4 +1,16 @@
-# MarketCrate — 현재 상태 (2026-10-28 KST, 11차)
+# MarketCrate — 현재 상태 (2026-10-28 KST, 12차)
+
+## 12차 — 로그인/조회 복구 및 Steam UI 재설계 (2026-10-28 KST)
+
+12차 최종 회귀: **기능187/187 PASS · 비표시 WPF42/42 PASS · 배포 파일 계약14/14 PASS · FAIL0 · Debug 경고0/오류0** (`scripts/Verify.ps1`, ignored runtime/stage12-verified.txt). 기존177/39/14 검사와 거래/Unknown/SQLite 회귀 유지. 사용자 제보의 실제 Steam 보관함 실패 응답은 미확보이므로 해당 실서버 파서 계약이 해결됐다고 보장하지 않는다. 수정한 것은 실패의 범위·인증 소실·UI 동작이며 실계정 파서/응답 형식 검증은 별도다. 실제 앱/입력/Popup/물리 DPI/Steam 인증·거래·설치 미실행.
+
+main/origin `4210269` clean/fetch 일치에서 시작. 인증 네트워크·실거래·실제 GUI/Popup·전역 입력·타 프로세스 접근 없이 진행. 사용자 0.11.0 문제 제보를 바탕으로 재현 검사를 먼저 작성했다.
+
+- 확인된 결함: 일반 read 파서가 공용 SteamHttp.Stop을 호출하고 VM.Error가 LoginState를 덮어씀. Authentication.Connected도 모든 Halted에 묶여 독립 조회까지 비활성화. 이제 서버 결과/Community 세션에 근거한 HasSession/Connected, 공용 요청 제한, 개별 ReadState를 분리했다. 단순 파싱/404/GET 통신 실패는 해당 조회만 실패; 401/인증 만료는 세션 정리·재로그인, 403/429/CAPTCHA/중복 페이지 등 안전 latch는 유지. POST 응답 불명/Unknown/거래 코디네이터 정지 보호 유지, 자동 재시도 없음.
+- Inventory/Listings/Fees/Orderbook/History 5개 상태. 로딩 중 기존 목록 보존, fee 실패 시 기존 fee를 검토에 재사용하지 않음. 한 번의 Load 내부에서도 fee 실패 뒤 독립 listings 계속 가능(서버 latch면 중단). 현재 Inventory/Prices/Fees 조건이 불완전하면 최종 검토 명령 비활성. 인증 완료 카드/일부 조회 실패/세션 만료/요청 제한을 분리 표시한다.
+- TabItem 전체 IsMouseOver 대신 템플릿 Header Border B만 Hover를 소유한다. 콘텐츠·하위 버튼/체크/드롭다운/입력 Hover와 Header를 분리. Selected 밑줄·키보드 점선은 유지. 실제 물리 깜빡임을 캡처하거나 재현한 것이 아니라 코드 구조와 제어된 DP 검사로 결함을 확인·수정했다.
+- Steam 5개 화면 재구성: 계정·조회 상태 / 3열 보관함 / 독립 판매 관리 / 결과 / 고급 설정. 긴 안내·AppID/context·OperationId는 고급으로 이동. 가격 기준·즉시거래가능가/수수료·실수령 예상·부족 수량·최종 검토를 고정 패널로 분리. 기본 컨트롤·가상화 유지, 이미지 안내 한 줄 기호/접근성 툴팁, 선택/게임별 자료/스크롤 보존. view cache 최대8게임/20,000행, 초과 시 오래된 뷰만 제거하며 선택·수량 기억과 저널은 보존.
+- ReadState4203/고정 endpoint/OperationId와 기존 HTTP·파서·SQLite 진단 연결. 원문·토큰·QR·계정 정보 제외. 최초75개 ID/판정 **47 COMPLETE / 15 PARTIAL / 0 MISSING / 4 BLOCKED / 9 UNVERIFIED** 유지. 실계정/현재 물리 GUI/DPI·Popup·설치·서명·KRW·스택 실서버 계약은 계속 미검증, 거래 IntegrationBlocked.
 
 ## 11차 — 사용자 발견 QR 계약·상태 강조 결함 수정 (2026-10-28 KST)
 

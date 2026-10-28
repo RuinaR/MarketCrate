@@ -31,6 +31,7 @@ public sealed class SteamException(SteamFailure code, int? apiResult = null) : I
 {
     public SteamFailure Code { get; } = code;
     public int? ApiResult { get; } = apiResult;
+    public string? Endpoint { get; internal set; }
 }
 
 // No browser cookie import, external host, redirects, automatic retries or response-body logging.
@@ -105,7 +106,7 @@ public sealed class SteamHttp : IDisposable
             {
                 var failure = status switch { 404 => SteamFailure.Unsupported, 401 => SteamFailure.Authentication, 403 => SteamFailure.Forbidden, 429 => SteamFailure.RateLimited,
                     >= 300 and < 400 => SteamFailure.Authentication, _ => SteamFailure.Transport };
-                if(failure!=SteamFailure.Unsupported)Stop(failure); throw new SteamException(failure);
+                if(failure!=SteamFailure.Unsupported && !(request.Method==HttpMethod.Get && failure==SteamFailure.Transport))Stop(failure); throw new SteamException(failure);
             }
             if (response.Headers.TryGetValues("x-eresult", out var results) && results.FirstOrDefault() is { } result && result != "1")
             { var failure = result == "15" ? SteamFailure.Denied : result == "27" ? SteamFailure.Expired : SteamFailure.Authentication; Stop(failure); throw new SteamException(failure,steamCode); }
@@ -126,11 +127,11 @@ public sealed class SteamHttp : IDisposable
         catch (OperationCanceledException error) when (token.IsCancellationRequested)
         { DiagnosticHub.Emit(DiagnosticEvent.HttpFailure, DiagnosticArea.HTTP, DiagnosticOutcome.Cancelled, LogLevel.Warning, DiagnosticError.Cancelled, endpoint: endpoint, reason: phase, exception: error, started: started, elapsed: watch.ElapsedMilliseconds); throw; }
         catch(SteamException error)
-        { SteamDiagnostics.Failure(error,endpoint,watch.ElapsedMilliseconds);throw; }
+        { error.Endpoint??=endpoint;SteamDiagnostics.Failure(error,endpoint,watch.ElapsedMilliseconds);throw; }
         catch (Exception error) when (error is HttpRequestException or TaskCanceledException || error is IOException and not SteamException)
         { DiagnosticHub.Emit(DiagnosticEvent.HttpFailure,DiagnosticArea.HTTP,token.IsCancellationRequested?DiagnosticOutcome.Cancelled:DiagnosticOutcome.Failed,LogLevel.Error,
             token.IsCancellationRequested?DiagnosticError.Cancelled:error is TaskCanceledException?DiagnosticError.Timeout:DiagnosticError.Transport,endpoint:endpoint,reason:phase,exception:error,started:started,elapsed:watch.ElapsedMilliseconds);
-          Stop(SteamFailure.Transport); throw new SteamException(SteamFailure.Transport); }
+          if(request.Method!=HttpMethod.Get)Stop(SteamFailure.Transport); throw new SteamException(SteamFailure.Transport){Endpoint=endpoint}; }
         finally { queue.Release(); }
     }
     internal static HttpRequestMessage Form(Uri uri, IEnumerable<KeyValuePair<string, string>> fields)

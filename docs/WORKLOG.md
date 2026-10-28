@@ -1,5 +1,15 @@
 7차 Release 검사 수정: SQLite 파일명 제외 정규식이 정상 의존성 Microsoft.Data.Sqlite.dll까지 거부했다. DB/sidecar 확장자 끝으로 한정해 수정하고 DLL 허용·sqlite/sqlite3-wal/db-shm/.env/session.json/private.key 차단 7개 파일명 회귀를 확인했다. 실제 비밀파일·DB는 생성하지 않았다. 최초 publish는 이 정적 검사에서 FAIL이며 실행파일은 실행하지 않았다.
 
+## 2026-10-28 KST — 12차 사용자 발견 복구·UI 결함
+
+12차 최종 회귀: **기능187/187 PASS · 비표시 WPF42/42 PASS · 배포 파일 계약14/14 PASS · FAIL0 · Debug 경고0/오류0** (`scripts/Verify.ps1`, ignored runtime/stage12-verified.txt). 기존177/39/14 검사와 거래/Unknown/SQLite 회귀 유지. 사용자 제보의 실제 Steam 보관함 실패 응답은 미확보이므로 해당 실서버 파서 계약이 해결됐다고 보장하지 않는다. 수정한 것은 실패의 범위·인증 소실·UI 동작이며 실계정 파서/응답 형식 검증은 별도다. 실제 앱/입력/Popup/물리 DPI/Steam 인증·거래·설치 미실행.
+
+- main/origin4210269 clean/fetch 확인, AGENTS/현재 상태/QA/설계·실제 호출 경로 감사. 수정 전 read4FAIL 및 Tab header1FAIL 재현 증거를 ignored runtime/stage12-before.txt,stage12-ui-before.txt에 남김. 실제 사용자 인증 응답을 확보·재생하지 않았다.
+- read parser→공용 Stop→Authentication.Connected→VM.Error.LoginState 결합 제거. GET transport 수동 재시도와 POST Unknown latch 구분,401/403/429/CAPTCHA 안전 중단 유지. fee 실패 후 listings 독립 진행·검토 freshness gate·새 ReadState4203·원인/operation 추적 구현.
+- TabItem.IsMouseOver를 Header B의 상태로 교체. 사용자 물리 깜빡임은 미실행이나 기존 구조의 잘못된 반응을 DP로 재현. Grid 기반 Steam 5페이지/3열 보관함/고급 분리/인증 완료 카드/가격·수수료 예상/한국어 결과/스크롤·선택 보존 구현. 렌더에서 QR 완료 후 대기 오안내, 긴 가격 source 노출, 좁은 칸 이미지 안내, 짧은 창의 계획 패널 clipping을 찾아 수정.
+- S6 진단 ZIP 검사에서 기존 async 경쟁 발견: 폴더 생성과 busy는 저장 완료 증거가 아니므로 실제 완료 Status+ZIP을 대기. 무조건 성공/허용 기준 완화 없이 기존 명령·검토·비밀정보 단언을 유지. UI 고급 이동과 템플릿 구조 변경은 같은 기능을 새 진입점에서 검증하도록 기존 테스트만 조정.
+- 공개 UX/IsMouseOver 문서만 조회, 실제 앱·인증·판매·취소·Guard·타 프로세스·입력·캡처0. SQLite/실저널/사용자 데이터 초기화0. 버전0.12.0, 기존75개 판정변경0. 실계정/물리 GUI는 별도 사용자 검증 필요.
+
 ## 2026-10-28 KST — 11차 실제 사용자 QR·상태 강조 결함
 
 - main/origin62663c5 clean에서 시작. AGENTS/현재 상태/QA/설계·관련 소스 확인. 공개 metadata/proto/공식WebAPI/공개 구현 대조, 인증 네트워크 실행0.

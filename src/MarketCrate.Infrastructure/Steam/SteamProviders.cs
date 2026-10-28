@@ -9,7 +9,7 @@ public sealed class SteamInventoryProvider(SteamHttp http, SteamQrAuthentication
 {
     public Dictionary<AssetKey,ItemImageReference> Images{get;}=[];
     internal Dictionary<AssetKey, int> PublisherFees { get; } = [];
-    public Capability Capability => auth.Connected ? Capability.Experimental : Capability.IntegrationBlocked;
+    public Capability Capability => auth.Connected && http.Halted is null ? Capability.Experimental : Capability.IntegrationBlocked;
     public async Task<IReadOnlyList<InventoryAsset>> GetAsync(CancellationToken cancellationToken)
     {
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.InventoryLoaded,DiagnosticArea.Data,"C01");
@@ -25,7 +25,7 @@ public sealed class SteamInventoryProvider(SteamHttp http, SteamQrAuthentication
             var body = await http.SendAsync(request, cancellationToken);
             SteamInventoryPage result;
             try { result = SteamContract.Inventory(body, appId, contextId, game); }
-            catch (SteamException error) { http.Stop(error.Code); throw; }
+            catch (SteamException error) { error.Endpoint??="Inventory";throw; }
             foreach (var asset in result.Assets)
                 if (!keys.Add(asset.Key)) { http.Stop(SteamFailure.ContractChanged); throw new SteamException(SteamFailure.ContractChanged); } else all.Add(asset);
             DiagnosticHub.Emit(DiagnosticEvent.InventoryPage,DiagnosticArea.Data,count:result.Assets.Length,requirement:"C01");
@@ -65,7 +65,7 @@ public sealed class SteamMarketDataProvider(SteamHttp http, SteamQrAuthenticatio
             cache[(asset.Key.AppId, asset.MarketHashName)] = snapshot;
             return snapshot;
         }
-        catch (SteamException error) { http.Stop(error.Code); throw; }
+        catch (SteamException error) { error.Endpoint??="Orderbook";throw; }
     }
     public async Task<PriceSnapshot> RefreshEstimateAsync(InventoryAsset asset,TimeSpan window,CancellationToken token=default)
     {
@@ -81,7 +81,7 @@ public sealed class SteamMarketDataProvider(SteamHttp http, SteamQrAuthenticatio
         using var correlation=DiagnosticHub.Scope(correlation:true);
         using var request = new HttpRequestMessage(HttpMethod.Get, $"https://steamcommunity.com/market/pricehistory/?appid={asset.Key.AppId}&market_hash_name={Uri.EscapeDataString(asset.MarketHashName)}");
         var body = await http.SendAsync(request, token);
-        try { return SteamContract.History(body); } catch (SteamException error) { http.Stop(error.Code); throw; }
+        try { return SteamContract.History(body); } catch (SteamException error) { error.Endpoint??="History";throw; }
     }
 }
 
@@ -89,7 +89,7 @@ public sealed class SteamOrdersProvider(SteamHttp http, SteamQrAuthentication au
 {
     private ImmutableArray<SteamListing> cache = [];
     public Dictionary<string,ItemImageReference> Images{get;}=[];
-    public Capability Capability => auth.Connected ? Capability.Experimental : Capability.IntegrationBlocked;
+    public Capability Capability => auth.Connected && http.Halted is null ? Capability.Experimental : Capability.IntegrationBlocked;
     public IReadOnlyList<LineResult> GetOrders() => cache.Select(x => new LineResult(x.ListingId, x.State, "Steam 목록 관측; 자동 갱신 없음")).ToArray();
     public async Task<ImmutableArray<SteamListing>> RefreshAsync(CancellationToken token = default)
     {
@@ -103,7 +103,7 @@ public sealed class SteamOrdersProvider(SteamHttp http, SteamQrAuthentication au
         using var request = new HttpRequestMessage(HttpMethod.Get, $"https://steamcommunity.com/market/mylistings/render/?norender=1&start={start}&count=100");
             var body = await http.SendAsync(request, token);
             SteamListingsPage page;
-            try { page = SteamContract.Listings(body); } catch (SteamException error) { http.Stop(error.Code); throw; }
+            try { page = SteamContract.Listings(body); } catch (SteamException error) { error.Endpoint??="Listings";throw; }
             if(page.Images is {} pageImages)foreach(var image in pageImages)images[image.Key]=image.Value;
             total ??= page.TotalActive;
             if (total != page.TotalActive) break; // Unstable pagination is not a complete authoritative snapshot.

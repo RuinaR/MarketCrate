@@ -22,7 +22,8 @@ public sealed class SteamQrAuthentication(SteamHttp http, TimeProvider? timeProv
     public Uri? Challenge { get; private set; }
     public string? SteamId { get; private set; }
     internal string? SessionId { get; private set; }
-    public bool Connected => SteamId is not null && SessionId is not null && http.Halted is null && http.Access.AuthenticatedReads;
+    public bool HasSession => SteamId is not null && SessionId is not null && http.Access.AuthenticatedReads;
+    public bool Connected => HasSession && http.Halted is not (SteamFailure.Authentication or SteamFailure.Expired);
     public Task<Uri> BeginAsync(CancellationToken token = default) => GuardAsync(() => BeginCoreAsync(token), "AuthBegin");
     private async Task<Uri> BeginCoreAsync(CancellationToken token)
     {

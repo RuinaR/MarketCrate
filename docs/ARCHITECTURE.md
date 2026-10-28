@@ -1,5 +1,13 @@
 # MarketCrate — 아키텍처 (최초 Mock 구현 / 후속 계획)
 
+## 12차 세션/요청/조회 상태 경계
+
+SteamQrAuthentication.HasSession은 성공한 finalize/Community transfer와 메모리 세션 존재, Connected는 인증 만료 여부를 나타낸다. 전역 SteamHttp.Halted는 요청 안전 latch이며 이 값을 로그인 존재와 동일시하지 않는다. VM.CanRead=Connected && !RequestsBlocked, 실행기 CanExecute/CanReconcile은 별도로 http.Halted=null까지 검사한다. 권한을 우회하거나 latch를 지우는 API는 추가하지 않았다.
+
+SteamReadStateViewModel partial은 5개 독립 상태와 사용자 요약을 담당한다. Run은 명령별 채널, IndependentRead는 기존 Load의 fee/listings 부분 성공을 처리한다. 일반 read schema/404/GET transport와 세션 만료/서버 제한을 구분하며 Error는 읽기 실패로 LoginState를 덮어쓰지 않는다. stale fee/Inventory/Prices는 검토 명령을 차단한다. 쓰기 어댑터의 불변 snapshot/저널/Unknown/예약/중복 방지는 유지한다.
+
+게임별 row 뷰 캐시는 계정 VM 내 최대8게임·20,000행, 선택/수량 기억은 별도 asset-key 사전이다. ScrollMemory는 뷰의 game key별100개 이하 offset을 기억하며 unload/reload/키 변경 때만 복원한다. OS 입력/타 창/계정 데이터 영속 저장을 사용하지 않는다. 이 캐시는 거래 판단 원본이 아니며 서버 재검증을 생략하지 않는다. SQLite 스키마·사용자 저장 경로 변경 없음.
+
 7차 추가 보호: 기간 중앙값의 구매자/판매자 결제액 역할과 통화 해석은 live 미검증이므로 `SteamTradingPolicy.MedianPriceContractSupported`가 별도로 필요하며 기본 false다. 사용자의 최종 클릭/정수 계산 성공으로 이를 true로 추정하지 않는다. 합성 positive 경로에서만 명시적으로 켜 검증했다.
 
 ## 7차 확장 (기존 MVVM/저널 유지)

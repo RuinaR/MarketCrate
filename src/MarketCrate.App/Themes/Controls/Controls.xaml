@@ -71,6 +71,7 @@
     </ControlTemplate.Triggers>
   </ControlTemplate>
   <Style x:Key="ActionBase" TargetType="p:ButtonBase">
+    <Setter Property="ToolTipService.ShowOnDisabled" Value="True" />
     <Setter Property="FocusVisualStyle" Value="{x:Null}" />
     <Setter Property="HorizontalContentAlignment" Value="Center" />
     <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -101,12 +102,12 @@
     <Border x:Name="Frame" Background="Transparent" Padding="6" BorderBrush="Transparent" BorderThickness="1" CornerRadius="4">
       <Grid>
       <Rectangle x:Name="FocusRing" Stroke="{StaticResource Warning}" StrokeThickness="1" StrokeDashArray="2,2" RadiusX="3" RadiusY="3" IsHitTestVisible="False" Visibility="Collapsed" />
-      <StackPanel Orientation="Horizontal">
+      <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="18"/><ColumnDefinition/></Grid.ColumnDefinitions>
         <Border x:Name="Box" Width="18" Height="18" Background="{StaticResource Surface}" BorderBrush="{StaticResource Edge}" BorderThickness="1" CornerRadius="3">
           <TextBlock x:Name="Mark" Text="✓" Visibility="Collapsed" Foreground="{StaticResource Accent}" HorizontalAlignment="Center" VerticalAlignment="Center" />
         </Border>
-        <ContentPresenter Margin="8,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="True" />
-      </StackPanel>
+        <ContentPresenter Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" RecognizesAccessKey="True" />
+      </Grid>
       </Grid>
     </Border>
     <ControlTemplate.Triggers>
@@ -409,7 +410,7 @@
               <Setter TargetName="B" Property="BorderBrush" Value="{StaticResource Accent}" />
               <Setter Property="Foreground" Value="{StaticResource Ink}" />
             </Trigger>
-            <MultiTrigger><MultiTrigger.Conditions><Condition Property="IsMouseOver" Value="True"/><Condition Property="IsEnabled" Value="True"/></MultiTrigger.Conditions>
+            <MultiTrigger><MultiTrigger.Conditions><Condition SourceName="B" Property="IsMouseOver" Value="True"/><Condition Property="IsEnabled" Value="True"/></MultiTrigger.Conditions>
               <Setter TargetName="B" Property="Background" Value="{StaticResource Hover}" />
             </MultiTrigger>
 
