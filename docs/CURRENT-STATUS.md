@@ -29,3 +29,6 @@
 
 ### 주의
 `LIVE_INTEGRATION_BLOCKED`는 기능 구현 완료가 아니며 Steam 실판매가 가능한 상태라고 표현하지 않는다.
+
+### Git
+최초 구현 커밋 `9b904bf`, `origin/main` 정상 push 완료. 이후 작업 결과 기록용 문서 커밋은 `git log -2 --oneline`으로 확인한다.
