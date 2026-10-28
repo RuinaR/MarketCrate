@@ -2,6 +2,12 @@
 
 ## 2026-10-29 — 0.16.0 실제 전용 Release
 
+### 0.16.0 LiveOnly 배포 확정
+
+소스 **85756b4f541175cbd388d51c3d3d2fb1349e84e7** origin/main push. 새 x64 self-contained Release: `artifacts/releases/MarketCrate-0.16.0-live-85756b4-win-x64.zip` (66,469,582바이트/412파일), SHA256 **1E758055EB23B5060EEE57BA6E819AEC323E2B698A5AC8518EF307FE48E9704A**. 전체 entry SHA/SourceCommit·CLR/WPF10.0.9·SQLite/라이선스/민감·개발파일 제외 검사 PASS. RuntimeMode=LiveOnly, 필수 PE/BAML 검사로 Mock 구현/모델/구 화면·재시도/구 USD fixture 파서가 없는지 확인했다. 경고·오류0. 실제 EXE/설치·실계정/거래·서명은 미실행이다.
+
+최신/롤백은 ignored artifacts/releases.json에 기록, rollback0.15.1의 SHA106E89E7C801250C1C264F92DDC2BE87710A70CD3591BD09B38ADDFD9BE820F2 재확인. 0.15.0/0.14/0.13과 기존 추출본·사용자 진단 ZIP/DB/저널/설정/인증·NuGet 캐시는 삭제하지 않았다. 실제 지갑의 성공/금액 계약은 사용자 확인이 필요하며 실패를 합성 성공으로 바꾸지 않는다. 최종 기능235/235·자체WPF50/50·배포계약14/14 PASS(개발 구성 회귀), Release 별도 빌드/메타데이터/전체ZIP 무결성 검사 PASS. 마지막 Shell 페이지 진단 이벤트 연결은 Release 빌드에서 확인했다.
+
 main7c7ba05 clean에서 시작. 사용자 지정 ZIP 하나만 OpenRead하여 정제된 분류를 확인했다. 원문 ZIP/로그·계정 정보는 복사/커밋하지 않았다. 새 증거는 Community/Market하위/추가query 이동이다. 공식 공개 자격 확인 URL의302→Market 복귀와 공개 구현 소스를 대조해 좁은 상태 머신으로 구현했다. 사용자 원문 목적지까지 확정한 것은 아니다.
 
 일반 App의 Demo 초기화·Mock UI 합성을 제거하고 실제 Shell/진단/별도 SQLite 설정으로 연결했다. Release는 Mock 서비스/관리 코드/구 화면/BAML/데이터모델·구 USD fixture 파서를 제외한다. 명시적 개발 테스트는 기존 소스를 유지한다. 소스 삭제/사용자 DB 초기화 없이 배포 경계를 분리했다. Publisher에 필수 메타데이터 검사와 LiveOnly 표기를 추가하고 LiveOnly 패키지의 Mock QA 래핑을 거부한다.

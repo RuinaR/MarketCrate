@@ -2,6 +2,8 @@
 
 ## 0.16.0 — 실제 Steam 전용 Release
 
+최신 portable: `artifacts/releases/MarketCrate-0.16.0-live-85756b4-win-x64.zip` (66,469,582바이트/412파일). SHA256 `1E758055EB23B5060EEE57BA6E819AEC323E2B698A5AC8518EF307FE48E9704A`. RuntimeMode=LiveOnly, Release/Mock 구현 제외/전체 파일 무결성 PASS. 실제 창·실계정 성공 검증은 별도입니다. 새 폴더에 풀어 MarketCrate.App.exe를 직접 실행하세요. 기존 데이터는 삭제하지 마세요.
+
 배포 앱에서 Mock 보관함·판매목록·가짜 배치·데이터 생성·Mock 재시도·Demo 저장소를 제외했습니다. 일반 실행은 실제 Steam 작업 공간과 진단 화면만 표시합니다. 실제 서버 응답이 없으면 빈 상태·실패·미검증으로 표시하며 합성 성공으로 대체하지 않습니다.
 
 지갑은 Steam의 `/market/eligibilitycheck/?goto=%2Fmarket%2F` 자격 확인과 고정 Market 복귀를 처리합니다. 서버가 발급한 쿠키만 현재 앱 세션에서 표준 처리하며, 자격 거절·로그인·403/429·알 수 없는 이동은 우회하지 않습니다. 제공된 ZIP의 유형은 이 흐름과 부합하지만 정확한 원문 경로는 없어 실계정 해결 완료로 단정하지 않습니다.
