@@ -1,5 +1,9 @@
 # 요구사항–구현–검증 추적표 (15차, 2026-10-29 KST)
 
+## 0.16.0 — 기존75개 ID/판정 유지
+
+47 COMPLETE/15 PARTIAL/0 MISSING/4 BLOCKED/9 UNVERIFIED. A04/D09의 Wallet 자격 확인 왕복과 G UI의 실제 전용 Shell을 구현·합성 검증했다. App→ProductionShell→Steam VM→실제 provider/HTTP/SQLite→UI 경로를 확인하고 Release metadata로 Mock 실행 경로 부재를 검사했다. LiveOnlyTests8개/LiveOnlyUiTests2개와 전체235/50/14 PASS. 사용자 지갑의 실제 성공·실거래·물리 GUI 검증은 없으므로 COMPLETE로 승격하지 않는다. 과거 Mock 검증 이력은 남기되 현재 배포 기능으로 표현하지 않는다.
+
 ## 15차 판정 유지 및 경로
 
 최초75개 ID/판정47 COMPLETE/15 PARTIAL/0 MISSING/4 BLOCKED/9 UNVERIFIED 유지. F01–F12/B08–B10/C09–C13/D09–D10: SteamTradingViewModel.PrepareTradingAsync→SteamExperimentalWorkspace.EnableUserTradingAsync→Wallet/Inventory/Orders→세션계정binding/VerifiedApps→BuildReview→SaleBatchCoordinator→SteamListingExecutor.ValidateBatchAsync→SteamStateStore→Submit/Reconcile/Cancel/Reprice→UI. OrderbookFingerprint/선택게임별fee/context·whole-cancelpreflight·intent호가지문 보호 추가. 새FifteenthStageTests16개와UiTests2개 합성증거. IMPLEMENTED는 조건부코드 범위, CONTRACT_VERIFIED는 합성과 실서버를 구분, LIVE_VERIFIED 없음. 활성화정책 변경만으로 미검증 원요구사항을 COMPLETE로 바꾸지 않는다.

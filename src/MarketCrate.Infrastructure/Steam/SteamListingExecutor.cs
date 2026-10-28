@@ -63,6 +63,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         BatchValidation.Validate(snapshot,DateTimeOffset.UtcNow); // Network preflight must not age an approval into a durable submission intent.
         foreach (var line in snapshot.Lines) approved.Add(SaleBatchCoordinator.RequestKey(snapshot, line), line);
     }
+#if MARKETCRATE_DEMO
     internal static FeePolicy Wallet(string html)
     {
         try
@@ -80,6 +81,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         catch (Exception error) when (error is JsonException or InvalidOperationException or KeyNotFoundException or FormatException)
         { throw new SteamException(SteamFailure.ContractChanged); }
     }
+#endif
     public async Task<LineResult> SubmitAsync(SaleLineSnapshot line, string requestKey, CancellationToken cancellationToken)
     {
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.ItemResult,DiagnosticArea.Sales,"F01");

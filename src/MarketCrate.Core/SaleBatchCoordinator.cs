@@ -9,6 +9,7 @@ public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatch
     public static string AttemptKey(SaleBatchSnapshot batch, SaleLineSnapshot line, int attempt) => attempt == 0 ? RequestKey(batch, line) : $"{RequestKey(batch, line)}:attempt:{attempt}";
 
     // Explicit approval only. Original snapshot and successful/uncertain lines remain untouched.
+#if MARKETCRATE_DEMO
     public async Task<BatchRecord> RetryFailedAsync(IReadOnlyDictionary<string, int> approvedAttempts, IReadOnlyList<InventoryAsset> current,
         DateTimeOffset pricesCheckedAt, IProgress<BatchRecord>? progress = null, CancellationToken cancellationToken = default)
     {
@@ -51,6 +52,7 @@ public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatch
         finally { gate.Release(); }
     }
 
+#endif
     public async Task<BatchRecord> ExecuteAsync(SaleBatchSnapshot snapshot, IProgress<BatchRecord>? progress = null, CancellationToken cancellationToken = default)
     {
         using var scope=DiagnosticHub.Scope(batch:snapshot.BatchId);
@@ -58,7 +60,11 @@ public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatch
         await gate.WaitAsync(cancellationToken);
         try
         {
+#if MARKETCRATE_DEMO
             if (executor.Capability != Capability.Mock && executor is not IAuthorizedListingExecutor { CanExecute: true }) throw new InvalidOperationException("IntegrationBlocked");
+#else
+            if (executor is not IAuthorizedListingExecutor { CanExecute: true }) throw new InvalidOperationException("IntegrationBlocked");
+#endif
             var existing = await journal.LoadAsync(cancellationToken);
             // Journal is an intentionally single active batch. User must archive/clear completed demo data before another batch.
             if (existing != null)
@@ -69,8 +75,12 @@ public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatch
             BatchValidation.Validate(snapshot, DateTimeOffset.UtcNow);
             DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,requirement:"E09",count:snapshot.Lines.Length);
             if (executor is IAuthorizedListingExecutor authorized) await authorized.ValidateBatchAsync(snapshot, cancellationToken);
+#if MARKETCRATE_DEMO
             if (journal is IDemoDataStore history) SalePlanner.ValidateReservations(snapshot, history.ReadBatches(), MockListingManagement.ReleasedRequests(history.ReadListings()));
             var record = new BatchRecord(1, snapshot, snapshot.Lines.Select(x => new LineResult(x.LineId, SaleState.Ready, executor.Capability == Capability.Mock ? "Mock 대기" : "실험적 Steam 전송 대기")).ToImmutableArray());
+#else
+            var record = new BatchRecord(1, snapshot, snapshot.Lines.Select(x => new LineResult(x.LineId, SaleState.Ready, "Steam 전송 대기")).ToImmutableArray());
+#endif
             await journal.SaveAsync(record, cancellationToken);
             for (var i = 0; i < snapshot.Lines.Length; i++)
             {
@@ -107,7 +117,11 @@ public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatch
     public async Task<BatchRecord?> RecoverAsync(CancellationToken cancellationToken = default)
     {
         using var operation=DiagnosticHub.Operation(DiagnosticEvent.BatchRecovered,DiagnosticArea.Sales,"F10");
+#if MARKETCRATE_DEMO
         if (executor.Capability != Capability.Mock && executor is not IAuthorizedListingExecutor { CanReconcile: true }) throw new InvalidOperationException("IntegrationBlocked");
+#else
+        if (executor is not IAuthorizedListingExecutor { CanReconcile: true }) throw new InvalidOperationException("IntegrationBlocked");
+#endif
         await gate.WaitAsync(cancellationToken);
         try
         {

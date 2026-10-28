@@ -1,5 +1,13 @@
 # Steam 연동 가능성 조사 — 2026-10-29 KST (13차)
 
+## 0.16.0 자격 확인 근거
+
+[Steam 공식 자격 확인](https://steamcommunity.com/market/eligibilitycheck/?goto=%2Fmarket%2F)을 쿠키/인증 없이 수동 redirect 금지 HTTP로 확인했다.302의 목적지는 같은 host /market/·추가query 없음이었다. [공개 steam-user 클라이언트 소스](https://docs.rs/crate/steam-user/latest/source/src/client.rs)도 eligibilitycheck를 포함한 수동 이동 처리를 구현한다. 참고만 했으며 코드/의존성을 복사하지 않았다.
+
+MarketCrate는 광범위10-hop/host 허용을 채택하지 않는다. 정확한 same-origin eligibility 경로와 고정 Market goto/복귀만 처리하고 canonical1회 포함 최대3 hop, 서버 거절/인증요구/보안검사 미완료/429는 중단한다. 서버 체크를 건너뛰거나 cookie를 생성/변조하는 우회가 아니다.
+
+사용자 새 ZIP의 Market하위/추가query 분류는 이 경로와 부합하지만 정확한 Location은 여전히 없으므로 실계정 원인 및 성공은 UNVERIFIED이다. Release의 실제 전용 구성과 계약/실거래 검증은 별개이며 제재 위험·수수료/스택의 미확인 계약은 유지된다.
+
 ## 0.15.1 Wallet302 증거 갱신
 
 사용자제공진단0.14/0.15 모두HTTP302/OtherRedirect·HTML파싱전중단, 정확한Location은미기록이다. 로그인실패나wallet미설정을입증하지않는다. [공식 /market](https://steamcommunity.com/market)과 [/market/](https://steamcommunity.com/market/)를쿠키/리다이렉트없이GET하여각200을확인했다. 공개wallet marker부재는익명응답의관측일뿐사용자원인이아니다. 두공식Marketroot 간단일GET과기존고정언어query만지원하며다른이동은분류후차단한다. 실계정의302가이경로였는지와지갑금액계약은여전히미검증이다.

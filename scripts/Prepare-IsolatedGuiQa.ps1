@@ -13,6 +13,8 @@ $artifactRoot = [System.IO.Path]::GetFullPath((Join-Path (Get-Location) 'artifac
 if (-not $output.StartsWith($artifactRoot, [System.StringComparison]::OrdinalIgnoreCase) -or (Test-Path -LiteralPath $output)) { throw 'Choose a NEW output folder inside project artifacts; existing contents are preserved.' }
 if (-not $source.StartsWith($artifactRoot,[System.StringComparison]::OrdinalIgnoreCase) -or $output.StartsWith($source + [System.IO.Path]::DirectorySeparatorChar,[System.StringComparison]::OrdinalIgnoreCase)) { throw 'Source must be a separate project artifacts directory' }
 $distribution = Assert-Distribution $source $Deployment
+$sourceMetadata=Join-Path $source distribution.json
+if((Test-Path -LiteralPath $sourceMetadata)-and(Get-Content -LiteralPath $sourceMetadata -Raw|ConvertFrom-Json).RuntimeMode-eq"LiveOnly"){throw "Production LiveOnly release has no offline Mock profile; use a separate explicit developer test build."}
 New-Item -ItemType Directory -Path $output | Out-Null
 Copy-Item -LiteralPath $source -Destination (Join-Path $output 'app') -Recurse
 Copy-Item -LiteralPath 'qa/Start-IsolatedGuiQa.ps1','qa/scenarios.json' -Destination $output

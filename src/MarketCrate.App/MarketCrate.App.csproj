@@ -9,4 +9,8 @@
     <ProjectReference Include="../MarketCrate.Infrastructure/MarketCrate.Infrastructure.csproj" />
     <None Include="../../THIRD-PARTY-NOTICES.md" Link="THIRD-PARTY-NOTICES.md" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
+  <ItemGroup Condition="'$(MarketCrateProduction)' == 'true'">
+    <Compile Remove="MainView.xaml.cs;ViewModels/MainViewModel.cs;ViewModels/ItemViewModel.cs;ViewModels/ListingViewModel.cs;ViewModels/ManagementRowViewModel.cs" />
+    <Page Remove="MainView.xaml" />
+  </ItemGroup>
 </Project>

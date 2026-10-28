@@ -1,5 +1,13 @@
 # MarketCrate
 
+## 0.16.0 — 실제 Steam 전용 Release
+
+배포 앱에서 Mock 보관함·판매목록·가짜 배치·데이터 생성·Mock 재시도·Demo 저장소를 제외했습니다. 일반 실행은 실제 Steam 작업 공간과 진단 화면만 표시합니다. 실제 서버 응답이 없으면 빈 상태·실패·미검증으로 표시하며 합성 성공으로 대체하지 않습니다.
+
+지갑은 Steam의 `/market/eligibilitycheck/?goto=%2Fmarket%2F` 자격 확인과 고정 Market 복귀를 처리합니다. 서버가 발급한 쿠키만 현재 앱 세션에서 표준 처리하며, 자격 거절·로그인·403/429·알 수 없는 이동은 우회하지 않습니다. 제공된 ZIP의 유형은 이 흐름과 부합하지만 정확한 원문 경로는 없어 실계정 해결 완료로 단정하지 않습니다.
+
+테스트용 Mock 소스는 회귀 검증을 위해 개발 구성에만 남겼으며 Release DLL/BAML에서는 제외됩니다. Release는 `--isolated-qa`도 거부합니다. 기존 사용자 DB·Steam 저널·인증 자료·진단 ZIP·이전 배포본은 보존합니다. [직접 확인 절차](docs/READ-ONLY-VALIDATION.md), [현재 상태](docs/CURRENT-STATUS.md). 아래 이전 버전 설명은 이력입니다.
+
 ## 0.15.1 — 지갑302 후속 수정·안전진단
 
 0.15.1 배포: 소스 d2ee9a4679e24854102f09355ff2d5f125f8c05a, `artifacts/releases/MarketCrate-0.15.1-wallet-d2ee9a4-win-x64.zip` (66,507,841바이트/412파일). SHA256 `106E89E7C801250C1C264F92DDC2BE87710A70CD3591BD09B38ADDFD9BE820F2`. Release/전체entry SHA/SourceCommit·CLR/WPF/SQLite·민감/개발파일 제외검사 PASS, 경고오류0. 실제EXE/지갑/계정은 미실행이며 해결완료 판정 아님. 0.15.0을rollback으로등록하고0.14/0.13·기존추출본/진단ZIP·DB/저널/인증/설정은보존했다.

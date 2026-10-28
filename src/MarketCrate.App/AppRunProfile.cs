@@ -9,9 +9,14 @@ public sealed record AppRunProfile(string DataRoot, bool OfflineQa)
     public const string GuestAcknowledgement = "dedicated-offline-windows-guest";
     public static AppRunProfile Create(string[] args, string localAppData, string? acknowledgement)
     {
+#if MARKETCRATE_LIVE_ONLY
+        if(args.Length!=0)throw new ArgumentException("ProductionLaunchArgumentsUnsupported");
+        return new(Path.Combine(localAppData,"MarketCrate"),false);
+#else
         if (args.Length == 0) return new(Path.Combine(localAppData, "MarketCrate"), false);
         if (args.Length != 1 || args[0] != "--isolated-qa" || acknowledgement != GuestAcknowledgement)
             throw new ArgumentException("Unsupported or unacknowledged launch profile");
         return new(Path.Combine(localAppData, "MarketCrate", "IsolatedGuiQa"), true);
+#endif
     }
 }

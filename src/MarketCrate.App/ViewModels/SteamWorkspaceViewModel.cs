@@ -17,7 +17,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     private CancellationTokenSource? operation;
     private bool busy, riskAccepted, credentialsAccepted, tradeAccepted, reviewOpen, managementOpen, logoutRequested;
     private SteamLoginState state;
-    private string status = "실험 연동 · 연결 안 됨 · 합성 데이터 없음", evidence = "요청을 선택하고 수동 대조를 실행하세요.", history = "중간가격 이력 미조회 (정확한 거래 VWAP 아님)";
+    private string status = "Steam 연결 안 됨 · 계정 연결을 시작하세요.", evidence = "요청을 선택하고 수동 대조를 실행하세요.", history = "중간가격 이력 미조회 (정확한 거래 VWAP 아님)";
     private bool[,]? matrix;
     private SteamFeeSchedule? fees;
     private readonly Dictionary<int,SteamFeeSchedule> gameFees=[];
@@ -67,7 +67,10 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     }
     public SteamWorkspaceViewModel(Func<SteamGameScope, SteamExperimentalWorkspace>? factory = null, bool contractTest = false, bool offlineOnly = false, Action<Uri>? openOfficial = null)
     {
-        ModeText=offlineOnly?"ISOLATED GUI QA · Mock 전용 · Steam 네트워크 차단":contractTest?"CONTRACT TEST · 합성 서버 · 실제 Steam 요청 없음":"STEAM EXPERIMENTAL · 실제 계정 읽기 · Mock과 분리";
+#if MARKETCRATE_LIVE_ONLY
+        if(contractTest||offlineOnly||factory is not null)throw new InvalidOperationException("ProductionCompositionOnly");
+#endif
+        ModeText=offlineOnly?"ISOLATED GUI QA · Mock 전용 · Steam 네트워크 차단":contractTest?"CONTRACT TEST · 합성 서버 · 실제 Steam 요청 없음":"STEAM · 실제 계정 연결 · 서버 응답 기반";
         this.factory = offlineOnly ? (_ => throw new SteamException(SteamFailure.Disabled)) : factory ?? (scope => new(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MarketCrate", "SteamExperimental"), scope.AppId, scope.ContextId, scope.Name));
         InitializeConnection(contractTest, openOfficial);InitializeTrading();
         game = Games[0];InitializeCatalog();InitializeSelfCheck();

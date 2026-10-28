@@ -12,5 +12,8 @@ dotnet publish src/MarketCrate.App/MarketCrate.App.csproj -c Release --no-self-c
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 . (Join-Path $PSScriptRoot 'Distribution.ps1')
 $metadata = Assert-Distribution $publishDirectory FrameworkDependent
+pwsh -NoProfile -File scripts/Test-ProductionAssembly.ps1 -Directory $publishDirectory
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+$metadata | Add-Member -NotePropertyName RuntimeMode -NotePropertyValue LiveOnly
 $metadata | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $publishDirectory 'distribution.json') -Encoding utf8
 Write-Output 'PASS framework-dependent x64 static inspection: apphost/SQLite PE, Desktop Runtime10 dependency, licenses and data exclusion. App/installation NOT executed.'

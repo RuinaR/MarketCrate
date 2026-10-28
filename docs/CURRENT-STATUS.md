@@ -1,5 +1,17 @@
 # MarketCrate — 현재 상태 (2026-10-29 KST, 15차)
 
+## 0.16.0 — 실제 Steam 전용 배포 및 자격 확인 처리
+
+새 사용자 진단은 Wallet302의 목적지가 RedirectCommunity / RedirectMarketOther / RedirectOtherQuery임을 보여준다. 공식 자격 확인 경로는 해당 분류에 부합한다. 원문 경로가 없으므로 동일 경로였다고 확정하지 않는다. 공식 공개 eligibilitycheck/goto=Market를 무인증 GET하여302→고정 Market 복귀를 확인했고, 이 정상 프로토콜을 기존 코드가 모두 차단하던 누락을 수정했다.
+
+Wallet 흐름은 canonical 이동1회·자격 확인1회·정확한 goto 복귀1회(최대3 hop)만 처리한다. 서버 Set-Cookie를 앱 자체 메모리 세션에서 수신하며 쿠키 위조/타 앱 추출은 없다. goto는 고정 Market root/기존 허용언어만, 중첩·외부·추가쿼리는 거부한다. 자격 확인에서200으로 멈추면 권한 미확인으로 Wallet만 차단한다. 401/403/429·로그인/보안/알 수 없는 이동·순환은 중단하고 데이터 생성/자동 재시도하지 않는다.
+
+일반 시작 경로를 ProductionShellViewModel/ProductionShellView로 변경했다. Demo 저장소를 열거나 Fake 데이터를 만들지 않는다. 실제 Steam 공급자/검토/저널/복구와 진단만 연결한다. Release에서 MainView/MainViewModel·DemoDataProvider/SqliteDemoStore·Mock 실행/관리/모델/재시도·구 USD fixture 파서를 컴파일 제외한다. 테스트 구성만 개발용 Mock 소스를 유지한다. Release의 격리 Mock 인자 및 합성 handler/모드 주입도 거부한다.
+
+비밀정보 없는 설정은 새 사용자별 Preferences/preferences.sqlite3에 저장한다. 기존 Demo DB는 열거나 삭제하지 않는다. SteamExperimental의 기존 실거래 저널 경로는 유지한다. 새 설정의 손상/미지원 버전은 초기화하지 않고 오류로 중단한다.
+
+회귀: 기능235/235·자체 WPF50/50·배포계약14/14 PASS, 경고·오류0. 정리7 PASS/1 NOT VERIFIED(실제junction 생성불가) 유지. Release 메타데이터/BAML에서 Mock 구현 부재와 실제 서비스 존재를 확인했고, 개발 DLL을 넣으면 검사 거부됨을 확인했다. 자체 렌더에서 연결/진단/작은 창 배치를 직접 검토했다. 실계정 지갑 성공·거래·물리 GUI·설치·DPI·서명은 미검증이며 Codex가 실행하지 않았다. ‘실제 전용 구성’은 LIVE_VERIFIED/제품 전체 완료를 뜻하지 않는다. 최초75개 판정47/15/0/4/9 유지.
+
 ## 0.15.1 — 사용자 진단 ZIP의 Wallet302 후속 수정
 
 0.15.1 배포: 소스 d2ee9a4679e24854102f09355ff2d5f125f8c05a, `artifacts/releases/MarketCrate-0.15.1-wallet-d2ee9a4-win-x64.zip` (66,507,841바이트/412파일). SHA256 `106E89E7C801250C1C264F92DDC2BE87710A70CD3591BD09B38ADDFD9BE820F2`. Release/전체entry SHA/SourceCommit·CLR/WPF/SQLite·민감/개발파일 제외검사 PASS, 경고오류0. 실제EXE/지갑/계정은 미실행이며 해결완료 판정 아님. 0.15.0을rollback으로등록하고0.14/0.13·기존추출본/진단ZIP·DB/저널/인증/설정은보존했다.

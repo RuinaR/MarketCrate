@@ -30,7 +30,9 @@ public sealed record SteamTradingPolicy(bool Enabled, string EvidenceReference, 
 {
     public System.Collections.Immutable.ImmutableArray<int> VerifiedApps {get;init;}=[];
     public static SteamTradingPolicy Blocked { get; } = new(false, "Valve permission not established");
+#if MARKETCRATE_DEMO
     internal static SteamTradingPolicy ContractTest { get; } = new(true, "synthetic contract only", true);
+#endif
 }
 public sealed class SteamException(SteamFailure code, int? apiResult = null) : IOException(code.ToString())
 {

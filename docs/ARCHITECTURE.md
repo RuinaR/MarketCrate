@@ -1,5 +1,11 @@
 # MarketCrate — 아키텍처 (최초 Mock 구현 / 후속 계획)
 
+## 0.16.0 생산 구성 경계
+
+App→ProductionShellViewModel→SteamWorkspaceViewModel/DiagnosticsViewModel만 일반 시작 경로다. 소유권은 App.owner→Shell.Dispose→Steam.Dispose/preferences.Dispose로 정리하며 기본 생성은 Steam 로그인/HTTP/거래를 시작하지 않는다. Demo 저장소 lease에 실제 앱 시작이 종속되지 않는다. 비밀 없는 SQLite 설정과 거래 저널은 별도이다.
+
+Wallet HTTP는 root→정확한 eligibilitycheck/goto→고정 root 복귀 상태를 추적한다. 서버 CookieContainer 수신과 동일 origin을 유지하며 상태/반복/권한 제한을 우회하지 않는다. Release에서 Mock 실행 코드·데이터 모델·legacy 화면은 미컴파일, 개발 테스트는 분리된 참조 속성으로 유지한다. enum/기존 저널 JSON 계약을 임의 재번호화하지 않는다.
+
 ## 14차 읽기 증거 계층
 
 ### 15차 세션 조건부 거래

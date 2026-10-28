@@ -1,5 +1,13 @@
 # Windows 배포 준비 — 3차 구현
 
+## 0.16.0 LiveOnly 배포
+
+Release 기본 MarketCrateProduction=true, 개발/테스트는 false이다. Directory.Build.targets의 조건부 심볼로 Core/Infrastructure/App의 Mock 구현과 legacy MainView BAML을 제외한다. 테스트 프로젝트의 ProjectReference는 명시적 false여서 기존 회귀를 유지한다.
+
+Publish 및 Publish-SelfContained는 배포검사에 더해 Test-ProductionAssembly를 필수 실행한다. PEReader로 타입·메서드·BAML 리소스만 읽으며 앱/네이티브 DLL을 실행하지 않는다. Mock 구현/모델/저장소/재시도·구 USD fixture 파서가 있거나 실제 Shell/서비스가 없으면 실패한다. distribution.json RuntimeMode=LiveOnly를 기록한다. LiveOnly 패키지를 오프라인 Mock QA 패키지로 감싸는 작업도 거부한다.
+
+기존 Demo 데이터는 읽거나 제거하지 않는다. 실제 SteamExperimental 저널 위치는 유지하고 새 비밀정보 없는 설정만 LOCALAPPDATA/MarketCrate/Preferences/preferences.sqlite3에 저장한다. 업데이트/롤백 시 파일을 초기화하지 않는다. 소스 테스트·로그·DB·인증·개발파일은 ZIP에서 제외한다.
+
 ## 0.15.0 배포 정책
 
 0.15.1 배포: 소스 d2ee9a4679e24854102f09355ff2d5f125f8c05a, `artifacts/releases/MarketCrate-0.15.1-wallet-d2ee9a4-win-x64.zip` (66,507,841바이트/412파일). SHA256 `106E89E7C801250C1C264F92DDC2BE87710A70CD3591BD09B38ADDFD9BE820F2`. Release/전체entry SHA/SourceCommit·CLR/WPF/SQLite·민감/개발파일 제외검사 PASS, 경고오류0. 실제EXE/지갑/계정은 미실행이며 해결완료 판정 아님. 0.15.0을rollback으로등록하고0.14/0.13·기존추출본/진단ZIP·DB/저널/인증/설정은보존했다.

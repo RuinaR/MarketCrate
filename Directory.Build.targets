@@ -1,0 +1,11 @@
+<Project>
+  <PropertyGroup Condition="'$(MarketCrateProduction)' == 'true'">
+    <DefineConstants>$(DefineConstants);MARKETCRATE_LIVE_ONLY</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(MarketCrateProduction)' != 'true'">
+    <DefineConstants>$(DefineConstants);MARKETCRATE_DEMO</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(MarketCrateProduction)' == 'true'">
+    <AssemblyMetadata Include="MarketCrate.Mode" Value="LiveOnly" />
+  </ItemGroup>
+</Project>

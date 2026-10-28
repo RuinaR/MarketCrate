@@ -17,7 +17,11 @@ public sealed partial class SteamWorkspaceViewModel
     public string ContractSummary => "마지막 파싱 관측 · "+(syntheticConnection?"합성 계약 (실서버 아님)":"실험 연결 (READ_ONLY_READY 판정 아님)")+"\n"+
         (readChecks.Count==0?"조회 증거 없음":string.Join("\n",readChecks.OrderBy(x=>x.Key).Select(x=>$"{x.Key} · {x.Value.Count}건 · {x.Value.Currency??"—"} · {x.Value.At:yyyy-MM-dd HH:mm:ss} UTC · 작업 {x.Value.Operation}")))+
         "\n원문·계정·자산ID·QR·토큰 제외. 조회 실패 시 기존 표는 마지막 관측이며 최신값으로 사용하지 마세요.";
+#if MARKETCRATE_LIVE_ONLY
+    public string ProductReadiness => "실제 Steam 연결 전용 · 서버 응답과 거래 계약을 확인하지 못한 기능은 차단합니다. 실제 거래 성공 검증을 뜻하지 않습니다.";
+#else
     public string ProductReadiness => "MOCK_READY · GUI_VERIFIED: 사용자 보고의 9차 기본 7경로만\nREAD_ONLY_READY / LIVE_CONTRACT_READY / LIVE_READY / RELEASE_READY: 미검증 또는 차단";
+#endif
     private void InitializeConnection(bool synthetic,Action<Uri>? open)
     {
         syntheticConnection=synthetic;

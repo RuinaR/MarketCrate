@@ -65,12 +65,17 @@ public interface IBatchJournal
     Task SaveAsync(BatchRecord record, CancellationToken cancellationToken);
 }
 
+#if MARKETCRATE_DEMO
 public interface IDemoJournal : IBatchJournal { void ClearDemo(); }
+#endif
 public enum ListingState { Listed, AwaitingSteamGuard, CancelRequested, Cancelled, Failed, Unknown, Submitted, SubmitRequested }
 public enum ListingAction { None, Cancel, Reprice, Registration }
+#if MARKETCRATE_DEMO
 public record MockListing(string ListingId, string Name, int Quantity, long BuyerPays, ListingState State,
     ListingAction Action = ListingAction.None, long? PendingPrice = null, int Attempt = 0, string? ReplacementId = null);
+#endif
 public enum DiagnosticCode { StoreOpened, BatchSaved, RetryStarted, ListingsSaved, ManagementRecovered, SettingsSaved, UiFailure, StorageFailure }
+#if MARKETCRATE_DEMO
 public record DiagnosticEntry(DateTimeOffset At, DiagnosticCode Code, int Count);
 public interface IDiagnosticStore { void RecordDiagnostic(DiagnosticCode code, int count = 0); IReadOnlyList<DiagnosticEntry> ReadDiagnostics(); }
 public interface IDemoDataStore
@@ -85,3 +90,4 @@ public interface IDemoDataStore
     void WriteEvidence(string requestKey, LineResult result);
     IReadOnlyList<BatchRecord> ReadBatches();
 }
+#endif

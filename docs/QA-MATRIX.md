@@ -1,5 +1,23 @@
 # 정상·오류·복구 QA 매트릭스 — 10차 (2026-10-28 KST)
 
+## 0.16.0 실제 전용 검증
+
+| 항목 | 결과 |
+|---|---|
+| root→자격확인→서버 쿠키 수신→고정 Market 복귀→실제 응답 파서 | 합성 HTTP PASS, 통화만 있으면 가격 단위 생성하지 않음 |
+| goto 외부/중첩/이중 인코딩/임의 query/fragment | PASS, 무전송 또는 첫 이동에서 중단 |
+| 자격 확인401/403/429 | PASS, 반환 요청 없음·기존 전역 제한 유지 |
+| 자격 확인200 미완료 | PASS, Wallet 권한 미확인·재전송 금지·독립 목록 유지 |
+| 순환/알 수 없는 Market 경로 | PASS, 제한된 요청 수 후 중단 |
+| 실제 전용 Shell·진단 명령·빈 서버 데이터·설정 복원 | 자체 WPF PASS, Demo/운영 저널 부작용 없음 |
+| 전체 기능/자체 WPF/배포 계약 | 235/235 ·50/50 ·14/14 PASS |
+| Release 구현/BAML 검사 | Mock 공급자/저장소/실행/구 UI·재시도 부재, 실제 서비스 존재 |
+| 개발 DLL을 Release로 검사 | 예상 fixture 코드 누출 사유로 거부 |
+| 자격 확인의 실제 사용자 원문 경로·지갑 성공 | UNVERIFIED |
+| 실제 GUI/계정/거래·설치·서명 | Codex 미실행 |
+
+증거는 ignored runtime/live-only-verify.txt·live-only-release-*-build.txt·live-only-negative-audit.txt·ui-tests/live-only-*.png. 기존 회귀를 삭제하거나 성공 기준을 낮추지 않았다. 실제 데스크톱/다른 프로세스는 조사하지 않았다.
+
 ## 0.15.1 Wallet302 패치
 
 검증: 기능227/227·비표시WPF48/48·배포계약14/14 PASS, FAIL0·경고오류0. 정리검사7 PASS/1 NOT VERIFIED(실제junction 환경제약) 유지. runtime/wallet-patch-verify.txt 및 최종core 재검사 증거. 실제Steam지갑 성공은 미검증이며 Codex 실계정/앱/거래 실행0. 최초75개 판정과 거래보호 변경없음.

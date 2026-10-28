@@ -8,4 +8,5 @@
     <ProjectReference Include="../MarketCrate.Core/MarketCrate.Core.csproj" />
     <None Update="ThirdParty/QrCodeGenerator/LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" TargetPath="licenses/QrCodeGenerator-LICENSE.txt" />
   </ItemGroup>
+  <ItemGroup Condition="'$(MarketCrateProduction)' == 'true'"><Compile Remove="DemoProviders.cs;SqliteDemoStore.cs;FileBatchJournal.cs" /></ItemGroup>
 </Project>

@@ -25,6 +25,9 @@ public sealed class SteamExperimentalWorkspace : IDisposable
     public SteamExperimentalWorkspace(string isolatedDataDirectory, int appId, string contextId, string game,
         SteamTradingPolicy? policy = null, HttpMessageHandler? contractHandler = null, TimeProvider? clock = null,HttpMessageHandler? imageHandler=null)
     {
+#if MARKETCRATE_LIVE_ONLY
+        if(contractHandler is not null||imageHandler is not null||clock is not null||policy?.Enabled==true)throw new SteamException(SteamFailure.Disabled);
+#endif
         synthetic=contractHandler is not null;
         if(policy?.Enabled==true&&!synthetic)throw new SteamException(SteamFailure.Disabled);
         store = new(isolatedDataDirectory);Images=new(imageHandler);

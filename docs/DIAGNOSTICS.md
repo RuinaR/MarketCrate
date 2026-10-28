@@ -1,5 +1,11 @@
 # 진단 시스템 (10차, 2026-10-28 KST)
 
+## 0.16.0 자격 확인과 실제 전용 시작
+
+AppStart는 일반 실행 LiveSession, 개발 격리 QA만 IsolatedQa이다. 실제 Release에는 Demo 시작 경로가 없다. ReadContract의 RedirectEligibilityPath와 HTTP MarketEligibilityRedirect/MarketEligibilityReturn, hop 수로 왕복을 연결한다. OperationId/CorrelationId를 유지하며 원문 Location/goto/cookie/HTML/계정값은 남기지 않는다. 서버가 발급한 cookie만 현재 세션에서 수신하고 디스크 저장/외부 추출/위조하지 않는다.
+
+제공된 ZIP은 RedirectMarketOther/OtherQuery까지만 증명하며 실제 eligibilitycheck 여부를 확정하지 않는다. 새 정상 경로는 체크→정확한 복귀, 미완료/권한/속도 제한은 기존 분류로 중단한다. 설정 SQLite 실패는 기존 StorageDiagnostics에 연결하고 초기화로 숨기지 않는다. 정상 사용자 앱에는 실제 JSONL 로거가 연결되며 테스트 렌더의 로거 미연결 표시는 격리 환경만 해당한다.
+
 ## 0.15.1 Wallet 리다이렉트 증거
 
 구버전 OtherRedirect만으로는 목적지·지갑미설정·인증문제를 구분할 수 없었다. ReadContract4202에 고정category를 추가: PreviousState=RedirectCommunity/Store/LoginHost/External/UnsafeAuthority, Reason=RedirectMarketSlash/MarketNoSlash/MarketOther/LoginPath/Account/Security/Root/OtherPath, NewState=RedirectNoQuery/LanguageQuery/OtherQuery/Fragment, Count=hop0/1. 모든 값은 내부화이트리스트 상수이며 원본host·Location·path·query이름/값·fragment·계정식별자는 기록하지 않는다. OperationId/CorrelationId 유지.

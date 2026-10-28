@@ -30,5 +30,8 @@ Copy-Item -LiteralPath (Join-Path $corePack 'LICENSE.TXT') -Destination (Join-Pa
 Copy-Item -LiteralPath (Join-Path $corePack 'THIRD-PARTY-NOTICES.TXT') -Destination (Join-Path $licenseDirectory 'NETCore-THIRD-PARTY-NOTICES.txt')
 Copy-Item -LiteralPath (Join-Path $desktopPack 'LICENSE') -Destination (Join-Path $licenseDirectory 'WindowsDesktop-LICENSE.txt')
 $metadata = Assert-Distribution $output SelfContained
+pwsh -NoProfile -File scripts/Test-ProductionAssembly.ps1 -Directory $output
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+$metadata | Add-Member -NotePropertyName RuntimeMode -NotePropertyValue LiveOnly
 $metadata | ConvertTo-Json -Depth 6 | Set-Content -LiteralPath (Join-Path $output 'distribution.json') -Encoding utf8
 Write-Output 'PASS self-contained win-x64 static inspection: bundled CLR/WPF/SQLite, runtime config, licenses and data/debug exclusion. App/guest/installation NOT executed.'

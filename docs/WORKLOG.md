@@ -1,5 +1,13 @@
 7차 Release 검사 수정: SQLite 파일명 제외 정규식이 정상 의존성 Microsoft.Data.Sqlite.dll까지 거부했다. DB/sidecar 확장자 끝으로 한정해 수정하고 DLL 허용·sqlite/sqlite3-wal/db-shm/.env/session.json/private.key 차단 7개 파일명 회귀를 확인했다. 실제 비밀파일·DB는 생성하지 않았다. 최초 publish는 이 정적 검사에서 FAIL이며 실행파일은 실행하지 않았다.
 
+## 2026-10-29 — 0.16.0 실제 전용 Release
+
+main7c7ba05 clean에서 시작. 사용자 지정 ZIP 하나만 OpenRead하여 정제된 분류를 확인했다. 원문 ZIP/로그·계정 정보는 복사/커밋하지 않았다. 새 증거는 Community/Market하위/추가query 이동이다. 공식 공개 자격 확인 URL의302→Market 복귀와 공개 구현 소스를 대조해 좁은 상태 머신으로 구현했다. 사용자 원문 목적지까지 확정한 것은 아니다.
+
+일반 App의 Demo 초기화·Mock UI 합성을 제거하고 실제 Shell/진단/별도 SQLite 설정으로 연결했다. Release는 Mock 서비스/관리 코드/구 화면/BAML/데이터모델·구 USD fixture 파서를 제외한다. 명시적 개발 테스트는 기존 소스를 유지한다. 소스 삭제/사용자 DB 초기화 없이 배포 경계를 분리했다. Publisher에 필수 메타데이터 검사와 LiveOnly 표기를 추가하고 LiveOnly 패키지의 Mock QA 래핑을 거부한다.
+
+LiveOnlyTests8개(자격 왕복/goto공격/401403429/미완료/루프/알 수 없는 이동/설정 보존)·자체UI2개 추가. 234/50/14 PASS. 초기 전처리 분기 편집 오류는 빌드에서 발견해 수정 후 Debug/Release 경고·오류0을 확인했다. RTB 연결/진단 직접 검토, 실제 창/계정/거래/다른 앱 접근0. metadata 양성 검사 및 개발 DLL 음성 검사(구 fixture 파서 검출) 확인. 최종 배포 hash/커밋은 확정 기록에 추가한다.
+
 ## 2026-10-29 — 0.15.1 Wallet302 진단 후속
 
 0.15.1 배포: 소스 d2ee9a4679e24854102f09355ff2d5f125f8c05a, `artifacts/releases/MarketCrate-0.15.1-wallet-d2ee9a4-win-x64.zip` (66,507,841바이트/412파일). SHA256 `106E89E7C801250C1C264F92DDC2BE87710A70CD3591BD09B38ADDFD9BE820F2`. Release/전체entry SHA/SourceCommit·CLR/WPF/SQLite·민감/개발파일 제외검사 PASS, 경고오류0. 실제EXE/지갑/계정은 미실행이며 해결완료 판정 아님. 0.15.0을rollback으로등록하고0.14/0.13·기존추출본/진단ZIP·DB/저널/인증/설정은보존했다.

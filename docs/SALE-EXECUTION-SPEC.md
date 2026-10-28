@@ -1,5 +1,9 @@
 # MarketCrate — Sale Execution Product Contract
 
+## 0.16.0 실제 전용 배포 경계
+
+Release의 SaleBatchCoordinator는 IAuthorizedListingExecutor.CanExecute/CanReconcile을 요구하며 Mock capability를 실행 허가로 사용하지 않는다. Mock 재시도·Demo 예약·Mock 결과 생성은 개발 구성에만 존재한다. 일반 시작은 실제 서버 공급자와 기존 SteamStateStore이며 실패를 합성 성공으로 대체하지 않는다. 단일 승인/불변 snapshot/저널 선기록/직렬 요청/Guard 수동 승인/Unknown 및 반환 인과 보호는 변경하지 않는다. 실제 거래는 기본 OFF이고 미검증 계약을 강제로 활성화하지 않는다.
+
 ## 15차 조건부 실행 계약 (이전 차수 제한을 대체하는 현재 범위)
 
 제품 기본값은 SteamTradingPolicy.Blocked. 사용자가 비공식 위험을 검토하고 이번 세션을 명시적으로 선택한 경우에만 EnableUserTradingAsync가 읽기 preflight를 수행한다. Valve 허가 여부와 기술적 조건은 별개다. 단순 체크박스/ContractTest/과거설정은 계정에 바인딩된 실행권한을 만들지 않는다. QR 새시작/로그아웃/동의해제는 binding을 제거한다. 활성화는 저장하지 않는다. 같은 게임 기존 등록fee 비교가 없으면 first-bootstrap도 차단하며 미확인KRW/스택 계약을 상수로 대체하지 않는다.
