@@ -2,6 +2,8 @@
 
 ## 13차 읽기 전용 자가검증 (2026-10-29 KST)
 
+13차 배포: 구현 `dd7e27635104c02fe53c0e282242e9d598c04a4b` origin/main push. **0.13.0 x64 self-contained Release/정적 파일검사 PASS**, 경고·오류0, CLR/WPF10.0.9·SQLite 네이티브·라이선스 포함. `artifacts/MarketCrate-0.13.0-stage13-dd7e276-win-x64.zip` **78.31MiB/412파일**, ZIP 전체 원본 hash 및 ProductVersion/SourceCommit 일치. SHA256 `2B76B0ACB3440CCBA5F2C2364AAD46BA458D10E89E329A8456400A0ED83BD7C8`. DB·로그·인증·PDB/개발파일 제외, 이전 ZIP·사용자 데이터 보존. 실제 EXE/서버 로그인·읽기·거래·설치·서명 미실행. 최소 사용자 절차는 READ-ONLY-VALIDATION의0.13.0절차를 따른다.
+
 기능 **199/199**, 비표시 WPF **45/45**, 배포 파일계약 **14/14 PASS**, FAIL0/Debug 경고0·오류0. 기존187/42/14 회귀 유지. 실제 인증/서버/GUI/설치 검증이 아니다.
 
 | 새 검사 | 단언한 증거 |

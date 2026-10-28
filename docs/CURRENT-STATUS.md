@@ -2,6 +2,8 @@
 
 ## 13차 — 기존 인증 활용 검토와 읽기 전용 자가검증 (2026-10-29 KST)
 
+13차 배포: 구현 `dd7e27635104c02fe53c0e282242e9d598c04a4b` origin/main push. **0.13.0 x64 self-contained Release/정적 파일검사 PASS**, 경고·오류0, CLR/WPF10.0.9·SQLite 네이티브·라이선스 포함. `artifacts/MarketCrate-0.13.0-stage13-dd7e276-win-x64.zip` **78.31MiB/412파일**, ZIP 전체 원본 hash 및 ProductVersion/SourceCommit 일치. SHA256 `2B76B0ACB3440CCBA5F2C2364AAD46BA458D10E89E329A8456400A0ED83BD7C8`. DB·로그·인증·PDB/개발파일 제외, 이전 ZIP·사용자 데이터 보존. 실제 EXE/서버 로그인·읽기·거래·설치·서명 미실행. 최소 사용자 절차는 READ-ONLY-VALIDATION의0.13.0절차를 따른다.
+
 기준 main/origin3684d07 clean/fetch 일치. AGENTS/정의/상태/작업기록·인증/읽기/진단 호출 경로 확인. 공식 문서·공개 QR 정의만 GET, 실제 앱/계정 인증·조회·거래·타 프로그램 접근0.
 
 - 공식 OpenID는 브라우저에서 SteamID를 확인하는 수단이고 Community 장터 인증 권한을 주는 경로로 확인되지 않았다. OAuth는 Valve Client ID/권한 협의가 필요한 제한된 서비스다. 기존 세션을 데스크톱 앱으로 전달하는 공식 공개 경로를 찾지 못했으므로 쿠키·클라이언트 파일·자격 증명·프로세스를 읽는 재사용은 구현하지 않았다. 공식 장터 직접 관리 버튼은 사용자 브라우저 안에서만 기존 로그인을 활용한다. 앱 OpenID/OAuth 로그인은 미구현이며 기존 QR 실험 어댑터만 유지한다.

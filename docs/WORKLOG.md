@@ -2,6 +2,8 @@
 
 ## 2026-10-29 KST — 13차 기존 인증 검토·자가검증
 
+13차 배포: 구현 `dd7e27635104c02fe53c0e282242e9d598c04a4b` origin/main push. **0.13.0 x64 self-contained Release/정적 파일검사 PASS**, 경고·오류0, CLR/WPF10.0.9·SQLite 네이티브·라이선스 포함. `artifacts/MarketCrate-0.13.0-stage13-dd7e276-win-x64.zip` **78.31MiB/412파일**, ZIP 전체 원본 hash 및 ProductVersion/SourceCommit 일치. SHA256 `2B76B0ACB3440CCBA5F2C2364AAD46BA458D10E89E329A8456400A0ED83BD7C8`. DB·로그·인증·PDB/개발파일 제외, 이전 ZIP·사용자 데이터 보존. 실제 EXE/서버 로그인·읽기·거래·설치·서명 미실행. 최소 사용자 절차는 READ-ONLY-VALIDATION의0.13.0절차를 따른다.
+
 - 기준main/origin3684d07 clean/fetch 확인, AGENTS·제품/현재상태/작업기록·인증/읽기/진단 소스 감사. 공식OpenID/OAuth/Steamworks ticket와 공개QR 정의 재확인. 공식 장터 브라우저 내부 로그인 활용과 앱 Market 세션 권한을 구분, 지원 근거 없는 세션 전달/쿠키추출/자격증명 접근·OpenID로 Market권한 가장을 구현하지 않음.
 - 기존 provider에 첫 페이지 probe를 공통 page 함수로 추가, fee wallet/structure 단계를 분리. 불변 SteamReadCheckPlan·순차 실행기(거래/저널 명령 없음)와 사용자 범위/실행 동의·9단계 결과/중단·정제 진단4204/UI 탐색을 구현. 전체 목록 캐시·선택/수량·저널 유지. 일반 조회 실패와 인증 상태 분리 유지.
 - 감사에서 Wallet HTML 마커 부재를 Authentication으로 추측하던 오류 수정. QR transfer 쿠키 Secure/비어 있지 않음·미만료 검사. publisher rate/지갑·호가 통화 상충을 특정 원인으로 실패 처리. 실제 서버의 새 필드를 추정하지 않았으며 실응답 불일치를 확인한 것으로 과장하지 않는다.
