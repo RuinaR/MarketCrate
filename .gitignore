@@ -1,0 +1,48 @@
+# .NET / IDE build output
+**/bin/
+**/obj/
+**/TestResults/
+.vs/
+.vscode/*.log
+.idea/
+*.user
+*.suo
+*.cache
+*.pdb
+
+# Sensitive local config, auth, credentials and responses
+.env
+.env.*
+!.env.example
+*secret*
+*credential*
+*session*.json
+*cookie*.json
+*.key
+*.pem
+*.pfx
+*.p12
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite-*
+**/local_data/
+**/secrets/
+**/runtime/
+**/logs/
+**/dumps/
+*.dmp
+*.mdmp
+
+# Local releases and diagnostic artifacts
+dist/
+release/
+artifacts/
+*.tmp
+*.bak
+*.zip
+*.log
+!docs/WORKLOG.md
+
+# Keep normal project source/assets and documentation under version control.
