@@ -1,5 +1,17 @@
 # MarketCrate — 아키텍처 (최초 Mock 구현 / 후속 계획)
 
+## 2차 구현 — 2026-10-28 (아래 최초 구현 설명보다 우선)
+
+- `MainWindow`는 일반 앱 실행 시의 호스트만 담당하고 실제 화면은 `MainView : UserControl`로 분리했다. `MarketCrate.UiTests`는 plain Application의 리소스만 로드해 MainView를 직접 생성하며 App.OnStartup/Window/Popup을 실행하지 않는다.
+- 카드의 `VirtualizingTilePanel : VirtualizingPanel, IScrollInfo`는 고정 258×312 DIP 셀, viewport+overscan만 생성하고 WPF recycling generator를 사용한다. 목록은 기존 VirtualizingStackPanel을 유지한다. 필터 Reset·끝 스크롤·모드 전환을 검사한다.
+- `RangeObservableCollection.ReplaceAll`과 전체 선택의 알림 일괄 처리로 아이템 수만큼 UI Reset/합계를 다시 계산하지 않는다. 결과 화면도 변경된 행만 교체한다.
+- `SalePlanner`는 공유 호가 잔량 소비를 합계·검토에서 재사용한다. 최종 명령에서 현재 inventory/가격/잔량·선택 수량을 재대조한다. coordinator도 과거 배치의 예약 수량을 검사한다.
+- 프로덕션 구성의 현재 저장소는 **합성 데이터 전용 `SqliteDemoStore`**다. `IDemoJournal`/`IDemoDataStore`, SQLite 스키마 v1 `objects(kind,id,value)`에 설정/인벤토리/활성 배치/배치 이력/합성 결과 증거/판매 목록을 저장한다. 네이티브 SQLite 의존성은 앱 저장소에만 사용하며 타 프로세스 주입/호킹이 아니다.
+- 단일 connection/파일 lease, parameterized SQL, transaction, FULL 동기화, 미래 스키마 거절, 손상 스냅샷 검사. JSON v1은 동일 lease 하에서 단 한 번 이관하며 원본 보존·migration tombstone으로 삭제 후 재이관을 차단한다. 자동 백그라운드 DB 작업/네트워크는 없다.
+- `MockListingExecutor`의 요청 키별 결과는 SQLite의 **합성 서버 증거**이며 실제 서버가 아니다. 명시적 fixture 결과 주입 이후 대조만 Listed를 확정한다. 근거가 없으면 Unknown 유지, Ready 자동 재시도 없음.
+- `MockOrderProjection`은 배치 결과를 판매 목록으로 연결한다. `MockCancellation`은 최종 취소 검토의 선택 전체를 처리하며 intent/개별 결과를 저장한다. 중단된 CancelRequested는 Unknown으로 복구한다. 취소된 요청 키의 예약만 명시적으로 해제하고 취소/실패 결과를 배치 대조가 덮어쓰지 않는다.
+- DB 설정·코어 검증은 콘솔 러너, WPF 렌더·상태·바인딩은 독립 STA 콘솔 러너에서 순차 검사한다. 실제 모니터 DPI/사용자 입력/팝업·설치/다중 활성 배치/장시간 장애 검증은 미완료다.
+
 ## 솔루션
 - `src/MarketCrate.App`: WPF UI, MVVM/ViewModels, 커스텀 ControlTemplates, 애니메이션 및 라우팅.
 - `src/MarketCrate.Core`: 순수 데이터 모델, 가격 산식, 품목별 주문 매핑, 배치 스냅샷/상태 머신. 외부 네트워크 참조 없음.

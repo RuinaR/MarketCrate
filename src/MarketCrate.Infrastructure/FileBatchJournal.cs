@@ -5,7 +5,7 @@ namespace MarketCrate.Infrastructure;
 
 // Single-writer lock is held for the lifetime of the app/journal, including across processes.
 // The demo stores synthetic IDs only. SQLite migrations are deferred until real permitted data exists.
-public sealed class FileBatchJournal : IBatchJournal, IDisposable
+public sealed class FileBatchJournal : IDemoJournal, IDisposable
 {
     private readonly string path;
     private readonly FileStream lease;
@@ -24,7 +24,7 @@ public sealed class FileBatchJournal : IBatchJournal, IDisposable
         if (record.SchemaVersion != 1 || record.Snapshot is null || record.Snapshot.Lines.IsDefaultOrEmpty || record.Results.IsDefault || record.Results.Any(x => !Enum.IsDefined(x.State)) || record.Results.Length != record.Snapshot.Lines.Length ||
             !record.Results.Select(x => x.LineId).SequenceEqual(record.Snapshot.Lines.Select(x => x.LineId)))
             throw new InvalidDataException("지원하지 않거나 손상된 저널: 자동 실행 차단");
-        return record;
+        return BatchRecordGuard.Validate(record);
     }
     public async Task SaveAsync(BatchRecord record, CancellationToken cancellationToken)
     {

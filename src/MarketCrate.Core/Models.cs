@@ -55,3 +55,19 @@ public interface IBatchJournal
     Task<BatchRecord?> LoadAsync(CancellationToken cancellationToken);
     Task SaveAsync(BatchRecord record, CancellationToken cancellationToken);
 }
+
+public interface IDemoJournal : IBatchJournal { void ClearDemo(); }
+public enum ListingState { Listed, AwaitingSteamGuard, CancelRequested, Cancelled, Failed, Unknown, Submitted }
+public record MockListing(string ListingId, string Name, int Quantity, long BuyerPays, ListingState State);
+public interface IDemoDataStore
+{
+    string? ReadSetting(string key);
+    void WriteSetting(string key, string value);
+    void SaveInventory(IReadOnlyList<InventoryAsset> assets);
+    IReadOnlyList<InventoryAsset> ReadInventory();
+    IReadOnlyList<MockListing> ReadListings();
+    void SaveListings(IReadOnlyList<MockListing> listings);
+    LineResult? ReadEvidence(string requestKey);
+    void WriteEvidence(string requestKey, LineResult result);
+    IReadOnlyList<BatchRecord> ReadBatches();
+}

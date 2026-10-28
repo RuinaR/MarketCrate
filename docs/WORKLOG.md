@@ -19,3 +19,17 @@
 - 다음: 승인된 앱 자체 창 QA, 남은 컨트롤/대량 UI, Valve 허용 경로 검증. 실등록 목표는 LIVE_INTEGRATION_BLOCKED 유지. Git 결과는 아래 후속 기록/최종 보고에 추가.
 - 마감 검토: C#/XAML 소스 서식 정리. 솔루션 기반 formatter는 격리 환경 named pipe 권한으로 실패해 권한 확대 없이 폴더/파일 formatter로 대체했다. XAML 정리 후 앱 빌드도 PASS. staged diff의 추가 EOF 공백을 제거했고, 금지 API/민감정보 패턴 검색 결과 일치 없음. 빌드 출력/테스트 runtime/비밀 설정은 Git 제외.
 - Git 결과: 구현 커밋 `9b904bf` (`feat: implement MarketCrate WPF mock workspace and durable batch flow`), `origin/main` 정상 push 성공 (`8fcad5c..9b904bf`). 로컬 .git 쓰기 제한에는 승인된 Git 명령만 사용했고, 강제 push/원격 변경/타 브랜치 조작 없음. 이 결과 기록은 별도 문서 커밋으로 누적한다.
+
+## 2026-10-28 — 2차: 창 없는 UI 검증·SQLite·취소/복구
+
+- 시작: HEAD `65e3ef4`, 작업 트리 clean. `git fetch origin main` 후 원격과 동일함을 확인했다. 이번 사용자 승인은 별도 STA 자체 컨트롤 렌더이며 실제 창·활성화·전역 입력·타 앱 접근으로 확대하지 않았다.
+- 화면: MainWindow에서 MainView/UserControl 분리, detached STA 검사 프로젝트 추가. RenderTargetBitmap으로 크기/출력 밀도·검토 오류·배치 결과·취소·컨트롤 상태 PNG 생성/시각 검토. Application.Windows=0, PresentationSource=null 확인. VSM Focus 상태는 시각 모의이며 실제 포커스 이동 없음.
+- UI 개선: 검색 placeholder·원형 Radio·상태 색 차이·Stepper 범위/peer/overflow/템플릿 핸들러·스크롤 thumb 최소 크기, inventory 전용 context menu 범위. 카드 VirtualizingTilePanel/recycling과 목록 가상화, 필터·전체 선택 알림 일괄 처리, 결과 변경 행만 갱신.
+- 렌더 재현으로 찾은 문제: WPF generator 초기화 순서 및 재활용된 컨테이너가 created=false로 돌아올 때 시각 트리에 재부착하지 않는 누락을 수정. ToolTip은 부모에 붙일 수 없어 독립 컨트롤로 렌더했고, 상태 clock은 테스트 dispatcher의 렌더 큐만 처리해 색 차이를 확인했다.
+- 저장: 로컬 캐시 Microsoft.Data.Sqlite 8.0.31/SQLitePCLRaw 2.1.12 사용. CLI_HOME과 별개인 기존 캐시를 NUGET_PACKAGES로 지정해 오프라인 복원 문제 해결. 설치/다운로드 없음. SQLite v1·transaction/FULL/단일 lease, 설정/합성 inventory/배치/증거/판매 목록·삭제 UX, JSON 일회 이관/원본 보존/재이관 방지.
+- 도메인: 공유 호가를 예상 합계와 검토에 공통 적용해 기존 계산 불일치를 해결. 최종 직전 현재 inventory/선택 수량/가격·잔량 재검증. 다른 활성 배치 차단, immutable snapshot/확정 결과 역행 거절, 보관 후에도 예약 수량 중복 차단.
+- 연결: Mock 요청 증거로 응답 유실/재시작 대조, 수동 fixture→Listed→판매 목록 반영. 개별 선택→취소 검토→선택 전체 Mock 취소→부분 결과 저장. 취소 불명은 Unknown, 취소 완료된 요청 키만 예약 해제. 실제 Steam Guard/네트워크 동작 없음.
+- 최종 검증: `scripts/Verify.ps1`, 5개 프로젝트 단일 빌드 경고0/오류0, 도메인/SQLite/MVVM **41/41 PASS**, detached UI **10/10 PASS**. 실제 SQLite 롤백/스키마99/손상/저널 재열기/JSON 이관·삭제/상태 보존 검사 포함.
+- 자원/성능: 무거운 빌드·테스트를 병렬 실행하지 않았다. 10,000개 카드에서 실현된 컨테이너 시작9/끝7. 마지막 fixture+복수 렌더 관측259ms는 전후 속도 향상/장기 부하 인증이 아니다. 소프트웨어 렌더링, 전역 시스템 설정 변경 없음.
+- 미검증/차단: 실제 입력·모니터 DPI·열린 팝업·스크린리더·장시간/전원 차단·설치·가격 변경·수동 재시도. 실제 Steam 로그인/조회/판매/Guard·타 앱 조사/조작/데스크톱 캡처 없음. 실등록 필수 목표는 LIVE_INTEGRATION_BLOCKED 유지.
+- Git: 소스/테스트/누적 문서/패키지 잠금·고지만 커밋한다. 생성 이미지·DB·로그·빌드 바이너리·인증정보는 제외한다. 구현 및 push 결과는 아래 후속 기록에 추가한다.

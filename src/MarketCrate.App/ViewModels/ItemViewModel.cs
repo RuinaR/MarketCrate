@@ -27,6 +27,7 @@ public sealed class ReviewLineViewModel : Observable
     public int Quantity { get; }
     public long SuggestedPrice { get; }
     public DateTimeOffset CapturedAt { get; }
+    public string MarketTimeDisplay => $"시세 {CapturedAt.ToOffset(TimeSpan.FromHours(9)):MM-dd HH:mm:ss} KST";
     public string Source { get; }
     private long price;
     private readonly Action changed;

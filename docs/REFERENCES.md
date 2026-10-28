@@ -1,5 +1,13 @@
 # MarketCrate — 외부 자료·레퍼런스
 
+## 2차 재확인 / 채택 (2026-10-28 KST)
+
+- https://steamhelper.app/ 와 https://cslytics.com/ 공개 소개를 재조회했다. 선택→단가 검토, 게임별 자산/판매 상태 분리, 배치 활동/대기 표시를 참고했다. 제품 설치·로그인·실행이나 소스/그래픽 복사는 하지 않았다. 기존 AGPL/미확인 자산 라이선스 제한은 유지한다.
+- https://learn.microsoft.com/en-us/dotnet/desktop/wpf/graphics-multimedia/how-to-create-a-bitmap-from-a-visual : 공식 Visual→RenderTargetBitmap 경로를 확인해 자체 컨트롤 렌더에 채택했다. 화면 캡처 API를 사용하지 않는다. 예제 코드를 복사하지 않고 테스트 뷰에 맞춰 작성했다.
+- https://learn.microsoft.com/en-us/dotnet/standard/data/sqlite/transactions : 공식 트랜잭션·단일 작성자 동시성 설명을 확인했다. 설정/저널과 배치 이력을 transaction으로 갱신하고 실제 실패 롤백을 검사한다.
+- Microsoft.Data.Sqlite/Core 8.0.31 (MIT), SQLitePCLRaw 계열 2.1.12 (Apache-2.0): 기존 로컬 NuGet 캐시의 `.nuspec` 라이선스/종속성 메타데이터를 직접 확인하고 채택했다. 패키지 설치/다운로드 없이 캐시를 사용한다. 버전/해시는 packages.lock.json, 고지는 THIRD-PARTY-NOTICES.md에 기록한다. 전체 취약점·배포 라이선스 감사 완료를 주장하지 않는다.
+- 외부 제품의 거래 자동화/인증 방식은 채택하지 않았다. 실제 Steam 쓰기 허용 근거를 새로 확보한 것이 아니므로 IntegrationBlocked를 유지한다.
+
 > 확인일: **2026-10-28 KST**. 웹 문서 조회 도구로 공개 페이지/본문/소스 구조를 확인했다. 브라우저 실행·설치·로그인·거래·제품 자체 실행·화면 캡처는 하지 않았다. 홍보 내용은 서비스의 주장이지 독립 검증이나 Valve 허가가 아니다. 외부 코드·이미지·문구는 제품에 복사하지 않았다.
 
 | 출처 / 확인 결과 | 기능·구조에서 참고한 점 | 라이선스 / 채택·미채택 |

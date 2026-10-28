@@ -1,5 +1,33 @@
 # MarketCrate — QA 체크리스트 (자동 검사 완료 / GUI 미실행)
 
+## 2차 최종 결과 — 2026-10-28 KST
+
+이 절이 아래 최초 구현 기록보다 최신이다. 실제 창은 표시하지 않았으며 WPF 컨트롤 렌더링은 수행했다.
+
+| 검사 | 결과 | 범위/제한 |
+|---|---|---|
+| 솔루션 빌드 | PASS | 5개 프로젝트, 경고 0/오류 0, 단일 빌드 작업 |
+| 도메인·SQLite·MVVM | 41/41 PASS | 기존 회귀 포함, synthetic only |
+| detached STA WPF | 10/10 PASS | Window/PresentationSource 없음, 자체 렌더·모의 상태 |
+| 10,000개 카드·목록 | PASS | 생성 컨테이너 시작 9/끝 7, 재활용·끝 스크롤·Reset·모드 전환 |
+| 비트맵 밀도/크기 | PASS | 1100×700~1600×900 DIP, 96/120/144/192 DPI 출력 |
+| 실제 입력/모니터 DPI/팝업/스크린리더 | NOT VERIFIED | 승인 범위 밖, 실제 창·포커스·입력 사용 안 함 |
+| Steam 로그인/읽기/등록/Guard | BLOCKED / NOT VERIFIED | 실제 어댑터 없음 |
+| 장시간 부하·전원 차단·설치 | NOT VERIFIED | 짧은 합성 검사로 인증하지 않음 |
+
+- [x] 동일 품목 공유 매수 잔량, 합계/검토 단일 경로, 50개 합성 수량 보존 케이스.
+- [x] 최종 직전 자산 수량 감소/누락·호가 변경 차단, 이중 실행·다른 활성 배치·예약 중복·상태 역행 차단.
+- [x] SQLite 재시작·설정/inventory/증거 보존, 트랜잭션 롤백, schema99/null 손상 차단, JSON 원본 보존·일회 이관.
+- [x] 응답 유실 뒤 재시작은 합성 증거와 대조만 수행, 증거 없는 Unknown 유지, Ready 자동 재개 없음.
+- [x] 배치 결과→판매 목록→개별 선택→취소 검토→부분 취소/실패, 취소 intent 복구, 취소된 요청의 예약만 해제.
+- [x] 가격 변환 오류 시 검토 명령 차단·검토 닫기 후 오류 복구, 단일 최종 명령·완료 결과 렌더.
+- [x] 버튼 Normal/Hover/Pressed/Focus/Disabled VSM 렌더의 실제 색 차이, 선택 상태 및 Radio 원형, Stepper managed RangeValue/상한 overflow, Tooltip 템플릿 자체 렌더.
+- [ ] 실제 호버 입력·키보드 Tab/Enter/Esc/휠·팝업 외부 클릭, 스크린리더/모니터 DPI 동작. 시각 상태 모의를 실제 입력 검증으로 표시하지 않음.
+
+생성/시각 검토한 대표 파일: `runtime/ui-tests/inventory.png`, `inventory-100.png`~`inventory-200.png`, `review.png`, `review-error.png`, `batch-pending.png`, `batch-complete.png`, `cancel-review.png`, `listings-results.png`, `control-states.png`, `large-inventory.png`, `large-end.png`, `large-list.png`, `empty.png`, `tooltip-template.png`. 이미지/DB/런타임 로그는 Git에 포함하지 않는다.
+
+이전 회귀 중 검토 열린 상태에서 배경 선택 해제를 하던 테스트는 실제 사용자 경로인 **검토 닫기→선택 해제**로 수정했다. 다른 활성 BatchId 호출은 조용히 이전 결과를 반환하는 대신 예외로 차단하도록 테스트 계약을 강화했다. 보호 기준을 완화하지 않았다.
+
 표시: `[ ]` 미검증 / `[x]` 검증 완료. 실행한 적 없는 테스트는 통과 처리 금지.
 
 ## 2026-10-28 실제 결과

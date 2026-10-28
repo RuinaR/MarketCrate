@@ -8,14 +8,15 @@ namespace MarketCrate.App;
 
 public partial class App : Application
 {
-    private FileBatchJournal? journal;
+    private SqliteDemoStore? journal;
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
         RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
         // No forced activation. A second instance exits without touching the first instance.
-        try { journal = new FileBatchJournal(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MarketCrate", "Demo")); }
+        try { journal = new SqliteDemoStore(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MarketCrate", "Demo")); }
         catch (IOException) { Shutdown(2); return; }
+        catch (Exception error) when (error is Microsoft.Data.Sqlite.SqliteException or System.Text.Json.JsonException or InvalidDataException) { Shutdown(3); return; }
         var vm = new MainViewModel(new DemoDataProvider(), journal);
         var window = new MainWindow { DataContext = vm };
         MainWindow = window;

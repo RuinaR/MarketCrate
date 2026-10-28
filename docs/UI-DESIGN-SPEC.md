@@ -1,5 +1,15 @@
 # MarketCrate — UI/UX & Custom Controls
 
+## 2차 구현 / 승인된 검증 범위 (2026-10-28)
+
+- MainView를 최상위 창 없이 생성해 보관함·검토·배치 대기/결과·판매 취소 검토/결과를 자체 비트맵으로 렌더한다. 실제 데스크톱 픽셀을 읽는 캡처가 아니다.
+- 1100×700, 1280×800, 1380×820, 1600×900 DIP 범위와 96/120/144/192 DPI 비트맵 출력 밀도를 확인한다. 물리 모니터 DPI 전환, OS 배율/해상도 변경은 하지 않는다.
+- Button CommonStates/FocusStates의 Normal/MouseOver/Pressed/Focused/Disabled를 VSM으로 직접 전환하여 시각 차이를 확인한다. 실제 마우스/키보드 focus 이벤트를 발생시킨 검증은 아니다. Check/Radio/Toggle의 선택 상태·Radio 원형 표시, 검색 placeholder·가격 오류·비활성 명령·Tooltip 템플릿을 검사한다.
+- ScrollBar의 작은 thumb 최소 크기, NumericStepper의 범위 coercion/상한 overflow/템플릿 재적용 이벤트·managed RangeValue peer를 보완한다. 실제 휠/스크린리더의 동작 인증은 아니다.
+- 카드와 목록 모두 가상화한다. 카드 높이는 고정이며 매우 긴 이름·사용자 폰트 확대에 대한 전체 접근성 검증은 남는다. 팝업은 열지 않으므로 ComboBox/ContextMenu의 실제 열림/닫힘·화면 경계 보정은 NOT VERIFIED.
+- 판매목록의 개별 체크→취소 검토→한 번의 Mock 취소→개별 결과를 연결한다. 배치 게시 결과도 판매목록에 반영한다. 가격 변경/실제 취소는 계속 차단한다.
+- 단계별 결과 이미지는 `runtime/ui-tests/`에 생성하며 Git에 넣지 않는다. 실제 검사 기록은 QA-CHECKLIST를 기준으로 한다.
+
 > 2026-10-28: 아래는 목표 명세와 최초 구현의 공통 기준이다. GUI를 실행하지 않았으므로 렌더링/입력/접근성 완료 판정이 아니다.
 
 ## 최초 구현 범위

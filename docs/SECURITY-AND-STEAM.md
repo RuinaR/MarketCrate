@@ -1,5 +1,15 @@
 # MarketCrate — 보안·Steam 계정·메이플 동시 실행
 
+## 2차 작업의 명시적 승인과 실행 경계
+
+사용자는 MarketCrate 컨트롤을 별도 STA 환경에서 생성하고 RenderTargetBitmap으로 자체 렌더링하는 검증을 승인했다. 이 승인은 실제 창 표시/활성화·전역 입력·타 앱 접근·화면 캡처·Steam 연결로 확장하지 않는다.
+
+테스트는 plain Application 리소스/MainView/UserControl만 생성한다. Application.Run/Window/HwndSource/Popup 열기·Focus 호출 없이 자체 Measure/Arrange, ViewModel 명령, 컨트롤 속성/내부 routed event, VSM 상태, managed automation peer를 검사한다. 타 앱 UI Automation은 사용하지 않는다. Application.Windows.Count=0 및 detached PresentationSource=null을 검사한다. 상태별 Focus 렌더는 실제 포커스를 옮기지 않은 시각 상태 모의다.
+
+SQLite 네이티브 라이브러리는 앱의 합성 DB만 처리한다. 테스트 DB는 workspace/runtime 아래의 격리 경로를 사용하며 일반 앱의 LocalAppData DB를 열지 않는다. 실제 계정/토큰/쿠키/개인 로그는 저장·전송하지 않는다. 합성 증거의 fixture 주입은 자동 Steam Guard 승인이 아니다.
+
+금지 API/민감정보 정적 검색과 테스트 실행 경로를 검토한다. 일반 App.OnStartup의 자체 창 Show/활성 앱 내부 Focus는 정상 앱 코드에 남아 있지만 이번 테스트에서 실행하지 않는다. 다른 프로그램의 실행 여부를 확인하지 않는다.
+
 ## 최초 구현 허용 매트릭스 (2026-10-28 KST)
 
 | 기능 | 정책/권한 판정 | 앱 상태 |

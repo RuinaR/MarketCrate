@@ -15,8 +15,13 @@ public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatch
             if (executor.Capability != Capability.Mock) throw new InvalidOperationException("IntegrationBlocked: 허용된 실거래 어댑터 없음");
             var existing = await journal.LoadAsync(cancellationToken);
             // Journal is an intentionally single active batch. User must archive/clear completed demo data before another batch.
-            if (existing != null) return existing;
+            if (existing != null)
+            {
+                if (existing.Snapshot.BatchId != snapshot.BatchId) throw new InvalidOperationException("기존 활성 배치를 먼저 복구/대조하세요. 새 배치를 제출하지 않았습니다.");
+                return existing;
+            }
             BatchValidation.Validate(snapshot, DateTimeOffset.UtcNow);
+            if (journal is IDemoDataStore history) SalePlanner.ValidateReservations(snapshot, history.ReadBatches(),history.ReadListings().Where(x=>x.State==ListingState.Cancelled).Select(x=>x.ListingId).ToHashSet());
             var record = new BatchRecord(1, snapshot, snapshot.Lines.Select(x => new LineResult(x.LineId, SaleState.Ready, "Mock 대기")).ToImmutableArray());
             await journal.SaveAsync(record, cancellationToken);
             for (var i = 0; i < snapshot.Lines.Length; i++)
@@ -32,6 +37,8 @@ public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatch
                 catch (Exception e) when (e is TimeoutException or OperationCanceledException or IOException)
                 { result = new(line.LineId, SaleState.Unknown, "응답 불명: 자동 재전송 금지, 상태 대조 필요"); }
                 if (result.LineId != line.LineId) throw new InvalidDataException("응답 행 불일치");
+                if (result.State is not (SaleState.Submitted or SaleState.AwaitingSteamGuard or SaleState.Listed or SaleState.Failed or SaleState.Unknown))
+                    throw new InvalidDataException("잘못된 제출 결과: 재전송 금지");
                 record = Update(record, i, result);
                 await journal.SaveAsync(record, CancellationToken.None);
                 progress?.Report(record);
@@ -44,11 +51,13 @@ public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatch
 
     public async Task<BatchRecord?> RecoverAsync(CancellationToken cancellationToken = default)
     {
+        if (executor.Capability != Capability.Mock) throw new InvalidOperationException("IntegrationBlocked: 실제 서버 대조 연동 미허용");
         await gate.WaitAsync(cancellationToken);
         try
         {
             var record = await journal.LoadAsync(cancellationToken);
             if (record == null) return null;
+            BatchRecordGuard.Validate(record);
             for (var i = 0; i < record.Results.Length; i++)
             {
                 if (record.Results[i].State is not (SaleState.Submitting or SaleState.Unknown or SaleState.Submitted or SaleState.AwaitingSteamGuard)) continue;
@@ -58,6 +67,8 @@ public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatch
                 catch (Exception e) when (e is IOException or TimeoutException)
                 { result = new(line.LineId, SaleState.Unknown, "상태 대조 실패: 재전송하지 않았습니다."); }
                 if (result.LineId != line.LineId) throw new InvalidDataException("대조 응답 행 불일치");
+                if (result.State is not (SaleState.Unknown or SaleState.Submitted or SaleState.AwaitingSteamGuard or SaleState.Listed or SaleState.Failed or SaleState.Reconciled))
+                    throw new InvalidDataException("안전하지 않은 대조 상태: 재제출 금지");
                 record = Update(record, i, result);
                 await journal.SaveAsync(record, cancellationToken);
             }
