@@ -2,6 +2,8 @@
 
 ## 11차 — 사용자 결함 재현 및 회귀 (2026-10-28 KST)
 
+11차 배포: 구현 커밋 `0705dc2874b64b521e86dd92b3847c1a1b63219c` origin/main push 완료. **0.11.0** self-contained Windows x64 Release 빌드·정적 검사 PASS, 출력 경고/오류0. CLR/WPF10.0.9, x64 apphost/SQLite 네이티브 DLL/라이선스 고지 포함, DB·로그·인증·PDB·개발파일 제외. `artifacts/MarketCrate-0.11.0-stage11-0705dc2-win-x64.zip` **78.29MiB/412파일**, ZIP 전 항목과 원본 SHA256 일치. SHA256 `C3A5AEC49ACB4B8FEA93D4496E49E4D7AB92F2FB7F409F5EA22F1E43A60AEE28`. distribution.json 및 ProductVersion=0.11.0+0705dc2…의 SourceCommit 확인. 실제 EXE/설치/서명/실서버 QR 발급은 미실행. 이전 배포본·사용자별 저장소를 덮어쓰거나 초기화하지 않았다.
+
 | 경로 | 수정 전 증거 → 수정 및 합성/비표시 검증 |
 |---|---|
 | QR 요청 | 독립 decoder 정상계약 테스트 FAIL(최상위1 누락); API 메타데이터에서 최상위1/2 required 확인. EleventhStageTests.RequestContract: field번호/wiretype/상위·내부 구분/WebBrowser2/base64 form/format·Accept/인증완료 안 함 |

@@ -2,6 +2,8 @@
 
 ## 11차 — 사용자 발견 QR 계약·상태 강조 결함 수정 (2026-10-28 KST)
 
+11차 배포: 구현 커밋 `0705dc2874b64b521e86dd92b3847c1a1b63219c` origin/main push 완료. **0.11.0** self-contained Windows x64 Release 빌드·정적 검사 PASS, 출력 경고/오류0. CLR/WPF10.0.9, x64 apphost/SQLite 네이티브 DLL/라이선스 고지 포함, DB·로그·인증·PDB·개발파일 제외. `artifacts/MarketCrate-0.11.0-stage11-0705dc2-win-x64.zip` **78.29MiB/412파일**, ZIP 전 항목과 원본 SHA256 일치. SHA256 `C3A5AEC49ACB4B8FEA93D4496E49E4D7AB92F2FB7F409F5EA22F1E43A60AEE28`. distribution.json 및 ProductVersion=0.11.0+0705dc2…의 SourceCommit 확인. 실제 EXE/설치/서명/실서버 QR 발급은 미실행. 이전 배포본·사용자별 저장소를 덮어쓰거나 초기화하지 않았다.
+
 기준 main/origin `62663c5` clean/fetch 일치. 실제 인증·앱·Popup·포커스·입력·타 프로세스 접근 없이 공개 정의 GET 및 합성/비표시 검사만 수행했다. IntegrationBlocked/기존 SQLite·저널·수량 예약 계약 변경 없음.
 
 - QR 요청: 공개 HTTP API 메타데이터가 required로 선언한 최상위 device_friendly_name(1,string), platform_type(2,enum WebBrowser=2)을 device_details(3,message)의 내부1/2와 함께 명시. input_protobuf_encoded 표준 base64→UTF8 form 인코딩, 별도 format=json/Accept를 독립 decoder로 검증. uint64 client_id는 문자열·정확한 정수 JSON 모두 처리하고 소수 interval 허용. 누락·범위·URL 이상은 차단한다.
