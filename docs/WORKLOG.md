@@ -12,7 +12,7 @@
 - 부하/배포: 10,000개 뷰 컨테이너 시작9/끝7 및 반복 스크롤 선택 보존, 128행 SQLite 배치와 저장 payload <1MB 검사. 장시간/최대 규모 실행 인증은 아니다. `scripts/Publish.ps1` 최신 Release framework-dependent exe 생성/PE/DB·로그·키 제외 PASS, 산출물 실행·설치 안 함. 데이터 경로는 기존 LocalAppData 유지.
 - 진단: timestamp/enum code/count만 DB 최대500개, 시작 DB 오류는 앱 전용 bounded 고정 코드 파일. 임의 예외 메시지·계정/아이템·비밀정보를 기록하지 않는 검사 추가. 이미지/DB/로그/빌드 결과는 Git 제외.
 - 미검증/차단: 실제 입력·열린 팝업·모니터 DPI·스크린리더·설치/서명·장시간/전원 차단·실제 Steam 로그인/거래/Guard. 관리 Unknown의 외부 증거 없는 재전송은 차단. 필수 실제 일괄 등록 목표는 IntegrationBlocked 유지.
-- 후속: 허용된 실연동 경로/권한 확보 전 실제 어댑터 금지, 다중 배치 탐색·외부 대조 도구·대량 UI 선택 확장·배포 감사. 최종 diff/민감정보 점검 후 구현 및 기록을 commit/push한다.
+- 후속: 허용된 실연동 경로/권한 확보 전 실제 어댑터 금지, 다중 배치 탐색·외부 대조 도구·대량 UI 선택 확장·배포 감사. 최종 diff/민감정보 패턴 검사 PASS. 구현 커밋 `1e6c280`을 origin/main에 정상 push했다. 조사 `db8a55c` 및 구현 커밋 모두 원격 반영 완료.
 
 ## 2026-10-28 — 3차 조사 마일스톤
 - 시작 HEAD `9ce53df`, 작업 트리 clean. fetch한 origin/main과 일치, AGENTS/현황/QA/아키텍처/판매 계약 확인.
