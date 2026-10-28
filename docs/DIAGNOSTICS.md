@@ -1,4 +1,14 @@
-# 진단 시스템 (6차, 2026-10-28 KST)
+# 진단 시스템 (7차, 2026-10-28 KST)
+
+7차 추가 보호: 기간 중앙값의 구매자/판매자 결제액 역할과 통화 해석은 live 미검증이므로 `SteamTradingPolicy.MedianPriceContractSupported`가 별도로 필요하며 기본 false다. 사용자의 최종 클릭/정수 계산 성공으로 이를 true로 추정하지 않는다. 합성 positive 경로에서만 명시적으로 켜 검증했다.
+
+## 7차 이벤트/운영 보완
+
+- ImageMetadata 4100 / ImageLoad 4101 / GameCatalog 4200 / InventoryScope 4201 / PriceIndicator 5100 추가. InventoryScope는 고정 상태의 이전/새 상태/판매 가능 종류 수를 기록한다. app/context/name/계정 원문은 기록하지 않는다.
+- metadata parser와 inventory/listings/orderbook/history/fees HTTP는 부모 OperationId와 요청 CorrelationId를 연결한다. 서로 다른 HTTP는 서로 다른 correlation, 사용자 명령 전체는 같은 operation. parser는 해당 request scope 안에서 동작하도록 보완했다. 일부 기존 auth parser는 operation으로 연결한다.
+- thumbnail은 row의 조회 OperationId를 이어받아 UI 로딩/취소/디코딩 오류에 사용. CDN 요청은 endpoint=Image/고정 상태·HTTP 분류만, URL/opaque token/bytes/쿠키/원문 제외. 성공 metadata/cache-hit는 Debug로 제한하고 실패/전송은 기본 수준에서 추적한다. 이미지는 메모리 캐시이며 SQLite에 쓰는 것처럼 가짜 transaction 이벤트를 만들지 않는다.
+- catalog 검증/저장과 가격 window/basis/indicator/final digest 검증은 같은 사용자 operation 문맥. 이름/AppID/context/표본 원문을 로그에 넣지 않고 고정 reason·count·통화·오류 사용. 원자료와 추정 지표를 같은 성공으로 기록하지 않는다.
+- Steam 화면의 작업 ID와 **현재 Steam 작업의 진단 보기**는 Diagnostics.OperationFilter로 연결해 바로 해당 operation을 찾는다. 설정/보존/보안/ZIP 재정제/사용자 검토 정책은 변경 없다.
 
 ## 목적과 저장 경계
 

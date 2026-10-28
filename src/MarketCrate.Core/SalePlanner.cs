@@ -12,8 +12,10 @@ public record SalePlan(ImmutableArray<PlannedSale> Lines, int UnpricedQuantity)
 
 public static class SalePlanner
 {
-    public static SalePlan Build(IEnumerable<SaleSelection> selections, bool immediate)
+    public static SalePlan Build(IEnumerable<SaleSelection> selections, bool immediate)=>Build(selections,immediate?PriceBasis.Immediate:PriceBasis.ExactAverage);
+    public static SalePlan Build(IEnumerable<SaleSelection> selections,PriceBasis basis)
     {
+        var immediate=basis==PriceBasis.Immediate;
         using var operation=DiagnosticHub.Operation(DiagnosticEvent.PricePlan,DiagnosticArea.Pricing,"D05");
         var selected = selections.ToArray();
         if (selected.Select(x => x.Asset.Key).Distinct().Count() != selected.Length) throw new ArgumentException("중복 선택 자산");
@@ -38,6 +40,8 @@ public static class SalePlanner
                 for (var i = 0; i < bids.Count && used > 0; i++) { var count = Math.Min(used, bids[i].Quantity); used -= count; bids[i] = bids[i] with { Quantity = bids[i].Quantity - count }; }
                 bids.RemoveAll(x => x.Quantity == 0);
             }
+            else if(basis==PriceBasis.MedianEstimate)
+            {var estimate=entry.Price.Estimate;if(estimate is null||estimate.Basis!=basis||estimate.Currency!=entry.Price.Currency||!estimate.Fresh(DateTimeOffset.UtcNow))throw new ArgumentException("IndicatorUnavailable");plan=new([new(estimate.Minor,entry.Quantity)],0);}
             else plan = Pricing.WeightedAverage(entry.Price.Trades) is long average ? new([new(average, entry.Quantity)], 0) : new([], entry.Quantity);
             missing = checked(missing + plan.UnpricedQuantity);
             if (plan.UnpricedQuantity > 0) unpriced.Add(new(entry, plan.UnpricedQuantity));

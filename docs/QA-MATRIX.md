@@ -1,4 +1,36 @@
-# 정상·오류·복구 QA 매트릭스 — 6차 (2026-10-28 KST)
+# 정상·오류·복구 QA 매트릭스 — 7차 (2026-10-28 KST)
+
+### 7차 자동 검증 마감
+
+- 전체 기능/합성 HTTP/SQLite/진단 **158/158 PASS, FAIL0** (기존139+신규19), 비표시 WPF **28/28 PASS, FAIL0** (기존23+신규5), Debug 빌드 경고0/오류0. 마지막 기능 보강 후 전체 회귀 실행. 예상치 못한 binding 오류0/Window·PresentationSource0.
+- 실제 PNG 디코딩·재활용60회·전송 중복/취소·재시도/실패 상태와 보관함/판매/검토/추정/진단 이동 이미지를 직접 검사했다. NumericStepper 36px/텍스트 줄바꿈/출처/기준별 부족 수량 안내를 수정·재확인했다.
+- 단기 합성 예: 이미지100회 약2ms wall/31ms 자체 process CPU/managed allocation 약1.36MB, LRU4개/280B; 썸네일60회 약1835ms wall/1406ms 자체 CPU/약0.89MB managed allocation, cache210B. 자체 process만 읽었고 CPU 계수 해상도/다른 자체 스레드가 포함된다. 실이미지/네이티브 메모리/장시간 누수/FPS/다른 앱 영향 측정으로 확대하지 않는다.
+- 실제 Steam 이미지/인증/보관함/가격/fee/판매/취소/Guard 및 실제 창/물리 입력/모니터 DPI/installer/VM 실행은 NOT VERIFIED. Release는 별도 소스 커밋 후 정적 마감 기록에 추가한다.
+
+## 7차 검증 범위 (6차 139/23 회귀 유지)
+
+75개 전 행을 같은 ID로 재평가했다. 7차 최종 실행 항목은 기능 **158개(기존139+신규19)**, 비표시 WPF **28개(기존23+신규5)**이며 위 마감 기록에 실제 결과를 반영했다. 아래 이전 6차 기록은 당시 범위다. 실제 Steam 응답/계정·실제 창/Popup/물리 입력/모니터 DPI·장시간 누수는 이번에도 NOT VERIFIED다.
+
+| 7차 경로/오류 | 실제 단언/연결 | 테스트 |
+|---|---|---|
+| 이미지 join/icon 우선순위/누락/잘못된 class·instance | 올바른 side map, description mismatch 거부, URL 필드 invalid 처리 | S7.Metadata |
+| CDN/token/경로/픽셀 | 단일 host/경로, URL/query/traversal/긴 token 거부, 512px 초과/비이미지 거부 | S7.ImageSecurity |
+| 중복/구독별 취소 | 요청1, 다른 구독 유지, 마지막 구독 취소 후 네트워크 중단/캐시 미보존/복구 | S7.ImageDedup/ImageCancel |
+| 리디렉션/403/429/5xx/MIME/큰 body | 우회·자동 retry 없음, 403/429 latch 후 새 요청0, 사용자 명령 후 일반 실패 복구 | S7.ImageFaults |
+| 메모리 상한 | LRU4/1024B 설정에서100개 고유 이미지, cache 상한/재사용/eviction 단언. wall/자체 CPU/managed allocation 측정 | S7.ImageMemory (실제 이미지/장시간 아님) |
+| 실제 WPF decoder/재활용/늦은 응답 | 유효 PNG→frozen pixels, 60회 source 교체/unload 후 Source null, 이전 응답이 새 그림을 덮지 않음, 실패→재시도 | U7 thumbnail/recycling |
+| 보관함/게임 대표/판매/검토 이미지 | metadata→VM→template→cache→worker decode→UI, 동일 token 전송1/쿠키·권한·referrer 없음 | U7 integrated image render |
+| custom AppID/context/계정 저장·제거 | context6 실제 합성 요청, 왕복 선택/수량 보존, account catalog 복원/기존 journal 유지 | S7.Catalog/JournalCompatibility |
+| 404/빈 목록/403/잘못된 입력 | Unsupported/Empty/PrivateOrDenied 구분, 403 원인을 비공개로 확정 안 함, 로컬 오류가 로그인 상태를 만료시키지 않음 | S7.CatalogStates/CatalogInvalid |
+| median/window/통화 | lower weighted median / 기간 필터 / 구간·거래량 / KRW 소수 거부 / USD 정확 단위 / 중복·미래 표본 거부 | S7.Indicators |
+| 모드 선택/기준 변경/평균 없음 | 수동값/검토 초기화, 정확 평균 검토 불가, late history/로그아웃 후 UI 상태 오염 없음 | S7.UnavailableAverage/LateHistory |
+| 추정 검토→승인→Guard→재시작 조회 | Evidence 불변/단일 배치 전송/Listed 대조/전송 횟수1 유지 | S7.EstimateFlow; MedianContractGate(기본 false/전송0) |
+| history 부족/표본 변조 | empty 또는 동일 median/count/volume의 다른 표본 digest면 전송0/저널 미생성 | S7.ChangedHistory/StricterContracts |
+| fee/stack/불명 | 누락 publisher fee/서버 fee conflict 거부, Unknown 예약/다음 행 Ready, proof 없는 revision 거부 | S7.FeeAndReturn/StricterContracts + 기존 F5/S6 모든 취소·스택·재시작 |
+| 로그·진단 이동 | 요청/이미지 결과 operation 연결/토큰 부재, 현재 Steam 작업 ID→진단 필터 실제 RoutedEvent | S7.Logs; U7 diagnostics jump |
+| release/사용자 데이터 | publish 정적 검사에 jsonl/zip/dump/env/session/SQLite 변형 파일 제외 강화 | scripts/Publish.ps1, 실제 앱/installer 미실행 |
+
+자체 렌더는 `runtime/ui-tests/stage7-*`: 보관함/대표 이미지/최종 분할·추정/판매/없음·실패·재활용, 100/125/150/200% 배율. root Window/PresentationSource0/예상하지 못한 binding 오류0 확인. NumericStepper 높이 과확대는 육안 발견 후36px로 수정했다. 실제 장터 이미지/설치·네트워크·장시간은 PASS로 승격하지 않는다. 별도 [격리 실제 GUI 절차](ISOLATED-GUI-QA.md)와 `.wsb.example`는 준비만 했으며 실행하지 않았다.
 
 ## 실행 범위
 

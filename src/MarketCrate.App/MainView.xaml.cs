@@ -46,5 +46,6 @@ public partial class MainView : UserControl
         if (e.Key == Key.Escape && DataContext is MainViewModel vm)
         { var command = vm.IsCancelReviewOpen ? vm.CloseCancelReview : vm.CloseReview; if (command.CanExecute(null)) command.Execute(null); e.Handled = true; }
     }
+    private void SteamDiagnosticsClicked(object sender,RoutedEventArgs e){if(DataContext is MainViewModel vm){vm.Diagnostics.OperationFilter=vm.Steam.LastOperationId?.ToString()??"";vm.Diagnostics.Refresh.Execute(null);WorkspaceTabs.SelectedIndex=5;}}
     private void SubmitClicked(object sender, RoutedEventArgs e) => WorkspaceTabs.SelectedIndex = 2;
 }

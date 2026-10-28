@@ -1,5 +1,11 @@
 # MarketCrate — 보안·Steam 계정·메이플 동시 실행
 
+## 7차 추가 경계
+
+ImageCache는 Steam 인증 client와 완전히 분리된 무쿠키/무권한·referrer·redirect/proxy OFF, 단일 확인 CDN/고정 경로다. opt-in과 실현된 컨트롤 구독만 내려받고 unload/재활용/로그아웃 취소, 범위·용량·시간·403/429 latch 제한을 적용했다. URL/토큰/bytes는 로그·journal에 저장하지 않는다. 실제 이미지서버 확인/위험0 보장 아님.
+
+카탈로그는 app/context/name만 계정별 최소 저장하고 진단 ZIP에서 DB를 제외한다. 원자료 없는 정확 평균과 이력 지표의 결제액/통화 의미는 추정으로 활성화하지 않는다. MedianPriceContractSupported도 기본 false, 기존 정책/stack/fee/Unknown proof 차단을 유지한다. 신규 CPU 측정은 자체 테스트 process 하나뿐이며 타 프로세스를 탐색하지 않았다. Sandbox/VM 구성은 파일/절차만 준비하고 실행/Windows 기능 변경은 하지 않았다.
+
 ## 6차 진단 보호 경계
 
 - 진단은 자체 앱의 typed 이벤트만 처리한다. 다른 프로세스/화면/입력/패킷/클립보드 감시·메모리 덤프 없음. 폴더 열기는 사용자 직접 명령이며 테스트는 callback 대체다.

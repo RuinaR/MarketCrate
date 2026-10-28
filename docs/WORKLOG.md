@@ -1,5 +1,23 @@
 # MarketCrate — 누적 작업 로그
 
+7차 추가 반환 제한: 원래 단일 수량이었어도 취소 후 returned.Stackable/수량 증가·기존 가용 수량이 있으면 proof로 확정하지 않는다. 동일 ID라도 현재 정확히1개/기존0개인 제한 경로만 합성 대조하며 나머지는 Unknown/예약 유지. 실제 nonstack/스택·ID 의미와 인과 증거는 여전히 미검증이다.
+
+### 7차 자동 검증 마감
+
+- 전체 기능/합성 HTTP/SQLite/진단 **158/158 PASS, FAIL0** (기존139+신규19), 비표시 WPF **28/28 PASS, FAIL0** (기존23+신규5), Debug 빌드 경고0/오류0. 마지막 기능 보강 후 전체 회귀 실행. 예상치 못한 binding 오류0/Window·PresentationSource0.
+- 실제 PNG 디코딩·재활용60회·전송 중복/취소·재시도/실패 상태와 보관함/판매/검토/추정/진단 이동 이미지를 직접 검사했다. NumericStepper 36px/텍스트 줄바꿈/출처/기준별 부족 수량 안내를 수정·재확인했다.
+- 단기 합성 예: 이미지100회 약2ms wall/31ms 자체 process CPU/managed allocation 약1.36MB, LRU4개/280B; 썸네일60회 약1835ms wall/1406ms 자체 CPU/약0.89MB managed allocation, cache210B. 자체 process만 읽었고 CPU 계수 해상도/다른 자체 스레드가 포함된다. 실이미지/네이티브 메모리/장시간 누수/FPS/다른 앱 영향 측정으로 확대하지 않는다.
+- 실제 Steam 이미지/인증/보관함/가격/fee/판매/취소/Guard 및 실제 창/물리 입력/모니터 DPI/installer/VM 실행은 NOT VERIFIED. Release는 별도 소스 커밋 후 정적 마감 기록에 추가한다.
+
+## 2026-10-28 KST — 7차 미완성 항목 구현
+
+- 시작 main/origin `158a606`, clean/fetch 확인. AGENTS·75개 추적표·QA/진단/설계 조사 후 같은 ID와 6차 판정을 보존했다. B04/C02/D02 로컬 COMPLETE, B05 PARTIAL로 개선(47/15/0/4/9), 실제 응답/계정/DPI 판정은 승격하지 않음.
+- 공식 공개 HTML/JS에서 icon fields/CDN 경로/기간 중앙값 의미, 공식 GetOwnedGames 문서와 Sandbox 구성 자료를 확인했다. 새 SDK/패키지/타 제품 코드 도입 없음, source만 읽고 실행하지 않음.
+- 메타데이터 join/side maps, opt-in 무인증 단일 CDN/제한 캐시/중복 억제/취소/재활용·worker decode/freeze, inventory/listings/review/대표 이미지와 오류 UI 구현. 초기 합성 PNG fixture 오류를 BCL CRC/ZLib로 직접 생성한 유효 PNG로 수정, 실제 decoder까지 검증했다.
+- account별 manual/observed context catalog와 v3 저장/복원/오류 상태를 추가했다. 로컬 입력 실패가 로그인 상태를 만료시키던 문제를 수정. 로그아웃 후 늦은 load의 새 catalog 오염도 차단. 통계 모드/기간 변경 후 늦은 응답 폐기.
+- exact average는 계속 미제공. 대체 weighted median estimate의 기간/표본/한계/불변 evidence/digest를 구현하고 같은 합계의 바뀐 표본도 거부한다. 최종 preflight의 동일 상품 반복 조회를 제거하고 마지막 freshness 검사, publisher fee 누락 차단 보완. 실제 stack return/Unknown 인과 증거 기준은 그대로다.
+- 정상/실패/취소/중복/403·429/MIME/픽셀·바이트/캐시/변조 이력/설정·저널 재시작/진단 연결에 합성 테스트를 추가했다. 자체 PNG를 육안 검토해 과도하게 늘어난 스테퍼를 수정. 앱/최상위 창/실제 입력/다른 프로세스·화면/실계정 접근은 없음. 최종 결과/커밋은 마감 기록 참조.
+
 ## 2026-10-28 KST — 6차 요구사항 감사 및 실사용 진단
 
 - 최종 마감: 구현 `5b44e0d`, 진단 보완 `fab286a` 각각 origin/main push 완료. 보완 후 전체 **139/139 + WPF 23/23 PASS**, FAIL0/경고0/오류0. `fab286a` Release PE/데이터 제외/MIT 고지 PASS, Core DLL의 소스 commit 포함 정적 확인. 최신 진단/최종 검토 PNG 육안 재확인, 실제 Window/앱/계정/타 프로세스 접근 없음. 남은 항목은 추적표 PARTIAL/MISSING/BLOCKED/UNVERIFIED로 유지한다. 최종 문서 커밋은 완료 보고 참조.

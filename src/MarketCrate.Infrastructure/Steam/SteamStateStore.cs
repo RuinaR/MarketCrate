@@ -53,6 +53,16 @@ public sealed class SteamStateStore : IBatchJournal, IDisposable
         command.Parameters.AddWithValue("$k", kind); command.Parameters.AddWithValue("$i", id); command.Parameters.AddWithValue("$v", JsonSerializer.Serialize(value));
         StorageDiagnostics.NonQuery(command);
     }
+    public IReadOnlyList<InventoryScope> ReadCatalog(string account)
+    {
+        if(account.Length!=17||account.Any(c=>!char.IsAsciiDigit(c)))throw new ArgumentException("CatalogAccount");
+        var scopes=Read<InventoryScope[]>("catalog",account)??[];foreach(var scope in scopes)scope.Validate();if(scopes.Length>100||scopes.Select(x=>(x.AppId,x.ContextId)).Distinct().Count()!=scopes.Length)throw new InvalidDataException("CatalogInvalid");return scopes;
+    }
+    public void SaveCatalog(string account,IReadOnlyList<InventoryScope> scopes)
+    {
+        if(account.Length!=17||account.Any(c=>!char.IsAsciiDigit(c))||scopes.Count>100||scopes.Select(x=>(x.AppId,x.ContextId)).Distinct().Count()!=scopes.Count)throw new ArgumentException("CatalogInvalid");foreach(var scope in scopes)scope.Validate();
+        Save("catalog",account,scopes);DiagnosticHub.Emit(DiagnosticEvent.GameCatalog,DiagnosticArea.Storage,count:scopes.Count,journal:"Committed",requirement:"C02");
+    }
     public SteamCommandRecord? ReadCommand(string requestKey)
     {
         var record = Read<SteamCommandRecord>("command", requestKey);

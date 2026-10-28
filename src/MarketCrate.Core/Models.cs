@@ -10,7 +10,8 @@ public record InventoryAsset(AssetKey Key, string Game, string Name, string Mark
 public record BidLevel(long BuyerPays, int Quantity);
 public record TradeSample(long BuyerPays, int Volume);
 public record PriceSnapshot(string Currency, DateTimeOffset CapturedAt, string Source,
-    TimeSpan Window, ImmutableArray<TradeSample> Trades, ImmutableArray<BidLevel> Bids);
+    TimeSpan Window, ImmutableArray<TradeSample> Trades, ImmutableArray<BidLevel> Bids)
+{ public PriceEvidence? Estimate{get;init;} }
 public record FeePolicy(int SteamBasisPoints = 500, int GameBasisPoints = 1000, long MinimumSteam = 1, long MinimumGame = 1);
 public record FeeQuote(long BuyerPays, long SellerReceives, long SteamFee, long GameFee)
 {
@@ -19,7 +20,8 @@ public record FeeQuote(long BuyerPays, long SellerReceives, long SteamFee, long 
 public record Allocation(long BuyerPays, int Quantity);
 public record AllocationResult(ImmutableArray<Allocation> Lines, int UnpricedQuantity);
 public record SaleLineSnapshot(string LineId, InventoryAsset Asset, int Quantity, string Currency,
-    FeeQuote UnitQuote, DateTimeOffset MarketTime);
+    FeeQuote UnitQuote, DateTimeOffset MarketTime)
+{ public PriceEvidence? Evidence{get;init;} }
 public record SaleBatchSnapshot(Guid BatchId, string AccountReference, DateTimeOffset FinalizedAt,
     ImmutableArray<SaleLineSnapshot> Lines)
 {

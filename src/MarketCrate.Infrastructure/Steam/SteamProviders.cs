@@ -7,18 +7,21 @@ namespace MarketCrate.Infrastructure.Steam;
 
 public sealed class SteamInventoryProvider(SteamHttp http, SteamQrAuthentication auth, int appId, string contextId, string game) : IInventoryProvider
 {
+    public Dictionary<AssetKey,ItemImageReference> Images{get;}=[];
     internal Dictionary<AssetKey, int> PublisherFees { get; } = [];
     public Capability Capability => auth.Connected ? Capability.Experimental : Capability.IntegrationBlocked;
     public async Task<IReadOnlyList<InventoryAsset>> GetAsync(CancellationToken cancellationToken)
     {
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.InventoryLoaded,DiagnosticArea.Data,"C01");
         if (!auth.Connected || appId < 1 || !ulong.TryParse(contextId, out var context) || context == 0) throw new SteamException(SteamFailure.Authentication);
+        var images=new Dictionary<AssetKey,ItemImageReference>();
         var all = new List<InventoryAsset>(); var fees = new Dictionary<AssetKey, int>(); var keys = new HashSet<AssetKey>(); var cursors = new HashSet<string>(); string? next = null;
         for (var page = 0; page < 100; page++)
         {
             var path = $"https://steamcommunity.com/inventory/{auth.SteamId}/{appId}/{contextId}?l=english&count=1000";
             if (next is not null) path += "&start_assetid=" + next;
-            using var request = new HttpRequestMessage(HttpMethod.Get, path);
+            using var correlation=DiagnosticHub.Scope(correlation:true);
+        using var request = new HttpRequestMessage(HttpMethod.Get, path);
             var body = await http.SendAsync(request, cancellationToken);
             SteamInventoryPage result;
             try { result = SteamContract.Inventory(body, appId, contextId, game); }
@@ -26,9 +29,10 @@ public sealed class SteamInventoryProvider(SteamHttp http, SteamQrAuthentication
             foreach (var asset in result.Assets)
                 if (!keys.Add(asset.Key)) { http.Stop(SteamFailure.ContractChanged); throw new SteamException(SteamFailure.ContractChanged); } else all.Add(asset);
             DiagnosticHub.Emit(DiagnosticEvent.InventoryPage,DiagnosticArea.Data,count:result.Assets.Length,requirement:"C01");
+            if(result.Images is {} pageImages)foreach(var image in pageImages)images.Add(image.Key,image.Value);
             next = result.Next;
             if (result.PublisherFees is { } pageFees) foreach (var fee in pageFees) fees.Add(fee.Key, fee.Value);
-            if (next is null) { PublisherFees.Clear(); foreach (var fee in fees) PublisherFees.Add(fee.Key, fee.Value); return all; }
+            if (next is null) { Images.Clear();foreach(var image in images)Images.Add(image.Key,image.Value);PublisherFees.Clear(); foreach (var fee in fees) PublisherFees.Add(fee.Key, fee.Value); return all; }
             if (!cursors.Add(next)) break;
         }
         http.Stop(SteamFailure.ContractChanged); throw new SteamException(SteamFailure.ContractChanged);
@@ -49,6 +53,7 @@ public sealed class SteamMarketDataProvider(SteamHttp http, SteamQrAuthenticatio
     {
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.PriceLoaded,DiagnosticArea.Data,"D07");
         var query = Uri.EscapeDataString(JsonSerializer.Serialize(new object[] { asset.Key.AppId, asset.MarketHashName }));
+        using var correlation=DiagnosticHub.Scope(correlation:true);
         using var request = new HttpRequestMessage(HttpMethod.Get, "https://steamcommunity.com/market/orderbook?q=Load&qp=" + query);
         var body = await http.SendAsync(request, token);
         try
@@ -62,10 +67,18 @@ public sealed class SteamMarketDataProvider(SteamHttp http, SteamQrAuthenticatio
         }
         catch (SteamException error) { http.Stop(error.Code); throw; }
     }
+    public async Task<PriceSnapshot> RefreshEstimateAsync(InventoryAsset asset,TimeSpan window,CancellationToken token=default)
+    {
+        var book=await RefreshAsync(asset,token);var rows=await GetMedianHistoryAsync(asset,token);var captured=DateTimeOffset.UtcNow;
+        var evidence=PriceIndicators.MedianEstimate(rows.Select(x=>new MedianObservation(x.At,PriceIndicators.MajorToMinor(x.MedianMajor,book.Currency),x.Volume)),book.Currency,captured,window);
+        var result=book with{Estimate=evidence};cache[(asset.Key.AppId,asset.MarketHashName)]=result;
+        DiagnosticHub.Emit(DiagnosticEvent.PriceIndicator,DiagnosticArea.Pricing,evidence is null?DiagnosticOutcome.Blocked:DiagnosticOutcome.Succeeded,requirement:"D02",reason:"MedianEstimate",count:evidence?.Buckets??0,currency:book.Currency);return result;
+    }
     public async Task<ImmutableArray<SteamHistoryPoint>> GetMedianHistoryAsync(InventoryAsset asset, CancellationToken token = default)
     {
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.HistoryLoaded,DiagnosticArea.Data,"D01");
         if (!auth.Connected) throw new SteamException(SteamFailure.Authentication);
+        using var correlation=DiagnosticHub.Scope(correlation:true);
         using var request = new HttpRequestMessage(HttpMethod.Get, $"https://steamcommunity.com/market/pricehistory/?appid={asset.Key.AppId}&market_hash_name={Uri.EscapeDataString(asset.MarketHashName)}");
         var body = await http.SendAsync(request, token);
         try { return SteamContract.History(body); } catch (SteamException error) { http.Stop(error.Code); throw; }
@@ -75,19 +88,23 @@ public sealed class SteamMarketDataProvider(SteamHttp http, SteamQrAuthenticatio
 public sealed class SteamOrdersProvider(SteamHttp http, SteamQrAuthentication auth) : IMarketOrderProvider
 {
     private ImmutableArray<SteamListing> cache = [];
+    public Dictionary<string,ItemImageReference> Images{get;}=[];
     public Capability Capability => auth.Connected ? Capability.Experimental : Capability.IntegrationBlocked;
     public IReadOnlyList<LineResult> GetOrders() => cache.Select(x => new LineResult(x.ListingId, x.State, "Steam 목록 관측; 자동 갱신 없음")).ToArray();
     public async Task<ImmutableArray<SteamListing>> RefreshAsync(CancellationToken token = default)
     {
         using var operation=DiagnosticHub.Operation(DiagnosticEvent.ListingsLoaded,DiagnosticArea.Data,"B01");
         if (!auth.Connected) throw new SteamException(SteamFailure.Authentication);
+        var images=new Dictionary<string,ItemImageReference>();
         var all = new Dictionary<string, SteamListing>(); int? total = null; var active = 0;
         for (var start = 0; start < 10000; start += 100)
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"https://steamcommunity.com/market/mylistings/render/?norender=1&start={start}&count=100");
+            using var correlation=DiagnosticHub.Scope(correlation:true);
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"https://steamcommunity.com/market/mylistings/render/?norender=1&start={start}&count=100");
             var body = await http.SendAsync(request, token);
             SteamListingsPage page;
             try { page = SteamContract.Listings(body); } catch (SteamException error) { http.Stop(error.Code); throw; }
+            if(page.Images is {} pageImages)foreach(var image in pageImages)images[image.Key]=image.Value;
             total ??= page.TotalActive;
             if (total != page.TotalActive) break; // Unstable pagination is not a complete authoritative snapshot.
             foreach (var row in page.Listings)
@@ -95,7 +112,7 @@ public sealed class SteamOrdersProvider(SteamHttp http, SteamQrAuthentication au
                 if (all.TryGetValue(row.ListingId, out var old) && old != row) { http.Stop(SteamFailure.ContractChanged); throw new SteamException(SteamFailure.ContractChanged); }
                 if (all.TryAdd(row.ListingId, row) && row.State == SaleState.Listed) active++;
             }
-            if (active == total) { cache = all.Values.ToImmutableArray(); return cache; }
+            if (active == total) { Images.Clear();foreach(var image in images)Images.Add(image.Key,image.Value);cache = all.Values.ToImmutableArray(); return cache; }
             if (page.Listings.Count(x => x.State == SaleState.Listed) == 0) break;
         }
         throw new SteamException(SteamFailure.ContractChanged);

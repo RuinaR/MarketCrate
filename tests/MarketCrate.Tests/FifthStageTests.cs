@@ -67,7 +67,7 @@ internal static class FifthStageTests
     {
         public string Directory{get;}=Path.Combine(System.IO.Directory.GetCurrentDirectory(),"runtime","stage5-"+Guid.NewGuid().ToString("N"));
         public SteamContractServer Server{get;}=new();public SteamExperimentalWorkspace? Workspace{get;private set;}public SteamWorkspaceViewModel Vm{get;}
-        public Fixture(bool policy=true,bool stacks=true){Vm=new(scope=>Workspace=new(Directory,scope.AppId,scope.ContextId,scope.Name,new(policy,"synthetic test only",stacks),Server.Connection(),Server.Clock),true);}
+        public Fixture(bool policy=true,bool stacks=true,bool medianContract=false){Vm=new(scope=>Workspace=new(Directory,scope.AppId,scope.ContextId,scope.Name,new(policy,"synthetic test only",stacks,medianContract),Server.Connection(),Server.Clock),true);}
         public async Task Login(){Vm.RiskAccepted=Vm.CredentialsAccepted=true;await Vm.BeginAsync();Server.Clock.Advance();await Vm.CheckAsync();Check(Vm.Connected);}
         public async Task Prepare(int quantity){await Vm.LoadAsync();Vm.Assets[0].Selected=true;Vm.Assets[0].Quantity=quantity;await Vm.RefreshPricesAsync();Vm.BuildReview();}
         public void EnableTrading(){Vm.TradeAccepted=true;Vm.EnableTrading.Execute(null);}

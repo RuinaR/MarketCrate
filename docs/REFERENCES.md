@@ -56,3 +56,17 @@
 | https://help.steampowered.com/en/faqs/view/2E6E-A02C-5581-8904 | 열기 시도 | 새 코드 도입 없음 | 이번 응답은 이미지 한 줄로 본문 재검증 실패. 이전 기록과 구분 |
 
 기존 SteamHelper/CSlytics/오픈소스 조사와 라이선스 기록은 유지했다. 이번 단계는 저장소 실행 경로 감사/독립 BCL 진단 구현이며 비교 제품 코드·새 외부 UI/QR 라이브러리를 추가 도입하지 않았다. live API 호환성을 재검증했다고 주장하지 않는다.
+
+
+## 7차 직접 확인 — 2026-10-28 KST
+
+| 출처 | 확인한 의미/채택 | 라이선스·한계 |
+|---|---|---|
+| https://steamcommunity.com/market/ | 공식 공개 HTML에서 CDN 이미지 경로와 JS 참조 확인 | 웹 문서/정적 소스 연구만. 이미지 bytes/계정/판매 API 호출 안 함 |
+| https://community.fastly.steamstatic.com/public/javascript/economy.js | ImageURL 경로, icon_url_large 우선/icon_url, Median Sale Prices 표시 | source 복사·실행 없이 독립 C# 구현. SHA256 638e71a3a9cb65548b942454569e6d0d079cce460ad50147bfbc5736c5b2c056 |
+| https://community.fastly.steamstatic.com/public/javascript/economy_common.js | economy shared 표시 코드 비교 | 미복사/미실행, SHA256 84429d06a9ef8c250ac567f9fedc9fb155d23ceb7442c92a19b815840c102784 |
+| https://community.fastly.steamstatic.com/public/javascript/market.js | 현재 공개 Market UI 이력/호가 구분 참고 | 미복사/미실행, SHA256 ac938119e82c7d4c8d0f7843ef168483efa4af3e45dc987c068f340bb5af72ec |
+| https://partner.steamgames.com/doc/webapi/IPlayerService#GetOwnedGames | key/공개 범위/무료 게임 조건 확인, inventory/context 완전 목록으로 미채택 | 공식 문서만 읽음, API/key 수집/호출 없음 |
+| https://learn.microsoft.com/en-us/windows/security/application-security/application-isolation/windows-sandbox/windows-sandbox-configure-using-wsb-file | offline/읽기 전용 mapping/장치·클립보드 차단 구성 예제 | 독립 XML/절차 작성, Windows 기능 설치/실행 안 함 |
+
+공식 JS 열기는 web 도구에서 실패해 공개 문서 GET을 승인된 shell 네트워크로 조회했다. 원본은 ignored runtime/research-stage7에만 보존. 새로운 라이브러리/SDK/경쟁사/AGPL 코드 편입 없음. 경로 사례/자료 의미와 Valve 자동화 허가는 서로 다른 문제다.

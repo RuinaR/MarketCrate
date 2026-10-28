@@ -1,0 +1,17 @@
+<!-- Preparation only. Do not launch during host/game use. Replace ONLY the reviewed publish folder. -->
+<Configuration>
+  <vGPU>Disable</vGPU>
+  <Networking>Disable</Networking>
+  <AudioInput>Disable</AudioInput>
+  <VideoInput>Disable</VideoInput>
+  <PrinterRedirection>Disable</PrinterRedirection>
+  <ClipboardRedirection>Disable</ClipboardRedirection>
+  <MemoryInMB>2048</MemoryInMB>
+  <MappedFolders>
+    <MappedFolder>
+      <HostFolder>C:\REPLACE_WITH_REVIEWED_PUBLISH_FOLDER</HostFolder>
+      <SandboxFolder>C:\MarketCrateInput</SandboxFolder>
+      <ReadOnly>true</ReadOnly>
+    </MappedFolder>
+  </MappedFolders>
+</Configuration>

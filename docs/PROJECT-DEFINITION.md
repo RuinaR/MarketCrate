@@ -1,5 +1,9 @@
 # MarketCrate — 제품 정의서 (2026-10-28)
 
+## 7차 범위
+
+기존 75개 ID를 유지하며 이미지/수동·관측 context 카탈로그/정확 평균과 구분된 추정 지표를 실제 코드/UI/합성 계약/비표시 WPF로 연결했다. 단일 최종 승인 전체 실제 등록 목표와 기본 IntegrationBlocked 유지. 현재 로컬 기준 47 COMPLETE/15 PARTIAL/0 MISSING/4 BLOCKED/9 UNVERIFIED이며 실계정 출시 준비 완료를 뜻하지 않는다. 상세 기준은 REQUIREMENTS-TRACEABILITY/QA-MATRIX.
+
 ## 5차 범위 (최신)
 
 - 실험 어댑터를 사용자 시작 QR/읽기/선택/가격 검토/결과·수동 대조/관리 UI에 연결한다. Mock과 출처·상태를 분리하며 실제 거래 기본 차단은 유지한다.

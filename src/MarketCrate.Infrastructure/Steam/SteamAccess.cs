@@ -21,8 +21,8 @@ public sealed class SteamAccess
     public override string ToString() => "SteamAccess (session-only)";
 }
 
-public enum SteamFailure { Disabled, Authentication, Forbidden, RateLimited, Challenge, ContractChanged, Transport, Restricted, Expired, Denied, StaleReview }
-public sealed record SteamTradingPolicy(bool Enabled, string EvidenceReference, bool StackAmountsSupported = false)
+public enum SteamFailure { Disabled, Authentication, Forbidden, RateLimited, Challenge, ContractChanged, Transport, Restricted, Expired, Denied, StaleReview, Unsupported }
+public sealed record SteamTradingPolicy(bool Enabled, string EvidenceReference, bool StackAmountsSupported = false,bool MedianPriceContractSupported = false)
 {
     public static SteamTradingPolicy Blocked { get; } = new(false, "Valve permission not established");
     internal static SteamTradingPolicy ContractTest { get; } = new(true, "synthetic contract only", true);
@@ -66,7 +66,7 @@ public sealed class SteamHttp : IDisposable
     }
     internal async Task<string> SendAsync(HttpRequestMessage request, CancellationToken token, bool allowWalletHtml = false)
     {
-        using var scope=DiagnosticHub.Scope(correlation:true);
+        using var scope=DiagnosticHub.Scope(correlation:DiagnosticHub.Context?.CorrelationId is null);
         var started=DateTimeOffset.UtcNow;var watch=Stopwatch.StartNew();
         ValidateUri(request.RequestUri!);
         var path = request.RequestUri!.AbsolutePath;
@@ -102,9 +102,9 @@ public sealed class SteamHttp : IDisposable
                 endpoint:endpoint,method:request.Method.Method,status:status,serverCode:steamCode,started:started,elapsed:watch.ElapsedMilliseconds);
             if (status != 200)
             {
-                var failure = status switch { 401 => SteamFailure.Authentication, 403 => SteamFailure.Forbidden, 429 => SteamFailure.RateLimited,
+                var failure = status switch { 404 => SteamFailure.Unsupported, 401 => SteamFailure.Authentication, 403 => SteamFailure.Forbidden, 429 => SteamFailure.RateLimited,
                     >= 300 and < 400 => SteamFailure.Authentication, _ => SteamFailure.Transport };
-                Stop(failure); throw new SteamException(failure);
+                if(failure!=SteamFailure.Unsupported)Stop(failure); throw new SteamException(failure);
             }
             if (response.Headers.TryGetValues("x-eresult", out var results) && results.FirstOrDefault() is { } result && result != "1")
             { var failure = result == "15" ? SteamFailure.Denied : result == "27" ? SteamFailure.Expired : SteamFailure.Authentication; Stop(failure); throw new SteamException(failure); }

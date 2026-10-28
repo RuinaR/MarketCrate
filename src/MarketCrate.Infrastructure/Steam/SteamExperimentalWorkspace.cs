@@ -8,6 +8,7 @@ public sealed class SteamExperimentalWorkspace : IDisposable
 {
     private readonly SteamStateStore store;
     private readonly SteamHttp http;
+    public SteamImageCache Images{get;}
     public SteamAccess Access { get; } = new();
     public SteamQrAuthentication Authentication { get; }
     public SteamInventoryProvider Inventory { get; private set; }
@@ -19,9 +20,9 @@ public sealed class SteamExperimentalWorkspace : IDisposable
     public SteamTradingPolicy Policy { get; }
     public SteamFailure? Failure => http.Halted;
     public SteamExperimentalWorkspace(string isolatedDataDirectory, int appId, string contextId, string game,
-        SteamTradingPolicy? policy = null, HttpMessageHandler? contractHandler = null, TimeProvider? clock = null)
+        SteamTradingPolicy? policy = null, HttpMessageHandler? contractHandler = null, TimeProvider? clock = null,HttpMessageHandler? imageHandler=null)
     {
-        store = new(isolatedDataDirectory);
+        store = new(isolatedDataDirectory);Images=new(imageHandler);
         Policy = policy ?? SteamTradingPolicy.Blocked;
         http = new(Access, contractHandler); Authentication = new(http, clock);
         Inventory = new(http, Authentication, appId, contextId, game);
@@ -35,5 +36,5 @@ public sealed class SteamExperimentalWorkspace : IDisposable
         Executor = new(http, Authentication, store, Inventory, Prices, Orders, Policy); Batches = new(Executor, store);
     }
     public Task<SteamFeeSchedule> FeesAsync(int appId, CancellationToken token = default) => SteamFees.FetchAsync(http, appId, token);
-    public void Dispose() { Authentication.Dispose(); http.Dispose(); store.Dispose(); }
+    public void Dispose() { Authentication.Dispose(); Images.Dispose();http.Dispose(); store.Dispose(); }
 }

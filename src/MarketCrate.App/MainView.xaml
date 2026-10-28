@@ -241,7 +241,7 @@
             </StackPanel>
           </ScrollViewer>
         </TabItem>
-        <TabItem Header="Steam 실험 연동"><local:SteamWorkspaceView DataContext="{Binding Steam}" /></TabItem>
+        <TabItem Header="Steam 실험 연동"><DockPanel><Button DockPanel.Dock="Top" Content="현재 Steam 작업의 진단 보기" Click="SteamDiagnosticsClicked" HorizontalAlignment="Right"/><local:SteamWorkspaceView DataContext="{Binding Steam}" /></DockPanel></TabItem>
         <TabItem Header="진단 / 로그"><local:DiagnosticsView DataContext="{Binding Diagnostics}"/></TabItem>
       </TabControl>
       <Border Grid.Column="4">

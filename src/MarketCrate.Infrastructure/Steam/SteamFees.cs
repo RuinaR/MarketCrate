@@ -38,8 +38,9 @@ public static class SteamFees
     });
     public static async Task<SteamFeeSchedule> FetchAsync(SteamHttp http, int appId, CancellationToken token)
     {
-        using var walletRequest = new HttpRequestMessage(HttpMethod.Get, "https://steamcommunity.com/market/");
-        var wallet = Wallet(await http.SendAsync(walletRequest, token, true));
+        SteamWallet wallet;
+        using(DiagnosticHub.Scope(correlation:true)){using var walletRequest = new HttpRequestMessage(HttpMethod.Get, "https://steamcommunity.com/market/");wallet = Wallet(await http.SendAsync(walletRequest, token, true));}
+        using var correlation=DiagnosticHub.Scope(correlation:true);
         using var feesRequest = new HttpRequestMessage(HttpMethod.Get, $"https://steamcommunity.com/market/ajaxfeestructure/?appid={appId}");
         try { return Structure(await http.SendAsync(feesRequest, token), wallet); }
         catch (SteamException e) { http.Stop(e.Code); throw; }

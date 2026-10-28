@@ -1,4 +1,26 @@
-# MarketCrate — 현재 상태 (2026-10-28 KST, 6차)
+# MarketCrate — 현재 상태 (2026-10-28 KST, 7차)
+
+7차 추가 반환 제한: 원래 단일 수량이었어도 취소 후 returned.Stackable/수량 증가·기존 가용 수량이 있으면 proof로 확정하지 않는다. 동일 ID라도 현재 정확히1개/기존0개인 제한 경로만 합성 대조하며 나머지는 Unknown/예약 유지. 실제 nonstack/스택·ID 의미와 인과 증거는 여전히 미검증이다.
+
+### 7차 자동 검증 마감
+
+- 전체 기능/합성 HTTP/SQLite/진단 **158/158 PASS, FAIL0** (기존139+신규19), 비표시 WPF **28/28 PASS, FAIL0** (기존23+신규5), Debug 빌드 경고0/오류0. 마지막 기능 보강 후 전체 회귀 실행. 예상치 못한 binding 오류0/Window·PresentationSource0.
+- 실제 PNG 디코딩·재활용60회·전송 중복/취소·재시도/실패 상태와 보관함/판매/검토/추정/진단 이동 이미지를 직접 검사했다. NumericStepper 36px/텍스트 줄바꿈/출처/기준별 부족 수량 안내를 수정·재확인했다.
+- 단기 합성 예: 이미지100회 약2ms wall/31ms 자체 process CPU/managed allocation 약1.36MB, LRU4개/280B; 썸네일60회 약1835ms wall/1406ms 자체 CPU/약0.89MB managed allocation, cache210B. 자체 process만 읽었고 CPU 계수 해상도/다른 자체 스레드가 포함된다. 실이미지/네이티브 메모리/장시간 누수/FPS/다른 앱 영향 측정으로 확대하지 않는다.
+- 실제 Steam 이미지/인증/보관함/가격/fee/판매/취소/Guard 및 실제 창/물리 입력/모니터 DPI/installer/VM 실행은 NOT VERIFIED. Release는 별도 소스 커밋 후 정적 마감 기록에 추가한다.
+
+## 7차 최신 상태 — 이미지 / 계정별 context 카탈로그 / 구분된 가격 지표
+
+시작 HEAD/origin/main `158a606`, clean/fetch 확인. 75개 ID 유지/전 행 재평가: **44/16/1/5/9 → COMPLETE47 / PARTIAL15 / MISSING0 / BLOCKED4 / UNVERIFIED9**. 새 COMPLETE **B04/C02/D02**는 로컬 구현·합성 계약·비표시 WPF 범위. B05는 대체 추정치를 연결해 BLOCKED→PARTIAL. 실제 서버/계정/GUI 검증은 승격하지 않았다.
+
+- 이미지: 검증한 classid/instanceid description join과 icon_url_large/icon_url → 메타데이터 별도 maps → 보관함/판매/검토 및 게임 대표 이미지. opt-in 전 네트워크 없음. 인증과 분리한 단일 Steam CDN/고정 128px 경로, URL 토큰 제한, redirects/cookies/proxy OFF. PNG/JPEG 512KiB·512px 이하, 128px off-thread decode/freeze, LRU 128개/16MiB·single-flight·동시 전송1·대기32·15초 timeout·제한 응답 latch. 가상화 unload/재활용/끄기/로그아웃 취소, 늦은 결과 폐기, 없음/꺼짐/미지원/로딩/실패/재시도 UI. 실제 CDN 이미지 미요청/미검증.
+- 카탈로그: 3개 seed는 보유 확인이 아니다. 계정별 AppID/context 수동 추가/제거, 판매목록 관측 scope 추가, 기존 Steam v3 SQLite에 원자 저장/복원. context 2 고정 가정 제거. 이름 미확인 App 임시 이름, 판매 가능 종류 수/대표 보관함 이미지/미조회·빈 목록·404·접근 거부·부분 실패 구분. 403만으로 비공개라고 확정하지 않음. 무차별 조회/전체 계정 자동 발견/GetOwnedGames 호출 없음.
+- 가격: 즉시 예상가 / 정확한 평균(원자료 없어 이용 불가) / 기간 중앙값의 서버 거래량 가중 중앙값 추정. 24h/7d/30d·수집/기간/구간 수/서버 거래량/방법/한계 표시. 추정은 VWAP/전체 체결 중앙값/즉시 체결가가 아니다. 최저 판매호가는 자료 없음을 표시. 판매목록 선택 최대10상품의 대체 지표도 명시적 조회. 기준/기간 변경은 수동 가격 초기화, 늦은 응답 폐기.
+- 보강: Evidence 불변 snapshot/digest, 최종 history 재조회에서 표본 변동(중앙값/합계 같아도)·부족/통화/오래됨 거부. 상품별 preflight 중복 조회 제거/완료 후 승인 freshness 재검사. publisher fee 누락도 차단. 기존 Unknown/스택 반환 인과 증거/취소·재가격 보호 유지. 로그아웃 뒤 늦은 응답이 새 catalog 상태를 덮지 않음.
+- 진단: 새 metadata/image/catalog/indicator 이벤트와 operation/request 연결. 원본/URL/토큰/이미지 bytes 로그 없음. 현재 Steam 작업→진단 탭 바로가기. 정책/보존/ZIP 그대로 유지.
+- 최종 자동·Release 결과는 7차 QA-MATRIX/WORKLOG 마감 기록 참조. 실제 앱/Window/Popup/전역 입력/다른 앱/실계정/거래/Guard 미실행. [격리 GUI 후속 절차](ISOLATED-GUI-QA.md)는 구성만 준비하고 실행하지 않음.
+
+남은 28개 판정은 추적표에 유지. 핵심 차단: 실제 인증/응답·KRW/스택 계약/정확한 원자료·ID-less/외부 동시 등록/스택 반환의 인과 증거, live 재시도/실환경 QA. **IntegrationBlocked 기본과 최종 단일 승인 전체 실등록 목표 모두 유지.**
 
 ## 6차 최신 상태 — 전체 감사 / 구조화 진단 / 안전한 새 재가격 승인
 

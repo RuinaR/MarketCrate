@@ -21,6 +21,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,"E09");
         approved.Clear();
         if (!CanExecute || snapshot.AccountReference != auth.SteamId) throw new SteamException(SteamFailure.Disabled);
+        if(snapshot.Lines.Any(x=>x.Evidence is not null)&&!executionPolicy.MedianPriceContractSupported)throw new SteamException(SteamFailure.Restricted);
         BatchValidation.Validate(snapshot, DateTimeOffset.UtcNow);
         if (snapshot.Lines.Select(x => x.Asset.Key.AppId).Distinct().Count() != 1 ||
             snapshot.Lines.Any(x => x.Asset.Stackable && !executionPolicy.StackAmountsSupported))
@@ -29,17 +30,26 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         var schedule = await SteamFees.FetchAsync(http, snapshot.Lines[0].Asset.Key.AppId, token);
         foreach (var group in snapshot.Lines.GroupBy(x => x.Asset.Key))
             if (!current.TryGetValue(group.Key, out var found) || group.Sum(x => x.Quantity) > store.Available(found)) throw new SteamException(SteamFailure.Restricted);
+        var validatedPrices=new Dictionary<(int,string,long),PriceSnapshot>();
         foreach (var line in snapshot.Lines)
         {
             if (!current.TryGetValue(line.Asset.Key, out var asset) || asset != line.Asset || !asset.Marketable || asset.Locked ||
                 schedule.Currency != line.Currency || schedule.FromSeller(line.UnitQuote.SellerReceives) != line.UnitQuote) throw new SteamException(SteamFailure.Restricted);
-            if (inventory.PublisherFees.TryGetValue(asset.Key, out var fee) && fee * 100L != schedule.Publisher.Millionths) throw new SteamException(SteamFailure.Restricted);
-            var price = await prices.RefreshAsync(asset, token);
+            if (!inventory.PublisherFees.TryGetValue(asset.Key, out var fee) || fee * 100L != schedule.Publisher.Millionths) throw new SteamException(SteamFailure.Restricted);
+            var priceKey=(asset.Key.AppId,asset.MarketHashName,line.Evidence is {} source?(source.WindowEnd-source.WindowStart).Ticks:0);
+            if(!validatedPrices.TryGetValue(priceKey,out var price))
+            {price=line.Evidence is {} evidenceSource?await prices.RefreshEstimateAsync(asset,evidenceSource.WindowEnd-evidenceSource.WindowStart,token):await prices.RefreshAsync(asset,token);validatedPrices.Add(priceKey,price);}
+            if(line.Evidence is {} evidence)
+            {
+                if(evidence.Currency!=line.Currency||!evidence.Fresh(DateTimeOffset.UtcNow))throw new SteamException(SteamFailure.StaleReview);
+                if(price.Estimate is not {} fresh||fresh.Minor!=evidence.Minor||fresh.Buckets!=evidence.Buckets||fresh.Volume!=evidence.Volume||fresh.SampleDigest!=evidence.SampleDigest){DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,DiagnosticOutcome.Blocked,LogLevel.Warning,DiagnosticError.Validation,reason:"HistoryChanged",requirement:"E09");throw new SteamException(SteamFailure.StaleReview);}
+            }
             if (price.Currency != line.Currency || price.Bids.IsEmpty) throw new SteamException(SteamFailure.Restricted);
             var reference = price.Bids[0].BuyerPays;
             if (line.UnitQuote.BuyerPays < reference / 2 || (decimal)line.UnitQuote.BuyerPays > (decimal)reference * 2)
                 throw new SteamException(SteamFailure.Restricted); // Require a new review, never reprice the immutable approval.
         }
+        BatchValidation.Validate(snapshot,DateTimeOffset.UtcNow); // Network preflight must not age an approval into a durable submission intent.
         foreach (var line in snapshot.Lines) approved.Add(SaleBatchCoordinator.RequestKey(snapshot, line), line);
     }
     internal static FeePolicy Wallet(string html)
@@ -180,7 +190,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         var returned = (await inventory.GetAsync(token)).SingleOrDefault(x => x.Key == intent.Line.Asset.Key && x.MarketHashName == intent.Line.Asset.MarketHashName);
         var originalSell=store.Commands().SingleOrDefault(x=>x.Kind=="sell"&&x.ListingId==intent.ListingId);
         // Stack increases may be unrelated merges. Without a causal cancellation event, do not release them.
-        var confirmed = originalSell is not null && !originalSell.Line.Asset.Stackable && intent.Line.Quantity==1 && current is null && intent.Accepted && returned is not null && returned.Quantity >= checked(intent.AvailableBefore + intent.Line.Quantity);
+        var confirmed = originalSell is not null && !originalSell.Line.Asset.Stackable && intent.Line.Quantity==1 && current is null && intent.Accepted && returned is not null && !returned.Stackable && returned.Quantity==1 && intent.AvailableBefore==0;
         var state = confirmed ? SaleState.Reconciled : current is null ? SaleState.Unknown : SaleState.Submitted;
         if (confirmed)
         {

@@ -1,5 +1,14 @@
 # MarketCrate — 아키텍처 (최초 Mock 구현 / 후속 계획)
 
+7차 추가 보호: 기간 중앙값의 구매자/판매자 결제액 역할과 통화 해석은 live 미검증이므로 `SteamTradingPolicy.MedianPriceContractSupported`가 별도로 필요하며 기본 false다. 사용자의 최종 클릭/정수 계산 성공으로 이를 true로 추정하지 않는다. 합성 positive 경로에서만 명시적으로 켜 검증했다.
+
+## 7차 확장 (기존 MVVM/저널 유지)
+
+- Image metadata를 InventoryAsset/SaleLine의 거래 equality에 추가하지 않고 provider side maps에 둔다. ItemThumbnail은 실현된 컨트롤만 구독, unload/data recycling/Loader 변경 때 구독 취소/decoded Source 해제. byte 캐시는 별도 무인증 SteamImageCache, single-flight subscriber refcount와 bounded LRU/queue, WIC decode는 바이트/픽셀 검증 후 worker→freeze→소유 Dispatcher 반영. cache 실패는 주문 상태에 영향 없음.
+- SteamCatalogViewModel partial은 Observable Games/InventoryScope를 다룬다. validated app/context/name만 account-scoped catalog kind로 SteamStateStore v3에 저장. command/result/return/reprice kind와 분리하고 기존 journal 행/버전 삭제·재작성 없음. 현재 scope/관측된 판매목록만 반영하며 과거 상태/건수는 재시작에 확정값으로 복원하지 않음.
+- PriceBasis/PriceEvidence는 exact average와 median estimate를 분리한다. 허용 정수 금액·정렬된 기간 표본/거래량으로 하위 가중 중앙값 산출, 원자료 없으면 exact average 차단. immutable line.Evidence에는 source/method/window/count/volume/SHA256 digest를 고정, fresh 검토/서버 재조회 변화 검사. 실제 최신 계약 보장은 아님. 원본 버킷/HTTP 본문은 저널·로그에 저장하지 않음.
+- 네트워크 재검증은 같은 상품/기간별 한 번, 결과는 line마다 검증하며 끝에 snapshot 시간도 재검사. 기존 한 번 승인/직렬 제출/durable intent/Unknown 보존 그대로. 근거 없는 stack 반환 proof 추가 안 함.
+
 ## 6차 — 진단 경계와 재가격 승인 revision
 
 - Core `Diagnostics.cs`는 typed 이벤트와 AsyncLocal 연결 scope만 정의한다. Infrastructure `Diagnostics/JsonDiagnosticLog.cs`가 Channel single writer/retention/reviewed export를 맡고 `DiagnosticRecordSafety.cs`가 생성·export 이중 whitelist를 적용한다. App은 startup 전에 로거를 구성하고 lifecycle/global exception/binding 이벤트를 연결한다. **로그와 transaction authority를 분리**하며 진단 실패는 주문 흐름에 예외를 전파하거나 재시도를 유발하지 않는다. 구조/보존/위험은 [DIAGNOSTICS](DIAGNOSTICS.md).

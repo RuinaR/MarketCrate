@@ -1,4 +1,17 @@
-# Steam 연동 가능성 조사 — 2026-10-28 KST (6차)
+# Steam 연동 가능성 조사 — 2026-10-28 KST (7차)
+
+7차 추가 반환 제한: 원래 단일 수량이었어도 취소 후 returned.Stackable/수량 증가·기존 가용 수량이 있으면 proof로 확정하지 않는다. 동일 ID라도 현재 정확히1개/기존0개인 제한 경로만 합성 대조하며 나머지는 Unknown/예약 유지. 실제 nonstack/스택·ID 의미와 인과 증거는 여전히 미검증이다.
+
+7차 추가 보호: 기간 중앙값의 구매자/판매자 결제액 역할과 통화 해석은 live 미검증이므로 `SteamTradingPolicy.MedianPriceContractSupported`가 별도로 필요하며 기본 false다. 사용자의 최종 클릭/정수 계산 성공으로 이를 true로 추정하지 않는다. 합성 positive 경로에서만 명시적으로 켜 검증했다.
+
+## 7차 공개 자료 조사와 구현 범위 — 2026-10-28 KST
+
+실계정 인증/보관함·장터 API/이미지 다운로드/판매·취소·Guard는 실행하지 않았다. 공개 Market HTML과 연결된 공식 JS만 source로 읽었다(실행/코드 복사 없음). 네트워크 DNS sandbox 제한은 공개 문서 GET에만 승인된 경로로 재시도했다. 제재/허용 근거는 새로 확보하지 않았고 기본 거래 차단이다.
+
+- [공개 Market](https://steamcommunity.com/market/)의 이미지 경로 및 [economy.js](https://community.fastly.steamstatic.com/public/javascript/economy.js) ImageURL/icon_url/icon_url_large 사용과 Median Sale Prices 표시를 확인. `community.fastly.steamstatic.com/economy/image/<opaque-token>/128fx128f`만 구성한다. 공식 웹의 사용 사례는 안정적인 API/자동화 허가 보장이 아니다. Steam 원본 이미지 bytes/실계정 메타데이터는 이번에 검증 안 함. 다른 CDN/임의 URL fallback 없음.
+- [IPlayerService/GetOwnedGames](https://partner.steamgames.com/doc/webapi/IPlayerService#GetOwnedGames)는 key/노출 권한과 무료 게임 포함 조건이 있다. 계정 inventory context 전체성은 문서의 보장이 아니므로 카탈로그 전체 발견으로 쓰지 않는다. key 수집/해당 API 호출을 구현하지 않았다. 실제 조회한 inventory scope와 판매목록, 사용자 app/context 설정을 반영한다. 404는 해당 요청 경로 미지원이지 게임 영구 미지원 증거가 아니며 403은 비공개 원인 확정이 아니다.
+- `pricehistory`는 기간 중앙값/거래량 자료로 취급한다. 정확한 체결 가격 목록이 없어 exact mean/VWAP는 차단한다. 대체값은 **버킷 중앙값의 서버 거래량 가중 하위 중앙값 추정**이며 실제 전체 체결 중앙값도 아니다. 현재 최고 구매호가 기반 예상가와 분리. 최저 판매호가는 현재 계약에 없음을 표시. 합성 형식/정수 계산/기간·digest 재검증만 확인했으며 실제 이력/거래량 단위/버킷 재집계는 미검증이다.
+- KRW wire·반올림·fee profile/스택 capability는 이전 소스 기반 합성 범위 그대로. 누락 publisher fee/불일치/시간 만료/변경 history도 요청 전 차단. 스택 취소의 동일 ID/증가 수량은 인과 proof로 승격 안 함. ID 없는 요청·외부 동시 등록·ID remap은 여전히 Unknown.
 
 ## 6차 감사 보완 — 2026-10-28 KST (최신)
 
