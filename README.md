@@ -2,6 +2,8 @@
 
 Windows 10/11 · C# / .NET 10 / WPF / MVVM 기반 Steam 보관함·판매 계획 앱입니다. 현재 범위는 **Mock**이며 Steam 공식 앱이 아닙니다.
 
+4차: 별도의 **실험적 비공식 Steam 어댑터 소스**를 추가했습니다. QR 프로토콜/자체 메모리 세션, 실제 HTTP 보관함·호가·중간가격 이력·목록·등록·취소, 직렬 전송/응답 검증/불명 저널/대조를 합성 HTTP로 검증합니다. 일반 WPF 앱에는 주입하지 않으며 로그인 UI·실계정 검증·원화 실등록·스택 분할·확정 취소 후 재가격은 미완성입니다. Mock 화면에서 실제 계정 작업이 발생하지 않습니다. 제재 위험과 인증 보안 위험은 별개입니다. [조사·범위·개발자 옵트인 계약](docs/STEAM-INTEGRATION-FEASIBILITY.md)을 먼저 확인하세요.
+
 **필수 최종 목표:** 최종 검토의 `전체 판매등록` 한 번 승인으로 선택 전 품목·수량·개별 가격을 실제 Steam 장터에 제출합니다. 현재 실제 읽기·등록·취소는 **LIVE_INTEGRATION_BLOCKED / Unavailable**입니다. Mock을 실판매 완료로 표현하지 않습니다.
 
 ## 현재 기능
@@ -14,7 +16,7 @@ Windows 10/11 · C# / .NET 10 / WPF / MVVM 기반 Steam 보관함·판매 계획
 - 판매 중 전체 선택/해제, 취소 확인 후 새 가격으로 Mock 재등록, 확정 실패 등록/취소 작업의 명시적 재시도 검토를 지원합니다. 재시도는 시도 번호별 키를 사용하며 성공·불명·승인 대기는 다시 제출하지 않습니다.
 - 잔량 부족 수량은 가격 없는 별도 행으로 표시합니다. 직접 가격을 입력하면 대기 판매 계획에 포함할 수 있지만 즉시 체결은 보장하지 않습니다. 수동 가격은 열린 검토에서만 유효하며 전략 변경/검토 닫기/갱신 시 초기화합니다.
 - SQLite에 합성 보관함·설정·배치 이력·요청 증거·판매 목록 저장. JSON v1 저널은 원본을 남기고 한 번만 이관합니다.
-- 독자적인 다크 테마·커스텀 템플릿·모션 축소 기본 ON. 전역 입력·타 앱 조사·자동 시작·Steam 네트워크 연동 없음.
+- 독자적인 다크 테마·커스텀 템플릿·모션 축소 기본 ON. 전역 입력·타 앱 조사·자동 시작 없음. 일반 앱은 Steam 연결을 시작하지 않습니다.
 
 ## 빌드·검증
 
@@ -49,7 +51,7 @@ WPF 검사는 MainView/UserControl을 직접 Measure/Arrange하고 RenderTargetB
 
 [현재 상태](docs/CURRENT-STATUS.md) · [일괄 등록 계약](docs/SALE-EXECUTION-SPEC.md) · [출처](docs/REFERENCES.md) · [외부 의존성 고지](THIRD-PARTY-NOTICES.md)
 
-3차 조사: [Steam 연동 가능성](docs/STEAM-INTEGRATION-FEASIBILITY.md). 공식 publisher API의 존재는 일반 개인용 장터 쓰기 허가가 아닙니다. 실제 연동은 계속 차단합니다.
+4차 조사: [Steam 연동 가능성](docs/STEAM-INTEGRATION-FEASIBILITY.md). 공식 publisher API의 존재나 비공식 구현 사례는 일반 개인용 장터 자동화 허가가 아닙니다. 실험적 소스 구현과 실제 계정 지원 완료를 구분하며 일반 앱은 계속 차단합니다.
 
 `./scripts/Publish.ps1`은 framework-dependent Windows 실행파일을 `artifacts/windows-framework-dependent`에 만들고 PE 헤더/로컬 데이터 제외를 검사합니다. 앱을 실행하거나 설치/공개 배포하지 않습니다. [배포 검증 범위](docs/DEPLOYMENT-CHECKLIST.md)를 참조하세요.
 

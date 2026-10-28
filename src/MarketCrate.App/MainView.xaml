@@ -216,11 +216,18 @@
           </Grid>
         </TabItem>
         <TabItem Header="기록·안전">
-          <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <StackPanel>
+          <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="0,0,16,0">
               <TextBlock Text="투명한 기능 상태" Style="{StaticResource Heading}" />
               <TextBlock Text="Available: 로컬 계산 / Mock: 보관함·시세·배치 / Unavailable: 실제 읽기 / Blocked: 실제 등록·취소·재등록" Margin="0,8" />
               <TextBlock Text="최종 제품 목표: 최종 검토의 단 한 번 승인으로 선택 전체 실제 Steam 장터 등록. 현재 Mock은 실판매 완성이 아닙니다." Foreground="{StaticResource Warning}" Margin="0,8" />
+              <Border x:Name="IntegrationNotice" Style="{StaticResource PanelStyle}" Margin="0,8">
+                <StackPanel>
+                  <TextBlock Text="실험적 Steam 어댑터 · 기본 비활성" FontWeight="Bold" Foreground="{StaticResource Warning}" />
+                  <TextBlock Text="QR 프로토콜·보관함·호가·판매/취소 전송 코드는 별도 구현되어 있습니다. 이 화면은 계속 Mock이며 계정 연결/실거래를 시작하지 않습니다." Style="{StaticResource MutedText}" Margin="0,8" />
+                  <TextBlock Text="실계정 미검증 · 비공식 자동화의 제재 위험 있음 · 원화 실등록/스택 분할/자동 재가격은 미지원. 세션 보안을 강화해도 제재 위험은 사라지지 않습니다." Style="{StaticResource MutedText}" />
+                </StackPanel>
+              </Border>
               <CheckBox Content="모션 축소 (기본 ON, 현재 정적 상태 사용)" IsChecked="{Binding ReducedMotion}" />
               <TextBlock Text="백그라운드 폴링·자동 시작·타 앱 입력·프로세스 조사 없음. 수수료는 Demo 정책 추정이며 실제 Steam 통화별 산식은 미검증입니다." Margin="0,12" />
               <ItemsControl ItemsSource="{Binding History}" />

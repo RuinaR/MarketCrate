@@ -1,0 +1,115 @@
+using System.Net;
+using System.Net.Http.Headers;
+using System.Text.Json;
+
+namespace MarketCrate.Infrastructure.Steam;
+
+// Session-only consent. Never deserialize this from settings or enable it at startup.
+public sealed class SteamAccess
+{
+    public bool ResearchRiskAccepted { get; private set; }
+    public bool AuthenticatedReads { get; private set; }
+    public bool Trading { get; private set; }
+    public void Acknowledge(bool unofficialAutomationRisk, bool credentialRisk, bool reads, bool trading)
+    {
+        if (!unofficialAutomationRisk || !credentialRisk) throw new InvalidOperationException("SteamRiskAcknowledgementRequired");
+        ResearchRiskAccepted = true; AuthenticatedReads = reads; Trading = reads && trading;
+    }
+    public void Revoke() { ResearchRiskAccepted = AuthenticatedReads = Trading = false; }
+    public override string ToString() => "SteamAccess (session-only)";
+}
+
+public enum SteamFailure { Disabled, Authentication, Forbidden, RateLimited, Challenge, ContractChanged, Transport, Restricted }
+public sealed class SteamException(SteamFailure code) : IOException(code.ToString())
+{
+    public SteamFailure Code { get; } = code;
+}
+
+// No browser cookie import, external host, redirects, automatic retries or response-body logging.
+public sealed class SteamHttp : IDisposable
+{
+    private readonly HttpClient client;
+    private readonly SemaphoreSlim queue = new(1, 1);
+    private DateTimeOffset last;
+    private readonly TimeSpan gap;
+    internal readonly CookieContainer Cookies = new();
+    public SteamAccess Access { get; }
+    public SteamFailure? Halted { get; private set; }
+    public SteamHttp(SteamAccess access, HttpMessageHandler? testHandler = null, TimeSpan? testGap = null)
+    {
+        Access = access; gap = testHandler is null ? TimeSpan.FromSeconds(3) : testGap ?? TimeSpan.Zero;
+        client = new(testHandler ?? new HttpClientHandler { AllowAutoRedirect = false, UseCookies = true, CookieContainer = Cookies, UseProxy = false });
+        client.Timeout = TimeSpan.FromSeconds(25);
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("MarketCrate/0.4 (experimental; user-initiated)");
+    }
+    public void Stop(SteamFailure failure) => Halted ??= failure;
+    internal static void ValidateUri(Uri uri)
+    {
+        if (uri.Scheme != "https" || uri.Port != 443 || uri.UserInfo.Length != 0 || uri.Fragment.Length != 0) throw new SteamException(SteamFailure.ContractChanged);
+        var path = uri.AbsolutePath;
+        var valid = uri.Host switch
+        {
+            "api.steampowered.com" => path is "/IAuthenticationService/BeginAuthSessionViaQR/v1/" or "/IAuthenticationService/PollAuthSessionStatus/v1/",
+            "login.steampowered.com" => path == "/jwt/finalizelogin",
+            "steamcommunity.com" => path is "/login/settoken" or "/market/" or "/market/orderbook" or "/market/pricehistory/" or "/market/mylistings/render/" or "/market/sellitem/" ||
+                path.StartsWith("/inventory/", StringComparison.Ordinal) || path.StartsWith("/market/removelisting/", StringComparison.Ordinal),
+            _ => false
+        };
+        if (!valid) throw new SteamException(SteamFailure.ContractChanged);
+    }
+    internal async Task<string> SendAsync(HttpRequestMessage request, CancellationToken token, bool allowWalletHtml = false)
+    {
+        ValidateUri(request.RequestUri!);
+        var path = request.RequestUri!.AbsolutePath;
+        var mustPost = path.Contains("AuthSession", StringComparison.Ordinal) || path is "/jwt/finalizelogin" or "/login/settoken" or "/market/sellitem/" || path.StartsWith("/market/removelisting/", StringComparison.Ordinal);
+        if (request.Method != (mustPost ? HttpMethod.Post : HttpMethod.Get)) throw new SteamException(SteamFailure.ContractChanged);
+        if (!Access.ResearchRiskAccepted) throw new SteamException(SteamFailure.Disabled);
+        await queue.WaitAsync(token);
+        try
+        {
+            if (Halted is { } halted) throw new SteamException(halted);
+            var wait = last + gap - DateTimeOffset.UtcNow;
+            if (wait > TimeSpan.Zero) await Task.Delay(wait, token);
+            if (!Access.ResearchRiskAccepted) throw new SteamException(SteamFailure.Disabled);
+            last = DateTimeOffset.UtcNow;
+            using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);
+            var status = (int)response.StatusCode;
+            if (status != 200)
+            {
+                var failure = status switch { 401 => SteamFailure.Authentication, 403 => SteamFailure.Forbidden, 429 => SteamFailure.RateLimited,
+                    >= 300 and < 400 => SteamFailure.Authentication, _ => SteamFailure.Transport };
+                Stop(failure); throw new SteamException(failure);
+            }
+            if (response.Headers.TryGetValues("x-eresult", out var results) && results.Any(x => x != "1"))
+            { Stop(SteamFailure.Authentication); throw new SteamException(SteamFailure.Authentication); }
+            // Bounded reads prevent unexpected HTML/large payloads from consuming unbounded memory.
+            await using var stream = await response.Content.ReadAsStreamAsync(token);
+            using var bytes = new MemoryStream(); var buffer = new byte[8192]; int read;
+            while ((read = await stream.ReadAsync(buffer, token)) != 0)
+            {
+                if (bytes.Length + read > 8 * 1024 * 1024) { Stop(SteamFailure.ContractChanged); throw new SteamException(SteamFailure.ContractChanged); }
+                bytes.Write(buffer, 0, read);
+            }
+            var text = System.Text.Encoding.UTF8.GetString(bytes.ToArray());
+            if (text.TrimStart().StartsWith('<') && !(allowWalletHtml && request.RequestUri!.AbsoluteUri == "https://steamcommunity.com/market/")) { Stop(SteamFailure.Challenge); throw new SteamException(SteamFailure.Challenge); }
+            return text;
+        }
+        catch (Exception error) when (error is HttpRequestException or TaskCanceledException || error is IOException and not SteamException)
+        { Stop(SteamFailure.Transport); throw new SteamException(SteamFailure.Transport); }
+        finally { queue.Release(); }
+    }
+    internal static HttpRequestMessage Form(Uri uri, IEnumerable<KeyValuePair<string, string>> fields)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, uri) { Content = new FormUrlEncodedContent(fields) };
+        request.Headers.Referrer = new("https://steamcommunity.com/");
+        request.Headers.Add("Origin", "https://steamcommunity.com");
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        return request;
+    }
+    internal static JsonDocument Json(string body)
+    {
+        try { return JsonDocument.Parse(body, new JsonDocumentOptions { MaxDepth = 32 }); }
+        catch (JsonException) { throw new SteamException(SteamFailure.ContractChanged); }
+    }
+    public void Dispose() { Access.Revoke(); client.Dispose(); queue.Dispose(); }
+}

@@ -53,7 +53,7 @@ public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatch
         await gate.WaitAsync(cancellationToken);
         try
         {
-            if (executor.Capability != Capability.Mock) throw new InvalidOperationException("IntegrationBlocked: 허용된 실거래 어댑터 없음");
+            if (executor.Capability != Capability.Mock && executor is not IAuthorizedListingExecutor { CanExecute: true }) throw new InvalidOperationException("IntegrationBlocked");
             var existing = await journal.LoadAsync(cancellationToken);
             // Journal is an intentionally single active batch. User must archive/clear completed demo data before another batch.
             if (existing != null)
@@ -62,14 +62,15 @@ public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatch
                 return existing;
             }
             BatchValidation.Validate(snapshot, DateTimeOffset.UtcNow);
+            if (executor is IAuthorizedListingExecutor authorized) await authorized.ValidateBatchAsync(snapshot, cancellationToken);
             if (journal is IDemoDataStore history) SalePlanner.ValidateReservations(snapshot, history.ReadBatches(), MockListingManagement.ReleasedRequests(history.ReadListings()));
-            var record = new BatchRecord(1, snapshot, snapshot.Lines.Select(x => new LineResult(x.LineId, SaleState.Ready, "Mock 대기")).ToImmutableArray());
+            var record = new BatchRecord(1, snapshot, snapshot.Lines.Select(x => new LineResult(x.LineId, SaleState.Ready, executor.Capability == Capability.Mock ? "Mock 대기" : "실험적 Steam 전송 대기")).ToImmutableArray());
             await journal.SaveAsync(record, cancellationToken);
             for (var i = 0; i < snapshot.Lines.Length; i++)
             {
                 if (cancellationToken.IsCancellationRequested) break;
                 var line = snapshot.Lines[i];
-                record = Update(record, i, new(line.LineId, SaleState.Submitting, "Mock 전송 기록 중"));
+                record = Update(record, i, new(line.LineId, SaleState.Submitting, "전송 전 의도 기록 중"));
                 // Durable intent BEFORE side effect. Save failure prevents submission.
                 await journal.SaveAsync(record, CancellationToken.None);
                 progress?.Report(record);
@@ -93,7 +94,7 @@ public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatch
 
     public async Task<BatchRecord?> RecoverAsync(CancellationToken cancellationToken = default)
     {
-        if (executor.Capability != Capability.Mock) throw new InvalidOperationException("IntegrationBlocked: 실제 서버 대조 연동 미허용");
+        if (executor.Capability != Capability.Mock && executor is not IAuthorizedListingExecutor { CanReconcile: true }) throw new InvalidOperationException("IntegrationBlocked");
         await gate.WaitAsync(cancellationToken);
         try
         {

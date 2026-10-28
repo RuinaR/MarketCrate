@@ -1,5 +1,16 @@
 # MarketCrate — 누적 작업 로그
 
+## 2026-10-28 — 4차 조사·실험적 연동 구현
+
+- 시작 HEAD/origin/main `9455dc9`, 작업 트리 clean. AGENTS/현재 상태/정의/QA/아키텍처/실행 계약을 확인하고 fetch했다. 사용자 승인으로 비공식 **소스 구현** 범위를 확장했으며 계정 로그인/거래 시험은 승인 범위 밖으로 유지했다.
+- GitHub 최신 고정 커밋 세 곳의 관련 소스/라이선스와 공식 Market/약관/OpenID/publisher 문서를 읽었다. 공개 orderbook 1회 무인증 응답의 중첩 JSON/eCurrency/가격·잔량 쌍을 직접 확인했다. 연구 소스/응답은 runtime에만 보관하고 코드 복사/실행/의존성 설치 없음. 최신 지원 주장과 직접 관측 한계를 분리했다.
+- Infrastructure/Steam에 QR protocol→새 자체 메모리 쿠키 세션·동의·host 제한 HTTP·inventory/orderbook/median history/listings·sell/cancel·별도 SQLite intent/reconcile를 독립 구현. 기존 provider/executor 도메인 계약과 단일 승인 coordinator를 재사용했다. live 단가 USD exact fee만 허용하며 기존 KRW Mock은 유지, unsupported 통화 회귀 케이스는 EUR로 바꾸고 USD 통화/수수료 경로를 추가 검사했다.
+- request key는 로컬 중복 방지용이며 서버 idempotency 지원을 가정하지 않는다. Unknown/서버ID 없음/취소 목록 부재는 자동 성공·재등록으로 바꾸지 않는다. 원화/스택/확정 취소 후 실제 재가격/live 수동 retry/로그인 WPF는 미완성으로 명시했다. 일반 앱에는 live 구성 주입 없음.
+- 합성 HTTP로 전송 코드의 form/인증 만료/접근 제한/호가·통화·수수료/승인 대기/서버ID 대조/타임아웃·재시작/취소 불명/중복 키/순차성/자격 불일치/미래 스키마/비밀값 비저장을 검사했다. 초기 검사의 timeout 후 중단된 세션 재실행은 기존 결과 반환이 아닌 차단이 맞아 테스트 기대를 수정했다. 실제 안전 검사를 완화하지 않았다.
+- 비표시 안전 안내 렌더에서 좁은 viewport 오른쪽 여백을 보완했고 카드 경계 검사를 추가했다. Steam 저널은 불변 배치+변경 result 행 transaction으로 저장하도록 구현했으며 128행/두 번째 행 실패 rollback 재열기 검사를 추가했다.
+- 최종 전체 회귀: 빌드 경고0/오류0, 도메인/저장/MVVM/합성 Steam HTTP **87/87 PASS**, detached STA WPF **17/17 PASS**, FAIL0. 기존58/16 회귀 유지. 새 안전 화면 자체 PNG 시각 검토·카드 경계 검사 PASS. 변경 소스 이후 Release publish·PE/로컬 데이터 제외 검사 PASS. 앱 실행/설치/공개 배포는 안 했다.
+- 전체 diff/비밀값 패턴/금지 API 검색에서 문제 없음. 기존 Process.Start는 이전 승인된 프로젝트 headless 테스트 자식뿐이다. raw source/응답/이미지/DB/로그/bin/obj/산출물은 Git 제외. 실제 Steam 인증/거래/Guard·다른 앱/화면/입력/프로세스는 건드리지 않았다. 후속은 QR/실계정 UI와 원화/스택 계약·확정 취소 및 불명 대조 근거 보강이다.
+
 ## 2026-10-28 — 3차 구현·검증 마일스톤
 - 조사 커밋 `db8a55c`를 origin/main에 정상 push한 뒤 기존 WPF/MVVM/Core/SQLite 구조를 이어 구현했다. 새로운 라이브 연동/의존성 설치/원격 변경 없음.
 - 검토: 개별 등록 단위 가격 편집, Steam/게임 수수료·실수령/양쪽 합계 갱신, 부족 잔량 빈 단가 행·예상 미체결 안내, 수동 가격 전략/닫기/갱신 초기화, 조회 시각/신선도 및 최종 재검증.

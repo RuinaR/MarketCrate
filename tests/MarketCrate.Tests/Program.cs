@@ -16,7 +16,7 @@ var tests = new (string Name, Func<Task> Run)[] {
  ("배치 수량 상한/중복 행",()=>Sync(()=> { var b=Batch(); BatchValidation.Validate(b,DateTimeOffset.UtcNow); Throws<ArgumentException>(()=>BatchValidation.Validate(b with { Lines=[b.Lines[0] with { Quantity=11 }] },DateTimeOffset.UtcNow)); Throws<ArgumentException>(()=>BatchValidation.Validate(b with { Lines=[b.Lines[0],b.Lines[0]] },DateTimeOffset.UtcNow)); })),
  ("중복 자산 분할 총량/상충 자산",()=>Sync(()=> { var b=Batch(); var l=b.Lines[0]; Throws<ArgumentException>(()=>BatchValidation.Validate(b with { Lines=[l with { Quantity=6 },l with { LineId="other",Quantity=5 }] },DateTimeOffset.UtcNow)); Throws<ArgumentException>(()=>BatchValidation.Validate(b with { Lines=[l,l with { LineId="other",Asset=l.Asset with { Quantity=99 } }] },DateTimeOffset.UtcNow)); })),
  ("비판매/보류/비 스택",()=>Sync(()=> { foreach(var a in new[] { Asset() with { Marketable=false },Asset() with { Locked=true },Asset() with { Stackable=false } }) Throws<ArgumentException>(()=>BatchValidation.Validate(Batch() with { Lines=[Line("x",a,2)] },DateTimeOffset.UtcNow)); })),
- ("오래된 시세/미래 시세/통화",()=>Sync(()=> { var b=Batch(); foreach(var l in new[] { b.Lines[0] with { MarketTime=DateTimeOffset.UtcNow.AddMinutes(-6) },b.Lines[0] with { MarketTime=DateTimeOffset.UtcNow.AddHours(1) },b.Lines[0] with { Currency="USD" } }) Throws<ArgumentException>(()=>BatchValidation.Validate(b with { Lines=[l] },DateTimeOffset.UtcNow)); })),
+ ("오래된 시세/미래 시세/통화",()=>Sync(()=> { var b=Batch(); foreach(var l in new[] { b.Lines[0] with { MarketTime=DateTimeOffset.UtcNow.AddMinutes(-6) },b.Lines[0] with { MarketTime=DateTimeOffset.UtcNow.AddHours(1) },b.Lines[0] with { Currency="EUR" } }) Throws<ArgumentException>(()=>BatchValidation.Validate(b with { Lines=[l] },DateTimeOffset.UtcNow)); })),
  ("한 번 승인 전체/분할 보존",async()=> { var j=new MemoryJournal(); var e=new TestExecutor(); var c=new SaleBatchCoordinator(e,j); var b=Batch(); var r=await c.ExecuteAsync(b); Equal(3,e.Calls); Equal("3,4,3",string.Join(',',r.Snapshot.Lines.Select(x=>x.Quantity))); Equal("1000,980,950",string.Join(',',r.Snapshot.Lines.Select(x=>x.UnitQuote.BuyerPays))); }),
  ("중복 클릭/새 배치 차단",async()=> { var j=new MemoryJournal(); var e=new TestExecutor(); var c=new SaleBatchCoordinator(e,j); var b=Batch(); await Task.WhenAll(c.ExecuteAsync(b),c.ExecuteAsync(b)); await ThrowsAsync<InvalidOperationException>(()=>c.ExecuteAsync(Batch())); Equal(3,e.Calls); }),
  ("부분 성공/실패/승인 대기",async()=> { var e=new TestExecutor { Outcomes=[SaleState.Listed,SaleState.Failed,SaleState.AwaitingSteamGuard] }; var r=await new SaleBatchCoordinator(e,new MemoryJournal()).ExecuteAsync(Batch()); Equal(SaleState.Failed,r.Results[1].State); Equal(SaleState.AwaitingSteamGuard,r.Results[2].State); Equal(3,e.Calls); }),
@@ -37,8 +37,9 @@ foreach (var test in tests) { try { await test.Run(); Console.WriteLine($"PASS {
 var next = await NextStageTests.RunAsync();
 failed += next.Failed;
 var third = await ThirdStageTests.RunAsync(); failed += third.Failed;
-var total = tests.Length + next.Passed + next.Failed + third.Passed + third.Failed;
-Console.WriteLine($"RESULT {total - failed}/{total} PASS; {failed} FAIL · synthetic data only, no GUI/network");
+var fourth = await FourthStageTests.RunAsync(); failed += fourth.Failed;
+var total = tests.Length + next.Passed + next.Failed + third.Passed + third.Failed + fourth.Passed + fourth.Failed;
+Console.WriteLine($"RESULT {total - failed}/{total} PASS; {failed} FAIL · synthetic data only, no GUI/network (Steam HTTP replaced by test handler)");
 return failed == 0 ? 0 : 1;
 
 static InventoryAsset Asset() => new(new(730, "2", "synthetic"), "Synthetic Game", "Synthetic Item", "Synthetic Hash", 10, true, true, false);

@@ -1,5 +1,16 @@
 # MarketCrate — 아키텍처 (최초 Mock 구현 / 후속 계획)
 
+## 4차 실험적 Steam 경계 — 2026-10-28 (최신)
+
+- Infrastructure/Steam에 독립 구현. `SteamExperimentalWorkspace`는 개발자 composition이며 App.OnStartup은 여전히 Demo만 구성한다. 새 패키지/외부 소스 복사 없음.
+- `SteamAccess`: 매 세션 위험별 명시적 동의 및 reads/trading 분리, 저장/자동 복원 없음. `SteamQrAuthentication`: WebBrowser QR Begin/Poll→finalize→Community settoken, 자체 CookieContainer만. 비밀번호/외부 쿠키/프로세스/Steam Guard 비밀 접근 없음. QR WPF UI는 미완성이다.
+- `SteamHttp`: 고정 HTTPS endpoint·redirect 거절·proxy OFF·직렬3초·25초 timeout·8MiB 제한·단일 latch·자동 retry 없음. HttpMessageHandler 주입 계약 테스트는 실제 네트워크를 대체한다.
+- 기존 IInventoryProvider/IMarketDataProvider/IMarketOrderProvider/IMarketListingExecutor를 구현한다. 동기 가격/목록 getter는 cache만 반환하고 명시적 비동기 갱신으로 읽는다. 정확한 VWAP를 만들지 않고 중간가격 이력은 별도 타입으로 둔다.
+- `IAuthorizedListingExecutor`는 실행/대조 가능 여부와 최종 async preflight를 제공한다. coordinator는 Mock 또는 이 계약을 충족한 executor만 받아 기존 단일 승인·intent-first 흐름을 재사용한다. live retry는 아직 차단한다. Domain 통화 검사는 KRW와 USD를 허용하지만 실험 제출은 exact USD만, 기존 KRW Mock 산식은 유지한다.
+- `SteamStateStore`: Demo와 다른 디렉터리의 독점 SQLite/FULL/user_version1. immutable 활성 배치 헤더+변경 result 행/command 의도 저장. 토큰·쿠키·raw response·서버 메시지·전체 URL은 저장하지 않는다. 재시작은 대조만, 자동 재전송 없음. 실제 store는 일반 앱의 삭제 버튼에 연결하지 않는다.
+- 등록은 seller net 전송, success는 Submitted/Guard 대기, 서버 listingid와 필드 일치가 있어야 Listed. 응답에 ID가 없거나 취소 목록이 사라진 것만으로는 게시/취소를 확정하지 않는다. 원화/스택·판매 제한 전체 해석/실제 재가격 saga/실계정 UI/확정 취소 이력은 미완성이다.
+- 기능 범위와 승인 제한의 최신 근거는 STEAM-INTEGRATION-FEASIBILITY. 아래 1~3차의 “HTTP 없음/무조건 Mock” 문구는 당시 상태다.
+
 ## 3차 구현 — 2026-10-28 (최신)
 
 - 기존 계층/뷰를 유지했다. `ReviewLineViewModel`은 미산정 행·개별 단가/Steam·게임 수수료/실수령·수동 여부·조회 신선도를 표시한다. 합계는 편집 이벤트에서 갱신하며 프레임별 폴링은 없다.

@@ -1,5 +1,13 @@
 # MarketCrate — 외부 자료·레퍼런스
 
+## 4차 조사 (2026-10-28 KST, 최신)
+
+- 지정한 CSlytics `b8a6be3`, SteamMarketHelper `e186d51`, todd-elvers/steam-bulk-seller `9de9e5c` default HEAD의 인증/세션/보관함/가격·판매/취소 관련 소스를 읽었다. 기능별 확인 한계·고정 permalink·라이선스·독립 구현/미채택 이유는 [실연동 조사](STEAM-INTEGRATION-FEASIBILITY.md)의 4차 표 참조.
+- CSlytics AGPL-3.0, SteamMarketHelper LICENSE 본문 MIT, todd 프로젝트는 LICENSE 미확보. 자료를 실행하거나 코드를 편입하지 않았다. 별도 node-steam-session MIT 소스와 공개 인증 protobuf의 protocol shape를 비교했다. 새 패키지/브라우저 확장/웹 주입 없음.
+- 공식 Market 공개 HTML/JS와 비로그인 multisell redirect를 확인했다. 공개 orderbook 1회 무인증 GET에서 신규 중첩/통화/잔량 쌍을 실제 확인했다. 다른 계정 보관함/세션/판매 API/모바일 승인은 호출하지 않았다. 실제 응답 원본·연구용 소스는 ignored runtime에만 있다.
+- `pricehistory`의 중간가격 시계열과 정확한 거래 VWAP를 구분했다. 구 histogram 지원 주장은 최신 userscript 소스의 설명이며 실계정/엔드포인트를 직접 시험한 것이 아니다. 변경 시 fail-closed parser를 독립 구현했다.
+- 비공식 자동화 제재 위험과 token 탈취 위험은 별개다. 사용자 승인은 구현 범위에 대한 것이며 Valve 허가가 아니다. 공식 문서/약관 링크와 향후 옵트인·실계정 미검증 범위를 조사 보고서에 누적했다.
+
 ## 3차 조사 (2026-10-28 KST)
 
 공식 인증/Inventory/Economy/Market API·API 약관·자동화 약관·확인 절차와 공개 구현을 다시 조사했다. 범위/권한/미확인을 분리한 결과는 [STEAM-INTEGRATION-FEASIBILITY.md](STEAM-INTEGRATION-FEASIBILITY.md). 실제 로그인/API/거래를 시험하지 않았다. SteamHelper/CSlytics의 검토·가격 수정·상태별 관리 UX만 참고하며 코드/그래픽은 도입하지 않는다.

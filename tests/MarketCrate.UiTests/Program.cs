@@ -42,6 +42,17 @@ internal static class Program
             PresentationTraceSources.DataBindingSource.Listeners.Add(listener);
             PresentationTraceSources.DataBindingSource.Switch.Level = SourceLevels.Error;
             Test("보관함 1380x820 자체 렌더", () => { Render(view, 1380, 820, 1, "inventory.png"); Check(Find<ListBox>(view).Any(x => x.Items.Count == 5)); });
+            Test("실험적 Steam 상태 안내 비표시 렌더", () =>
+            {
+                var tabs = (TabControl)view.FindName("WorkspaceTabs"); tabs.SelectedIndex = 3;
+                Render(view, 1100, 700, 1, "stage4-integration-status.png");
+                Check(Find<TextBlock>(view).Any(x => x.Text.Contains("실계정 미검증")));
+                var notice = (Border)view.FindName("IntegrationNotice");
+                var presenter = Find<ScrollContentPresenter>(tabs).First(x => x.IsAncestorOf(notice));
+                Check(notice.TransformToAncestor(presenter).Transform(new Point(notice.ActualWidth, 0)).X <= presenter.ActualWidth);
+                Check(Application.Current.Windows.Count == 0 && PresentationSource.FromVisual(view) == null);
+                tabs.SelectedIndex = 0;
+            });
             Test("창 크기/DPI 출력 밀도 100/125/150/200%", () =>
             {
                 foreach (var scale in new[] { 1d, 1.25, 1.5, 2 }) Render(view, 1100, 700, scale, $"inventory-{scale * 100:0}.png");

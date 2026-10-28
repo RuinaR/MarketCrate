@@ -1,5 +1,28 @@
 # MarketCrate — QA 체크리스트 (자동 검사 완료 / GUI 미실행)
 
+## 4차 최종 결과 — 2026-10-28 KST (최신)
+
+| 검사 | 결과 | 검증 범위 |
+|---|---|---|
+| 전체 빌드 | PASS 경고0/오류0 | 5프로젝트, MSBuild1, 순차 실행 |
+| 도메인/저장/MVVM/Steam 계약 | **87/87 PASS** | 기존58 + 신규29, 합성 HTTP only |
+| 비표시 WPF | **17/17 PASS** | 기존16 + 상태 안내, 카드 경계·바인딩/창 미생성 |
+| 최신 Release publish | PASS | 실행파일 생성·PE/로컬 데이터 제외, 실행·설치 안 함 |
+| 실계정 QR/보관함/가격/판매/취소/Guard | NOT VERIFIED | 세션 요청을 실제 전송하지 않음 |
+| 공개 orderbook GET | HTTP200 JSON 확인 | 무인증1회, 실제 계정 API/거래 검증 아님 |
+
+- [x] 초기 비활성 전송0, 위험별/읽기·쓰기 동의 분리, HTTPS host/path/method 고정·redirect 거절, QR interval/만료·허용 transfer 제한·로그아웃 쿠키 폐기.
+- [x] 401/403/429/로그인 redirect/HTML challenge latch, 변경된/구형 응답 거절, cursor 순환/식별자/통화/잔량 검증, 중간가격과 거래 VWAP 구분.
+- [x] 단일 승인 복수 항목→각기 확정된 seller net 전송, exact 정수 fee·gap 거절, 현재 계정·자산·수량·가격 불일치 전송0.
+- [x] 접수≠Listed, mobile/email 대기, listingid/가격/수량/통화/품목 대조, ID 없음/timeout 이후 재시작에서도 재전송0.
+- [x] 취소 응답≠취소 완료, 중복 키/새 키 중복 취소 금지, timeout 의도 보존, 목록 부재로 재등록하지 않음. 실제 재가격 saga는 미구현이며 Mock 재가격 회귀만 PASS.
+- [x] Steam 전용 DB128행 결과 delta 재열기·payload<1MiB, 두 번째 행 실패 원자 rollback, 미래 schema 원본 보존·독점 lease, auth marker 미저장.
+- [x] 10,000개 합성 inventory parser 및 기존 UI 가상화·선택 보존. 새 안전 카드 `runtime/ui-tests/stage4-integration-status.png` 직접 시각 검토.
+- [ ] 실제 QR 렌더/로그인 WPF·실계정 종단 흐름·원화/스택·확정 취소 이력/실제 재가격/live 수동 retry.
+- [ ] 실제 입력/스크린리더/열린 Popup/모니터 DPI/실제 설치·서명/장시간 장애·보안 감사. 정책 제재 위험0 보장 없음.
+
+검증 중 새 테스트의 구문/형식 오류 및 timeout 후 중단 세션에 대한 기대 불일치를 수정했다. 마지막 전체 회귀 FAIL0이며, 실패했던 실행을 성공으로 기록하지 않는다. 아래는 이전 단계 기록이다.
+
 ## 3차 최종 결과 — 2026-10-28 KST (최신)
 
 | 검사 | 실제 결과 | 제한 |

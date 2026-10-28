@@ -2,7 +2,7 @@ using System.Collections.Immutable;
 
 namespace MarketCrate.Core;
 
-public enum Capability { Mock, PermittedReadOnly, Unavailable, IntegrationBlocked }
+public enum Capability { Mock, PermittedReadOnly, Unavailable, IntegrationBlocked, Experimental }
 public enum SaleState { Draft, Ready, Submitting, Submitted, AwaitingSteamGuard, Listed, Failed, Unknown, Reconciled }
 public record AssetKey(int AppId, string ContextId, string AssetId);
 public record InventoryAsset(AssetKey Key, string Game, string Name, string MarketHashName,
@@ -49,6 +49,13 @@ public interface IMarketListingExecutor
     Capability Capability { get; }
     Task<LineResult> SubmitAsync(SaleLineSnapshot line, string requestKey, CancellationToken cancellationToken);
     Task<LineResult> ReconcileAsync(SaleLineSnapshot line, string requestKey, CancellationToken cancellationToken);
+}
+// An experimental executor must revalidate current account, assets, currency and prices before any intent.
+public interface IAuthorizedListingExecutor : IMarketListingExecutor
+{
+    bool CanExecute { get; }
+    bool CanReconcile { get; }
+    Task ValidateBatchAsync(SaleBatchSnapshot snapshot, CancellationToken token);
 }
 public interface IBatchJournal
 {
