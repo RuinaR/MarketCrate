@@ -1,5 +1,11 @@
 7차 Release 검사 수정: SQLite 파일명 제외 정규식이 정상 의존성 Microsoft.Data.Sqlite.dll까지 거부했다. DB/sidecar 확장자 끝으로 한정해 수정하고 DLL 허용·sqlite/sqlite3-wal/db-shm/.env/session.json/private.key 차단 7개 파일명 회귀를 확인했다. 실제 비밀파일·DB는 생성하지 않았다. 최초 publish는 이 정적 검사에서 FAIL이며 실행파일은 실행하지 않았다.
 
+## 2026-10-29 — 14차 읽기 계약 복구 및 안전 정리
+
+main/origin6c40500 clean/fetch 일치에서 시작. 0.13 사용자부분관측 반영, wallet실패 실제응답 미확보. 공식공개 market.js/marketselldialog.js·익명Market만 GET. 모든GET redirect/API오류를 인증실패로 묶던 경로와 증거없는빈inventory 허용 수정. wallet관측/strict money분리, endpoint권한 보존, 독립조회 복구, 요약/접힌상세와 고정진단사실 추가.
+
+기능8개·자체WPF1개 추가, 전체207/46/14 PASS/FAIL0·경고오류0. 안전정리7 PASS/1 NOT VERIFIED(실제junction 생성불가). 실행폴더 사용여부를 알아보는 프로세스 조사를 하지 않았고 모두 보존. release성공 이후 검증된 dry-run만 적용한다. 실제앱/계정/Steam/브라우저조작·타프로세스·전역입력·화면접근0. 실거래 차단 유지.
+
 ## 2026-10-29 KST — 13차 기존 인증 검토·자가검증
 
 13차 배포: 구현 `dd7e27635104c02fe53c0e282242e9d598c04a4b` origin/main push. **0.13.0 x64 self-contained Release/정적 파일검사 PASS**, 경고·오류0, CLR/WPF10.0.9·SQLite 네이티브·라이선스 포함. `artifacts/MarketCrate-0.13.0-stage13-dd7e276-win-x64.zip` **78.31MiB/412파일**, ZIP 전체 원본 hash 및 ProductVersion/SourceCommit 일치. SHA256 `2B76B0ACB3440CCBA5F2C2364AAD46BA458D10E89E329A8456400A0ED83BD7C8`. DB·로그·인증·PDB/개발파일 제외, 이전 ZIP·사용자 데이터 보존. 실제 EXE/서버 로그인·읽기·거래·설치·서명 미실행. 최소 사용자 절차는 READ-ONLY-VALIDATION의0.13.0절차를 따른다.

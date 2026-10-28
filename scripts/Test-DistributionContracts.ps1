@@ -36,3 +36,5 @@ foreach($forbiddenFile in @('sample.db','sample.sqlite3-wal','sample.db-shm','au
 }
 Write-Output "DISTRIBUTION RESULT $passed PASS / $failed FAIL; file inspection only; app/guest NOT executed"
 if($failed){exit 1}
+. (Join-Path $PSScriptRoot 'ArtifactMaintenance.ps1')
+$null=Remove-ProvenFixture $folder

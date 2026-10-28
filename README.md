@@ -1,5 +1,13 @@
 # MarketCrate
 
+## 0.14.0 — 개별 읽기 권한·빈 보관함 판정 개선
+
+0.13 사용자 관측은 QR기록/목록첫8건·CS2자산0건·지갑차단입니다. 전체실계정 지원 검증은 아닙니다. 새버전은 조회권한실패와 로그인전체실패를 분리하고 불완전응답을 정상빈으로 표시하지 않습니다. 지갑통화만 확인되면 가격단위·수수료를 추측하지 않습니다. 자가검증 요약·접힌작업상세에서 다음행동을 확인하세요.
+
+portable을 별도폴더에 풀어 직접실행하세요. 기존DB/저널 보존. 최신/롤백 경로·SHA는 artifacts/releases.json에 기록하며 0.13 ZIP/추출본을 보존합니다. `pwsh -File scripts/Clean-Artifacts.ps1` 기본dry-run, 실행폴더/개인자료 자동삭제 없음. [읽기검증](docs/READ-ONLY-VALIDATION.md), [배포·정리·롤백](docs/DEPLOYMENT-CHECKLIST.md).
+
+기능207/207·자체WPF46/46·배포계약14/14 PASS. 사용자wallet원인은 정제진단 추가필요. IntegrationBlocked·비공식자동화 제재위험 유지, Codex 실계정/GUI/거래 미실행. 아래 이전배포 경로는 이력입니다.
+
 ## 0.13.0 — 사용자 실행 읽기 전용 연결 자가검증
 
 로컬 배포: `artifacts/MarketCrate-0.13.0-stage13-dd7e276-win-x64.zip` (78.31MiB,0.13.0+dd7e276). 런타임 포함·정적 검사 PASS, 실제 앱/인증/조회는 사용자 별도 확인이 필요합니다.

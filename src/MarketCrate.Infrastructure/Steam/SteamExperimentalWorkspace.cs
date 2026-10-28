@@ -19,6 +19,7 @@ public sealed class SteamExperimentalWorkspace : IDisposable
     public SteamStateStore Store => store;
     public SteamTradingPolicy Policy { get; }
     public SteamFailure? Failure => http.Halted;
+    public SteamFailure? FeatureFailure(string endpoint)=>http.FeatureFailure(endpoint);
     public SteamExperimentalWorkspace(string isolatedDataDirectory, int appId, string contextId, string game,
         SteamTradingPolicy? policy = null, HttpMessageHandler? contractHandler = null, TimeProvider? clock = null,HttpMessageHandler? imageHandler=null)
     {
@@ -37,7 +38,8 @@ public sealed class SteamExperimentalWorkspace : IDisposable
     }
     public Task<SteamFeeSchedule> FeesAsync(int appId, CancellationToken token = default) => SteamFees.FetchAsync(http, appId, token);
     public Task<SteamInventoryPage> ProbeInventoryAsync(int appId,string contextId,string game,CancellationToken token)=>new SteamInventoryProvider(http,Authentication,appId,contextId,game).ProbeAsync(token);
-    public Task<SteamWallet> ProbeWalletAsync(CancellationToken token)=>SteamFees.FetchWalletAsync(http,token);
+    public Task<SteamWalletObservation> ProbeWalletAsync(CancellationToken token)=>SteamFees.FetchWalletObservationAsync(http,token);
+    public Task<SteamFeeStructure> ProbeFeeStructureAsync(int appId,CancellationToken token)=>SteamFees.FetchStructureObservationAsync(http,appId,token);
     public Task<SteamFeeSchedule> ProbeFeesAsync(int appId,SteamWallet wallet,CancellationToken token)=>SteamFees.FetchStructureAsync(http,appId,wallet,token);
     public void Dispose() { Authentication.Dispose(); Images.Dispose();http.Dispose(); store.Dispose(); }
 }

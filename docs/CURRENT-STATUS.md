@@ -1,4 +1,15 @@
-# MarketCrate — 현재 상태 (2026-10-29 KST, 13차)
+# MarketCrate — 현재 상태 (2026-10-29 KST, 14차)
+
+## 14차 — 개별 읽기 권한·빈 응답 검증·안전 정리 (2026-10-29 KST)
+
+0.14.0. 사용자0.13 관측: QR 인증기록 성공, 판매목록 첫8건/활성8건, CS2 730/2 첫0건·marketable0, 지갑 인증확인 차단 및 후속차단. 부분 실계정 증거이며 전체 계약 검증이 아니다. Codex는 실제 인증·계정조회·거래·앱 실행을 하지 않았다.
+
+- 확인된 코드 결함: GET의 모든 redirect/API오류를 Authentication으로 묶던 처리, 불완전한 inventory 응답을 정상0건으로 받아들이던 처리. 알려진 Steam 로그인redirect/API15는 endpoint Authorization으로 제한하고 세션을 보존한다. 다른 공식redirect는 Unsupported·무추적, 위험redirect는 안전중단. 401/만료27·403/429/CAPTCHA·불명 서버제한은 기존 보호 유지. 재전송/우회 없음.
+- 사용자 지갑실패 원인은 미확정(실패응답/ZIP 미제공). 공식 공개JS는 wallet_currency와 선택적 minimum/increment 및 fee비율을 소비한다. 익명 Market200의 wallet marker 부재는 사용자 인증실패의 증거가 아니다. 새 WalletObservation은 필드존재/로그인플래그를 구분하며 통화·가격단위를 생성하지 않는다. 통화만 확인되면 통화관측만 성공, 수수료금액/판매준비는 미검증. 엄격한 실제 money contract 유지.
+- 정상 빈 inventory는 명시적 success/total0·추가페이지 없음·모순 없음 필요. 필드누락/타입/총계모순은 ContractMismatch/Parsing, 페이지일부와 marketable0/보유0 구분. 사용자 CS2 실제0건의 원인은 기존 요약만으로 판정 불가.
+- 자가검증 상단 성공/실패/차단/미검증 요약·다음행동, 행별 접힌 작업상세(분류/시각/OperationId). 전역제한과 개별권한 분리로 독립조회 보존. 한 실행의 Authorization 이후는 차단·무전송, 독립조회는 사용자가 별도로 선택한다.
+- 기능207/207·비표시WPF46/46·배포계약14/14 PASS, FAIL0, 경고/오류0. 안전정리7 PASS/0 FAIL/1 NOT VERIFIED(실제junction 생성불가). RTB 요약/상세 직접검토, 실제창/물리입력/Popup/DPI/설치 대체 아님. 최초75개47 COMPLETE/15 PARTIAL/0 MISSING/4 BLOCKED/9 UNVERIFIED 유지.
+- 새 release검증 후 exact 합성fixture만 정리. 실행폴더·0.13 ZIP/추출본·진단·SQLite/저널·설정/계정자료·캐시·LOCALAPPDATA 보존. 최신/롤백은 artifacts/releases.json에 명시. 실거래 IntegrationBlocked, LIVE/READ_ONLY_READY 승격 없음. 비공식 자동화 제재위험 유지.
 
 ## 13차 — 기존 인증 활용 검토와 읽기 전용 자가검증 (2026-10-29 KST)
 

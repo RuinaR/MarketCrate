@@ -1,5 +1,13 @@
 # Windows 배포 준비 — 3차 구현
 
+## 0.14.0 배포·정리·롤백
+
+새 x64 self-contained는 고유버전/커밋 경로에 생성한다. 기존 CLR/WPF/SQLite 아키텍처·라이선스·민감/개발파일 제외 검사 유지. ZIP 전체entry SHA를 원본과 대조한 후 Register-Release.ps1로 artifacts/releases.json Latest/rollback 등록. 사용자자료는 기존 사용자별 저장소 보존. EXE/설치실행·디지털서명은 별도 미검증이다.
+
+Clean-Artifacts.ps1 기본dry-run은 후보·크기·참조수·보존이유를 ignored artifacts/cleanup-plan-*.json으로 남긴다. -Apply -PlanPath <절대경로>는 현재버전 검증Latest·rollback SHA 일치 이후에만 실행한다. 자동삭제는 exact hash256byte 가짜PE/합성고지22파일의 runtime/distribution-tests-<guid>만 허용. 경로정규화/reparse경계/파일잠금/변조 재검증, 파일별삭제 후 빈폴더만 비재귀제거. unknown/locked는 보존. 실제junction 생성은 환경제약으로 미검증.
+
+실행가능폴더·진단/DB/계정자료·NuGet캐시·프로젝트외부/LOCALAPPDATA는 대상이 아니다. 0.13 ZIP/추출본은 부분실사용 관측 롤백본이며 기능전체 정상인증본이라는 뜻은 아니다. 과거문서 배포경로는 이력으로 보존한다. 성공한 신규합성fixture는 자체정리하고 실패출력은 증거로 보존한다.
+
 ## 5차 추가 범위 (최신)
 
 - 일반 앱에 지연 연결 UI를 포함한다. startup/탭 생성은 Steam HTTP나 실저널을 열지 않으며 실제 거래 policy는 기본 Blocked다. 합성 테스트 이외의 인증/계정 시험을 하지 않는다.

@@ -1,5 +1,13 @@
 # Steam 연동 가능성 조사 — 2026-10-29 KST (13차)
 
+## 14차 공개 계약 근거 (2026-10-29 KST)
+
+인증/쿠키 없이 공식 [Market](https://steamcommunity.com/market/), [market.js](https://community.fastly.steamstatic.com/public/javascript/market.js), [marketselldialog.js](https://community.fastly.steamstatic.com/public/javascript/applications/community/marketselldialog.js)를 GET 확인했다. g_rgWalletInfo.wallet_currency·wallet_fee_percent, 선택적 wallet_market_minimum/increment, 현대dialog fee_rate/fee_cap 및 추가필드가 관측됐다. JS default1을 검증된KRW wire계약으로 채택하지 않는다. currency-only/fee비율 관측과 strict 정수money계약을 분리한다.
+
+market.js SHA256 AC938119E82C7D4C8D0F7843EF168483EFA4AF3E45DC987C068F340BB5AF72EC, marketselldialog.js CB84BB8A9B2970F71D277626A0B4E922B47CCE90BF437F704CF8F5100FA66726. 공개소스는 ignored research-stage14에서 계약참조만 했으며 코드복제 없음. 익명Market200에 wallet marker 없음/g_bLoggedIn 있음은 사용자인증실패의 증거가 아니다. 지갑미설정·장터권한·세션범위·구조변경 등 실제원인은 추가증거 필요.
+
+사용자0.13 세션기록/목록첫8건만 부분실관측. CS2 0건·wallet/fee·KRW/스택·호가/이력/이미지·등록취소는 미확정. 전체 READ_ONLY_READY/LIVE 승격 없음. [약관](https://store.steampowered.com/subscriber_agreement/)상 비공식자동화 제재위험, IntegrationBlocked·수동Guard·Unknown/저널/중복방지 유지.
+
 ## 13차 기존 인증 활용 판정 (공개 자료 확인: 2026-10-28~29 KST)
 
 | 방식 | 공식 근거와 판정 | MarketCrate 적용 |

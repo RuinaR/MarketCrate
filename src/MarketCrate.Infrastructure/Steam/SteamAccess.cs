@@ -21,7 +21,7 @@ public sealed class SteamAccess
     public override string ToString() => "SteamAccess (session-only)";
 }
 
-public enum SteamFailure { Disabled, Authentication, Forbidden, RateLimited, Challenge, ContractChanged, Transport, Restricted, Expired, Denied, StaleReview, Unsupported }
+public enum SteamFailure { Disabled, Authentication, Forbidden, RateLimited, Challenge, ContractChanged, Transport, Restricted, Expired, Denied, StaleReview, Unsupported, Authorization, WalletUnavailable }
 public sealed record SteamTradingPolicy(bool Enabled, string EvidenceReference, bool StackAmountsSupported = false,bool MedianPriceContractSupported = false)
 {
     public static SteamTradingPolicy Blocked { get; } = new(false, "Valve permission not established");
@@ -32,6 +32,7 @@ public sealed class SteamException(SteamFailure code, int? apiResult = null) : I
     public SteamFailure Code { get; } = code;
     public int? ApiResult { get; } = apiResult;
     public string? Endpoint { get; internal set; }
+    public DiagnosticError? Diagnostic { get; internal set; }
 }
 
 // No browser cookie import, external host, redirects, automatic retries or response-body logging.
@@ -44,6 +45,9 @@ public sealed class SteamHttp : IDisposable
     internal readonly CookieContainer Cookies = new();
     public SteamAccess Access { get; }
     public SteamFailure? Halted { get; private set; }
+    private readonly Dictionary<string,SteamFailure> featureBlocks=[];
+    public SteamFailure? FeatureFailure(string endpoint)=>featureBlocks.TryGetValue(endpoint,out var failure)?failure:null;
+    internal void BlockFeature(string endpoint)=>featureBlocks[endpoint]=SteamFailure.Authorization;
     public SteamHttp(SteamAccess access, HttpMessageHandler? testHandler = null, TimeSpan? testGap = null)
     {
         Access = access; gap = testHandler is null ? TimeSpan.FromSeconds(3) : testGap ?? TimeSpan.Zero;
@@ -86,6 +90,7 @@ public sealed class SteamHttp : IDisposable
         try
         {
             if (Halted is { } halted) throw new SteamException(halted);
+            if(FeatureFailure(endpoint) is {} feature)throw new SteamException(feature){Endpoint=endpoint};
             var wait = last + gap - DateTimeOffset.UtcNow;
             if (wait > TimeSpan.Zero) await Task.Delay(wait, token);
             if (!Access.ResearchRiskAccepted) throw new SteamException(SteamFailure.Disabled);
@@ -99,9 +104,20 @@ public sealed class SteamHttp : IDisposable
             }
             var status = (int)response.StatusCode;
             int? steamCode=response.Headers.TryGetValues("x-eresult",out var codes)&&int.TryParse(codes.FirstOrDefault(),out var numeric)?numeric:null;
+            var apiError=steamCode is null or 1?DiagnosticError.None:request.Method!=HttpMethod.Get?DiagnosticError.Authentication:steamCode==27?DiagnosticError.Authentication:steamCode==15?DiagnosticError.Authorization:DiagnosticError.Forbidden;
             DiagnosticHub.Emit(DiagnosticEvent.HttpResponse,DiagnosticArea.HTTP, status==200&&(steamCode is null or 1)?DiagnosticOutcome.Succeeded:DiagnosticOutcome.Failed,
-                status==200&&(steamCode is null or 1)?LogLevel.Information:LogLevel.Warning, steamCode is not (null or 1)?DiagnosticError.Authentication:status switch{401=>DiagnosticError.Authentication,403=>DiagnosticError.Forbidden,429=>DiagnosticError.RateLimited,>=500=>DiagnosticError.Server,>=400=>DiagnosticError.ClientRequest,_=>DiagnosticError.None},
+                status==200&&(steamCode is null or 1)?LogLevel.Information:LogLevel.Warning, steamCode is not (null or 1)?apiError:status switch{401=>DiagnosticError.Authentication,403=>DiagnosticError.Forbidden,429=>DiagnosticError.RateLimited,>=500=>DiagnosticError.Server,>=400=>DiagnosticError.ClientRequest,_=>DiagnosticError.None},
                 endpoint:endpoint,method:request.Method.Method,status:status,serverCode:steamCode,started:started,elapsed:watch.ElapsedMilliseconds);
+            if(status is >=300 and <400 && request.Method==HttpMethod.Get && response.Headers.Location is {} location)
+            {
+                var target=location.IsAbsoluteUri?location:new Uri(request.RequestUri!,location);
+                var official=target.Scheme=="https"&&target.Port==443&&target.UserInfo.Length==0&&target.Host is "steamcommunity.com" or "store.steampowered.com" or "login.steampowered.com";
+                var login=official&&(target.AbsolutePath=="/login"||target.AbsolutePath.StartsWith("/login/",StringComparison.Ordinal)||target.Host=="login.steampowered.com");
+                DiagnosticHub.Emit(DiagnosticEvent.ReadContract,DiagnosticArea.Data,DiagnosticOutcome.Blocked,LogLevel.Warning,login?DiagnosticError.Authorization:DiagnosticError.Unsupported,endpoint:endpoint,reason:login?"LoginRedirect":official?"OtherRedirect":"UnsafeRedirect",status:status);
+                if(login){BlockFeature(endpoint);throw new SteamException(SteamFailure.Authorization){Endpoint=endpoint};}
+                if(official)throw new SteamException(SteamFailure.Unsupported){Endpoint=endpoint};
+                Stop(SteamFailure.Challenge);throw new SteamException(SteamFailure.Challenge){Endpoint=endpoint};
+            }
             if (status != 200)
             {
                 var failure = status switch { 404 => SteamFailure.Unsupported, 401 => SteamFailure.Authentication, 403 => SteamFailure.Forbidden, 429 => SteamFailure.RateLimited,
@@ -109,7 +125,7 @@ public sealed class SteamHttp : IDisposable
                 if(failure!=SteamFailure.Unsupported && !(request.Method==HttpMethod.Get && failure==SteamFailure.Transport))Stop(failure); throw new SteamException(failure);
             }
             if (response.Headers.TryGetValues("x-eresult", out var results) && results.FirstOrDefault() is { } result && result != "1")
-            { var failure = result == "15" ? SteamFailure.Denied : result == "27" ? SteamFailure.Expired : SteamFailure.Authentication; Stop(failure); throw new SteamException(failure,steamCode); }
+            { var failure=request.Method==HttpMethod.Get?(result=="15"?SteamFailure.Authorization:result=="27"?SteamFailure.Expired:SteamFailure.Restricted):(result=="15"?SteamFailure.Denied:result=="27"?SteamFailure.Expired:SteamFailure.Authentication);if(failure==SteamFailure.Authorization)BlockFeature(endpoint);else Stop(failure);throw new SteamException(failure,steamCode){Diagnostic=apiError}; }
             // Bounded reads prevent unexpected HTML/large payloads from consuming unbounded memory.
             phase="Body";
             await using var stream = await response.Content.ReadAsStreamAsync(token);
@@ -145,7 +161,7 @@ public sealed class SteamHttp : IDisposable
     internal static JsonDocument Json(string body)
     {
         try { return JsonDocument.Parse(body, new JsonDocumentOptions { MaxDepth = 32 }); }
-        catch (JsonException error) { DiagnosticHub.Emit(DiagnosticEvent.ResponseParsed,DiagnosticArea.HTTP,DiagnosticOutcome.Failed,LogLevel.Error,DiagnosticError.Parsing,exception:error); throw new SteamException(SteamFailure.ContractChanged); }
+        catch (JsonException error) { DiagnosticHub.Emit(DiagnosticEvent.ResponseParsed,DiagnosticArea.HTTP,DiagnosticOutcome.Failed,LogLevel.Error,DiagnosticError.Parsing,exception:error); throw new SteamException(SteamFailure.ContractChanged){Diagnostic=DiagnosticError.Parsing}; }
     }
     public void Dispose() { Access.Revoke(); client.Dispose(); queue.Dispose(); }
 }

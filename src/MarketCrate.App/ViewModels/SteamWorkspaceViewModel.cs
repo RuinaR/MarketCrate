@@ -71,7 +71,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         BeginLogin = new(BeginAsync, Error, () => !offlineOnly && !Busy && !Connected && !AnyReview && RiskAccepted && CredentialsAccepted);
         CheckLogin = new(CheckAsync, Error, () => !Busy && LoginState == SteamLoginState.AwaitingMobile);
         Logout = new(LogoutNow);
-        Load = new(LoadAsync, Error, () => !Busy && CanRead && !AnyReview);
+        Load = new(LoadAsync, Error, () => !Busy && CanReadFeature("Inventory") && !AnyReview);
         RefreshPrices = new(RefreshPricesAsync, Error, () => !Busy && CanRead && !AnyReview && Assets.Any(x => x.Selected));
         SelectAll = new(() => Bulk(()=>{foreach(var row in VisibleAssets)row.Selected=row.CanSelect;}), () => !Busy && !AnyReview);
         RefreshReviewStatus=new(()=>{foreach(var row in ReviewRows)row.RefreshStatus();Changed();DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Pricing,requirement:"D07",reason:ReviewRows.All(x=>x.Valid)?"Fresh":"Stale");},()=>!Busy&&ReviewOpen);

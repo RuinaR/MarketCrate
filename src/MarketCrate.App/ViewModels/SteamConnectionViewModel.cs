@@ -22,8 +22,8 @@ public sealed partial class SteamWorkspaceViewModel
         syntheticConnection=synthetic;
         officialPage=open??(uri=>System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri){UseShellExecute=true}));
         OpenOfficialMarket=new(()=>{DiagnosticHub.Emit(DiagnosticEvent.UiPage,DiagnosticArea.UI,requirement:"F01",reason:"OfficialMarket");officialPage(new("https://steamcommunity.com/market/"));},()=>!Busy&&!AnyReview);
-        LoadListings=new(LoadListingsAsync,Error,()=>CanRead&&!Busy&&!AnyReview);
-        LoadFees=new(LoadFeesAsync,Error,()=>CanRead&&!Busy&&!AnyReview);
+        LoadListings=new(LoadListingsAsync,Error,()=>CanReadFeature("Listings")&&!Busy&&!AnyReview);
+        LoadFees=new(LoadFeesAsync,Error,()=>CanReadFeature("Wallet")&&CanReadFeature("Fees")&&!Busy&&!AnyReview);
     }
     private void RecordCheck(string endpoint,int count,string? currency=null)
     {

@@ -126,6 +126,7 @@ internal static class Program
             SeventhStageUiTests.Run((name,test)=>Test(name,test),Render);
             EighthStageUiTests.Run((name,test)=>Test(name,test),Render);
             TenthStageUiTests.Run((name,test)=>Test(name,test),Render);
+            FourteenthStageUiTests.Run((name,test)=>Test(name,test),Render);
             ThirteenthStageUiTests.Run((name,test)=>Test(name,test),Render);
             TwelfthStageUiTests.Run((name,test)=>Test(name,test),Render);
             EleventhStageUiTests.Run((name,test)=>Test(name,test),Render);

@@ -1,5 +1,9 @@
 # MarketCrate — 아키텍처 (최초 Mock 구현 / 후속 계획)
 
+## 14차 읽기 증거 계층
+
+QR기록/메모리세션, SteamHttp 전역Halted, endpoint별 FeatureFailure(Authorization), 개별ReadState/ReadCheck를 분리한다. WalletObservation→strict SteamWallet 승격은 완전한 단위/증분정보가 있어야 가능. rates-only fee는 strict contract 대체 불가. InventoryPage VerifiedEmpty/ReportedTotal/More로 오류·빈·부분페이지 구분. UI→SelfCheck→Provider→HTTP→고정진단→요약/상세 경로이며 거래저널·복구구조 변경 없음.
+
 ## 13차 읽기 자가검증 경계
 
 SteamReadSelfCheck는 기존 workspace의 인증 기록/목록·보관함 probe/지갑/fee/가격·이력/이미지 adapter만 사용한다. 로그인 시작·executor·store mutation은 호출하지 않는다. 승인 때 고정한 SteamReadCheckPlan은 게임/context·최대 한 자산·이미지 참조·7개 범위를 담고 ToString은 정제한다. metadata 자체를 로그로 직렬화하지 않는다.

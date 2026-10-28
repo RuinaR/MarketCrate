@@ -44,7 +44,7 @@ public static class ThirteenthStageTests
     }
     private static async Task WalletFailure()
     {
-        using var f=new Fixture();await f.Prepare();f.Route=p=>p=="/market/"?Json("<html>changed-wallet-schema</html>"):null;f.All();await f.Vm.SelfCheckAsync();Check(f.Vm.Connected&&f.Vm.CheckRows.Single(x=>x.Step=="Wallet").Result?.Error==DiagnosticError.Schema,"missing HTML variable logged out");Check(f.Vm.CheckRows.Single(x=>x.Step=="Fees").Result?.Outcome==ReadCheckOutcome.Unverified&&!f.Reads.Any(x=>x.Path.Contains("ajaxfeestructure")),"dependent fee request invented wallet");
+        using var f=new Fixture();await f.Prepare();f.Route=p=>p=="/market/"?Json("<html>changed-wallet-schema</html>"):null;f.All();await f.Vm.SelfCheckAsync();Check(f.Vm.Connected&&f.Vm.CheckRows.Single(x=>x.Step=="Wallet").Result?.Error==DiagnosticError.Unsupported,"missing HTML variable logged out");Check(f.Vm.CheckRows.Single(x=>x.Step=="Fees").Result?.Outcome==ReadCheckOutcome.Unverified&&!f.Reads.Any(x=>x.Path.Contains("ajaxfeestructure")),"dependent fee request invented wallet");
     }
     private static async Task Missing()
     {
@@ -61,7 +61,7 @@ public static class ThirteenthStageTests
     {
         var path=Path.Combine(Directory.GetCurrentDirectory(),"runtime","stage13-diag-"+Guid.NewGuid().ToString("N"));try
         {
-            using var log=new JsonDiagnosticLog(path);using var scope=DiagnosticHub.Use(log);using var f=new Fixture();await f.Prepare();f.Route=p=>p.Contains("mylistings")?Json("{private-body-never-log"):null;f.All();await f.Vm.SelfCheckAsync();var id=f.Vm.LastOperationId;Check(f.Vm.CheckRows.All(x=>x.Result?.OperationId==id),"row operation missing");Check(log.Recent.Any(x=>x.EventId==(int)DiagnosticEvent.ReadSelfCheck&&x.Endpoint=="Listings"&&x.Error==DiagnosticError.Schema&&x.Context.OperationId==id),"failure not causal");Check(log.Recent.Any(x=>x.EventId==(int)DiagnosticEvent.HttpResponse&&x.Context.OperationId==id&&x.Context.CorrelationId is not null),"request correlation missing");await log.FlushAsync();var text=System.Text.Json.JsonSerializer.Serialize(log.Recent);foreach(var secret in new[]{"private-body-never-log","synthetic-cookie","synthetic-refresh","Synthetic stack","76561198000000001"})Check(!text.Contains(secret),"diagnostic leaked private data");
+            using var log=new JsonDiagnosticLog(path);using var scope=DiagnosticHub.Use(log);using var f=new Fixture();await f.Prepare();f.Route=p=>p.Contains("mylistings")?Json("{private-body-never-log"):null;f.All();await f.Vm.SelfCheckAsync();var id=f.Vm.LastOperationId;Check(f.Vm.CheckRows.All(x=>x.Result?.OperationId==id),"row operation missing");Check(log.Recent.Any(x=>x.EventId==(int)DiagnosticEvent.ReadSelfCheck&&x.Endpoint=="Listings"&&x.Error==DiagnosticError.Parsing&&x.Context.OperationId==id),"failure not causal");Check(log.Recent.Any(x=>x.EventId==(int)DiagnosticEvent.HttpResponse&&x.Context.OperationId==id&&x.Context.CorrelationId is not null),"request correlation missing");await log.FlushAsync();var text=System.Text.Json.JsonSerializer.Serialize(log.Recent);foreach(var secret in new[]{"private-body-never-log","synthetic-cookie","synthetic-refresh","Synthetic stack","76561198000000001"})Check(!text.Contains(secret),"diagnostic leaked private data");
         }finally{Directory.Delete(path,true);}
     }
     private static async Task Cookie()

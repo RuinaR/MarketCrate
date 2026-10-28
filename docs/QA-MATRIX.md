@@ -1,5 +1,22 @@
 # 정상·오류·복구 QA 매트릭스 — 10차 (2026-10-28 KST)
 
+## 14차 결과 (2026-10-29)
+
+|경로|결과|
+|---|---|
+|인증기록·목록8·inventory0·지갑401/로그인redirect·후속차단|합성 PASS; 사용자 실제실패응답 미확보|
+|GET API15/8·공식비로그인redirect·세션보존/독립조회/재전송방지|PASS FourteenthStageTests|
+|wallet null/부재/통화만/추가fee필드|PASS; 숫자default 없음·strict거래계약 유지|
+|명시빈페이지/모순/필드누락/타입/범위·marketable0|PASS; 오류를 빈성공으로 변환하지 않음|
+|4205/4206 고정사실·분류·민감정보 제외|PASS 합성 로그 assertions|
+|전체 기능/자체WPF/배포파일계약|207/207 ·46/46 ·14/14 PASS; FAIL0|
+|안전정리 경계/잠금/변조/DB보존/dry-run/삭제|7 PASS/0 FAIL/1 NOT VERIFIED(실제junction 생성불가)|
+|RTB 요약/행상세|자체이미지 직접검토; 실제창/입력/DPI 대체 아님|
+|사용자wallet실패/CS2 0건 근본원인|UNVERIFIED; 정제ZIP 증거 필요|
+|실계정·실거래·실제GUI·설치|Codex 미실행; IntegrationBlocked|
+
+ignored 증거 runtime/stage14-final-verify.txt, runtime/stage14-ui-final.txt, runtime/ui-tests/stage14-*.png. 기존199/45/14 회귀 유지. 최초75개47/15/0/4/9 판정 유지.
+
 ## 13차 읽기 전용 자가검증 (2026-10-29 KST)
 
 13차 배포: 구현 `dd7e27635104c02fe53c0e282242e9d598c04a4b` origin/main push. **0.13.0 x64 self-contained Release/정적 파일검사 PASS**, 경고·오류0, CLR/WPF10.0.9·SQLite 네이티브·라이선스 포함. `artifacts/MarketCrate-0.13.0-stage13-dd7e276-win-x64.zip` **78.31MiB/412파일**, ZIP 전체 원본 hash 및 ProductVersion/SourceCommit 일치. SHA256 `2B76B0ACB3440CCBA5F2C2364AAD46BA458D10E89E329A8456400A0ED83BD7C8`. DB·로그·인증·PDB/개발파일 제외, 이전 ZIP·사용자 데이터 보존. 실제 EXE/서버 로그인·읽기·거래·설치·서명 미실행. 최소 사용자 절차는 READ-ONLY-VALIDATION의0.13.0절차를 따른다.

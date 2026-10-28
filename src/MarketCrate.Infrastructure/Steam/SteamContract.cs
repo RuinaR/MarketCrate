@@ -5,7 +5,8 @@ using MarketCrate.Core;
 
 namespace MarketCrate.Infrastructure.Steam;
 
-public sealed record SteamInventoryPage(ImmutableArray<InventoryAsset> Assets, string? Next, ImmutableDictionary<AssetKey, int>? PublisherFees = null, ImmutableDictionary<AssetKey,ItemImageReference>? Images=null);
+public sealed record SteamInventoryPage(ImmutableArray<InventoryAsset> Assets, string? Next, ImmutableDictionary<AssetKey, int>? PublisherFees = null, ImmutableDictionary<AssetKey,ItemImageReference>? Images=null)
+{public bool VerifiedEmpty{get;init;}public int? ReportedTotal{get;init;}}
 public sealed record SteamListing(string ListingId, AssetKey Asset, string HashName, int Quantity, string Currency, long SellerReceives, long Fees, SaleState State, DateTimeOffset? CreatedAt = null);
 public sealed record SteamListingsPage(ImmutableArray<SteamListing> Listings, int TotalActive, ImmutableDictionary<string,ItemImageReference>? Images=null);
 public sealed record SteamHistoryPoint(DateTimeOffset At, decimal MedianMajor, int Volume);
@@ -36,8 +37,22 @@ public static class SteamContract
     public static SteamInventoryPage Inventory(string json, int appId, string context, string game) => Parse<SteamInventoryPage>(json, root =>
     {
         if (!Success(root)) throw new SteamException(SteamFailure.Restricted);
-        // Empty inventory may omit both arrays; only accept when explicit total count is zero.
-        if (root.TryGetProperty("total_inventory_count", out var total) && total.GetInt32() == 0 && !root.TryGetProperty("assets", out _)) return new([], null);
+        var reported=root.TryGetProperty("total_inventory_count",out var total)?checked((int)Integer(total)):(int?)null;
+        if(reported<0)throw new SteamException(SteamFailure.ContractChanged);
+        var hasMore=root.TryGetProperty("more_items",out var flag);var moreValue=hasMore?Integer(flag):0;if(moreValue is not(0 or 1))throw new SteamException(SteamFailure.ContractChanged);var more=moreValue==1;
+        if(reported==0&&more)throw new SteamException(SteamFailure.ContractChanged);
+        var hasAssets=root.TryGetProperty("assets",out var rawAssets);if(hasAssets&&rawAssets.ValueKind!=JsonValueKind.Array)throw new SteamException(SteamFailure.ContractChanged);
+        var assetCount=hasAssets?rawAssets.GetArrayLength():0;
+        DiagnosticHub.Emit(DiagnosticEvent.InventoryContract,DiagnosticArea.Data,endpoint:"Inventory",reason:"InventoryReportedTotal",count:reported);
+        DiagnosticHub.Emit(DiagnosticEvent.InventoryContract,DiagnosticArea.Data,endpoint:"Inventory",reason:"InventoryDescriptions",count:root.TryGetProperty("descriptions",out var desc)&&desc.ValueKind==JsonValueKind.Array?desc.GetArrayLength():null);
+        if(root.TryGetProperty("descriptions",out var described)&&described.ValueKind!=JsonValueKind.Array)throw new SteamException(SteamFailure.ContractChanged);
+        if(assetCount==0&&!more)
+        {
+            if(reported!=0||new[]{"error","Error","error_message"}.Any(name=>root.TryGetProperty(name,out var e)&&e.ValueKind!=JsonValueKind.Null&&!(e.ValueKind==JsonValueKind.String&&string.IsNullOrEmpty(e.GetString()))))
+            {DiagnosticHub.Emit(DiagnosticEvent.InventoryContract,DiagnosticArea.Data,DiagnosticOutcome.Failed,LogLevel.Warning,DiagnosticError.Schema,endpoint:"Inventory",reason:reported is null?"EmptyUnproven":"InventoryContradiction");throw new SteamException(SteamFailure.ContractChanged);}
+            DiagnosticHub.Emit(DiagnosticEvent.InventoryContract,DiagnosticArea.Data,endpoint:"Inventory",reason:"InventoryEmptyVerified",count:0);return new([],null){VerifiedEmpty=true,ReportedTotal=0};
+        }
+        if(reported==0&&assetCount>0){DiagnosticHub.Emit(DiagnosticEvent.InventoryContract,DiagnosticArea.Data,DiagnosticOutcome.Failed,LogLevel.Warning,DiagnosticError.Schema,endpoint:"Inventory",reason:"InventoryContradiction");throw new SteamException(SteamFailure.ContractChanged);}
         var descriptions = root.GetProperty("descriptions").EnumerateArray().ToDictionary(x => (Id(x.GetProperty("classid")), InstanceId(x.GetProperty("instanceid"))));
         var result = ImmutableArray.CreateBuilder<InventoryAsset>();
         var fees = ImmutableDictionary.CreateBuilder<AssetKey, int>();
@@ -60,8 +75,8 @@ public static class SteamContract
             }
         }
         if (result.Select(x => x.Key).Distinct().Count() != result.Count) throw new SteamException(SteamFailure.ContractChanged);
-        var more = root.TryGetProperty("more_items", out var m) && Integer(m) == 1;
-        return new(result.ToImmutable(), more ? Id(root.GetProperty("last_assetid")) : null, fees.ToImmutable(),images.ToImmutable());
+        DiagnosticHub.Emit(DiagnosticEvent.InventoryContract,DiagnosticArea.Data,endpoint:"Inventory",reason:more?"InventoryPagePartial":"InventoryPage",count:result.Count);
+        return new(result.ToImmutable(), more ? Id(root.GetProperty("last_assetid")) : null, fees.ToImmutable(),images.ToImmutable()){ReportedTotal=reported};
     });
     private static ItemImageReference Image(JsonElement data)
     {

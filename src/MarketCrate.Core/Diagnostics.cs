@@ -8,13 +8,13 @@ namespace MarketCrate.Core;
 public enum LogLevel { Trace, Debug, Information, Warning, Error, Critical }
 public enum DiagnosticArea { Lifecycle, Authentication, Data, Pricing, Sales, Management, Storage, UI, Diagnostics, HTTP }
 public enum DiagnosticOutcome { Started, Completed, Succeeded, Failed, Cancelled, Blocked, Unknown, Pending, Reconciled, CacheHit, CacheExpired }
-public enum DiagnosticError { None, Authentication, Forbidden, RateLimited, Challenge, ClientRequest, Server, Timeout, Transport, Parsing, Schema, Currency, Validation, Storage, Locked, Corrupt, Disk, Logging, Binding, Unhandled, Cancelled, EvidenceMissing }
+public enum DiagnosticError { None, Authentication, Forbidden, RateLimited, Challenge, ClientRequest, Server, Timeout, Transport, Parsing, Schema, Currency, Validation, Storage, Locked, Corrupt, Disk, Logging, Binding, Unhandled, Cancelled, EvidenceMissing, Authorization, Unsupported }
 public enum DiagnosticEvent
 {
     AppStart=1000, AppStop=1001, AppFault=1002, Settings=1003, ResourceCleanup=1004,
     Login=2000, QrReady=2001, LoginCheck=2002, Logout=2003, AuthState=2004, AuthContract=2005,
     HttpRequest=3000, HttpResponse=3001, HttpFailure=3002, ResponseParsed=3003, ResponseBody=3004,
-    InventoryPage=4000, InventoryLoaded=4001, ListingsLoaded=4002, PriceLoaded=4003, HistoryLoaded=4004, CacheRead=4005, ImageMetadata=4100, ImageLoad=4101, GameCatalog=4200, InventoryScope=4201, ReadContract=4202, ReadState=4203, ReadSelfCheck=4204, PriceIndicator=5100,
+    InventoryPage=4000, InventoryLoaded=4001, ListingsLoaded=4002, PriceLoaded=4003, HistoryLoaded=4004, CacheRead=4005, ImageMetadata=4100, ImageLoad=4101, GameCatalog=4200, InventoryScope=4201, ReadContract=4202, ReadState=4203, ReadSelfCheck=4204, WalletContract=4205, InventoryContract=4206, PriceIndicator=5100,
     PricePlan=5000, PriceEdited=5001, FeeValidated=5002, ReviewOpened=5003, FinalValidation=5004,
     BatchCreated=6000, ItemReserved=6001, ItemResult=6002, BatchFinished=6003, BatchRecovered=6004, Retry=6005,
     CancelRequested=7000, CancelResult=7001, EvidenceChecked=7002, Reprice=7003,
@@ -78,7 +78,7 @@ public static class DiagnosticHub
     public static string? SafeCode(string? value) => value is not null && value.Length is >0 and <=96 && value.All(c=>char.IsAsciiLetterOrDigit(c)||c is '.' or '_' or '-' or '+') ? value : null;
     private static readonly HashSet<string> tokens=new(
         Enum.GetNames<SaleState>().Concat(Enum.GetNames<ListingState>()).Concat(Enum.GetNames<DiagnosticError>()).Concat(Enum.GetNames<DiagnosticOutcome>()).Concat(Enum.GetNames<InventoryScopeState>()).Concat([
-        "SelfCheck","SessionCheck","Marketable","Succeeded","Unverified","Running","NotQueried","Loading","Ready","AccessBlocked","Stale","HTTP","ApiResult","RequestEncoding","ResponseParse","ResponseFields","ChallengeValidation","Synthetic","OfficialMarket","LoadListingsAsync","LoadFeesAsync","IsolatedQa","FocusDeferred","FocusRejected","ImageInvalid","ImageMissing","ImageReady","ImageDisabled","ImageFailed","MedianEstimate","ExactAverage","Immediate","PrivateOrDenied","Partial","Unsupported","Empty","Loaded","Manual","Observed","HistoryChanged","AuthBegin","AuthPoll","AuthFinalize","AuthTransfer","Wallet","Fees","Inventory","Orderbook","History","Listings","Sell","Cancel","Image",
+        "LoginRedirect","OtherRedirect","UnsafeRedirect","WalletMissing","WalletNull","WalletObject","WalletCurrencyMissing","WalletMinimumMissing","WalletIncrementMissing","LoggedIn","LoggedOut","InventoryReportedTotal","InventoryDescriptions","InventoryEmptyVerified","InventoryContradiction","InventoryPagePartial","InventoryPage","AccessRestricted","ContractMismatch","EmptyUnproven","SelfCheck","SessionCheck","Marketable","Succeeded","Unverified","Running","NotQueried","Loading","Ready","AccessBlocked","Stale","HTTP","ApiResult","RequestEncoding","ResponseParse","ResponseFields","ChallengeValidation","Synthetic","OfficialMarket","LoadListingsAsync","LoadFeesAsync","IsolatedQa","FocusDeferred","FocusRejected","ImageInvalid","ImageMissing","ImageReady","ImageDisabled","ImageFailed","MedianEstimate","ExactAverage","Immediate","PrivateOrDenied","Partial","Unsupported","Empty","Loaded","Manual","Observed","HistoryChanged","AuthBegin","AuthPoll","AuthFinalize","AuthTransfer","Wallet","Fees","Inventory","Orderbook","History","Listings","Sell","Cancel","Image",
         "BeginAsync","CheckAsync","LoadAsync","RefreshPricesAsync","SubmitAsync","RecoverAsync","InspectAsync","HistoryAsync","ManageAsync","ResumeRepriceAsync","ReviseRepriceAsync","Run","Operation",
         "Disconnected","RequestingQr","AwaitingMobile","Connected","Expired","Denied","NetworkFailure","AccessBlocked","ContractFailure","StaleReview",
         "AwaitingCancellation","AwaitingReturn","Superseded","CandidateOnly","MultipleCandidates","NoCandidate","FieldsMismatch","TimeMissingOrOutside","ExistingBeforeRequest","ServerIdAndFields",

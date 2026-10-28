@@ -1,5 +1,13 @@
 # 진단 시스템 (10차, 2026-10-28 KST)
 
+## 14차 — 읽기 권한·빈 페이지 증거
+
+WalletContract **4205**는 shape·통화/최소가격/증분 필드존재·명시적로그인플래그만 기록한다. InventoryContract **4206**은 보고총계·description수·검증된0·부분페이지/모순·count만 기록한다. 원본HTML/JSON·계정/자산ID·redirectURL·인증정보는 기록하지 않는다. 기존 OperationId/HTTP요청ID/고정endpoint와 ZIP 검토·보존/회전 유지.
+
+예: SelfCheck Wallet → HTTP302/redirect=Login → Authorization/Wallet 제한 → 후속 Blocked. 세션기록 보존, 독립endpoint는 사용자가 별도 요청 가능. Inventory HTTP200 → 명시total0/no-more → EmptyVerified → Empty. 총계누락/모순은 ContractMismatch, JSON문법오류는 Parsing. HTTP401/403/429/CAPTCHA와 불명서버제한 보호 유지.
+
+Authentication / Authorization / AccessRestricted / ContractMismatch / Parsing / Unsupported / Empty / Transport / RateLimited 및 무전송 Blocked를 구분한다. 0.13 Authentication은401/redirect/API오류 복수경로 가능, 사용자원인은 미확정이다. 진단로그는 SQLite 거래복구 저널을 대체하지 않는다.
+
 ## 13차 연결 자가검증
 
 **ReadSelfCheck4204**(Data,A04), Step=고정 Endpoint SessionCheck/Listings/Inventory/Marketable/Wallet/Fees/Orderbook/History/Image. Running/Succeeded/Failed/Blocked/Unsupported/Unverified/Cancelled을 기존 outcome/error로 기록한다. GUI SelfCheckAsync의 OperationId를 9개 행과 provider/HTTP correlation까지 공유한다. 표시 detail/게임명/아이템명/plan/QR·쿠키·원문은 로그에 직렬화하지 않고 고정 step·상태·원인·count·통화만 허용한다.

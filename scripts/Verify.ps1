@@ -16,4 +16,6 @@ dotnet tests/MarketCrate.UiTests/bin/Debug/net10.0-windows/MarketCrate.UiTests.d
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 # Synthetic file contracts only; does not execute published app/guest binaries.
 pwsh -NoProfile -File scripts/Test-DistributionContracts.ps1
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+pwsh -NoProfile -File scripts/Test-ArtifactCleanup.ps1
 exit $LASTEXITCODE

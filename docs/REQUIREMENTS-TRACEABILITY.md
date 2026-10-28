@@ -1,5 +1,9 @@
 # 요구사항–구현–검증 추적표 (13차, 2026-10-29 KST)
 
+## 14차 재평가
+
+최초75개 ID/행/판정 유지: COMPLETE47/PARTIAL15/MISSING0/BLOCKED4/UNVERIFIED9. 사용자0.13 부분관측(세션기록·목록첫8건)을 전체/실거래 증거로 승격하지 않는다. 수정경로: SteamAccess.SendAsync(권한/제한)→SteamFees.ObserveWallet(관측/정수계약)·SteamContract.Inventory(검증빈페이지)→SteamReadSelfCheck→SteamReadSelfCheckViewModel/SteamWorkspaceView(요약/접힌상세). FourteenthStageTests8개·FourteenthStageUiTests1개와 전체207/46/14 PASS. 실제wallet원인·전체보관함·KRW/스택 계약은 미검증, LIVE차단 유지.
+
 ## 13차 판정 유지
 
 최초75개 ID/기준 **47 COMPLETE / 15 PARTIAL / 0 MISSING / 4 BLOCKED / 9 UNVERIFIED**, 변경0. A01~05는 기존 QR+Secure Community cookie 검사, 공식 OpenID identity/브라우저 세션 전달 미지원 구분. A04/B01/C01/D01/D02/D09/D10/B04: UI SelfCheck→불변 plan→SteamReadSelfCheck→기존 probe/fee/price/image→정제4204→row 결과, T13 12개/U13 3개 근거. 실서버·실계정 검증 N, 앱 OpenID/OAuth 미구현, LIVE 차단 유지. 자가검증의 로컬/합성 완성을 원 요구사항의 실제 계정 지원 COMPLETE로 승격하지 않는다.
