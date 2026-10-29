@@ -2,6 +2,8 @@
 
 ## 0.19.0 유사 프로젝트 재가격 조사
 
+SSIM MarketService.ts(28a503f, Apache-2.0)의 취소 큐/계정별 결과와 CSlytics market.ts(a5c094b, AGPL-3.0)의 SUBMITTED/DEFINITIVELY_REJECTED/AMBIGUOUS 구분을 실제 코드로 비교했다(정확한 링크는 REFERENCES). 자동 승인·반복 전송·다계정 정책/AGPL 코드는 도입하지 않았다. 이 파일들에서 취소 후 새 자산 ID를 원래 등록에 유일하게 연결하는 서버 증거는 확인하지 못했다. 검증되지 않은 인과관계의 확정 근거가 되지 않는다. MarketCrate는 취소 전에 원등록 저널/대상·금액·호가 전체를 검증하고, 반환 증거가 없는 외부 등록은 취소 이전에 재가격 차단 이유를 표시한다. 사용자가 요청한 외부 판매목록 전체 재등록은 아직 완성되지 않았으며, 별도의 새 대상 선택/새 최종 승인 또는 확인 가능한 서버 반환 계약이 필요하다.
+
 2026-10-29 [SteamMarketHelper 실제 MIT 소스 e186d51](https://github.com/federicogiorgi/SteamMarketHelper/blob/e186d51efb742ddfb527d2ccb248c64fcee9c976/steam-market-helper.user.js)의 act(relist)를 확인했다. 취소→기다림→보관함 재조회→market_hash_name으로 새 자산을 골라 재판매하며, 코드도 취소 후 ID가 바뀐다고 설명한다. 상품별 조회/큐/진행/순차 관리 구조는 참고하고 기존 MarketCrate Planner/Executor에 연결했다. **같은 이름이면 교환 가능한 자산으로 취급하는 반환 선택은 기존 불변 대상/인과·Unknown 조건과 충돌하여 도입하지 않았다.** 소스 복사/라이브러리 추가/AGPL 도입0, 기존 라이선스 고지 보존.
 
 따라서 외부 기존 등록/변경ID·스택 자동 재가격은 여전히 BLOCKED/PARTIAL이며 실제 서버 근거 없이 완료라고 하지 않는다. [node-steamcommunity 문서](https://github.com/DoctorMcKay/node-steamcommunity/wiki/SteamCommunity)도 Market 지원 앱 목록과 보유 게임 목록이 다름을 구분하는 참고 자료이며, 소유 게임 추출이나 무차별 앱 탐색은 구현하지 않는다. 수수료 실제 계정 모드 검증은 기존 상태를 유지한다. Codex 실계정 요청/판매/취소/Guard0.

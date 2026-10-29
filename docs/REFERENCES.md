@@ -2,6 +2,8 @@
 
 ## 0.19.0 실사용 UX·재가격 참고
 
+추가 실제 코드 비교(2026-10-29): [SSIM MarketService.ts, 28a503f](https://github.com/Santerxyz/SSIM/blob/28a503fa79869f3233814d0deaa906a8b3f66621/src/trading/MarketService.ts)(Apache-2.0)의 계정별 취소 큐/항목 결과·세션 정리, [CSlytics market.ts, a5c094b](https://github.com/Xpar65/cslytics-desktop/blob/a5c094bc44d12dc0bc99e84e6643fe8a2cc113a8/packages/adapters-steam/src/market.ts)(AGPL-3.0)의 접수/명확한 거절/불명 결과 분리, [node-steamcommunity market.js, fa8d897](https://github.com/DoctorMcKay/node-steamcommunity/blob/fa8d89759077152b0c38175f154e03d0eacd2d1e/components/market.js)(MIT)를 열람했다. 마지막 파일은 주로 gems/booster/market 앱 기능이며 범용 판매·반환 인과 계약의 근거로 사용하지 않았다. SSIM의 자동 승인/다계정·재시도 정책은 채택하지 않았고 AGPL 코드는 복사하지 않았다. 이번 변경은 기존 C# 서비스에 독립 구현했으며 새 외부 소스 도입은 없다.
+
 2026-10-29 KST SteamMarketHelper e186d51 MIT의 실제 act(relist)/상품 키/재조회·진행 코드를 재확인했다. 이름으로 반환 자산을 선택하는 정책은 미채택, 이유는 STEAM-INTEGRATION-FEASIBILITY에 기록했다. [node-steamcommunity Wiki](https://github.com/DoctorMcKay/node-steamcommunity/wiki/SteamCommunity)의 Market 앱/Steam 커뮤니티753 범위 설명도 확인했다. 등록된 아이템이 있다는 사실과 게임을 구매/소유했다는 사실은 다르다. 직접 코드 복사0, 기존 Steam 세션 MIT 이식/고지 유지.
 
 
