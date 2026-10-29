@@ -6,6 +6,21 @@ namespace MarketCrate.Infrastructure.Steam;
 public sealed partial class SteamHttp
 {
     private static readonly HttpRequestOptionsKey<bool> FeeVanity=new("MarketCrate.FeeContextVanity");
+    private static readonly HttpRequestOptionsKey<Uri> FeeResolved=new("MarketCrate.FeeContextResolved");
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<Uri,Uri> feeContexts=[];
+    internal void RememberFeeContext(HttpRequestMessage request)
+    {
+        if(request.Options.TryGetValue(FeeResolved,out var target)&&FeeContextRedirectKind(request.RequestUri!,target) is "FeeContextVanityRedirect" or "FeeContextCanonicalRedirect")
+            feeContexts[request.RequestUri!]=target;
+    }
+    private async Task<HttpResponseMessage> SendFeeContextInitialAsync(HttpRequestMessage request,CancellationToken token)
+    {
+        if(!feeContexts.TryGetValue(request.RequestUri!,out var target))return await client.SendAsync(request,HttpCompletionOption.ResponseHeadersRead,token);
+        using var direct=new HttpRequestMessage(HttpMethod.Get,target);
+        request.Options.Set(FeeVanity,FeeContextRedirectKind(request.RequestUri!,target)=="FeeContextVanityRedirect");request.Options.Set(FeeResolved,target);
+        DiagnosticHub.Emit(DiagnosticEvent.ReadContract,DiagnosticArea.HTTP,endpoint:"FeeContext",reason:"FeeContextRouteReused",count:1);
+        var response=await client.SendAsync(direct,HttpCompletionOption.ResponseHeadersRead,token);CaptureCookies(response,target);return response;
+    }
     internal static bool FeeContextUsesVanity(HttpRequestMessage request)=>request.Options.TryGetValue(FeeVanity,out var value)&&value;
     internal static bool ViewingOwnInventory(string html)
     {
@@ -38,6 +53,7 @@ public sealed partial class SteamHttp
             token.ThrowIfCancellationRequested();last=DateTimeOffset.UtcNow;
             using var follow=new HttpRequestMessage(HttpMethod.Get,target);
             request.Options.Set(FeeVanity,kind=="FeeContextVanityRedirect");
+            request.Options.Set(FeeResolved,target);
             DiagnosticHub.Emit(DiagnosticEvent.HttpRequest,DiagnosticArea.HTTP,DiagnosticOutcome.Started,endpoint:"FeeContext",method:"GET",reason:kind,count:1);
             var result=await client.SendAsync(follow,HttpCompletionOption.ResponseHeadersRead,token);
             try{CaptureCookies(result,target);return result;}catch{result.Dispose();throw;}

@@ -14,5 +14,5 @@ public static class SteamDiagnostics
     };
     internal static void Failure(SteamException error,string? endpoint=null,long? elapsed=null)=>
         DiagnosticHub.Emit(DiagnosticEvent.HttpFailure,DiagnosticArea.HTTP,DiagnosticOutcome.Blocked,LogLevel.Error,
-            Classify(error),endpoint:endpoint,reason:error.BodyKind?.ToString()??error.Code.ToString(),exception:error,elapsed:elapsed,serverCode:error.ApiResult);
+            Classify(error),endpoint:endpoint,reason:error.BodyKind?.ToString()??error.Code.ToString(),exception:error,elapsed:elapsed,serverCode:error.ApiResult,status:error.HttpStatus);
 }

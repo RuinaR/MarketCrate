@@ -15,6 +15,8 @@ public sealed class SteamContractServer : HttpMessageHandler
     public string? IconToken;public bool DynamicInventory,UnsupportedInventory,PrivateInventory;public string? HistoryOverride;public bool HidePublisherFee;public int InventoryReads;public TaskCompletionSource? HistoryStarted,HistoryRelease;
     public int ListingAppId=730;public string ListingContext="2";
     public int ManyAssets;
+    public int SellStatus=200;public string? SellBody;public Uri? SellReferrer;public bool SellAjax;
+    public bool RotateSessionOnListings;private string? requiredSession;
     public TaskCompletionSource? InventoryStarted,InventoryRelease;
     public SteamFeeSchedule Schedule=>new(Currency,Currency=="KRW"?100:1,Currency=="KRW"?100:1,new(50000),new(100000));
     public static string HistoryJson(int gap=1)=>JsonSerializer.Serialize(new{success=true,prices=new object[][]{[DateTimeOffset.UtcNow.AddHours(-3).ToString("MMM dd yyyy HH: '+0'",System.Globalization.CultureInfo.InvariantCulture),115,"2"],[DateTimeOffset.UtcNow.AddHours(-3+gap).ToString("MMM dd yyyy HH: '+0'",System.Globalization.CultureInfo.InvariantCulture),115,"1"]}});
@@ -47,10 +49,17 @@ public sealed class SteamContractServer : HttpMessageHandler
         else if(path=="/market/ajaxfeestructure/")json="{\"steam_fee\":{\"fee_rate\":\"0.05\",\"fee_cap\":\"0\"},\"publisher_fee\":{\"fee_rate\":\"0.1\",\"fee_cap\":\"0\"}}";
         else if(path=="/market/orderbook")json=JsonSerializer.Serialize(new{data=new{success=true,data=new{eCurrency=Currency=="KRW"?16:1,rgCompactBuyOrders=new long[]{new Money(115,Currency).Wire,3,new Money(Currency=="KRW"?113:112,Currency).Wire,4,new Money(110,Currency).Wire,3}}}});
         else if(path=="/market/pricehistory/"){HistoryStarted?.TrySetResult();if(HistoryRelease is not null)await HistoryRelease.Task.WaitAsync(token);json=HistoryOverride??HistoryJson();}
-        else if(path=="/market/mylistings/render/")json=ListingsJson();
+        else if(path=="/market/mylistings/render/")
+        {
+            json=ListingsJson();
+            if(RotateSessionOnListings){requiredSession="0123456789abcdef01234567";var rotated=Json(json);rotated.Headers.Add("Set-Cookie","sessionid="+requiredSession+"; Path=/; Secure");return rotated;}
+        }
         else if(path=="/market/sellitem/")
         {
+            SellReferrer=request.Headers.Referrer;SellAjax=request.Headers.TryGetValues("X-Requested-With",out var values)&&values.Contains("XMLHttpRequest");
             var form=await Fields(request);var quantity=int.Parse(form["amount"]);var seller=Money.FromWire(long.Parse(form["price"]),Currency).Minor;
+            if(requiredSession is {} csrf&&form["sessionid"]!=csrf){Sends++;return new(HttpStatusCode.BadRequest){Content=new StringContent("{\"success\":false,\"message\":\"invalid session\"}")};}
+            if(SellStatus!=200){Sends++;return new((HttpStatusCode)SellStatus){Content=new StringContent(SellBody??"{}",System.Text.Encoding.UTF8,"application/json")};}
             Sends++;if(quantity>Free)return Json("{\"success\":false}");Free-=quantity;var id=(500+Sends).ToString();Rows.Add((id,quantity,seller));created[id]=DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             if(TimeoutSell)throw new HttpRequestException("synthetic response loss");
             var body=new Dictionary<string,object>{["success"]=true,["needs_mobile_confirmation"]=true};if(!MissingId)body["listingid"]=id;if(FeeConflict)body["fee"]=999999;json=JsonSerializer.Serialize(body);

@@ -7,8 +7,8 @@ public sealed partial class SteamHttp
     // Login/challenge/restriction replies are never bypassed, retried or rewritten.
     private async Task<HttpResponseMessage> SendWalletHeadersAsync(HttpRequestMessage request,CancellationToken token,bool wallet)
     {
+        if(wallet&&request.Method==HttpMethod.Get&&IsFeeContext(request.RequestUri!))return await SendFeeContextHeadersAsync(request,await SendFeeContextInitialAsync(request,token),token);
         var response=await client.SendAsync(request,HttpCompletionOption.ResponseHeadersRead,token);
-        if(wallet&&request.Method==HttpMethod.Get&&IsFeeContext(request.RequestUri!))return await SendFeeContextHeadersAsync(request,response,token);
         if(!wallet||request.Method!=HttpMethod.Get||request.RequestUri!.AbsolutePath!="/market/")return response;
         var current=request.RequestUri!;var canonical=false;Uri? eligibilityReturn=null;var returned=false;var hop=0;
         try

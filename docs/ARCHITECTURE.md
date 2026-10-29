@@ -203,3 +203,7 @@ SteamReadStateViewModel partial은 5개 독립 상태와 사용자 요약을 담
 ## 0.20.3 실제 소스 대조·기본 모드 보완 (2026-10-29 KST)
 
 SteamFeeSchedule.PublisherFallbackAppId는 최신 인증 세션의 ClassicInventoryContext에서 확인된 실제 앱/지갑 설정이 있을 때만 부여한다. PublisherMatches는 명시적 아이템 수수료가 있으면 반드시 대조하고, 필드가 없을 때만 같은 앱의 classic 증거를 허용한다. 단순 FeeSchedule/API 응답/다른 앱/누락 모드에는 허용하지 않는다. VM FeeFor→활성화 사전검증→최종 Executor.ValidateBatch가 같은 계약을 사용하며 최종 전송 전 다시 서버에서 계산한다. 새 DB 스키마/마이그레이션·인증 저장 변경 없음. 일반 실거래/이미지 모드 기본 ON, 실제 권한은 계정 연결마다 초기화하고 최종 검토 사용자 동작에서만 준비한다.
+
+## 0.20.4 판매 응답·속도 보완 (2026-10-29 KST)
+
+0.20.4: 현재 자체 Community CookieContainer의 sessionid를 판매/취소마다 사용한다. 외부 Steam/브라우저 인증정보를 읽지 않는다. 소유 페이지·모드 검증 후에만 계정 source URI→canonical URI를 메모리에 보관하고 이후에도 본문/소유자/지갑/모드/앱 설정은 새로 읽는다. 캐시는 계정 source 경로별이며 외부/임의 이동 허용 범위를 넓히지 않는다. 실거래 사전검증의 계정 확인과 수수료는 동일한 최신 Market 응답을 사용해 중복 GET1개를 제거했다. 여러 앱의 실제 통화·단위 일치 조건은 유지한다. GET 대기1.5초, 판매/취소 간 최소3초, 계정별 직렬 큐,403/429/CAPTCHA 즉시 중단. 사용자별 저장소·스키마/Unknown 복구 정책 변경 없음.

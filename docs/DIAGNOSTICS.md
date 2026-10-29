@@ -262,3 +262,7 @@ FeeContext ReadContract/HttpRequest는 기존 OperationId에 FeeContextVanityRed
 0.20.3 TradingCheck(FinalValidation)는 Consent→WalletIdentity→FeeContract→WalletConsistency→InventoryRead→SaleableAssets→PublisherFees→ListingsRead→ListingFees→SessionCheck 단계와 차단된 단계를 기존 OperationId로 연결한다. 원문·계정/자산 ID·토큰 없이 고정 enum만 기록한다. HTTP/파서 오류는 기존 요청 진단에 연결된다. 실패 화면은 한글 확인 단계와 오류 분류를 표시한다. 문제 해결은 마지막 성공 조회보다 최근 실패 작업 ID를 우선 선택하며 로그아웃 시 초기화한다. 수동 필터는 계속 변경 가능하다. 첨부0.20.2 ZIP에는 활성화 기록 없이 호가 조회 성공만 있어 실패 원인을 판단하지 않았다.
 
 사용자 요청으로 일반 앱의 실거래/이미지 기본 선택을 ON으로 변경했다. OpenTradingReviewAsync는 최종 검토 사용자 동작에만 부족한 전송 권한을 검증하며, 실패한 단계는 같은 작업에 남긴다. 로그인 복원 시 대량 조회나 자동 판매는 시작하지 않는다. 기본 선택과 검증된 Access.Trading은 별개다. 이미지 OFF/로그아웃은 실제 로딩을 중단한다.
+
+## 0.20.4 판매 응답·속도 보완 (2026-10-29 KST)
+
+0.20.4: HTTP400 판매/취소 오류는 ClientRequest와 HTTP 상태를 유지하며 최대16KiB 응답을 메모리에서만 조사한다. ResponseContract는 미디어/본문 종류를, ReadContract는 ServerSuccessFalse/True/Unverified, ServerMessagePresent/Absent/MessageMentionsSession, 크기 초과/파싱 불가 같은 고정 분류만 기록한다. 원문 message/HTML/쿠키/토큰/계정 값은 기록하지 않는다. success 또는 승인 플래그가 있어도 비200이면 승인 대기로 확정하지 않고 Unknown/자동 재전송 금지를 유지한다. HttpFailure와 항목 메시지에 HTTP 상태를 연결하고 전체 안내도 승인 대기 미확인으로 표시한다. FeeContextRouteReused는 소유/모드가 확인된 이동 경로를 재사용했다는 뜻이며 내용·가격 캐시 적중이 아니다.

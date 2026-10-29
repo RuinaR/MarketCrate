@@ -46,6 +46,7 @@ public sealed class SteamException(SteamFailure code, int? apiResult = null) : I
     public DiagnosticError? Diagnostic { get; internal set; }
     public bool Redirected { get; internal set; }
     public SteamBodyKind? BodyKind { get; internal set; }
+    public int? HttpStatus {get;internal set;}
     public SteamTradingCheck? TradingCheck { get; internal set; }
 }
 
@@ -55,7 +56,13 @@ public sealed partial class SteamHttp : IDisposable
     private readonly HttpClient client;
     private readonly SemaphoreSlim queue = new(1, 1);
     private DateTimeOffset last;
+    private DateTimeOffset lastMutation;
     private readonly TimeSpan gap;
+    private readonly TimeSpan mutationGap;
+    internal static readonly TimeSpan ReadGap=TimeSpan.FromMilliseconds(1500);
+    internal static readonly TimeSpan WriteGap=TimeSpan.FromSeconds(3);
+    internal static DateTimeOffset NextRequestAt(DateTimeOffset previous,DateTimeOffset previousWrite,bool write,TimeSpan readGap,TimeSpan writeGap)
+        =>write&&previousWrite+writeGap>previous+readGap?previousWrite+writeGap:previous+readGap;
     internal readonly CookieContainer Cookies = new();
     public SteamAccess Access { get; }
     public SteamFailure? Halted { get; private set; }
@@ -64,10 +71,10 @@ public sealed partial class SteamHttp : IDisposable
     internal void BlockFeature(string endpoint,SteamFailure failure=SteamFailure.Authorization)=>featureBlocks[endpoint]=failure;
     public SteamHttp(SteamAccess access, HttpMessageHandler? testHandler = null, TimeSpan? testGap = null)
     {
-        Access = access; gap = testHandler is null ? TimeSpan.FromSeconds(3) : testGap ?? TimeSpan.Zero;
-        client = new(testHandler ?? new HttpClientHandler { AllowAutoRedirect = false, UseCookies = true, CookieContainer = Cookies, UseProxy = false });
+        Access = access; gap = testHandler is null ? ReadGap : testGap ?? TimeSpan.Zero;mutationGap=testHandler is null?WriteGap:testGap??TimeSpan.Zero;
+        client = new(testHandler ?? new HttpClientHandler { AllowAutoRedirect = false, UseCookies = true, CookieContainer = Cookies, UseProxy = false, AutomaticDecompression=DecompressionMethods.All });
         client.Timeout = TimeSpan.FromSeconds(25);
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("MarketCrate/0.4 (experimental; user-initiated)");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd($"MarketCrate/{typeof(SteamHttp).Assembly.GetName().Version} (user-initiated)");
     }
     public void Stop(SteamFailure failure) => Halted ??= failure;
     private static bool IsFeeContext(Uri uri)=>uri.Host=="steamcommunity.com"&&uri.Query.Length==0&&System.Text.RegularExpressions.Regex.IsMatch(uri.AbsolutePath,@"^/profiles/[0-9]{17}/inventory/$",System.Text.RegularExpressions.RegexOptions.CultureInvariant,TimeSpan.FromMilliseconds(100));
@@ -106,10 +113,12 @@ public sealed partial class SteamHttp : IDisposable
         {
             if (Halted is { } halted) throw new SteamException(halted);
             if(FeatureFailure(endpoint) is {} feature)throw new SteamException(feature){Endpoint=endpoint};
-            var wait = last + gap - DateTimeOffset.UtcNow;
+            var mutation=request.Method==HttpMethod.Post&&endpoint is "Sell" or "Cancel";
+            var wait = NextRequestAt(last,lastMutation,mutation,gap,mutationGap) - DateTimeOffset.UtcNow;
             if (wait > TimeSpan.Zero) await Task.Delay(wait, token);
             if (!Access.ResearchRiskAccepted) throw new SteamException(SteamFailure.Disabled);
             last = DateTimeOffset.UtcNow;
+            if(mutation)lastMutation=last;
             phase="ConnectOrHeaders";
             using var response = await SendWalletHeadersAsync(request, token, allowWalletHtml);
             if (response.Headers.TryGetValues("Set-Cookie", out var cookies))
@@ -135,9 +144,11 @@ public sealed partial class SteamHttp : IDisposable
             }
             if (status != 200)
             {
+                if(status is >=400 and <500 and not(401 or 403 or 429)&&request.Method==HttpMethod.Post&&endpoint is "Sell" or "Cancel")
+                {var error=await InspectWriteFailureAsync(response,endpoint,token);Stop(error.Code);throw error;}
                 var failure = status switch { 404 => SteamFailure.Unsupported, 401 => SteamFailure.Authentication, 403 => SteamFailure.Forbidden, 429 => SteamFailure.RateLimited,
                     >= 300 and < 400 => SteamFailure.Authentication, _ => SteamFailure.Transport };
-                if(failure!=SteamFailure.Unsupported && !(request.Method==HttpMethod.Get && failure==SteamFailure.Transport))Stop(failure); throw new SteamException(failure);
+                if(failure!=SteamFailure.Unsupported && !(request.Method==HttpMethod.Get && failure==SteamFailure.Transport))Stop(failure); throw new SteamException(failure){HttpStatus=status};
             }
             if (response.Headers.TryGetValues("x-eresult", out var results) && results.FirstOrDefault() is { } result && result != "1")
             { var failure=request.Method==HttpMethod.Get?(result=="15"?SteamFailure.Authorization:result=="27"?SteamFailure.Expired:SteamFailure.Restricted):(result=="15"?SteamFailure.Denied:result=="27"?SteamFailure.Expired:SteamFailure.Authentication);if(failure==SteamFailure.Authorization)BlockFeature(endpoint);else Stop(failure);throw new SteamException(failure,steamCode){Diagnostic=apiError}; }
@@ -190,6 +201,8 @@ public sealed partial class SteamHttp : IDisposable
         request.Headers.Referrer = new("https://steamcommunity.com/");
         request.Headers.Add("Origin", "https://steamcommunity.com");
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+        if(uri.Host=="steamcommunity.com"&&uri.AbsolutePath.StartsWith("/market/",StringComparison.Ordinal))
+        {request.Headers.Referrer=new("https://steamcommunity.com/market/");request.Headers.Add("X-Requested-With","XMLHttpRequest");}
         return request;
     }
     internal static JsonDocument Json(string body)

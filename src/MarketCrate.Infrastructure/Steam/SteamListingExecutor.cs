@@ -63,11 +63,10 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
             foreach(var fee in provider.PublisherFees)publisherFees.Add(fee.Key,fee.Value);
         }
         var schedules=new Dictionary<int,SteamFeeSchedule>();
-        SteamWallet? wallet=executionPolicy.UserInitiated?await SteamFees.FetchTradingWalletAsync(http,auth.SteamId!,token):null;
         foreach(var app in snapshot.Lines.Select(x=>x.Asset.Key.AppId).Distinct())
         {
-            var schedule=await SteamFees.FetchResolvedAsync(http,auth,app,token);
-            if(wallet is not null&&(schedule.Currency!=wallet.Currency||schedule.MinimumWire!=wallet.MinimumWire||schedule.IncrementWire!=wallet.IncrementWire))throw new SteamException(SteamFailure.Restricted);
+            var schedule=await SteamFees.FetchResolvedAsync(http,auth,app,token,requireWalletIdentity:executionPolicy.UserInitiated);
+            if(executionPolicy.UserInitiated&&schedules.Values.FirstOrDefault() is {} previous&&(schedule.Currency!=previous.Currency||schedule.MinimumWire!=previous.MinimumWire||schedule.IncrementWire!=previous.IncrementWire))throw new SteamException(SteamFailure.Restricted);
             schedules.Add(app,schedule);
         }
         foreach (var group in snapshot.Lines.GroupBy(x => x.Asset.Key))
@@ -143,6 +142,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
                     ["assetid"] = line.Asset.Key.AssetId, ["amount"] = line.Quantity.ToString(CultureInfo.InvariantCulture),
                     ["price"] = SteamContract.ToWire(line.UnitQuote.SellerReceives, line.Currency).ToString(CultureInfo.InvariantCulture)
                 });
+                request.Headers.Referrer=new("https://steamcommunity.com/profiles/"+auth.SteamId+"/inventory/");
                 var body = await http.SendAsync(request, cancellationToken);
                 var response = SteamContract.Sell(body);
                 var conflict = SteamContract.Parse(body, root =>
@@ -159,7 +159,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
             {
                 http.Stop(error is SteamException steam ? steam.Code : SteamFailure.Transport);
                 store.SaveCommand(intent with { State = SaleState.Unknown });
-                return new(line.LineId, SaleState.Unknown, "Steam 응답 불명/접근 중단: 자동 재전송 금지");
+                return new(line.LineId, SaleState.Unknown, error is SteamException {HttpStatus:{} status}?$"Steam 판매 요청 HTTP {status} · 승인 대기 응답 없음 · 결과 불명, 자동 재전송 금지":"Steam 응답 불명/접근 중단: 자동 재전송 금지");
             }
         }
         finally { mutations.Release(); }

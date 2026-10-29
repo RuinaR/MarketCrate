@@ -407,3 +407,7 @@ ignored 증거 runtime/stage14-final-verify.txt, runtime/stage14-ui-final.txt, r
 최종0.20.3 추가 회귀: 앱 계약이 확인된 classic 수수료 + 선택적 아이템 필드 없음→검토→활성화→동일 실제 어댑터 합성 전송→모바일 승인 대기. 수정 전 FeeFor Unsupported FAIL, 수정 후 PASS. 다른 앱/수수료 상충/무근거 schedule은 거절하고 기존 React 필드 누락 보호 회귀도 유지한다. 기본 모드 ON은 검증 전 CanTrade=false, 최종 검토 사전검증/명시적 OFF·취소 전용 미승격/최종 승인 전 판매0을 검증한다. 실서버 성공으로 판정하지 않는다.
 
 최종0.20.3: 기능333/333·비표시WPF66/66·배포계약19/19·정리fixture9/9 PASS, 경고/오류0. 전체 ZIP entry SHA/파일 수/메타데이터·실제전용·런타임/SQLite/라이선스·비밀/사용자자료 출하 제외 PASS. 새 기본 체크/안내 RTB 직접 검토. 실제 Steam 계정/판매·물리입력·모니터DPI는 NOT VERIFIED. 사용자 제출 ZIP에는 활성화 실패 기록이 없어 활성화 성공/실패 원인을 확정하지 않았다.
+
+## 0.20.4 판매 응답·속도 보완 (2026-10-29 KST)
+
+0.20.4 신규 SubmissionTransportTests 8개: 쿠키 회전/POST 현재 CSRF, 정상 AJAX 판매 헤더, HTTP400→Unknown/Guard 오표시 없음/재전송0, JSON 성공 플래그·Challenge·금지 HTML·오류/대용량 본문 안전 처리/민감정보 미기록, 읽기/쓰기 간격 순수 계산, 확인된 canonical 이동 재사용과 신형 모드 재조회, 지갑/수수료 공통 Market GET1회. 수정 전3개 FAIL→수정 후PASS. 실제 HTTP400 원문과 새 버전 실계정 성공/실제 속도는 미검증이다. 기존 불명 저널/예약은 삭제하지 않는다.

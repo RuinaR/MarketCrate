@@ -1,6 +1,16 @@
-# MarketCrate — 현재 상태 (2026-10-29 KST, 0.20.3)
+# MarketCrate — 현재 상태 (2026-10-29 KST, 0.20.4)
 
-### 최신 배포 — 0.20.3
+## 0.20.4 — 판매 HTTP400·승인 대기 구분·속도
+
+사용자0.20.3 실제 SubmitAsync(작업3724aadb-b310-4535-8d0a-653f732ff32c)는 사전검증 후 sellitem HTTP400을 받았고 Unknown을 영속 저장했다. Steam Guard 필요/접수/게시 성공 응답은 확인되지 않았다. 기존 오류 본문이 없어400의 구체 원인은 미확정이다. 따라서 기존 Unknown 예약을 해제하거나 재전송하지 않았다.
+
+현재 자체 쿠키에서 sessionid를 읽고 정상 inventory Referer/AJAX 헤더를 적용했다. 400을 단순 Transport로 잃지 않고 HTTP 상태와 최대16KiB 본문의 고정 분류만 남긴다. 원문·쿠키·토큰은 로그/진단 ZIP에 없다. 비200의 성공/승인 플래그도 Unknown으로 유지하며 전체 UI 안내에서 승인 대기 미확인을 명시한다.
+
+해당 실제 작업의 첫 조회→400은 약21초였고3초 pacing이 대부분이었다. 읽기 간격은1.5초로 줄이고 판매/취소 간 최소3초는 유지한다. 지갑 계정/수수료 검증의 중복 GET1개를 제거하고, 검증된 canonical URL만 재사용해 반복302 한 번을 줄인다. 본문·가격·지갑/자산·매도 직전 판매목록은 새로 확인한다. 실제 새 버전 속도는 미측정이고 Valve 호출 한도 보장이 아니다. 직렬 큐/403·429·Challenge 중단은 유지한다.
+
+기능341/341·비표시WPF66/66·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0. 수정 전 쿠키 회전/400 진단/헤더3건 FAIL을 재현했다. 기존 실거래·이미지 기본 선택 ON과 최종 배치 승인, Auth/DB/저널·예약/Unknown 보호를 유지한다. 실제 계정/거래/호스트 GUI/타 프로세스 작업0. REAL_FEE_VERIFIED/LIVE_SELL_VERIFIED/RELEASE_READY 미부여, 최초75개 판정47/16/0/3/9 유지. 아래0.20.3은 이전 배포 근거다.
+
+### 이전 배포 — 0.20.3
 
 소스 **4d158896c90be55a5129d263bcd7a22229fbfb9f**. **artifacts/releases/MarketCrate-0.20.3-live-default-4d15889-win-x64.zip**, **66,511,118바이트/413파일**, SHA256 **23E0C2C5E3F413F5ED0292FEC3C59CECCB6CDF9858D7E67EBF4ACE9C4D8673A5**. 전체 ZIP entry SHA/파일 수·SourceCommit·CLR/WPF10.0.9·SQLite x64·ProtectedData·라이선스·실제 전용 PE/BAML·개발/인증/사용자DB/로그 제외 검사 PASS. 기능333/333·비표시WPF66/66·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0. 새 기본 설정과 검증 경로의 실계정/물리 GUI·실판매 성공은 미검증이다.
 

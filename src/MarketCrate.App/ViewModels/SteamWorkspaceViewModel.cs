@@ -181,7 +181,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         if(Busy)return;
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.UiCommand,DiagnosticArea.UI,"G08",stage);
         LastOperationId=DiagnosticHub.Context?.OperationId;Raise(nameof(LastOperationId));
-        OperationLabel=stage switch{nameof(BeginAsync)=>"QR 인증 요청 중",nameof(CheckAsync)=>"모바일 승인 확인 중",nameof(RestoreRememberedAsync)=>"저장 로그인 복원 중",nameof(LoadAsync)=>"보관함·수수료·판매목록 조회 중",nameof(LoadFeesAsync)=>"지갑·수수료 조회 중",nameof(LoadWalletAsync)=>"지갑 통화 조회 중",nameof(LoadListingsAsync)=>"판매목록 조회 중",nameof(RefreshPricesAsync)=>"선택한 아이템 시세 조회 중",nameof(ManageAsync)=>"검토한 관리 요청 처리 중",nameof(CancelForNewReviewAsync)=>"새 대상 검토를 위한 전체 취소 중",nameof(ReviewCancelledTargetsAsync)=>"취소 후 새 판매 대상 조회 중",nameof(PrepareListingRepriceAsync)=>"일괄 재등록 가격 계산 중",_=>"요청 처리 중"};Busy=true;operation=new();authenticating=stage is nameof(BeginAsync) or nameof(CheckAsync) or nameof(RestoreRememberedAsync);
+        OperationLabel=stage switch{nameof(BeginAsync)=>"QR 인증 요청 중",nameof(CheckAsync)=>"모바일 승인 확인 중",nameof(RestoreRememberedAsync)=>"저장 로그인 복원 중",nameof(LoadAsync)=>"보관함·수수료·판매목록 조회 중",nameof(SubmitAsync)=>"판매등록 전 서버 재검증 중",nameof(OpenTradingReviewAsync)=>"계정·수수료·자산 검증 중",nameof(LoadFeesAsync)=>"지갑·수수료 조회 중",nameof(LoadWalletAsync)=>"지갑 통화 조회 중",nameof(LoadListingsAsync)=>"판매목록 조회 중",nameof(RefreshPricesAsync)=>"선택한 아이템 시세 조회 중",nameof(ManageAsync)=>"검토한 관리 요청 처리 중",nameof(CancelForNewReviewAsync)=>"새 대상 검토를 위한 전체 취소 중",nameof(ReviewCancelledTargetsAsync)=>"취소 후 새 판매 대상 조회 중",nameof(PrepareListingRepriceAsync)=>"일괄 재등록 가격 계산 중",_=>"요청 처리 중"};Busy=true;operation=new();authenticating=stage is nameof(BeginAsync) or nameof(CheckAsync) or nameof(RestoreRememberedAsync);
         var read=ReadFor(stage);read?.Update(SteamReadState.Loading);Raise(nameof(InventoryEmptyTitle));Raise(nameof(InventoryEmptyHint));if(read==PricesRead&&PricingMode==2)HistoryRead.Update(SteamReadState.Stale);
         try{await action(operation.Token);read?.Update(read==InventoryRead&&Assets.Count==0||read==ListingsRead&&Listings.Count==0?SteamReadState.Empty:SteamReadState.Ready);}
         catch(OperationCanceledException)
@@ -267,7 +267,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         try
         {
             WorkPage=3;
-            var result=await workspace.Batches.ExecuteAsync(batch,new BatchUiProgress(this),token);token.ThrowIfCancellationRequested();SetResults(result);ReviewOpen=false;RefreshRequests();Status="배치 요청 결과 · 접수/승인 대기는 게시 완료가 아닙니다.";if(workspace.Failure is {} failure)Error(new SteamException(failure));
+            var result=await workspace.Batches.ExecuteAsync(batch,new BatchUiProgress(this),token);token.ThrowIfCancellationRequested();SetResults(result);ReviewOpen=false;RefreshRequests();Status="배치 요청 결과 · 접수/승인 대기는 게시 완료가 아닙니다.";if(workspace.Failure is {} failure)Error(new SteamException(failure));if(result.Results.Any(x=>x.State==SaleState.Unknown))Status="일부 등록 결과가 불명확합니다. 해당 항목은 Steam Guard 승인 대기로 확인되지 않았습니다. 재전송하지 말고 판매 결과의 오류와 공식 장터 상태를 확인하세요.";
         }
         finally{workspace.Store.ClearRelistApproval(batch.BatchId);}
     });

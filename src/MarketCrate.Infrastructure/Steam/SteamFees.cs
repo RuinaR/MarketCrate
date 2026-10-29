@@ -73,12 +73,12 @@ public static class SteamFees
         var data=ObserveStructure(json);if(data.AdditionalFields)throw new SteamException(SteamFailure.ContractChanged);
         var result=new SteamFeeSchedule(wallet.Currency,wallet.MinimumWire,wallet.IncrementWire,data.Steam,data.Publisher);result.Validate();DiagnosticHub.Emit(DiagnosticEvent.FeeValidated,DiagnosticArea.Pricing,requirement:"D10");return result;
     }
-    public static async Task<SteamFeeSchedule> FetchResolvedAsync(SteamHttp http,SteamQrAuthentication auth,int appId,CancellationToken token,Action<SteamWalletObservation>? observed=null)
+    public static async Task<SteamFeeSchedule> FetchResolvedAsync(SteamHttp http,SteamQrAuthentication auth,int appId,CancellationToken token,Action<SteamWalletObservation>? observed=null,bool requireWalletIdentity=false)
     {
         if(!auth.Connected||auth.SteamId is not {} account)throw new SteamException(SteamFailure.Authentication);
         using var correlation=DiagnosticHub.Scope(correlation:true);
         using var request=new HttpRequestMessage(HttpMethod.Get,"https://steamcommunity.com/market/");
-        var html=await http.SendAsync(request,token,true);var wallet=ObserveWallet(html);
+        var html=await http.SendAsync(request,token,true);var wallet=requireWalletIdentity?ObserveTradingWallet(html,account):ObserveWallet(html);
         if(wallet.LoggedIn==false){http.BlockFeature("Wallet");throw new SteamException(SteamFailure.Authorization){Endpoint="Wallet"};}
         observed?.Invoke(wallet);
         var evidence=FeeContractResolver.Observe(html,appId,wallet);
@@ -91,6 +91,7 @@ public static class SteamFees
             var identity=Regex.Match(html,@"\bg_steamID\s*=\s*['"" ]?([0-9]{17})['""]?\s*;",RegexOptions.CultureInvariant,TimeSpan.FromMilliseconds(100));
             if(!identity.Success||identity.Groups[1].Value!=account){http.BlockFeature("FeeContext");DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Pricing,DiagnosticOutcome.Blocked,LogLevel.Warning,DiagnosticError.Authorization,endpoint:"FeeContext",reason:"AccountMismatch");throw new SteamException(SteamFailure.Authorization){Endpoint="FeeContext"};}
             evidence=FeeContractResolver.Observe(html,appId,wallet);
+            if(evidence.Mode is FeeContractMode.VerifiedLegacy or FeeContractMode.VerifiedNew)http.RememberFeeContext(profile);
         }
         if(!auth.Connected||auth.SteamId!=account)throw new SteamException(SteamFailure.Authentication);
         var schedule=evidence.Mode switch
@@ -112,11 +113,15 @@ public static class SteamFees
     {
         using var request=new HttpRequestMessage(HttpMethod.Get,"https://steamcommunity.com/market/");
         var html=await http.SendAsync(request,token,true);
+        return ObserveTradingWallet(html,account).PricingWallet();
+    }
+    private static SteamWalletObservation ObserveTradingWallet(string html,string account)
+    {
         // Compare in memory only; account content is never a diagnostic field.
         var identity=Regex.Match(html,@"\bg_steamID\s*=\s*['"" ]?([0-9]{17})['""]?\s*;",RegexOptions.CultureInvariant,TimeSpan.FromMilliseconds(100));
         if(!identity.Success||identity.Groups[1].Value!=account){DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,DiagnosticOutcome.Blocked,LogLevel.Warning,DiagnosticError.Authorization,endpoint:"Wallet",reason:"AccountMismatch");throw new SteamException(SteamFailure.Authorization){Endpoint="Wallet"};}
         var wallet=ObserveWallet(html);if(wallet.LoggedIn!=true)throw new SteamException(SteamFailure.Authorization){Endpoint="Wallet"};
-        try{return wallet.PricingWallet();}catch(SteamException error){error.Endpoint="Wallet";throw;}
+        try{_=wallet.PricingWallet();return wallet;}catch(SteamException error){error.Endpoint="Wallet";throw;}
     }
     public static async Task<SteamFeeStructure> FetchStructureObservationAsync(SteamHttp http,int appId,CancellationToken token)
     {using var correlation=DiagnosticHub.Scope(correlation:true);using var request=StructureRequest(appId);return ObserveStructure(await http.SendAsync(request,token));}

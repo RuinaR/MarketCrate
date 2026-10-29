@@ -72,11 +72,10 @@ public sealed class SteamExperimentalWorkspace : IDisposable
             if(!unofficialRisk||!sessionConsent||!Authentication.Connected||Failure is not null)throw new SteamException(SteamFailure.Disabled);
             var account=Authentication.SteamId!;
             Step(SteamTradingCheck.WalletIdentity);
-            var wallet=await SteamFees.FetchTradingWalletAsync(http,account,token);
-            Step(SteamTradingCheck.FeeContract);
-            var schedule=await SteamFees.FetchResolvedAsync(http,Authentication,appId,token);
+            SteamWalletObservation? wallet=null;
+            var schedule=await SteamFees.FetchResolvedAsync(http,Authentication,appId,token,observed:read=>{wallet=read;Step(SteamTradingCheck.FeeContract);},requireWalletIdentity:true);
             Step(SteamTradingCheck.WalletConsistency);
-            if(schedule.Currency!=wallet.Currency||schedule.MinimumWire!=wallet.MinimumWire||schedule.IncrementWire!=wallet.IncrementWire)throw new SteamException(SteamFailure.Restricted);
+            if(wallet is null||schedule.Currency!=wallet.Currency||schedule.MinimumWire!=wallet.MinimumWire||schedule.IncrementWire!=wallet.IncrementWire)throw new SteamException(SteamFailure.Restricted);
             Step(SteamTradingCheck.InventoryRead);
             var provider=new SteamInventoryProvider(http,Authentication,appId,context,game);
             var assets=await provider.GetAsync(token);

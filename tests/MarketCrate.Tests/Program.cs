@@ -6,6 +6,7 @@ using MarketCrate.App.ViewModels;
 
 if(args.Contains("--usability")){var focused=await UsabilityTests.RunAsync();return focused.Failed==0?0:1;}
 if(args.Contains("--fee-modes")){var focused=await FeeModeTests.RunAsync();return focused.Failed==0?0:1;}
+if(args.Contains("--submission-contracts")){var focused=await SubmissionTransportTests.RunAsync();return focused.Failed==0?0:1;}
 if(args.Contains("--sessions")&&OperatingSystem.IsWindows()){var focused=await SessionPersistenceTests.RunAsync();return focused.Failed==0?0:1;}
 
 if(args.Contains("--recovery-failure")){await RecoveryFailure();return 0;}
@@ -70,9 +71,10 @@ var walletPatch=await WalletRedirectPatchTests.RunAsync();failed+=walletPatch.Fa
 var liveOnly=await LiveOnlyTests.RunAsync();failed+=liveOnly.Failed;
 var feeResponse=await FeeResponseTests.RunAsync();failed+=feeResponse.Failed;
 var feeModes=await FeeModeTests.RunAsync();failed+=feeModes.Failed;
+var submissionTransport=await SubmissionTransportTests.RunAsync();failed+=submissionTransport.Failed;
 var usability=await UsabilityTests.RunAsync();failed+=usability.Failed;
 var sessions=OperatingSystem.IsWindows()?await SessionPersistenceTests.RunAsync():(Passed:0,Failed:0);failed+=sessions.Failed;
-var total = usability.Passed+usability.Failed+feeModes.Passed+feeModes.Failed+sessions.Passed+sessions.Failed+feeResponse.Passed+feeResponse.Failed+liveOnly.Passed+liveOnly.Failed+walletPatch.Passed+walletPatch.Failed+fifteenth.Passed+fifteenth.Failed+fourteenth.Passed+fourteenth.Failed+ thirteenth.Passed+thirteenth.Failed+ twelfth.Passed+twelfth.Failed+ eleventh.Passed+eleventh.Failed+tenth.Passed+tenth.Failed+ninth.Passed+ninth.Failed+eighth.Passed+eighth.Failed+seventh.Passed+seventh.Failed+sixth.Passed+sixth.Failed+tests.Length + next.Passed + next.Failed + third.Passed + third.Failed + fourth.Passed + fourth.Failed + fifth.Passed + fifth.Failed;
+var total = submissionTransport.Passed+submissionTransport.Failed+usability.Passed+usability.Failed+feeModes.Passed+feeModes.Failed+sessions.Passed+sessions.Failed+feeResponse.Passed+feeResponse.Failed+liveOnly.Passed+liveOnly.Failed+walletPatch.Passed+walletPatch.Failed+fifteenth.Passed+fifteenth.Failed+fourteenth.Passed+fourteenth.Failed+ thirteenth.Passed+thirteenth.Failed+ twelfth.Passed+twelfth.Failed+ eleventh.Passed+eleventh.Failed+tenth.Passed+tenth.Failed+ninth.Passed+ninth.Failed+eighth.Passed+eighth.Failed+seventh.Passed+seventh.Failed+sixth.Passed+sixth.Failed+tests.Length + next.Passed + next.Failed + third.Passed + third.Failed + fourth.Passed + fourth.Failed + fifth.Passed + fifth.Failed;
 Console.WriteLine($"RESULT {total - failed}/{total} PASS; {failed} FAIL · synthetic data only, no GUI/network (Steam HTTP replaced by test handler)");
 return failed == 0 ? 0 : 1;
 

@@ -28,7 +28,7 @@ public sealed class SteamQrAuthentication(SteamHttp http, TimeProvider? timeProv
     public void ForgetRememberedToken(){RememberRequested=false;CryptographicOperations.ZeroMemory(rememberedRefresh);rememberedRefresh=[];}
     public Uri? Challenge { get; private set; }
     public string? SteamId { get; private set; }
-    internal string? SessionId { get; private set; }
+    internal string? SessionId => SteamId is null?null:http.Cookies.GetCookies(new("https://steamcommunity.com/"))["sessionid"] is {Expired:false,Value.Length:>0} cookie?cookie.Value:null;
     public bool HasSession => SteamId is not null && SessionId is not null && http.Access.AuthenticatedReads;
     public bool Connected => HasSession && http.Halted is not (SteamFailure.Authentication or SteamFailure.Expired);
     public Task<Uri> BeginAsync(CancellationToken token = default) => GuardAsync(() => BeginCoreAsync(token), "AuthBegin");
@@ -135,7 +135,7 @@ public sealed class SteamQrAuthentication(SteamHttp http, TimeProvider? timeProv
         if((expectedAccount is not null||!explicitSuccess)&&!Uri.UnescapeDataString(http.Cookies.GetCookies(new("https://steamcommunity.com/"))["steamLoginSecure"]!.Value).StartsWith(steamId+"||",StringComparison.Ordinal))
         {stage=SteamAuthStage.AccountValidation;throw new SteamException(SteamFailure.Authentication){Diagnostic=DiagnosticError.Authorization};}
         http.Cookies.Add(new System.Net.Cookie("sessionid", csrf, "/", "steamcommunity.com") { Secure = true });
-        SessionId = csrf; SteamId = steamId;
+        SteamId = steamId;
     }
     private static HttpRequestMessage AuthForm(string method, byte[] data)
     {
@@ -184,7 +184,7 @@ public sealed class SteamQrAuthentication(SteamHttp http, TimeProvider? timeProv
     public void Dispose()
     {
         http.Access.RevokeTrading();
-        SteamId = SessionId = null; Challenge = null; CryptographicOperations.ZeroMemory(requestId); requestId = [];
+        SteamId = null; Challenge = null; CryptographicOperations.ZeroMemory(requestId); requestId = [];
         CryptographicOperations.ZeroMemory(rememberedRefresh);rememberedRefresh=[];
         foreach (System.Net.Cookie cookie in http.Cookies.GetAllCookies()) cookie.Expired = true;
     }
