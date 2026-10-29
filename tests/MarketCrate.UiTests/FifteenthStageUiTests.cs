@@ -12,11 +12,12 @@ internal static class FifteenthStageUiTests
 {
     public static void Run(Action<string,Action> test,Action<FrameworkElement,int,int,double,string> render)
     {
-        test("실거래 기본OFF·별도세션 확인·개발용 활성화 분리 렌더",()=>
+        test("실거래·이미지 기본선택과 검증 전 전송권한 차단 렌더",()=>
         {
             using var vm=new SteamWorkspaceViewModel();vm.WorkPage=4;
             var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,800,1,"stage15-trading-off.png");
             Check(!vm.ContractToolsVisible&&!vm.PrepareTrading.CanExecute(null)&&!vm.EnableTrading.CanExecute(null),"unsafe default");
+            Check(vm.TradeAccepted&&vm.ImagesEnabled&&!vm.CanTrade&&vm.TradingConfirmation=="실제 거래","mode/image default or permission bypass");
             Check(Find<TextBox>(view).Any(x=>x.GetBindingExpression(TextBox.TextProperty)?.ParentBinding.Path?.Path=="TradingConfirmation"),"confirmation UI disconnected");
             Check(Find<Button>(view).Any(x=>ReferenceEquals(x.Command,vm.PrepareTrading)),"preflight UI disconnected");
             var panel=Find<TextBlock>(view).Single(x=>x.GetBindingExpression(TextBlock.TextProperty)?.ParentBinding.Path?.Path=="TradingPreparation");

@@ -93,13 +93,14 @@ public static class SteamFees
             evidence=FeeContractResolver.Observe(html,appId,wallet);
         }
         if(!auth.Connected||auth.SteamId!=account)throw new SteamException(SteamFailure.Authentication);
-        return evidence.Mode switch
+        var schedule=evidence.Mode switch
         {
             FeeContractMode.VerifiedLegacy=>FeeContractResolver.Legacy(evidence),
             FeeContractMode.VerifiedNew=>await FetchStructureAsync(http,appId,wallet.PricingWallet(),token),
             FeeContractMode.Restricted=>throw new SteamException(SteamFailure.Authorization){Endpoint="Fees"},
             _=>throw new SteamException(SteamFailure.Unsupported){Endpoint="Fees"}
         };
+        return evidence.Reason=="ClassicInventoryContext"?schedule with{PublisherFallbackAppId=appId}:schedule;
     }
     public static async Task<SteamWalletObservation> FetchWalletObservationAsync(SteamHttp http,CancellationToken token)
     {

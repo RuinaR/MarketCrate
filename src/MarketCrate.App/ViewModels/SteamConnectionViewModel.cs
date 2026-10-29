@@ -26,6 +26,9 @@ public sealed partial class SteamWorkspaceViewModel
     private void InitializeConnection(bool synthetic,Action<Uri>? open)
     {
         syntheticConnection=synthetic;
+        tradeAccepted=!synthetic;
+        imagesEnabled=!synthetic;
+        tradingConfirmation=synthetic?"":"실제 거래";
         officialPage=open??(uri=>System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri){UseShellExecute=true}));
         OpenOfficialMarket=new(()=>{DiagnosticHub.Emit(DiagnosticEvent.UiPage,DiagnosticArea.UI,requirement:"F01",reason:"OfficialMarket");officialPage(new("https://steamcommunity.com/market/"));},()=>!Busy&&!AnyReview);
         LoadListings=new(LoadListingsAsync,Error,()=>CanReadFeature("Listings")&&!Busy&&!AnyReview);

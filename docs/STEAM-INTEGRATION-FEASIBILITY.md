@@ -361,3 +361,7 @@ FeeContext는 현재 계정 /profiles/.../inventory/ 요청의 동일 Steam cano
 ## 0.20.2 classic 수수료 분기 보완 (2026-10-29 KST)
 
 0.20.2: 공식 economy_v2 SellCurrentSelection은 g_bReactSellDialog가 false이면 SellItemDialog.Show를 사용한다. classic GetPublisherFeeRate는 앱 market_pubfee_rate, 없으면 실제 지갑 default를 쓰고 GetSteamFeeRate는 지갑 rate, OnInputKeyUp은 economy_common GetTotalWithFees를 사용한다. 따라서 React data-props가 없는 것만으로 모든 계정 계약을 미지원으로 판단하던 결함을 수정했다. 단, 명시적 false·소유/계정·동일 실제 지갑·앱 context를 모두 확인해야 하며 없는 플래그나 새 API 실패로 classic을 추측하지 않는다. 새 API와 구형 지갑 필드만의 fallback은 계속 금지한다. 실제 첨부 페이지의 flag는 미관측으로 REAL_FEE_VERIFIED/LIVE_SELL_VERIFIED/RELEASE_READY 미부여.
+
+## 0.20.3 실제 소스 대조·기본 모드 보완 (2026-10-29 KST)
+
+공식 classic GetPublisherFeeRate는 앱 context→실제 지갑 default를 사용한다. SteamMarketHelper의 market_fee 선택적 처리와도 대조해 필드 부재만으로 모든 검토/전송을 막던 결함을 수정했다. 현재 인증 소유 페이지의 classic 모드/앱/일치 지갑이 검증된 경우만 앱에 바인딩한 증거를 허용하며 명시적 상충 수수료·미확인 React/API 계약은 차단한다. 과거 상수/구형 계산을 복사하지 않았다. 실제 유저 활성화 실패 ZIP에는 해당 작업이 없어 근본 원인은 아직 미확정이다. REAL_FEE_VERIFIED/LIVE_SELL_VERIFIED/RELEASE_READY를 부여하지 않는다. 기본 실거래 선택도 Valve 허가나 자동 거래 권한이 아니다.

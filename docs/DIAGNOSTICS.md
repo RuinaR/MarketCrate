@@ -256,3 +256,9 @@ FeeContext ReadContract/HttpRequest는 기존 OperationId에 FeeContextVanityRed
 ## 0.20.2 classic 수수료 분기 보완 (2026-10-29 KST)
 
 0.20.2: FeeValidated/FeeUiObserved는 서버의 classic/React 분기 유무(ClassicUiSelected/ReactUiSelected/ModeMissing/ModeInvalid)와 판매창 target 개수만 기록한다. 값·HTML·계정 ID·쿠키는 기록하지 않는다. ClassicInventoryContext→VerifiedLegacy는 런타임 증거 판정이며 실서버 수수료 확인 선언이 아니다. ReactPropsMissing/OwnerPageMissing/WalletChanged/AppContextMissing으로 실패 원인을 구별한다. 첨부0.20.1의 두 번째 ModeMissing은 302 처리 후 도달한 페이지에서 발생했다. 사용자 OperationId f67d8e55-5171-4c25-8c53-01a2524fecb8를 따라 확인했으며 QR/토큰/원본 본문은 읽거나 기록하지 않았다.
+
+## 0.20.3 활성화 실패 안내·진단 연결 (2026-10-29 KST)
+
+0.20.3 TradingCheck(FinalValidation)는 Consent→WalletIdentity→FeeContract→WalletConsistency→InventoryRead→SaleableAssets→PublisherFees→ListingsRead→ListingFees→SessionCheck 단계와 차단된 단계를 기존 OperationId로 연결한다. 원문·계정/자산 ID·토큰 없이 고정 enum만 기록한다. HTTP/파서 오류는 기존 요청 진단에 연결된다. 실패 화면은 한글 확인 단계와 오류 분류를 표시한다. 문제 해결은 마지막 성공 조회보다 최근 실패 작업 ID를 우선 선택하며 로그아웃 시 초기화한다. 수동 필터는 계속 변경 가능하다. 첨부0.20.2 ZIP에는 활성화 기록 없이 호가 조회 성공만 있어 실패 원인을 판단하지 않았다.
+
+사용자 요청으로 일반 앱의 실거래/이미지 기본 선택을 ON으로 변경했다. OpenTradingReviewAsync는 최종 검토 사용자 동작에만 부족한 전송 권한을 검증하며, 실패한 단계는 같은 작업에 남긴다. 로그인 복원 시 대량 조회나 자동 판매는 시작하지 않는다. 기본 선택과 검증된 Access.Trading은 별개다. 이미지 OFF/로그아웃은 실제 로딩을 중단한다.

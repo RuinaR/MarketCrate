@@ -78,7 +78,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
             var schedule=schedules[line.Asset.Key.AppId];
             if (!current.TryGetValue(line.Asset.Key, out var asset) || asset != line.Asset || !asset.Marketable || asset.Locked ||
                 schedule.Currency != line.Currency || schedule.FromSeller(line.UnitQuote.SellerReceives) != line.UnitQuote) throw new SteamException(SteamFailure.Restricted);
-            if (!publisherFees.TryGetValue(asset.Key, out var fee) || fee * 100L != schedule.Publisher.Millionths) throw new SteamException(SteamFailure.Restricted);
+            if (!schedule.PublisherMatches(asset.Key.AppId,publisherFees.TryGetValue(asset.Key,out var fee)?fee:null)) throw new SteamException(SteamFailure.Restricted);
             var priceKey=(asset.Key.AppId,asset.MarketHashName,line.Evidence is {} source?(source.WindowEnd-source.WindowStart).Ticks:0);
             if(!validatedPrices.TryGetValue(priceKey,out var price))
             {price=line.Evidence is {} evidenceSource?await prices.RefreshEstimateAsync(asset,evidenceSource.WindowEnd-evidenceSource.WindowStart,token):await prices.RefreshAsync(asset,token);validatedPrices.Add(priceKey,price);}

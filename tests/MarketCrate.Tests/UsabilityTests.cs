@@ -36,7 +36,8 @@ public static class UsabilityTests
             ("Evicting eight-game view cache never omits selected assets from batch targets",SelectionEviction),
             ("Archive command cannot move a different account active journal",ArchiveOwnership),
             ("Ten thousand selected item prices publish bounded summary updates per product",PriceNotifications),
-            ("User-requested TBH scope added once and explicit removal preserved after restart",Tbh)};
+            ("User-requested TBH scope added once and explicit removal preserved after restart",Tbh),
+            ("Diagnostics preserves failed operation after a later successful read and resets on logout",FailedOperation)};
         int passed=0,failed=0;foreach(var(name,run)in tests)try{await run();passed++;Console.WriteLine("PASS "+name);}catch(Exception e){failed++;Console.WriteLine("FAIL "+name+": "+e);}return(passed,failed);
     }
     private static Task Default(){using var vm=new SteamWorkspaceViewModel();Check(vm.Games.Count==1&&vm.Game.AppId==753&&vm.Game.ContextId=="6"&&vm.Game.Name=="Steam 커뮤니티");return Task.CompletedTask;}
@@ -127,5 +128,6 @@ public static class UsabilityTests
         public void Dispose(){Vm.Dispose();Server.Dispose();Directory.Delete(folder,true);}
     }
     private sealed class Trace:IDiagnosticLog{public Guid SessionId{get;}=Guid.NewGuid();public List<DiagnosticRecord> Events{get;}=[];public void Write(DiagnosticRecord value)=>Events.Add(value);}
+    private static async Task FailedOperation(){var log=new Trace();using var trace=DiagnosticHub.Use(log);using var f=new Fixture();await f.Login();await f.Vm.SubmitAsync();var failed=f.Vm.LastFailedOperationId;Check(failed is not null&&log.Events.Any(x=>x.EventName=="UiFailure"&&x.Context.OperationId==failed));await f.Vm.LoadListingsAsync();Check(f.Vm.LastOperationId!=failed&&f.Vm.DiagnosticOperationId==failed&&f.Vm.Connected);f.Vm.Logout.Execute(null);Check(f.Vm.LastFailedOperationId is null);}
     private static void Check(bool value){if(!value)throw new Exception("usability contract assertion");}
 }

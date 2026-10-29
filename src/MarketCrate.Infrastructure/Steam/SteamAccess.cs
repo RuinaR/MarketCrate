@@ -37,6 +37,7 @@ public sealed record SteamTradingPolicy(bool Enabled, string EvidenceReference, 
     internal static SteamTradingPolicy ContractTest { get; } = new(true, "synthetic contract only", true);
 #endif
 }
+public enum SteamTradingCheck { Consent, WalletIdentity, FeeContract, WalletConsistency, InventoryRead, SaleableAssets, PublisherFees, ListingsRead, ListingFees, SessionCheck }
 public sealed class SteamException(SteamFailure code, int? apiResult = null) : IOException(code.ToString())
 {
     public SteamFailure Code { get; } = code;
@@ -45,6 +46,7 @@ public sealed class SteamException(SteamFailure code, int? apiResult = null) : I
     public DiagnosticError? Diagnostic { get; internal set; }
     public bool Redirected { get; internal set; }
     public SteamBodyKind? BodyKind { get; internal set; }
+    public SteamTradingCheck? TradingCheck { get; internal set; }
 }
 
 // No browser cookie import, external host, redirects, automatic retries or response-body logging.

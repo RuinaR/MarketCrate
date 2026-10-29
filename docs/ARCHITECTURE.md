@@ -199,3 +199,7 @@ SteamReadStateViewModel partial은 5개 독립 상태와 사용자 요약을 담
 ## 0.20.2 classic 수수료 분기 보완 (2026-10-29 KST)
 
 0.20.2 FeeContractResolver 입력 경로: React featuretarget props(newFeeRates/walletInfo) 또는 소유 inventory의 유일한 inline g_bReactSellDialog=false + 실제 g_rgWalletInfo. 후자는 소유 표시·현재 인증 계정 확인과 Market 지갑 일치 검증 후 동일한 앱별 설정·정수 계산 경로를 따른다. 분기 충돌/문자열·주석 위장/불명 필드/통화·수수료 불일치는 차단한다. 지갑·모드·앱 계약이 없는 값은 생성하지 않는다. 거래 권한·저널·Unknown/재전송 규칙은 변경하지 않았다.
+
+## 0.20.3 실제 소스 대조·기본 모드 보완 (2026-10-29 KST)
+
+SteamFeeSchedule.PublisherFallbackAppId는 최신 인증 세션의 ClassicInventoryContext에서 확인된 실제 앱/지갑 설정이 있을 때만 부여한다. PublisherMatches는 명시적 아이템 수수료가 있으면 반드시 대조하고, 필드가 없을 때만 같은 앱의 classic 증거를 허용한다. 단순 FeeSchedule/API 응답/다른 앱/누락 모드에는 허용하지 않는다. VM FeeFor→활성화 사전검증→최종 Executor.ValidateBatch가 같은 계약을 사용하며 최종 전송 전 다시 서버에서 계산한다. 새 DB 스키마/마이그레이션·인증 저장 변경 없음. 일반 실거래/이미지 모드 기본 ON, 실제 권한은 계정 연결마다 초기화하고 최종 검토 사용자 동작에서만 준비한다.

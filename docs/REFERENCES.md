@@ -152,3 +152,7 @@ SteamMarketHelper e186d51 MIT의 실제 userscript fallback/base/통화 round, n
 ## 0.20.1 후속 보완 (2026-10-29 KST)
 
 [TBH 공식 스토어](https://store.steampowered.com/app/3678970/): 게임명/App3678970 확인, 이름/ID만 채택. context2·게임 수수료·스택 근거로 미사용. [Steam 공개 보관함](https://steamcommunity.com/id/robinwalker/inventory/): 비인증 HTML에서 g_bViewingOwnProfile 등 변수 존재 확인, 값/본문 미저장. 실제 사용자 소유 페이지 계약으로 확대하지 않음. 기존 공식 economy_v2.js의 g_bReactSellDialog 분기는 참고하되 실패 시 구형 자동 fallback 근거로 미사용. 외부 코드/자산 신규 복사·종속성 도입 없음, 기존 라이선스 고지 유지.
+
+## 0.20.3 실제 소스 대조·기본 모드 보완 (2026-10-29 KST)
+
+실제 구현 대조: SteamMarketHelper e186d51efb742ddfb527d2ccb248c64fcee9c976 / steam-market-helper.user.js v1.3.0 (MIT)는 선택적 item.market_fee, 없으면 실제 지갑 publisher 기본값을 사용하며 sellitem price를 판매자 수령액으로 전송한다. https://github.com/federicogiorgi/SteamMarketHelper/blob/e186d51efb742ddfb527d2ccb248c64fcee9c976/steam-market-helper.user.js . 하드코딩0.10/과거 base 계산·브라우저 주입·jitter/제한 회피 방식은 채택하지 않았다. 공식 economy_v2 GetPublisherFeeRate의 앱 설정/지갑 경로와 대조해 classic 계약이 확인된 앱에만 선택적 필드 부재를 허용했다. SSIM 28a503fa79869f3233814d0deaa906a8b3f66621 (Apache-2.0) src/trading/AccountTrader.ts의 sellitem net price, removelisting, 승인 필요 응답과 src/trading/commitAmbiguity.ts의 응답 불명 시 재전송 방지 구조를 기존 어댑터/저널과 대조했다. SSIM의 CS2 수수료 상수·다계정/비밀키/자동 모바일 승인은 채택하지 않았다. node-steamcommunity fa8d89759077152b0c38175f154e03d0eacd2d1e (MIT) components/market.js는 해당 파일에 직접 sellitem 구현이 없으므로 근거로 과장하지 않았다. 외부 코드를 직접 복사하거나 의존성/런타임을 도입하지 않았으며 기존 저작권 고지를 유지했다.

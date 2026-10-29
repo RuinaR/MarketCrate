@@ -23,7 +23,7 @@ public sealed class ProductionShellViewModel:Observable,IDisposable
         {
             Steam=new(authDirectory:authDirectory);Diagnostics=new(log,saveMode:value=>preferences.Save("diagnostic-mode",value));
             reducedMotion=preferences.Read("reduced-motion",false);if(preferences.Read("diagnostic-mode"))Diagnostics.DiagnosticMode=true;
-            ShowDiagnostics=new(()=>{if(Page==1){Page=0;return;}Diagnostics.OperationFilter=Steam.LastOperationId?.ToString()??"";Diagnostics.Refresh.Execute(null);Page=1;});
+            ShowDiagnostics=new(()=>{if(Page==1){Page=0;return;}Diagnostics.OperationFilter=Steam.DiagnosticOperationId?.ToString()??"";Diagnostics.Refresh.Execute(null);Page=1;});
         }
         catch{preferences.Dispose();throw;}
     }

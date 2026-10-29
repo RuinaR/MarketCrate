@@ -41,7 +41,8 @@ public static class FeeModeTests
             ("Classic mode requires explicit unique server flag and owner marker",ClassicEvidence),
             ("Classic inventory wallet and per-app contracts cannot be guessed",ClassicWallet),
             ("Conflicting classic and new React mode evidence cannot price",ClassicConflict),
-            ("Classic fee resolution diagnostics preserve operation and exclude source secrets",ClassicDiagnostics)
+            ("Classic fee resolution diagnostics preserve operation and exclude source secrets",ClassicDiagnostics),
+            ("Official classic app fee handles absent optional item rate through review and real adapter",ClassicPublisher)
         };
         int passed=0,failed=0;foreach(var(name,run)in tests)try{await run();passed++;Console.WriteLine("PASS "+name);}catch(Exception e){failed++;Console.WriteLine("FAIL "+name+": "+e);}return(passed,failed);
     }
@@ -83,6 +84,16 @@ public static class FeeModeTests
     private static Task ClassicWallet()=>Sync(()=>{var w=SteamFees.ObserveWallet(WalletOnly);Check(FeeContractResolver.Observe(Classic(wallet:Wallet.Replace("0.05","0.06")),730,w).Reason=="WalletChanged");Check(FeeContractResolver.Observe(Classic(),570,w).Reason=="AppContextMissing");Check(FeeContractResolver.Observe(Classic(wallet:Wallet.Replace("\"wallet_fee_base\":0","\"wallet_fee_base\":1")),730,SteamFees.ObserveWallet(Classic(wallet:Wallet.Replace("\"wallet_fee_base\":0","\"wallet_fee_base\":1")))).Mode==FeeContractMode.Unsupported);});
     private static Task ClassicConflict()=>Sync(()=>{var p=Classic()+Page(flag:"true");Check(FeeContractResolver.Observe(p,730,SteamFees.ObserveWallet(WalletOnly)).Mode==FeeContractMode.Unverified);});
     private static async Task ClassicDiagnostics(){var log=new Capture();using var use=DiagnosticHub.Use(log);using var op=DiagnosticHub.Operation(DiagnosticEvent.FeeValidated,DiagnosticArea.Pricing,"D10");await ClassicInventory();Check(log.Events.Any(x=>x.PreviousState=="ClassicInventoryContext"&&x.NewState=="VerifiedLegacy"&&x.Context.OperationId!=Guid.Empty));var json=JsonSerializer.Serialize(log.Events);Check(!json.Contains("76561198000000001")&&!json.Contains("wallet_fee_percent")&&!json.Contains(OwnerPath));var w=SteamFees.ObserveWallet(WalletOnly);foreach(var flag in new[]{"/* g_bReactSellDialog=false; */","// g_bReactSellDialog=false;\n","var text=';g_bReactSellDialog=false;';"})Check(FeeContractResolver.Observe(Classic().Replace("g_bReactSellDialog=false;",flag),730,w).Mode==FeeContractMode.Unverified);}
+    private static async Task ClassicPublisher()
+    {
+        using var f=new ThirteenthStageTests.Fixture();await f.Login();f.Server.Free=1;f.Server.HidePublisherFee=true;
+        f.Route=p=>p=="/market/"?Response(WalletOnly+"<script>g_steamID='76561198000000001';</script>"):p.StartsWith("/profiles/")?Response(Classic()):null;
+        await f.Vm.LoadAsync();f.Vm.Assets[0].Selected=true;await f.Vm.RefreshPricesAsync();f.Vm.BuildReview();
+        Check(f.Vm.ReviewRows.Count==1&&f.Vm.ReviewRows[0].Valid&&f.Server.Sends==0);
+        var schedule=await f.Workspace!.FeesAsync(730);Check(schedule.PublisherMatches(730,null)&&!schedule.PublisherMatches(570,null)&&!schedule.PublisherMatches(730,2000)&&!(schedule with{PublisherFallbackAppId=null}).PublisherMatches(730,null));
+        f.Vm.TradeAccepted=true;await f.Workspace!.EnableUserTradingAsync(730,"2","Counter-Strike 2",true,true,default);await f.Vm.SubmitAsync();
+        Check(f.Server.Sends==1&&f.Vm.Results.Single().State==SaleState.AwaitingSteamGuard);
+    }
     private static async Task<SteamException> Fail(Func<Task> action){try{await action();}catch(SteamException error){return error;}throw new Exception("expected safe failure");}
     private static Task Sync(Action action){action();return Task.CompletedTask;}
     private static void Check(bool value){if(!value)throw new Exception("fee contract assertion");}

@@ -4,7 +4,9 @@ namespace MarketCrate.App.ViewModels;
 public sealed partial class SteamWorkspaceViewModel
 {
     private string tradingConfirmation="";
-    private string tradingPreparation="기본 OFF · 선택 게임의 읽기 계약·계정·수수료를 확인한 뒤 이 실행 세션에서만 활성화할 수 있습니다.";
+    private string tradingPreparation="실거래 모드 기본 선택 · 최종 가격 검토 시 계정·수수료·자산을 검증하며, 전체 판매등록 승인 전에는 전송하지 않습니다.";
+    private AsyncCommand prepareReview=null!;
+    private bool LiveReviewRequested=>!syntheticConnection&&TradeAccepted&&TradingConfirmation=="실제 거래";
     public string TradingConfirmation {get=>tradingConfirmation;set{Set(ref tradingConfirmation,value);PrepareTrading?.Refresh();PrepareCancellation?.Refresh();}}
     public string TradingPreparation {get=>tradingPreparation;private set=>Set(ref tradingPreparation,value);}
     private string CaptureRepriceBook(SteamListing listing)
@@ -18,9 +20,28 @@ public sealed partial class SteamWorkspaceViewModel
     public AsyncCommand PrepareCancellation{get;private set;}=null!;
     private void InitializeTrading()
     {
+        prepareReview=new(OpenTradingReviewAsync,Error,()=>!Busy&&!AnyReview&&CanRead);
         PrepareTrading=new(PrepareTradingAsync,Error,()=>!syntheticConnection&&!Busy&&!AnyReview&&CanRead&&TradeAccepted&&TradingConfirmation=="실제 거래");
         PrepareCancellation=new(PrepareCancellationAsync,Error,()=>!syntheticConnection&&!Busy&&!AnyReview&&CanRead&&TradeAccepted&&TradingConfirmation=="실제 취소");
     }
+    public Task OpenTradingReviewAsync()=>Run(async token=>
+    {
+        RequireConnection();
+        if(LiveReviewRequested&&!CanTrade)
+        {
+            var scopes=SelectedSteamRows().Select(x=>x.Asset).DistinctBy(x=>(x.Key.AppId,x.Key.ContextId)).ToArray();
+            if(scopes.Length==0||scopes.Length>10)throw new SteamException(SteamFailure.Restricted);
+            foreach(var scope in scopes)
+            {
+                OperationLabel=$"{scope.Game} · 실거래 서버 계약 확인 중";
+                try{await workspace!.EnableUserTradingAsync(scope.Key.AppId,scope.Key.ContextId,scope.Game,RiskAccepted&&CredentialsAccepted,TradeAccepted,token);}
+                catch(SteamException error){TradingPreparation=TradingFailureText(error);throw;}
+            }
+            token.ThrowIfCancellationRequested();
+            TradingPreparation="서버 계약 확인 · 이번 세션 전송 권한 준비 · 최종 전체 판매등록 승인 대기";
+        }
+        BuildReview();
+    });
     public Task PrepareCancellationAsync()=>Run(async token=>
     {
         RequireConnection();if(syntheticConnection||!TradeAccepted||TradingConfirmation!="실제 취소")throw new SteamException(SteamFailure.Disabled);
@@ -33,18 +54,36 @@ public sealed partial class SteamWorkspaceViewModel
     {
         RequireConnection();
         if(syntheticConnection||!TradeAccepted||TradingConfirmation!="실제 거래")throw new SteamException(SteamFailure.Disabled);
-        TradingConfirmation="";
         TradingPreparation="선택 게임의 계정·지갑·수수료·자산·판매 화면 설정을 읽기 전용으로 재확인 중 · 거래 전송 없음";
         try
         {
             await workspace!.EnableUserTradingAsync(Game.AppId,Game.ContextId,Game.Name,RiskAccepted&&CredentialsAccepted,TradeAccepted,token);
             TradingPreparation="비공식 실제 거래 모드 · 이 세션 한정 · Valve 허용/실거래 검증 완료를 뜻하지 않습니다. 각 배치는 최종 검토 후 한 번 승인해야 합니다.";
         }
-        catch(SteamException)
+        catch(SteamException error)
         {
-            TradingPreparation="활성화하지 않았습니다. 계정·지갑 단위·게임별 수수료·판매 가능 자산·공식 판매 화면 설정을 확인해야 합니다. 문제 해결에서 실패 단계를 확인하세요. 자동 재시도하지 않습니다.";
+            TradingPreparation=TradingFailureText(error);
             throw;
         }
         finally{Changed();}
     });
+    public static string TradingFailureText(SteamException error)
+    {
+        var step=error.TradingCheck switch
+        {
+            SteamTradingCheck.Consent=>"로그인·이번 실행의 거래 동의",
+            SteamTradingCheck.WalletIdentity=>"지갑과 현재 로그인 계정",
+            SteamTradingCheck.FeeContract=>"게임별 수수료 계약",
+            SteamTradingCheck.WalletConsistency=>"지갑 통화·최소 가격·가격 증분 일치",
+            SteamTradingCheck.InventoryRead=>"선택한 게임의 보관함 조회",
+            SteamTradingCheck.SaleableAssets=>"판매 가능한 개별 자산과 미예약 수량",
+            SteamTradingCheck.PublisherFees=>"아이템별 게임 수수료와 견적의 일치",
+            SteamTradingCheck.ListingsRead=>"현재 판매목록 조회",
+            SteamTradingCheck.ListingFees=>"기존 판매목록과 수수료 계산의 일치",
+            SteamTradingCheck.SessionCheck=>"처리 중 로그인 세션 변경 여부",
+            _=>"서버 계약"
+        };
+        var cause=error.Code switch{SteamFailure.Authentication or SteamFailure.Expired=>"인증 확인 필요",SteamFailure.Forbidden or SteamFailure.Authorization=>"접근 권한 제한",SteamFailure.RateLimited=>"요청 제한",SteamFailure.Transport=>"통신 실패",SteamFailure.ContractChanged=>"응답 계약 불일치",SteamFailure.Unsupported=>"지원 계약 미확인",_=>"검증 조건 미충족"};
+        return $"실제 거래를 활성화하지 않았습니다. 확인 단계: {step} · {cause}. 거래 요청은 보내지 않았습니다. 문제 해결에서 최근 실패 작업을 확인하세요.";
+    }
 }

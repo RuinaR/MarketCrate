@@ -22,6 +22,10 @@ public readonly record struct Money
 public record SteamFeeRate(long Millionths, long CapWire = 0);
 public record SteamFeeSchedule(string Currency, long MinimumWire, long IncrementWire, SteamFeeRate Steam, SteamFeeRate Publisher)
 {
+    // Only the freshly resolved official classic app/wallet contract sets this.
+    // Missing optional item metadata is different from an explicit conflicting rate.
+    public int? PublisherFallbackAppId {get;init;}
+    public bool PublisherMatches(int appId,int? itemBasisPoints)=>itemBasisPoints is {} rate?rate*100L==Publisher.Millionths:PublisherFallbackAppId==appId;
     public FeeQuote FromSeller(long minor)
     {
         Validate(); var seller = new Money(minor, Currency).Wire;

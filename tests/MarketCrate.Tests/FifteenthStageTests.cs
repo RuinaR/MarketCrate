@@ -24,7 +24,9 @@ public static class FifteenthStageTests
             ("Response reusing preexisting listing ID remains Unknown",ExistingId),
             ("KRW shared product demand allocates ten units as three four three",SharedDemand),
             ("Reprice stale book is rejected before cancellation or new intent",RepriceBook),
-            ("Default and synthetic activation UI remain separate",DefaultBlocked)
+            ("Default and synthetic activation UI remain separate",DefaultBlocked),
+            ("Activation failure reports exact read-only gate without enabling or sending",ActivationGates),
+            ("Live default review validates contracts and never submits without final approval",DefaultReview)
         };
         int passed=0,failed=0;foreach(var(name,test)in tests)try{await test();passed++;Console.WriteLine("PASS "+name);}catch(Exception e){failed++;Console.WriteLine("FAIL "+name+": "+e);}return(passed,failed);
     }
@@ -42,6 +44,41 @@ public static class FifteenthStageTests
     }
     private static async Task Redirect401(){using var f=new Harness();await f.Login();f.Route.Redirect="https://steamcommunity.com/market/?l=english";f.Route.Final401=true;await Fails(()=>f.Workspace.ProbeWalletAsync(default));Check(f.Workspace.Failure==SteamFailure.Authentication&&f.Route.WalletCalls==2,"401 bypassed");await Fails(()=>f.Workspace.Orders.RefreshAsync());Check(f.Server.Sends==0,"writes issued");}
     private static async Task Activation(){using var f=new Harness();await f.Login();Check(!f.Workspace.Executor.CanExecute,"default armed");await f.Arm();Check(f.Workspace.Executor.CanExecute&&f.Workspace.Policy.UserInitiated&&!f.Workspace.Policy.StackAmountsSupported,"readiness not applied");Check(f.Server.Sends==0&&f.Server.Cancels==0,"activation sent trade");}
+    private static async Task ActivationGates()
+    {
+        foreach(var gate in new[]{SteamTradingCheck.WalletIdentity,SteamTradingCheck.SaleableAssets,SteamTradingCheck.PublisherFees,SteamTradingCheck.InventoryRead})
+        {
+            var trace=new GateLog();using var capture=DiagnosticHub.Use(trace);
+            using var f=new Harness();await f.Login();
+            if(gate==SteamTradingCheck.WalletIdentity)f.Route.Account="76561198000000002";
+            if(gate==SteamTradingCheck.SaleableAssets)f.Server.Free=0;
+            if(gate==SteamTradingCheck.PublisherFees)f.Server.HidePublisherFee=true;
+            if(gate==SteamTradingCheck.InventoryRead)f.Server.PrivateInventory=true;
+            SteamException? failure=null;try{await f.Arm();}catch(SteamException error){failure=error;}
+            Check(failure?.TradingCheck==gate&&!f.Workspace.Access.Trading&&f.Server.Sends==0&&f.Server.Cancels==0,"missing or incorrect gate / trade enabled");
+            var text=MarketCrate.App.ViewModels.SteamWorkspaceViewModel.TradingFailureText(failure!);
+            Check(text.Contains("확인 단계:")&&!text.Contains("76561198000000002")&&!text.Contains("다른 조회"),"generic or private activation message");
+            Check(trace.Events.Any(x=>x.Reason=="TradingCheck"&&x.PreviousState==gate.ToString()&&x.NewState=="Blocked"&&x.Context.OperationId!=Guid.Empty),"gate diagnostic missing cause/operation");
+            var json=System.Text.Json.JsonSerializer.Serialize(trace.Events);Check(!json.Contains("76561198000000002")&&!json.Contains("wallet_fee_percent")&&!json.Contains("synthetic-refresh"),"gate diagnostic source leak");
+        }
+    }
+    private sealed class GateLog:IDiagnosticLog{public Guid SessionId{get;}=Guid.NewGuid();public List<DiagnosticRecord> Events{get;}=[];public void Write(DiagnosticRecord record)=>Events.Add(record);}
+    private static async Task DefaultReview()
+    {
+        using var f=new Harness();using var vm=new MarketCrate.App.ViewModels.SteamWorkspaceViewModel(_=>f.Workspace,false){RiskAccepted=true,CredentialsAccepted=true};
+        Check(vm.TradeAccepted&&vm.ImagesEnabled&&!vm.CanTrade&&vm.TradingConfirmation=="실제 거래","live/image defaults or unverified capability");
+        await vm.BeginAsync();f.Server.Clock.Advance();await vm.CheckAsync();
+        var game=new MarketCrate.App.ViewModels.SteamGameScope(730,"2","Counter-Strike 2");vm.Games.Add(game);vm.Game=game;
+        await vm.LoadAsync();Check(vm.Assets.Count==1,"inventory failed");vm.Assets[0].Selected=true;await vm.RefreshPricesAsync();
+        f.Route.Account="76561198000000002";await vm.OpenTradingReviewAsync();var failed=vm.LastFailedOperationId;
+        Check(!vm.CanTrade&&!vm.ReviewOpen&&vm.Status.Contains("지갑과 현재 로그인 계정")&&vm.Status==vm.TradingPreparation&&failed is not null,"activation UI lost precise failure");
+        f.Route.Account="76561198000000001";await vm.LoadListingsAsync();Check(vm.DiagnosticOperationId==failed,"later success replaced failed operation");
+        await vm.OpenTradingReviewAsync();Check(vm.CanTrade&&vm.ReviewOpen&&vm.ReviewRows.Count==1&&f.Server.Sends==0&&f.Server.Cancels==0,"default preview bypassed gates or final approval");
+        vm.CloseReview.Execute(null);vm.TradingConfirmation="실제 취소";await vm.PrepareCancellationAsync();Check(vm.CanCancel&&!vm.CanTrade,"cancellation-only failed");
+        await vm.OpenTradingReviewAsync();Check(vm.CanCancel&&!vm.CanTrade&&vm.ReviewOpen&&f.Server.Sends==0,"cancellation-only mode upgraded automatically");
+        vm.CloseReview.Execute(null);vm.TradeAccepted=false;await vm.OpenTradingReviewAsync();Check(!vm.CanTrade&&vm.ReviewOpen&&f.Server.Sends==0,"disabled mode re-enabled automatically");
+        vm.Logout.Execute(null);Check(!vm.CanTrade&&!vm.ImagesEnabled&&vm.ImageLoader is null&&vm.LastFailedOperationId is null,"logout kept capability or image requests");
+    }
     private static async Task UserFlow()
     {
         using var f=new Harness();await f.Login();await f.Arm();var asset=(await f.Workspace.Inventory.GetAsync(default)).Single();var price=await f.Workspace.Prices.RefreshAsync(asset);
