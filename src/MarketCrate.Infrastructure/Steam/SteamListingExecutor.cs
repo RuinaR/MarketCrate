@@ -148,12 +148,12 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
                 var conflict = SteamContract.Parse(body, root =>
                     root.TryGetProperty("price", out var serverPrice) && SteamContract.Integer(serverPrice) != new Money(line.UnitQuote.SellerReceives, line.Currency).Wire ||
                     root.TryGetProperty("fee", out var serverFee) && SteamContract.Integer(serverFee) != new Money(line.UnitQuote.Fees, line.Currency).Wire);
-                if (conflict) {DiagnosticHub.Emit(DiagnosticEvent.FeeValidated,DiagnosticArea.Sales,DiagnosticOutcome.Unknown,LogLevel.Error,DiagnosticError.Validation,reason:"FieldsMismatch",currency:line.Currency,quote:line.UnitQuote,requirement:"D10");response = (SaleState.Unknown, null);}
+                if (conflict) {DiagnosticHub.Emit(DiagnosticEvent.FeeValidated,DiagnosticArea.Sales,DiagnosticOutcome.Unknown,LogLevel.Error,DiagnosticError.Validation,reason:"FieldsMismatch",currency:line.Currency,quote:line.UnitQuote,requirement:"D10");response = response with{State=SaleState.Unknown,ListingId=null,Approval=SteamApprovalChannel.None};}
                 if (response.ListingId is not null && ((intent.BeforeListingIds??[]).Contains(response.ListingId)||store.Commands().Any(x => x.Kind == "sell" && x.RequestKey != requestKey && x.ListingId == response.ListingId)))
-                    response = (SaleState.Unknown, null);
+                    response = response with{State=SaleState.Unknown,ListingId=null,Approval=SteamApprovalChannel.None};
                 if (response.State == SaleState.Unknown) http.Stop(SteamFailure.ContractChanged);
-                store.SaveCommand(intent with { State = response.State, ListingId = response.ListingId, Accepted = response.State != SaleState.Unknown });
-                return new(line.LineId, response.State, response.State == SaleState.Unknown?"응답 불일치 또는 증거 부족 · 재전송 금지":response.State == SaleState.AwaitingSteamGuard ? "공식 Steam 앱/이메일 수동 확인 대기: 게시 완료 아님" : "접수 응답: 서버 게시 확인 필요");
+                store.SaveCommand(intent with { State = response.State, ListingId = response.ListingId, Accepted = response.State != SaleState.Unknown,Approval=response.Approval });
+                return new(line.LineId, response.State, response.State == SaleState.Unknown?"응답 불일치 또는 증거 부족 · 재전송 금지":response.State == SaleState.AwaitingSteamGuard ? SteamContract.ApprovalHint(response.Approval) : "접수 응답: 서버 게시 확인 필요");
             }
             catch (Exception error) when (error is SteamException or OperationCanceledException or HttpRequestException)
             {
@@ -174,14 +174,14 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         if (command.ListingId is null)
         {
             var report = await InspectAsync(requestKey, cancellationToken);
-            return new(line.LineId, command.State == SaleState.AwaitingSteamGuard ? command.State : SaleState.Unknown, $"대조 {report.Verdict}: 인과관계 근거 없음, 자동 확정/재전송 금지");
+            return new(line.LineId, command.State == SaleState.AwaitingSteamGuard ? command.State : SaleState.Unknown, $"{(command.State==SaleState.AwaitingSteamGuard?SteamContract.ApprovalHint(command.Approval):"결과 불명")} · 서버 등록 ID 없음 · 대조 {report.Verdict}: 자동 게시 확정/재전송 금지");
         }
         var listing = (await orders.RefreshAsync(cancellationToken)).SingleOrDefault(x => x.ListingId == command.ListingId);
         if (listing is null || listing.HashName != line.Asset.MarketHashName || listing.Asset.AppId != line.Asset.Key.AppId || listing.Asset.ContextId != line.Asset.Key.ContextId || listing.Quantity != line.Quantity ||
             listing.Currency != line.Currency || listing.SellerReceives != line.UnitQuote.SellerReceives || listing.Fees != line.UnitQuote.Fees)
             return new(line.LineId, SaleState.Unknown, "목록 부재/불일치: 판매/취소/비표시 구분 불가");
         store.SaveCommand(command with { State = listing.State });
-        return new(line.LineId, listing.State, "서버 listingid·가격·수량 대조 결과");
+        return new(line.LineId, listing.State, listing.State==SaleState.AwaitingSteamGuard?SteamContract.ApprovalHint(command.Approval)+" · 서버 등록 ID 대조":"서버 listingid·가격·수량 대조 결과");
     }
     public async Task<LineResult> CancelAsync(SteamListing reviewed, string requestKey, CancellationToken token = default)
     {

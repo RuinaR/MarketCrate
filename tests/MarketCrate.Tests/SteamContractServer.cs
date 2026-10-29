@@ -17,6 +17,8 @@ public sealed class SteamContractServer : HttpMessageHandler
     public int ManyAssets;
     public int SellStatus=200;public string? SellBody;public Uri? SellReferrer;public bool SellAjax;
     public bool RotateSessionOnListings;private string? requiredSession;
+    public bool EmailConfirmation,UnspecifiedConfirmation;
+    public bool EmptyCancelBody;public int CancelStatus=200;
     public TaskCompletionSource? InventoryStarted,InventoryRelease;
     public SteamFeeSchedule Schedule=>new(Currency,Currency=="KRW"?100:1,Currency=="KRW"?100:1,new(50000),new(100000));
     public static string HistoryJson(int gap=1)=>JsonSerializer.Serialize(new{success=true,prices=new object[][]{[DateTimeOffset.UtcNow.AddHours(-3).ToString("MMM dd yyyy HH: '+0'",System.Globalization.CultureInfo.InvariantCulture),115,"2"],[DateTimeOffset.UtcNow.AddHours(-3+gap).ToString("MMM dd yyyy HH: '+0'",System.Globalization.CultureInfo.InvariantCulture),115,"1"]}});
@@ -62,11 +64,13 @@ public sealed class SteamContractServer : HttpMessageHandler
             if(SellStatus!=200){Sends++;return new((HttpStatusCode)SellStatus){Content=new StringContent(SellBody??"{}",System.Text.Encoding.UTF8,"application/json")};}
             Sends++;if(quantity>Free)return Json("{\"success\":false}");Free-=quantity;var id=(500+Sends).ToString();Rows.Add((id,quantity,seller));created[id]=DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             if(TimeoutSell)throw new HttpRequestException("synthetic response loss");
-            var body=new Dictionary<string,object>{["success"]=true,["needs_mobile_confirmation"]=true};if(!MissingId)body["listingid"]=id;if(FeeConflict)body["fee"]=999999;json=JsonSerializer.Serialize(body);
+            var body=new Dictionary<string,object>{["success"]=true,[EmailConfirmation?"needs_email_confirmation":UnspecifiedConfirmation?"requires_confirmation":"needs_mobile_confirmation"]=true};if(!MissingId)body["listingid"]=id;if(FeeConflict)body["fee"]=999999;json=JsonSerializer.Serialize(body);
         }
         else if(path.StartsWith("/market/removelisting/"))
         {
+            if(CancelStatus!=200){Cancels++;return new((HttpStatusCode)CancelStatus){Content=new StringContent("")};}
             Cancels++;var id=path.Split('/').Last();var row=Rows.SingleOrDefault(x=>x.Id==id);if(row!=default){Rows.Remove(row);Free+=row.Quantity;}if(TimeoutCancel)throw new HttpRequestException("synthetic cancel response loss");json="[]";
+            if(EmptyCancelBody)json="";
         }
         else throw new InvalidOperationException("Unexpected synthetic route: "+path);
         return Json(json);

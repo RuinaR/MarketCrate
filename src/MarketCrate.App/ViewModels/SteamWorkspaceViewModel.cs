@@ -102,7 +102,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         RefreshReviewStatus=new(()=>{foreach(var row in ReviewRows)row.RefreshStatus();Changed();DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Pricing,requirement:"D07",reason:ReviewRows.All(x=>x.Valid)?"Fresh":"Stale");},()=>!Busy&&ReviewOpen);
         ClearSelection=new(()=>Bulk(()=>{foreach(var row in AllSteamRows().Where(x=>x.Asset.Key.AppId==Game.AppId&&x.Asset.Key.ContextId==Game.ContextId))row.Selected=false;foreach(var key in selections.Keys.Where(x=>x.AppId==Game.AppId&&x.ContextId==Game.ContextId).ToArray())selections[key]=(false,selections[key].Quantity);}),()=>!Busy&&!AnyReview);
         ClearListings=new(()=>Bulk(()=>{foreach(var row in Listings)row.Selected=false;}),()=>!Busy&&!AnyReview);
-        Review = new(() => { if(LiveReviewRequested&&!CanTrade){prepareReview.Execute(null);return;} try { BuildReview(); } catch(Exception e) { Error(e); } }, () => CanRead && fees is not null && InventoryRead.State==SteamReadState.Ready && PricesRead.State==SteamReadState.Ready && !Busy && !AnyReview && SelectedSteamRows().Length>0 && SelectedSteamRows().All(x=>x.Price is not null&&(PricingMode!=1||!x.Price.Trades.IsEmpty)&&(PricingMode!=2||x.Price.Estimate is not null)));
+        Review = new(() => { if(NeedsLiveReviewPreparation){prepareReview.Execute(null);return;} try { BuildReview(); } catch(Exception e) { Error(e); } }, () => CanRead && fees is not null && InventoryRead.State==SteamReadState.Ready && PricesRead.State==SteamReadState.Ready && !Busy && !AnyReview && SelectedSteamRows().Length>0 && SelectedSteamRows().All(x=>x.Price is not null&&(PricingMode!=1||!x.Price.Trades.IsEmpty)&&(PricingMode!=2||x.Price.Estimate is not null)));
         CloseReview = new(() => { ReviewOpen = ManagementOpen = false; ReviewRows.Clear(); Changed(); }, () => !Busy);
         Submit = new(SubmitAsync, Error, () => !Busy && CanRead && ReviewOpen && CanTradeReview && ReviewRows.Count > 0 && ReviewRows.All(x => x.Valid));
         EnableTrading = new(() => { workspace!.Access.Acknowledge(true, true, true, true); Changed(); }, () => syntheticConnection && !Busy && CanRead && TradeAccepted && workspace?.Policy.Enabled == true);
@@ -344,7 +344,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
             owner.SetResults(record);owner.OperationLabel="전체 판매등록 처리 중 · "+owner.BatchProgressText;
         }
     }
-    public string BatchProgressText=>$"전체 {Results.Count}건 · 미전송 {Results.Count(x=>x.State==SaleState.Ready)} · 처리 중 {Results.Count(x=>x.State==SaleState.Submitting)} · 접수 {Results.Count(x=>x.State==SaleState.Submitted)} · 모바일 대기 {Results.Count(x=>x.State==SaleState.AwaitingSteamGuard)} · 게시 {Results.Count(x=>x.State==SaleState.Listed)} · 실패 {Results.Count(x=>x.State==SaleState.Failed)} · 불명 {Results.Count(x=>x.State==SaleState.Unknown)}";
+    public string BatchProgressText=>$"전체 {Results.Count}건 · 미전송 {Results.Count(x=>x.State==SaleState.Ready)} · 처리 중 {Results.Count(x=>x.State==SaleState.Submitting)} · 접수 {Results.Count(x=>x.State==SaleState.Submitted)} · 승인 대기 {Results.Count(x=>x.State==SaleState.AwaitingSteamGuard)} · 게시 {Results.Count(x=>x.State==SaleState.Listed)} · 실패 {Results.Count(x=>x.State==SaleState.Failed)} · 불명 {Results.Count(x=>x.State==SaleState.Unknown)}";
     private void RefreshRequests()
     {
         var previous=SelectedRequest;

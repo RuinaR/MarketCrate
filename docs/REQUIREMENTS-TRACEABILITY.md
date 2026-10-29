@@ -271,3 +271,7 @@ PARTIAL=일부 경로/기능 부족, MISSING=실행 코드 없음, BLOCKED=필�
 0.20.3: 최초75개 ID/판정47 COMPLETE·16 PARTIAL·0 MISSING·3 BLOCKED·9 UNVERIFIED 유지. D10의 classic 앱/지갑 근거가 확인된 경우 선택적 item market_fee 부재 처리, F01/E09의 기본 실거래 선택→최종 검토 사전검증, B04 이미지 기본 ON과 로그아웃 중단, G08 실패 단계/최근 실패 진단 연결 보완. 기능333/333·비표시WPF66/66·배포19/19 PASS지만 실제 사용자 활성화 실패 작업이 ZIP에 없으며 실계정 수수료/거래를 COMPLETE로 승격하지 않는다.
 
 0.20.4: 기존75개 ID/판정47 COMPLETE·16 PARTIAL·0 MISSING·3 BLOCKED·9 UNVERIFIED 유지. A 세션 CSRF 현재 값 사용, F 제출 HTTP400/Unknown과 실제 승인 대기 분리, G 사용자 상태 안내 및 중복 읽기/이동 제거. 기능341/WPF66/배포19 합성·정적 PASS. 사용자 실제 요청1건 HTTP400은 전송 시도 증거이며 접수/게시/Guard 성공 증거가 아니다. 기존 원문이 없어 실제400 원인과 새 버전 판매 성공은 미검증.
+
+## 0.20.5 전체 경로 재확인
+
+기존75개 ID와47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED 유지. 이번 AdditionalGame/ApprovalChannels/EmailJournal/PendingWithoutId/EmptyCancellation 및 자체 UI 회귀로 다중 게임 준비 누락·승인 채널 혼동·빈 취소 ACK 처리 결함을 수정했다. 전체 UI→서비스→어댑터→저널→결과 경로와 미지원 차이는 OPEN-SOURCE-FLOW-AUDIT.md에 매핑했다. 합성346/WPF67 통과만으로 실계정·수수료·실게시 항목을 승격하지 않는다.

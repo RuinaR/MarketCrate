@@ -160,3 +160,7 @@ SteamMarketHelper e186d51 MIT의 실제 userscript fallback/base/통화 round, n
 ## 0.20.4 판매 응답·속도 보완 (2026-10-29 KST)
 
 추가 실제 코드 확인(2026-10-29 KST): node-steamcommunity fa8d89759077152b0c38175f154e03d0eacd2d1e/index.js getSessionID는 현재 자체 cookie jar를 읽는다(MIT). SSIM 28a503fa79869f3233814d0deaa906a8b3f66621/src/trading/AccountTrader.ts sellOnMarket는 seller net, 소유 inventory Referer, Origin, X-Requested-With를 사용한다(Apache-2.0). 해당 정상 계약을 독립 C# 구현에 반영했고 Chromium/UA지문 위장·다계정 프록시·자동 승인은 채택하지 않았다. SteamMarketHelper e186d51efb742ddfb527d2ccb248c64fcee9c976/steam-market-helper.user.js의 요청 간격 기본1200ms와 비교해 읽기1500ms/쓰기3000ms·직렬·403/429 즉시 중단을 사용한다. 지터/인간 행위 위장은 도입하지 않음. 공식 승인 안내 https://help.steampowered.com/en/faqs/view/2E6E-A02C-5581-8904 는 페이지 접근은 됐지만 도구의 본문은 비어 있어 새로운 세부 정책 근거로 인용하지 않았다. 직접 코드 복사/의존성 추가는 없다.
+
+## 2026-10-29 KST — 전체 실행 경로 재대조
+
+node-steam-session 3ac0f34(MIT), node-steamcommunity fa8d897(MIT), SteamMarketHelper e186d51(MIT), SSIM 28a503f(Apache-2.0)의 실제 인증/요청/취소/승인 코드를 대조했다. 상세 파일 링크·채택/미채택·라이선스·공식JS 해시는 OPEN-SOURCE-FLOW-AUDIT.md 참조. 이번에는 외부 코드를 복사하거나 패키지를 추가하지 않았다. 기존 MIT 인증 이식과 고지는 유지한다. helper의200 빈 취소 ACK 의미를 반영했지만 실제 반환 증거는 별도다. SSIM 자동 비밀키 승인과 fingerprint/proxy는 도입하지 않았다. 공식 확인 안내: https://help.steampowered.com/en/faqs/view/2E6E-A02C-5581-8904 . 기술 구현 사례는 Valve 허가의 증거가 아니다.

@@ -11,6 +11,8 @@ public sealed record SteamListing(string ListingId, AssetKey Asset, string HashN
 public sealed record SteamListingsPage(ImmutableArray<SteamListing> Listings, int TotalActive, ImmutableDictionary<string,ItemImageReference>? Images=null);
 public sealed record SteamHistoryPoint(DateTimeOffset At, decimal MedianMajor, int Volume);
 public sealed record SteamOrderBook(string Currency, ImmutableArray<BidLevel> Bids);
+public enum SteamApprovalChannel { None, Mobile, Email, Unspecified, Either }
+public sealed record SteamSellResponse(SaleState State,string? ListingId,SteamApprovalChannel Approval=SteamApprovalChannel.None);
 
 // Contract shape, not Valve API guarantees. Synthetic tests are derived from source contracts.
 public static class SteamContract
@@ -148,19 +150,29 @@ public static class SteamContract
         if (total < 0 || rows.Select(x => x.ListingId).Distinct().Count() != rows.Count) throw new SteamException(SteamFailure.ContractChanged);
         return new(rows.ToImmutable(), total,images.ToImmutable());
     });
-    public static (SaleState State, string? ListingId) Sell(string json) => Parse(json, root =>
+    public static SteamSellResponse Sell(string json) => Parse<SteamSellResponse>(json, root =>
     {
-        if (!Success(root)) return (SaleState.Unknown, null); // success:false is not sufficient evidence of no side effect.
-        var pending = false;
-        foreach (var name in new[] { "needs_mobile_confirmation", "needs_email_confirmation", "requires_confirmation" })
-            if (root.TryGetProperty(name, out var flag))
-            {
-                if (flag.ValueKind is not (JsonValueKind.True or JsonValueKind.False or JsonValueKind.Number)) throw new SteamException(SteamFailure.ContractChanged);
-                pending |= flag.ValueKind switch { JsonValueKind.True => true, JsonValueKind.False => false, JsonValueKind.Number when flag.TryGetInt32(out var value) && value is 0 or 1 => value == 1, _ => throw new SteamException(SteamFailure.ContractChanged) };
-            }
-        return (pending ? SaleState.AwaitingSteamGuard : SaleState.Submitted, root.TryGetProperty("listingid", out var id) ? Id(id) : null);
+        if (!Success(root)) return new(SaleState.Unknown,null); // No side-effect inference from success:false.
+        bool Flag(string name)
+        {
+            if(!root.TryGetProperty(name,out var value))return false;
+            return value.ValueKind switch{JsonValueKind.True=>true,JsonValueKind.False=>false,JsonValueKind.Number when value.TryGetInt32(out var n)&&n is 0 or 1=>n==1,_=>throw new SteamException(SteamFailure.ContractChanged)};
+        }
+        var mobile=Flag("needs_mobile_confirmation");var email=Flag("needs_email_confirmation");var required=Flag("requires_confirmation");
+        var channel=mobile&&email?SteamApprovalChannel.Either:mobile?SteamApprovalChannel.Mobile:email?SteamApprovalChannel.Email:required?SteamApprovalChannel.Unspecified:SteamApprovalChannel.None;
+        var state=channel==SteamApprovalChannel.None?SaleState.Submitted:SaleState.AwaitingSteamGuard;
+        DiagnosticHub.Emit(DiagnosticEvent.ReadContract,DiagnosticArea.Sales,state==SaleState.AwaitingSteamGuard?DiagnosticOutcome.Pending:DiagnosticOutcome.Completed,endpoint:"Sell",reason:channel switch{SteamApprovalChannel.Mobile=>"MobileConfirmationRequired",SteamApprovalChannel.Email=>"EmailConfirmationRequired",SteamApprovalChannel.Either=>"EitherConfirmationRequired",SteamApprovalChannel.Unspecified=>"ConfirmationChannelUnknown",_=>"NoConfirmationFlag"},to:state.ToString());
+        return new(state,root.TryGetProperty("listingid",out var id)?Id(id):null,channel);
     });
-    public static bool CancellationAccepted(string json) => Parse(json, root => root.ValueKind == JsonValueKind.Array && root.GetArrayLength() == 0);
+    public static string ApprovalHint(SteamApprovalChannel channel)=>channel switch
+    {
+        SteamApprovalChannel.Mobile=>"요청 당시 Steam이 모바일 확인을 요구했습니다. 공식 Steam 앱에서 직접 승인한 뒤 판매 상태를 다시 조회하세요. 게시 완료가 아닙니다.",
+        SteamApprovalChannel.Email=>"요청 당시 Steam이 이메일 확인을 요구했습니다. 이메일에서 직접 확인한 뒤 판매 상태를 다시 조회하세요. 게시 완료가 아닙니다.",
+        SteamApprovalChannel.Either=>"요청 당시 Steam이 모바일/이메일 확인을 요구했습니다. 공식 Steam에서 직접 확인한 뒤 판매 상태를 다시 조회하세요. 게시 완료가 아닙니다.",
+        _=>"요청 당시 Steam이 추가 확인을 요구했습니다. 확인 방식은 미확인입니다. 공식 Steam에서 확인한 뒤 판매 상태를 다시 조회하세요."
+    };
+    // Only called after SteamHttp accepted HTTP200. An acknowledgement is not proof of return.
+    public static bool CancellationAccepted(string json) => string.IsNullOrWhiteSpace(json)||Parse(json, root => root.ValueKind == JsonValueKind.Array && root.GetArrayLength() == 0);
     public static string Currency(int id) => id switch { 1 => "USD", 16 => "KRW", _ => throw new SteamException(SteamFailure.Restricted) };
     public static long FromWire(long value, string currency) => currency switch { "USD" => value, "KRW" when value % 100 == 0 => value / 100, _ => throw new SteamException(SteamFailure.ContractChanged) };
     public static long ToWire(long value, string currency) => currency switch { "USD" => value, "KRW" => checked(value * 100), _ => throw new SteamException(SteamFailure.Restricted) };

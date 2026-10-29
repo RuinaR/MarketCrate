@@ -207,3 +207,7 @@ SteamFeeSchedule.PublisherFallbackAppId는 최신 인증 세션의 ClassicInvent
 ## 0.20.4 판매 응답·속도 보완 (2026-10-29 KST)
 
 0.20.4: 현재 자체 Community CookieContainer의 sessionid를 판매/취소마다 사용한다. 외부 Steam/브라우저 인증정보를 읽지 않는다. 소유 페이지·모드 검증 후에만 계정 source URI→canonical URI를 메모리에 보관하고 이후에도 본문/소유자/지갑/모드/앱 설정은 새로 읽는다. 캐시는 계정 source 경로별이며 외부/임의 이동 허용 범위를 넓히지 않는다. 실거래 사전검증의 계정 확인과 수수료는 동일한 최신 Market 응답을 사용해 중복 GET1개를 제거했다. 여러 앱의 실제 통화·단위 일치 조건은 유지한다. GET 대기1.5초, 판매/취소 간 최소3초, 계정별 직렬 큐,403/429/CAPTCHA 즉시 중단. 사용자별 저장소·스키마/Unknown 복구 정책 변경 없음.
+
+## 0.20.5 검토 준비·승인 채널
+
+SteamTradingViewModel.NeedsLiveReviewPreparation은 선택 AppID 중 Policy.VerifiedApps에 없는 scope가 있으면 기존 CanTrade와 무관하게 준비를 요구한다. SteamContract.Sell은 SteamSellResponse(State,ListingId,Approval)를 반환하며 SteamCommandRecord.Approval에 채널을 영속 저장한다. 기존 JSON의 필드 부재는 None이며 DB schema3 변경 없음. 알려진 채널의 후속 덮어쓰기는 거부한다. 응답 플래그는 게시 증거가 아니고 ID 없는 후보도 자동 Listed가 아니다. Cancel의 HTTP200 빈 본문은 ACK로만 허용하며 반환 판정은 기존 Reconcile 증거가 담당한다. 전체 경로 비교: OPEN-SOURCE-FLOW-AUDIT.md.

@@ -16,7 +16,11 @@ public static class SubmissionTransportTests
             ("Confirmed canonical route saves a redirect but always rereads changed server mode",CanonicalReuse),
             ("Trading preflight reads account wallet and fee evidence from one Market response",SingleWallet),
             ("Current CSRF cookie reaches actual adapter POST after rotation immediately before send",RotatedSubmission),
-            ("Error body success challenge malformed and oversized payloads never imply Guard or replay",ErrorBodies)
+            ("Error body success challenge malformed and oversized payloads never imply Guard or replay",ErrorBodies),
+            ("Approval response distinguishes mobile email unspecified and no request",ApprovalChannels),
+            ("Email approval persists without claiming phone approval and old journals remain compatible",EmailJournal),
+            ("Missing server ID cannot turn a pending mobile request into a coincidental listing",PendingWithoutId),
+            ("Empty HTTP200 cancel is an acknowledgement while empty HTTP400 stays Unknown",EmptyCancellation)
         };
         int passed=0,failed=0;foreach(var(name,run)in tests)try{await run();passed++;Console.WriteLine("PASS "+name);}catch(Exception error){failed++;Console.WriteLine("FAIL "+name+": "+error);}return(passed,failed);
     }
@@ -69,6 +73,42 @@ public static class SubmissionTransportTests
             var capture=new Trace();using var trace=DiagnosticHub.Use(capture);using var f=new FifthStageTests.Fixture();await f.Login();await f.Prepare(1);f.EnableTrading();f.Server.SellStatus=400;f.Server.SellBody=body;await f.Vm.SubmitAsync();
             Check(f.Server.Sends==1&&f.Vm.Results.Single().State==SaleState.Unknown&&f.Vm.Results.Single().Message.Contains("HTTP 400"));
             Check(!JsonSerializer.Serialize(capture.Events).Contains("private-"));await f.Vm.SubmitAsync();Check(f.Server.Sends==1);
+        }
+    }
+    private static Task ApprovalChannels()
+    {
+        foreach(var (flags,channel) in new[]{("\"needs_mobile_confirmation\":true",SteamApprovalChannel.Mobile),("\"needs_email_confirmation\":1",SteamApprovalChannel.Email),("\"requires_confirmation\":true",SteamApprovalChannel.Unspecified),("\"needs_mobile_confirmation\":true,\"needs_email_confirmation\":true",SteamApprovalChannel.Either)})
+        {var result=SteamContract.Sell("{\"success\":true,"+flags+"}");Check(result.State==SaleState.AwaitingSteamGuard&&result.Approval==channel);}
+        Check(SteamContract.Sell("{\"success\":true}").Approval==SteamApprovalChannel.None&&SteamContract.Sell("{\"success\":false,\"needs_mobile_confirmation\":true}").State==SaleState.Unknown);
+        Check(SteamContract.ApprovalHint(SteamApprovalChannel.Email).Contains("이메일")&&!SteamContract.ApprovalHint(SteamApprovalChannel.Email).Contains("모바일"));
+        return Task.CompletedTask;
+    }
+    private static async Task EmailJournal()
+    {
+        using var f=new FifthStageTests.Fixture();await f.Login();await f.Prepare(1);f.EnableTrading();f.Server.EmailConfirmation=true;await f.Vm.SubmitAsync();
+        Check(f.Vm.Results.Single().State==SaleState.AwaitingSteamGuard&&f.Vm.Results.Single().Message.Contains("이메일")&&!f.Vm.Results.Single().Message.Contains("모바일")&&f.Server.Sends==1);
+        var command=f.Workspace!.Store.Commands().Single(x=>x.Kind=="sell");
+        var old=System.Text.Json.Nodes.JsonNode.Parse(JsonSerializer.Serialize(command))!.AsObject();old.Remove("Approval");
+        Check(JsonSerializer.Deserialize<SteamCommandRecord>(old.ToJsonString())!.Approval==SteamApprovalChannel.None);
+        var key=command.RequestKey;f.Vm.Dispose();
+        using var reopened=new SteamStateStore(f.Directory);Check(reopened.ReadCommand(key)!.Approval==SteamApprovalChannel.Email);
+    }
+    private static async Task PendingWithoutId()
+    {
+        using var f=new FifthStageTests.Fixture();await f.Login();await f.Prepare(1);f.EnableTrading();f.Server.MissingId=true;await f.Vm.SubmitAsync();
+        f.Server.Publish=true;await f.Vm.RecoverAsync();Check(f.Server.Sends==1&&f.Vm.Results.Single().State==SaleState.AwaitingSteamGuard&&f.Vm.Results.Single().Message.Contains("서버 등록 ID 없음")&&f.Workspace!.Store.Commands().Single(x=>x.Kind=="sell").Approval==SteamApprovalChannel.Mobile);
+    }
+    private static async Task EmptyCancellation()
+    {
+        Check(SteamContract.CancellationAccepted("")&&SteamContract.CancellationAccepted(" ")&&SteamContract.CancellationAccepted("[]")&&!SteamContract.CancellationAccepted("{}"));
+        foreach(var status in new[]{200,400})
+        {
+            using var f=new FifthStageTests.Fixture();f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();await f.Vm.SubmitAsync();f.Server.Publish=true;await f.Vm.RecoverAsync();
+            var listing=(await f.Workspace!.Orders.RefreshAsync()).Single();f.Server.EmptyCancelBody=true;f.Server.CancelStatus=status;
+            var result=await f.Workspace.Executor.CancelAsync(listing,"empty-cancel");
+            Check(f.Server.Cancels==1&&f.Server.Sends==1&&result.State==(status==200?SaleState.Submitted:SaleState.Unknown));
+            if(status==200)Check((await f.Workspace.Executor.ReconcileCancellationAsync("empty-cancel")).State==SaleState.Reconciled);
+            else Check(f.Workspace.Store.ReadCommand("empty-cancel")!.State==SaleState.Unknown);
         }
     }
     private sealed class Trace:IDiagnosticLog{public Guid SessionId{get;}=Guid.NewGuid();public List<DiagnosticRecord> Events{get;}=[];public void Write(DiagnosticRecord value)=>Events.Add(value);}

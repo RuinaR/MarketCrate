@@ -7,6 +7,7 @@ public sealed partial class SteamWorkspaceViewModel
     private string tradingPreparation="실거래 모드 기본 선택 · 최종 가격 검토 시 계정·수수료·자산을 검증하며, 전체 판매등록 승인 전에는 전송하지 않습니다.";
     private AsyncCommand prepareReview=null!;
     private bool LiveReviewRequested=>!syntheticConnection&&TradeAccepted&&TradingConfirmation=="실제 거래";
+    private bool NeedsLiveReviewPreparation=>LiveReviewRequested&&(!CanTrade||SelectedSteamRows().Any(x=>workspace?.Policy.VerifiedApps.Contains(x.Asset.Key.AppId)!=true));
     public string TradingConfirmation {get=>tradingConfirmation;set{Set(ref tradingConfirmation,value);PrepareTrading?.Refresh();PrepareCancellation?.Refresh();}}
     public string TradingPreparation {get=>tradingPreparation;private set=>Set(ref tradingPreparation,value);}
     private string CaptureRepriceBook(SteamListing listing)
@@ -27,7 +28,7 @@ public sealed partial class SteamWorkspaceViewModel
     public Task OpenTradingReviewAsync()=>Run(async token=>
     {
         RequireConnection();
-        if(LiveReviewRequested&&!CanTrade)
+        if(NeedsLiveReviewPreparation)
         {
             var scopes=SelectedSteamRows().Select(x=>x.Asset).DistinctBy(x=>(x.Key.AppId,x.Key.ContextId)).ToArray();
             if(scopes.Length==0||scopes.Length>10)throw new SteamException(SteamFailure.Restricted);

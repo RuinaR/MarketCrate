@@ -6,7 +6,8 @@ using Microsoft.Data.Sqlite;
 namespace MarketCrate.Infrastructure.Steam;
 
 public sealed record SteamCommandRecord(string RequestKey, string Account, SaleLineSnapshot Line, string Kind, SaleState State, string? ListingId = null,
-    DateTimeOffset? SentAt = null, string[]? BeforeListingIds = null, int AvailableBefore = 0, bool Accepted = false);
+    DateTimeOffset? SentAt = null, string[]? BeforeListingIds = null, int AvailableBefore = 0, bool Accepted = false)
+{public SteamApprovalChannel Approval{get;init;}}
 
 // Separate from Demo; no delete/reset UI and no auth material. A missing response never removes intent.
 public sealed partial class SteamStateStore : IBatchJournal, IDisposable
@@ -93,7 +94,7 @@ public sealed partial class SteamStateStore : IBatchJournal, IDisposable
         var previous = ReadCommand(command.RequestKey);
         if (previous is not null && (previous.Account != command.Account || previous.Line != command.Line || previous.Kind != command.Kind || previous.SentAt != command.SentAt || previous.AvailableBefore != command.AvailableBefore ||
             !(previous.BeforeListingIds ?? []).SequenceEqual(command.BeforeListingIds ?? []) ||
-            previous.ListingId is not null && previous.ListingId != command.ListingId || previous.State == SaleState.Listed && command.State != previous.State))
+            previous.ListingId is not null && previous.ListingId != command.ListingId || previous.Approval!=SteamApprovalChannel.None&&previous.Approval!=command.Approval || previous.State == SaleState.Listed && command.State != previous.State))
             throw new InvalidDataException("SteamCommandImmutable");
         using var transaction=StorageDiagnostics.Begin(connection);Upsert("command",command.RequestKey,command,transaction);
         Audit(command.RequestKey,command.Kind=="sell"?SteamAuditAction.Sell:SteamAuditAction.Cancel,command.State.ToString(),transaction);StorageDiagnostics.Commit(transaction);
@@ -166,7 +167,7 @@ public sealed partial class SteamStateStore : IBatchJournal, IDisposable
     private static void ValidateCommand(SteamCommandRecord command)
     {
         if (string.IsNullOrWhiteSpace(command.RequestKey) || command.RequestKey.Length > 200 || command.Kind is not ("sell" or "cancel") ||
-            command.Account is null || command.Account.Length != 17 || command.Account.Any(c => c is < '0' or > '9') || !Enum.IsDefined(command.State) ||
+            command.Account is null || command.Account.Length != 17 || command.Account.Any(c => c is < '0' or > '9') || !Enum.IsDefined(command.State) || !Enum.IsDefined(command.Approval) ||
             command.Line is null || command.Line.Asset is null || command.Line.Quantity < 1 || command.Line.Asset.Key.AppId < 1 ||
             command.Line.Asset.Key.AssetId.Any(c => c is < '0' or > '9') || command.Line.UnitQuote.SellerReceives < 1)
             throw new InvalidDataException("SteamCommandInvalid");

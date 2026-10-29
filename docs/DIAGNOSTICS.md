@@ -266,3 +266,7 @@ FeeContext ReadContract/HttpRequest는 기존 OperationId에 FeeContextVanityRed
 ## 0.20.4 판매 응답·속도 보완 (2026-10-29 KST)
 
 0.20.4: HTTP400 판매/취소 오류는 ClientRequest와 HTTP 상태를 유지하며 최대16KiB 응답을 메모리에서만 조사한다. ResponseContract는 미디어/본문 종류를, ReadContract는 ServerSuccessFalse/True/Unverified, ServerMessagePresent/Absent/MessageMentionsSession, 크기 초과/파싱 불가 같은 고정 분류만 기록한다. 원문 message/HTML/쿠키/토큰/계정 값은 기록하지 않는다. success 또는 승인 플래그가 있어도 비200이면 승인 대기로 확정하지 않고 Unknown/자동 재전송 금지를 유지한다. HttpFailure와 항목 메시지에 HTTP 상태를 연결하고 전체 안내도 승인 대기 미확인으로 표시한다. FeeContextRouteReused는 소유/모드가 확인된 이동 경로를 재사용했다는 뜻이며 내용·가격 캐시 적중이 아니다.
+
+## 0.20.5 승인 채널 추적
+
+기존 OperationId 안의 ReadContract/Sales, endpoint Sell에 MobileConfirmationRequired / EmailConfirmationRequired / EitherConfirmationRequired / ConfirmationChannelUnknown / NoConfirmationFlag를 화이트리스트 이유로 기록한다. 저널 Approval과 상태 전이를 연결하지만 QR·토큰·주소·응답 원문은 기록하지 않는다. HTTP400은 Unknown이며 승인 대기 증거로 간주하지 않는다. ID 없는 후보는 근거 부족으로 유지한다. 로그는 SQLite 거래 상태의 대체물이 아니다. 전체 경로는 OPEN-SOURCE-FLOW-AUDIT.md.

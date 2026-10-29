@@ -411,3 +411,7 @@ ignored 증거 runtime/stage14-final-verify.txt, runtime/stage14-ui-final.txt, r
 ## 0.20.4 판매 응답·속도 보완 (2026-10-29 KST)
 
 0.20.4 신규 SubmissionTransportTests 8개: 쿠키 회전/POST 현재 CSRF, 정상 AJAX 판매 헤더, HTTP400→Unknown/Guard 오표시 없음/재전송0, JSON 성공 플래그·Challenge·금지 HTML·오류/대용량 본문 안전 처리/민감정보 미기록, 읽기/쓰기 간격 순수 계산, 확인된 canonical 이동 재사용과 신형 모드 재조회, 지갑/수수료 공통 Market GET1회. 수정 전3개 FAIL→수정 후PASS. 실제 HTTP400 원문과 새 버전 실계정 성공/실제 속도는 미검증이다. 기존 불명 저널/예약은 삭제하지 않는다.
+
+## 0.20.5 전체 경로 대조 회귀
+
+게임A 권한 후 게임B 추가 선택의 사전검증 누락을 수정 전 재현(341/342 PASS, 해당1 FAIL). 수정 후346/346 기능·67/67 비표시WPF·19/19 배포 계약·9/9 정리fixture PASS. 새 검사는 AdditionalGame, ApprovalChannels, EmailJournal, PendingWithoutId, EmptyCancellation 및 ProductAuditUiTests 승인채널/빈 요청 선택기다. 이메일 채널의 재시작 영속화·구 저널 호환·ID 없는 후보 오인 금지·200 빈 취소 ACK와400 Unknown을 확인했다. `runtime/ui-tests/flow25-approval-channels.png`를 직접 검토했다. 물리 입력/호스트 GUI/실계정/장시간 사용은 미검증. 원본과 실행 경로 대조는 OPEN-SOURCE-FLOW-AUDIT.md 참조.

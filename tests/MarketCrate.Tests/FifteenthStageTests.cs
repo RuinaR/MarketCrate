@@ -26,7 +26,8 @@ public static class FifteenthStageTests
             ("Reprice stale book is rejected before cancellation or new intent",RepriceBook),
             ("Default and synthetic activation UI remain separate",DefaultBlocked),
             ("Activation failure reports exact read-only gate without enabling or sending",ActivationGates),
-            ("Live default review validates contracts and never submits without final approval",DefaultReview)
+            ("Live default review validates contracts and never submits without final approval",DefaultReview),
+            ("Adding another game after activation still validates its contract before whole review",AdditionalGame)
         };
         int passed=0,failed=0;foreach(var(name,test)in tests)try{await test();passed++;Console.WriteLine("PASS "+name);}catch(Exception e){failed++;Console.WriteLine("FAIL "+name+": "+e);}return(passed,failed);
     }
@@ -87,6 +88,20 @@ public static class FifteenthStageTests
         f.Server.Publish=false;result=await f.Workspace.Batches.RecoverAsync();Check(result!.Results.Single().State==SaleState.AwaitingSteamGuard,"pending lost");f.Server.Publish=true;result=await f.Workspace.Batches.RecoverAsync();Check(result!.Results.Single().State==SaleState.Listed,"listing evidence not reflected");
         var listing=(await f.Workspace.Orders.RefreshAsync()).Single(x=>x.ListingId!="900");var repriced=await f.Workspace.Executor.RepriceAsync(listing,116,"user-reprice",reviewedOrderbook:OrderbookFingerprint.Of(price));
         Check(repriced.State==SteamRepriceState.Submitted&&f.Server.Sends==2&&f.Server.Cancels==1&&f.Workspace.Store.AuditTrail("user-reprice").Count>0,"user saga or audit incomplete");
+    }
+    private static async Task AdditionalGame()
+    {
+        using var f=new Harness();f.Server.DynamicInventory=true;
+        using var vm=new MarketCrate.App.ViewModels.SteamWorkspaceViewModel(_=>f.Workspace,false){RiskAccepted=true,CredentialsAccepted=true};
+        await vm.BeginAsync();f.Server.Clock.Advance();await vm.CheckAsync();
+        foreach(var app in new[]{730,440})
+        {
+            var game=new MarketCrate.App.ViewModels.SteamGameScope(app,"2",app==730?"Counter-Strike 2":"Team Fortress 2");vm.Games.Add(game);vm.Game=game;
+            await vm.LoadAsync();vm.Assets[0].Selected=true;await vm.RefreshPricesAsync();await vm.OpenTradingReviewAsync();
+            Check(vm.ReviewOpen&&vm.CanTrade&&f.Workspace.Policy.VerifiedApps.Contains(app)&&f.Server.Sends==0&&f.Server.Cancels==0,"new game's readiness skipped or preview sent trade");
+            vm.CloseReview.Execute(null);
+        }
+        Check(vm.SelectionSummary.Contains("2")&&f.Workspace.Policy.VerifiedApps.Contains(730),"prior selection/verified game lost");
     }
     private static async Task WrongAccount(){using var f=new Harness();await f.Login();f.Route.Account="76561198000000002";await Fails(f.Arm);Check(!f.Workspace.Access.Trading&&f.Server.Sends==0,"account mismatch armed");}
     private static async Task MissingEvidence()
