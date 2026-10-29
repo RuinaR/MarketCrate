@@ -2,7 +2,7 @@
 
 ## 0.20 제품 경로 보완
 
-UI→SteamWorkspaceViewModel→기존 서비스 구조 유지. UI 화면 캐시와 retainedSelections를 분리해 view eviction이 선택 배치 대상을 누락하지 않도록 했다. BatchUiProgress는 Coordinator가 이어지는 호출 UI 문맥에서 변경된 결과 행만 갱신하며 늦은 다른 계정/로그아웃 결과를 버린다. NavigationIndex는 기존 WorkPage 인덱스와 새 표시 순서를 분리한다. 카드 보기는 기존 VirtualizingTilePanel을 실제 보관함에 연결한다.
+UI→SteamWorkspaceViewModel→기존 서비스 구조 유지. 상품별 시세 행 갱신은 Bulk로 묶어 항목마다 전체 선택/정산을 재계산하지 않는다. UI 화면 캐시와 retainedSelections를 분리해 view eviction이 선택 배치 대상을 누락하지 않도록 했다. BatchUiProgress는 Coordinator가 이어지는 호출 UI 문맥에서 변경된 결과 행만 갱신하며 늦은 다른 계정/로그아웃 결과를 버린다. NavigationIndex는 기존 WorkPage 인덱스와 새 표시 순서를 분리한다. 카드 보기는 기존 VirtualizingTilePanel을 실제 보관함에 연결한다.
 
 SteamStateStore.StageRelistApproval은 검토 스냅샷/계정/상품별 수량/취소 접수만 메모리에서 준비한다. 실제 Coordinator 사전검증 후 최초 SaveAsync가 새 batch와 relist.SubmissionBatch를 동일 트랜잭션으로 기록한다. 실패는 두 기록 모두 rollback이며 SQLite schema3/기존 데이터 형식·DPAPI 저장 형식은 유지한다. 0.19에서 이미 제출 시도로 묶인 과거 계획을 추측으로 해제하지 않는다.
 

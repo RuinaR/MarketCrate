@@ -232,7 +232,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     {
         RequireConnection();var revision=priceRevision;var mode=PricingMode;var window=IndicatorWindow;var selected=SelectedSteamRows();var groups=selected.GroupBy(x=>(x.Asset.Key.AppId,x.Asset.MarketHashName)).ToArray();
         if(groups.Length>50)throw new SteamException(SteamFailure.Restricted);
-        foreach(var group in groups){var quote=mode==2?await workspace!.Prices.RefreshEstimateAsync(group.First().Asset,window,token):await workspace!.Prices.RefreshAsync(group.First().Asset,token);token.ThrowIfCancellationRequested();if(revision!=priceRevision)return;if(fees is not null&&quote.Currency!=fees.Currency)throw new SteamException(SteamFailure.Restricted);foreach(var row in group)row.SetPrice(quote);RecordCheck("Orderbook",quote.Bids.Length,quote.Currency);if(quote.Estimate is {} observed)RecordCheck("History",observed.Buckets,observed.Currency);}
+        foreach(var group in groups){var quote=mode==2?await workspace!.Prices.RefreshEstimateAsync(group.First().Asset,window,token):await workspace!.Prices.RefreshAsync(group.First().Asset,token);token.ThrowIfCancellationRequested();if(revision!=priceRevision)return;if(fees is not null&&quote.Currency!=fees.Currency)throw new SteamException(SteamFailure.Restricted);Bulk(()=>{foreach(var row in group)row.SetPrice(quote);});RecordCheck("Orderbook",quote.Bids.Length,quote.Currency);if(quote.Estimate is {} observed)RecordCheck("History",observed.Buckets,observed.Currency);}
         Status="Steam 호가 갱신 완료 · 매수 잔량은 동일 상품 전체가 공유 · 체결 보장 없음";
     });
     public void BuildReview()

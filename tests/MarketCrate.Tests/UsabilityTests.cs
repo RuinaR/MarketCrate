@@ -34,7 +34,8 @@ public static class UsabilityTests
             ("Cancellation-only capability resets on logout and cannot upgrade cached executor",CancellationReset),
             ("Logout during submission rejects late progress and preserves durable Unknown",ProgressLogout),
             ("Evicting eight-game view cache never omits selected assets from batch targets",SelectionEviction),
-            ("Archive command cannot move a different account active journal",ArchiveOwnership)};
+            ("Archive command cannot move a different account active journal",ArchiveOwnership),
+            ("Ten thousand selected item prices publish bounded summary updates per product",PriceNotifications)};
         int passed=0,failed=0;foreach(var(name,run)in tests)try{await run();passed++;Console.WriteLine("PASS "+name);}catch(Exception e){failed++;Console.WriteLine("FAIL "+name+": "+e);}return(passed,failed);
     }
     private static Task Default(){using var vm=new SteamWorkspaceViewModel();Check(vm.Games.Count==1&&vm.Game.AppId==753&&vm.Game.ContextId=="6"&&vm.Game.Name=="Steam 커뮤니티");return Task.CompletedTask;}
@@ -104,6 +105,10 @@ public static class UsabilityTests
         using var f=new Fixture();await f.Login();var asset=(await f.Workspace!.Inventory.GetAsync(default)).First();var line=new SaleLineSnapshot("other",asset,1,"KRW",f.Server.Schedule.FromBuyer(115),DateTimeOffset.UtcNow);var snapshot=new SaleBatchSnapshot(Guid.NewGuid(),"76561198000000002",DateTimeOffset.UtcNow,[line]);await f.Workspace.Store.SaveAsync(new(1,snapshot,[new(line.LineId,SaleState.Ready,"unsent")]),default);
         try{f.Workspace.Store.ArchiveCompleted(f.Workspace.Authentication.SteamId);throw new Exception("other account journal archived");}catch(SteamException error){Check(error.Code==SteamFailure.Restricted);}
         Check((await f.Workspace.Store.LoadAsync(default))?.Snapshot.BatchId==snapshot.BatchId&&f.Server.Sells==0&&f.Server.Cancels==0);
+    }
+    private static async Task PriceNotifications()
+    {
+        using var f=new Fixture();await f.Login();f.Server.Available.Clear();foreach(var index in Enumerable.Range(1,10000))f.Server.Available.Add((100000+index).ToString());await f.Vm.LoadAsync();f.Vm.SelectAll.Execute(null);var notifications=0;f.Vm.PropertyChanged+=(_,e)=>{if(e.PropertyName==nameof(f.Vm.SelectionSummary))notifications++;};await f.Vm.RefreshPricesAsync();Check(f.Vm.Assets.Count==10000&&f.Vm.Assets.All(x=>x.Price is not null)&&notifications is >0 and <10&&f.Server.Sells==0&&f.Server.Cancels==0);
     }
     private static async Task PlanImmutable(){using var f=new Fixture();await PrepareNewTargets(f);var plan=f.Workspace!.Store.RelistPlans(f.Workspace.Authentication.SteamId!).Single();try{f.Workspace.Store.SaveRelistPlan(plan with{Account="76561198000000002"});throw new Exception("mutated plan accepted");}catch(InvalidDataException){}Check(f.Workspace.Store.RelistPlans(plan.Account).Single().SubmissionBatch is null);}
     private sealed class Fixture:IDisposable
