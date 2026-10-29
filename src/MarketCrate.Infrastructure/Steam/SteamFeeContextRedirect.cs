@@ -19,7 +19,13 @@ public sealed partial class SteamHttp
         using var direct=new HttpRequestMessage(HttpMethod.Get,target);
         request.Options.Set(FeeVanity,FeeContextRedirectKind(request.RequestUri!,target)=="FeeContextVanityRedirect");request.Options.Set(FeeResolved,target);
         DiagnosticHub.Emit(DiagnosticEvent.ReadContract,DiagnosticArea.HTTP,endpoint:"FeeContext",reason:"FeeContextRouteReused",count:1);
-        var response=await client.SendAsync(direct,HttpCompletionOption.ResponseHeadersRead,token);CaptureCookies(response,target);return response;
+        var response=await client.SendAsync(direct,HttpCompletionOption.ResponseHeadersRead,token);
+        try
+        {
+            if(!response.IsSuccessStatusCode)feeContexts.TryRemove(request.RequestUri!,out _);
+            CaptureCookies(response,target);return response;
+        }
+        catch{response.Dispose();throw;}
     }
     internal static bool FeeContextUsesVanity(HttpRequestMessage request)=>request.Options.TryGetValue(FeeVanity,out var value)&&value;
     internal static bool ViewingOwnInventory(string html)

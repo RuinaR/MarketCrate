@@ -47,10 +47,13 @@ public static class SubmissionTransportTests
     private static string WalletPage=>FeeModeTests.Page().Split("<div")[0];
     private static async Task CanonicalReuse()
     {
-        using var f=new ThirteenthStageTests.Fixture();await f.Login();var newer=false;
-        f.Route=p=>p=="/market/"?Json(WalletPage):p.StartsWith("/profiles/")?new(HttpStatusCode.Found){Headers={Location=new Uri("/id/synthetic-owner/inventory/",UriKind.Relative)},Content=new StringContent("")}:p=="/id/synthetic-owner/inventory/"?Json(OwnerPage(newer)):null;
+        using var f=new ThirteenthStageTests.Fixture();await f.Login();var newer=false;var missing=false;
+        f.Route=p=>p=="/market/"?Json(WalletPage):p.StartsWith("/profiles/")?new(HttpStatusCode.Found){Headers={Location=new Uri("/id/synthetic-owner/inventory/",UriKind.Relative)},Content=new StringContent("")}:p=="/id/synthetic-owner/inventory/"?missing?Json("{}",HttpStatusCode.NotFound):Json(OwnerPage(newer)):null;
         await f.Workspace!.FeesAsync(730);newer=true;await f.Workspace.FeesAsync(730);
         Check(f.Reads.Count(x=>x.Path.StartsWith("/profiles/"))==1&&f.Reads.Count(x=>x.Path=="/id/synthetic-owner/inventory/")==2&&f.Reads.Count(x=>x.Path.Contains("ajaxfeestructure"))==1&&f.Server.Sends==0);
+        missing=true;try{await f.Workspace.FeesAsync(730);throw new Exception("expected404");}catch(SteamException error){Check(error.Code==SteamFailure.Unsupported);}
+        var reads=f.Reads.Count;Check(f.Reads.Count(x=>x.Path.StartsWith("/profiles/"))==1);
+        missing=false;await f.Workspace.FeesAsync(730);Check(f.Reads.Count>reads&&f.Reads.Count(x=>x.Path.StartsWith("/profiles/"))==2&&f.Server.Sends==0);
     }
     private static async Task SingleWallet()
     {
