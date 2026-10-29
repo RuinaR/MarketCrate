@@ -1,5 +1,13 @@
 # MarketCrate — 아키텍처 (최초 Mock 구현 / 후속 계획)
 
+## 16차 — 동의 기반 인증 저장과 복원
+
+App→ProductionShellViewModel(authDirectory=DataRoot/Auth)→SteamWorkspaceViewModel.InitializePersistence. Loaded에서 RestoreRememberedAsync를 호출하되 정상 저장 동의/파일이 있고 실행당 최초일 때만 Run한다. 기본 생성은 네트워크를 보내지 않는다. 개발/비표시 tests는 별도 authDirectory 또는 저장소 없는 composition을 사용한다.
+
+SteamAuthStore는 Preferences/SteamStateStore와 별도이며 DPAPI CurrentUser·사용자 SID ACL·경로/파일 경계·암호화 pending/차단 표식/lease를 소유한다. TakeForRestore는 네트워크 전에 disarm, SteamSavedLogin(secret buffer)→Authentication.RestoreAsync→JWT claims→finalizelogin→Community transfer→계정 쿠키 검사→SaveRememberedLogin(expected cipher fingerprint) 후만 rearm한다. 파일/저장 실패는 실제 인증 실패와 별도 안내하고 평문/쿠키를 저장하지 않는다.
+
+명시적 Logout=EndSession(true)→로컬 저장 삭제·메모리 종료·거래권한 철회. Dispose=EndSession(false)→메모리 종료만 하고 사용자가 선택한 저장은 유지한다. 거래 실행/과거 승인 재생/자동 목록 갱신은 없고 RefreshRequests는 기존 저널을 읽기만 한다. 계정마다 증거를 다시 검증하며 Unknown/예약은 유지한다. 자동 refresh-token 회전·서버 철회는 이 버전의 지원 계약이 아니다. 자세한 상태/파일/검증은 SESSION-PERSISTENCE 참조.
+
 ## 0.16.0 생산 구성 경계
 
 App→ProductionShellViewModel→SteamWorkspaceViewModel/DiagnosticsViewModel만 일반 시작 경로다. 소유권은 App.owner→Shell.Dispose→Steam.Dispose/preferences.Dispose로 정리하며 기본 생성은 Steam 로그인/HTTP/거래를 시작하지 않는다. Demo 저장소 lease에 실제 앱 시작이 종속되지 않는다. 비밀 없는 SQLite 설정과 거래 저널은 별도이다.

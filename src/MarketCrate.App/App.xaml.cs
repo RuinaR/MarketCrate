@@ -39,7 +39,8 @@ public partial class App : Application
             else
 #endif
             {
-                var vm=new ProductionShellViewModel(Path.Combine(profile.DataRoot,"Preferences"),diagnostics);owner=vm;window.DataContext=vm;
+                var vm=new ProductionShellViewModel(Path.Combine(profile.DataRoot,"Preferences"),diagnostics,Path.Combine(profile.DataRoot,"Auth"));owner=vm;window.DataContext=vm;
+                window.Loaded+=async(_,_)=>{try{await vm.Steam.RestoreRememberedAsync();}catch(Exception error){Fault(error);}};
             }
             MainWindow=window;window.Closed+=(_,_)=>{owner?.Dispose();owner=null;};window.Show();
         }

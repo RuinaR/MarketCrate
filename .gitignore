@@ -50,3 +50,6 @@ artifacts/
 # Structured local diagnostics / reviewed packages
 session-*.jsonl
 **/Logs/
+**/Auth/
+*.authbin
+*.authlock

@@ -5,8 +5,10 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.31" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.9" />
     <ProjectReference Include="../MarketCrate.Core/MarketCrate.Core.csproj" />
     <None Update="ThirdParty/QrCodeGenerator/LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" TargetPath="licenses/QrCodeGenerator-LICENSE.txt" />
+    <None Update="ThirdParty/steam-session/LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" TargetPath="licenses/steam-session-LICENSE.txt" />
   </ItemGroup>
   <ItemGroup Condition="'$(MarketCrateProduction)' == 'true'"><Compile Remove="DemoProviders.cs;SqliteDemoStore.cs;FileBatchJournal.cs" /></ItemGroup>
 </Project>

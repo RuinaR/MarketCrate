@@ -1,5 +1,19 @@
 # MarketCrate — 현재 상태 (2026-10-29 KST, 15차)
 
+### 0.17.0 최종 자동 검증
+
+기능 **270/270 PASS**, 자체 비표시 WPF **55/55 PASS**, 배포 파일계약 **19/19 PASS**, 안전 fixture 정리 **8 PASS/0 FAIL/1 NOT VERIFIED**(실제 junction 생성 환경제약). 최종 빌드 경고·오류0. 신규 세션20/자체UI3개와 기존 전 회귀 포함. 직접 Windows CurrentUser DPAPI·ACL/암호문만 저장, 로그·검토ZIP canary 미노출, 인증 복원 시 Unknown 저널/예약 보존·거래0을 확인했다. 마지막 저장 예외 분류/계정 검증을 반영한 최종 source 증거는 runtime/session-build.txt·session-core.txt·session-ui.txt·session-distribution.txt·session-cleanup.txt에 있다.
+
+RTB session-optin/session-restored-small/large/session-paused를 직접 확인했다. 실제 Windows 사용자 간 복호화·실제 GUI/물리입력·전원 차단·Steam 저장 토큰 재사용/회전·수수료·판매/취소는 NOT VERIFIED. NuGet 취약성 메타데이터를 끄거나 SDK/Windows 설정을 설치/변경하지 않았다. 최초75개 판정47/15/0/4/9 유지. 기존 운영 데이터/진단/릴리즈 삭제0. Release·ZIP 해시와 커밋은 확정 기록에 추가한다.
+
+## 16차 / 0.17.0 — 동의 기반 Steam 로그인 유지
+
+현재0.16.1의 실제 전용 구조를 유지하며 MIT steam-session의 WebBrowser token 검증/getWebCookies 경로를 C#으로 제한 이식했다. 로그인 유지 기본OFF, 사용자가 QR 전 선택하면 DPAPI CurrentUser·사용자 전용 ACL로 Auth에 암호화 저장하고 다음 시작에서 한 번만 새 Community 세션을 발급받는다. 앱 종료는 저장을 보존하고 명시적 로그아웃은 로컬 저장/메모리/거래 권한을 정리한다. 로컬 삭제가 서버 철회라는 주장은 하지 않는다.
+
+실패/만료/거절/손상/중단은 자동 반복하지 않으며 미완료 파일/구 토큰 fallback도 없다. 자동 보관함/목록 갱신·거래0, Unknown 저널/예약 보존, 실거래는 매 실행 OFF다. 계정·쿠키 일치 확인 전 인증 완료가 아니다. 저장 실패는 유지OFF로 안내하며 현재 QR 인증 성공을 지우지 않는다.
+
+실제 서버의 저장 토큰 재사용/자동 회전/철회·수수료/KRW·스택/판매·취소와 물리GUI는 아직 미검증이다. WebBrowser에 맞지 않는 GenerateAccessTokenForApp를 강행하지 않으며 자동 Refresh Token 회전은 미지원, 만료/철회 시 새 QR이 필요하다. 수수료 HTML 문제를 새 로그인 기능의 성공으로 덮어쓰지 않는다. 최초75개47/15/0/4/9 유지. SESSION-PERSISTENCE의 최소 사용자 확인 절차를 따른다. 최종 테스트·배포는 확정 기록으로 추가한다.
+
 ### 0.16.1 배포 확정 — 수수료 HTML 오분류 수정
 
 소스 **f5ed123aff841b85fa9a6865fa5a1f4a886004a9**, origin/main push 완료. 최신 Windows x64 self-contained LiveOnly portable: `artifacts/releases/MarketCrate-0.16.1-fees-f5ed123-win-x64.zip` (**66,475,258바이트 /412파일**), SHA256 **94F7E423D49AA0F0AF6C4651A50486F95548A93B45EAE850B488480C70012C2F**. 원본 폴더 `artifacts/releases/fee-f5ed123-windows-x64`, BuildVersion0.16.1+f5ed123aff841b85fa9a6865fa5a1f4a886004a9. Release 빌드·실제 전용 metadata/BAML·CLR/WPF10.0.9/SQLite x64·라이선스·민감/개발파일 제외·전체ZIP entry SHA 일치 검사 PASS. 실제 EXE/설치/서명·실계정/거래 미실행. 초기 NuGet 감사 메타데이터의 sandbox 네트워크 실패는 정상 접근으로 재빌드하여 해소했으며 감사/경고 검사를 끄지 않았다.

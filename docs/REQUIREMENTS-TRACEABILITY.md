@@ -1,5 +1,11 @@
 # 요구사항–구현–검증 추적표 (15차, 2026-10-29 KST)
 
+## 16차 — 최초75개 ID/판정 보존
+
+75개 **47 COMPLETE/15 PARTIAL/0 MISSING/4 BLOCKED/9 UNVERIFIED** 유지. A01–A06 인증·보안: App.Loaded→ProductionShell→SteamWorkspace.RestoreRememberedAsync→SteamAuthStore(DPAPI/ACL/disarm)→SteamQrAuthentication.RestoreAsync→finalizelogin/settoken/계정 쿠키 검증→SaveRememberedLogin→UI 상태. 명시적 Logout와 Dispose를 분리했다. 새 요구 로그인 유지는 SESSION-PERSISTENCE에 추가 추적하며 기존 ID를 삭제/통합하지 않는다.
+
+SessionPersistenceTests20/UiTests3이 QR·저장·재시작·거절·손상·계정/소유자·교체/중단·삭제·누출·저널 보존을 검증한다. 실제 Windows 자체 DPAPI와 ACL은 확인하지만 실제 Steam 복원·다른 Windows 사용자·물리 GUI는 미검증이다. 코드 추가/정책 예외만으로 A항목/실거래를 COMPLETE로 승격하지 않는다. D09/D10/C스택·F일괄등록 계약과 Unknown 보호는 기존 미검증/차단을 유지한다.
+
 ## 0.16.1 — ID/판정 보존, 수수료 실패 근거 보강
 
 최초75개 ID·판정 **47 COMPLETE /15 PARTIAL /0 MISSING /4 BLOCKED /9 UNVERIFIED** 유지. A04/D09/D10/G 오류안내 경로: SteamWorkspaceView→SteamReadSelfCheckViewModel→SteamReadSelfCheck→SteamFees.StructureRequest→SteamHttp→SteamResponseContract→3005/3002/4204→CheckRows/ConnectionSummary. legacy wallet fee 관측과 공식 단가 비교는 자동판매의 검증된 수수료를 대신하지 않는다. UI 비교는 조회된 schedule만 읽으며 저널/요청/권한 갱신0. 실제 거래의 SQLite intent/Unknown/재시작 보호 코드는 유지했다.

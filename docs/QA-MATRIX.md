@@ -1,5 +1,27 @@
 # 정상·오류·복구 QA 매트릭스 — 10차 (2026-10-28 KST)
 
+### 0.17.0 최종 자동 검증
+
+기능 **270/270 PASS**, 자체 비표시 WPF **55/55 PASS**, 배포 파일계약 **19/19 PASS**, 안전 fixture 정리 **8 PASS/0 FAIL/1 NOT VERIFIED**(실제 junction 생성 환경제약). 최종 빌드 경고·오류0. 신규 세션20/자체UI3개와 기존 전 회귀 포함. 직접 Windows CurrentUser DPAPI·ACL/암호문만 저장, 로그·검토ZIP canary 미노출, 인증 복원 시 Unknown 저널/예약 보존·거래0을 확인했다. 마지막 저장 예외 분류/계정 검증을 반영한 최종 source 증거는 runtime/session-build.txt·session-core.txt·session-ui.txt·session-distribution.txt·session-cleanup.txt에 있다.
+
+RTB session-optin/session-restored-small/large/session-paused를 직접 확인했다. 실제 Windows 사용자 간 복호화·실제 GUI/물리입력·전원 차단·Steam 저장 토큰 재사용/회전·수수료·판매/취소는 NOT VERIFIED. NuGet 취약성 메타데이터를 끄거나 SDK/Windows 설정을 설치/변경하지 않았다. 최초75개 판정47/15/0/4/9 유지. 기존 운영 데이터/진단/릴리즈 삭제0. Release·ZIP 해시와 커밋은 확정 기록에 추가한다.
+
+## 16차 / 0.17.0 인증 유지 QA
+
+| 검사 | 자동 검증 범위 |
+|---|---|
+| 최초 QR·유지 ON/OFF·닫기/재시작 | 합성 QR/HTTP로 DPAPI 저장·새 VM의 단일 복원, 실제 GUI/계정 미검증 |
+| DPAPI/파일 보안 | 실제 CurrentUser Protect/Unprotect·사용자 SID만 허용된 ACL·평문 토큰/계정 미포함. 다른 Windows 사용자의 실제 복호화 시도는 NOT VERIFIED |
+| 계정/토큰/응답 | web/derive·sub/exp/nbf·계정/쿠키 일치. result 생략 cookie 계약도 검증. 잘못된 소유자 envelope/버전·만료·거절·누락 쿠키는 연결 불가 |
+| 실패/중단/재시작 | pending/손상/네트워크/취소/쓰기 잠금은 차단 표식 보존, 반복 자동 요청0. 잠금 교체 실패 후 이전 암호문 보존. 실제 강제전원차단은 NOT VERIFIED |
+| 교체/삭제 | 새 QR 토큰 원자 저장·다른 인스턴스 삭제 후 재생성 차단. 서버 측 이전 토큰 무효화/회전·철회는 미검증/미지원 |
+| 로그아웃/로컬 삭제 | 유지OFF/명시적 로그아웃은 파일 삭제, 현재 메모리만 유지하는 삭제 동작 구분, 저장 실패는 OFF·정상 인증과 분리 |
+| 거래/저널 | 자동판매/목록·보관함 갱신0, 인증POST만2개, 실거래 기본OFF. Unknown intent/예약 보존·재전송0 |
+| 진단/배포 | OperationId/HTTP/저장 이벤트 연결, JSONL/검토ZIP 토큰·쿠키·SID·계정 미노출. Auth폴더/authbin/authlock/pending/blocked 배포 차단 |
+| WPF | 체크박스/삭제 명령 바인딩·기본OFF·복원 완료/중단 RTB. 물리입력·실제 창/Popup/모니터DPI는 NOT VERIFIED |
+
+신규 SessionPersistenceTests20개·SessionPersistenceUiTests3개. 기존 전체 회귀를 유지한다. MIT 소스 검토와 합성 HTTP 성공은 실제 Steam 서버 복원/수수료/거래의 LIVE_VERIFIED가 아니다. 최종 집계/Release 결과는 현재상태·작업기록에 누적한다.
+
 ### 0.16.1 최종 자동 검증
 
 기능 **250/250 PASS**, 자체 비표시WPF **52/52 PASS**, 배포 파일계약 **14/14 PASS**, 최종FAIL0·빌드 경고/오류0. 안전정리7 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 환경제약), 이번 사용자 배포/데이터 정리0. 신규 수수료/복구 오류 주입·JSONL 원인 연결/비밀 canary 미노출 및 기존 거래 어댑터·가격·SQLite/Unknown 회귀 포함. runtime/fee-final-core.txt·fee-final-ui.txt·fee-final-build.txt·fee-distribution-contracts.txt·fee-cleanup-contracts.txt에 로컬 증거를 남겼다. RTB fee-response-error-row/fee-comparison-small/large·오류 화면 직접검토, 물리GUI/모니터DPI/설치·실계정 수수료/거래·서명 미실행. 최초75개 판정47/15/0/4/9 유지. 중간1회 기존 복구 검사 실패/미확정 원인과 결정적 게이트 보강은 WORKLOG에 보존했다. Release 정적 검사와 실제 실행 검증을 혼동하지 않는다.

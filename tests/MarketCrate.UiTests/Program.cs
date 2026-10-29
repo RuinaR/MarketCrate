@@ -130,6 +130,7 @@ internal static class Program
             FifteenthStageUiTests.Run((name,test)=>Test(name,test),Render);
             LiveOnlyUiTests.Run((name,test)=>Test(name,test),Render);
             FeeResponseUiTests.Run((name,test)=>Test(name,test),Render);
+            SessionPersistenceUiTests.Run((name,test)=>Test(name,test),Render);
             ThirteenthStageUiTests.Run((name,test)=>Test(name,test),Render);
             TwelfthStageUiTests.Run((name,test)=>Test(name,test),Render);
             EleventhStageUiTests.Run((name,test)=>Test(name,test),Render);

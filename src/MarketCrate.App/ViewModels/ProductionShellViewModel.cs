@@ -13,12 +13,12 @@ public sealed class ProductionShellViewModel:Observable,IDisposable
     public int Page{get=>page;set{if(Set(ref page,value))DiagnosticHub.Emit(DiagnosticEvent.UiPage,DiagnosticArea.UI,requirement:"G08",reason:"LiveSession",count:value);}}
     public bool ReducedMotion{get=>reducedMotion;set{if(Set(ref reducedMotion,value))preferences.Save("reduced-motion",value);}}
     public Command ShowDiagnostics{get;}
-    public ProductionShellViewModel(string preferencesDirectory,JsonDiagnosticLog? log=null)
+    public ProductionShellViewModel(string preferencesDirectory,JsonDiagnosticLog? log=null,string? authDirectory=null)
     {
         preferences=new(preferencesDirectory);
         try
         {
-            Steam=new();Diagnostics=new(log,saveMode:value=>preferences.Save("diagnostic-mode",value));
+            Steam=new(authDirectory:authDirectory);Diagnostics=new(log,saveMode:value=>preferences.Save("diagnostic-mode",value));
             reducedMotion=preferences.Read("reduced-motion",true);if(preferences.Read("diagnostic-mode"))Diagnostics.DiagnosticMode=true;
             ShowDiagnostics=new(()=>{Diagnostics.OperationFilter=Steam.LastOperationId?.ToString()??"";Diagnostics.Refresh.Execute(null);Page=1;});
         }

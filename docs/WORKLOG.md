@@ -1,5 +1,21 @@
 7차 Release 검사 수정: SQLite 파일명 제외 정규식이 정상 의존성 Microsoft.Data.Sqlite.dll까지 거부했다. DB/sidecar 확장자 끝으로 한정해 수정하고 DLL 허용·sqlite/sqlite3-wal/db-shm/.env/session.json/private.key 차단 7개 파일명 회귀를 확인했다. 실제 비밀파일·DB는 생성하지 않았다. 최초 publish는 이 정적 검사에서 FAIL이며 실행파일은 실행하지 않았다.
 
+### 0.17.0 최종 자동 검증
+
+기능 **270/270 PASS**, 자체 비표시 WPF **55/55 PASS**, 배포 파일계약 **19/19 PASS**, 안전 fixture 정리 **8 PASS/0 FAIL/1 NOT VERIFIED**(실제 junction 생성 환경제약). 최종 빌드 경고·오류0. 신규 세션20/자체UI3개와 기존 전 회귀 포함. 직접 Windows CurrentUser DPAPI·ACL/암호문만 저장, 로그·검토ZIP canary 미노출, 인증 복원 시 Unknown 저널/예약 보존·거래0을 확인했다. 마지막 저장 예외 분류/계정 검증을 반영한 최종 source 증거는 runtime/session-build.txt·session-core.txt·session-ui.txt·session-distribution.txt·session-cleanup.txt에 있다.
+
+RTB session-optin/session-restored-small/large/session-paused를 직접 확인했다. 실제 Windows 사용자 간 복호화·실제 GUI/물리입력·전원 차단·Steam 저장 토큰 재사용/회전·수수료·판매/취소는 NOT VERIFIED. NuGet 취약성 메타데이터를 끄거나 SDK/Windows 설정을 설치/변경하지 않았다. 최초75개 판정47/15/0/4/9 유지. 기존 운영 데이터/진단/릴리즈 삭제0. Release·ZIP 해시와 커밋은 확정 기록에 추가한다.
+
+## 2026-10-29 — 16차 로그인 유지와 실제 소스 이식
+
+main9de5197 clean에서 시작, origin/main0/0 확인. AGENTS에 사용자 명시 동의·DPAPI CurrentUser·자체 세션만 저장하는 예외를 추가했다. 실제 Steam 계정/읽기/거래·GUI/타 프로세스/화면·시스템 설정은 실행하지 않았다. 테스트는 프로젝트 격리 Auth 폴더의 합성 토큰만 사용했고 운영 Auth/DB/저널/진단을 열거나 초기화하지 않았다.
+
+지정6개 프로젝트의 실제 auth/session/market/pricing 소스와 존재하는 관련 테스트·LICENSE를 대조했다. node-steam-session3ac0f34 MIT의 audience/계정 검증·WebBrowser cookie 발급을 제한 이식하고 전문/커밋/변경 고지를 보존했다. Node runtime과 AGPL 코드는 추가하지 않았다. GenerateAccessTokenForApp의 WebBrowser 제한, SSIM의 손상 저장소·통화 floor, SteamMarketHelper의 KRW round/floor·gap과 현재 보호를 비교했고 기본율/프록시·회피·Guard/평문·자동재시도를 도입하지 않았다.
+
+구현: 별도 Auth store·사설 ACL·버전/SID/계정·만료 검사·전송 전 disarm·암호화 pending/원자 교체·원 파일 지문 대조·삭제경쟁 보호. App.Loaded에서 동의가 있는 경우만 단일 복원, QR/restore 후 저장·일반종료/명시로그아웃 분리·OFF/삭제·상태 UI/진단 연결. settoken 결과 JSON 생략은 실제 계정 쿠키가 있는 경우만 허용하도록 호환성을 보완했다. SQLite 금융/Unknown 경로는 유지했다.
+
+중간 검증: 처음 DPAPI package restore가 로컬 전용 source에서 실패하여 공식 NuGet source를 명시해 복원했다. 신규 UI 파일의 System.IO using 누락은 빌드에서 수정했다. 잠금 실패 테스트는 Windows가 UnauthorizedAccessException을 반환하는 것도 정당한 실패로 확인했다. 배포 검사에 인증파일/pending/blocked 차단을 추가했고 테스트 fixture 정리의 기존22파일·신규24파일 정확한 집합/해시 구분을 보완했다. 모든 실패를 기록하고 수정 후 관련 검증을 수행한다. 실제 크로스 사용자 DPAPI/전원차단/실계정 성공은 테스트하지 않았으며 해당 미검증을 유지한다.
+
 ### 0.16.1 배포 확정 — 수수료 HTML 오분류 수정
 
 소스 **f5ed123aff841b85fa9a6865fa5a1f4a886004a9**, origin/main push 완료. 최신 Windows x64 self-contained LiveOnly portable: `artifacts/releases/MarketCrate-0.16.1-fees-f5ed123-win-x64.zip` (**66,475,258바이트 /412파일**), SHA256 **94F7E423D49AA0F0AF6C4651A50486F95548A93B45EAE850B488480C70012C2F**. 원본 폴더 `artifacts/releases/fee-f5ed123-windows-x64`, BuildVersion0.16.1+f5ed123aff841b85fa9a6865fa5a1f4a886004a9. Release 빌드·실제 전용 metadata/BAML·CLR/WPF10.0.9/SQLite x64·라이선스·민감/개발파일 제외·전체ZIP entry SHA 일치 검사 PASS. 실제 EXE/설치/서명·실계정/거래 미실행. 초기 NuGet 감사 메타데이터의 sandbox 네트워크 실패는 정상 접근으로 재빌드하여 해소했으며 감사/경고 검사를 끄지 않았다.

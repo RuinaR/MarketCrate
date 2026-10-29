@@ -14,8 +14,8 @@ function Pe([string]$Path,[uint16]$Machine=0x8664) {
     [BitConverter]::GetBytes($Machine).CopyTo($bytes,68);[System.IO.File]::WriteAllBytes($Path,$bytes)
 }
 New-Item -ItemType Directory -Path (Join-Path $folder 'licenses') | Out-Null
-foreach ($name in @('MarketCrate.App.exe','MarketCrate.App.dll','MarketCrate.Core.dll','MarketCrate.Infrastructure.dll','PresentationFramework.dll','PresentationCore.dll','WindowsBase.dll','System.Private.CoreLib.dll','coreclr.dll','clrjit.dll','hostfxr.dll','hostpolicy.dll','PresentationNative_cor3.dll','wpfgfx_cor3.dll','e_sqlite3.dll')) { Pe (Join-Path $folder $name) }
-foreach ($name in @('THIRD-PARTY-NOTICES.md','licenses/QrCodeGenerator-LICENSE.txt','licenses/NETCore-LICENSE.txt','licenses/NETCore-THIRD-PARTY-NOTICES.txt','licenses/WindowsDesktop-LICENSE.txt')) { Set-Content -LiteralPath (Join-Path $folder $name) -Value 'synthetic notice' }
+foreach ($name in @('MarketCrate.App.exe','MarketCrate.App.dll','MarketCrate.Core.dll','MarketCrate.Infrastructure.dll','PresentationFramework.dll','PresentationCore.dll','WindowsBase.dll','System.Private.CoreLib.dll','coreclr.dll','clrjit.dll','hostfxr.dll','hostpolicy.dll','PresentationNative_cor3.dll','wpfgfx_cor3.dll','e_sqlite3.dll','System.Security.Cryptography.ProtectedData.dll')) { Pe (Join-Path $folder $name) }
+foreach ($name in @('THIRD-PARTY-NOTICES.md','licenses/QrCodeGenerator-LICENSE.txt','licenses/steam-session-LICENSE.txt','licenses/NETCore-LICENSE.txt','licenses/NETCore-THIRD-PARTY-NOTICES.txt','licenses/WindowsDesktop-LICENSE.txt')) { Set-Content -LiteralPath (Join-Path $folder $name) -Value 'synthetic notice' }
 $config=Join-Path $folder 'MarketCrate.App.runtimeconfig.json'
 $selfConfig='{"runtimeOptions":{"includedFrameworks":[{"name":"Microsoft.NETCore.App","version":"10.0.9"},{"name":"Microsoft.WindowsDesktop.App","version":"10.0.9"}]}}'
 Set-Content -LiteralPath $config -Value $selfConfig
@@ -31,7 +31,8 @@ Test-Case 'FDD config cannot masquerade as bundled runtime' {
 Test-Case 'Missing runtime license rejected' {
     $license=Join-Path $folder 'licenses/NETCore-LICENSE.txt'; [System.IO.File]::Delete($license); Reject { Assert-Distribution $folder SelfContained };Set-Content -LiteralPath $license -Value 'synthetic notice'
 }
-foreach($forbiddenFile in @('sample.db','sample.sqlite3-wal','sample.db-shm','auth-session.json','trace.jsonl','.env.local','private.key','MarketCrate.App.pdb')) {
+Test-Case 'Auth directory cannot be shipped even when empty' { $auth = Join-Path $folder 'Auth'; New-Item -ItemType Directory -Path $auth | Out-Null; try { Reject { Assert-Distribution $folder SelfContained } } finally { Remove-Item -LiteralPath $auth } }
+foreach($forbiddenFile in @('sample.db','sample.sqlite3-wal','sample.db-shm','auth-session.json','trace.jsonl','.env.local','private.key','MarketCrate.App.pdb','refresh.authbin','store.authlock','refresh.pending','restore.blocked')) {
     Test-Case ('Forbidden file '+$forbiddenFile) { $path=Join-Path $folder $forbiddenFile;Set-Content -LiteralPath $path -Value 'synthetic';Reject { Assert-Distribution $folder SelfContained };[System.IO.File]::Delete($path) }
 }
 Write-Output "DISTRIBUTION RESULT $passed PASS / $failed FAIL; file inspection only; app/guest NOT executed"

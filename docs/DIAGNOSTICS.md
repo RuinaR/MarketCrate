@@ -1,5 +1,11 @@
 # 진단 시스템 (10차, 2026-10-28 KST)
 
+## 16차 — 로그인 유지 진단
+
+새2006 SessionCredential 이벤트는 CredentialLoad/LoadFailed, CredentialSaved/SaveFailed, CredentialDeleted/DeleteFailed, CredentialPauseFailed/Unavailable 고정 분류만 기록한다. AuthRestore/TokenValidation/AccountValidation/SessionRestored를 기존2004/2005와 연결한다. UI Run의 OperationId를 finalizelogin/AuthTransfer HTTP CorrelationId 및 저장 결과까지 유지한다. CryptographicException은 메시지 없이 타입/앱 내부 stack만 허용한다.
+
+로그/ZIP에는 토큰/쿠키/QR/원본 요청·응답/DPAPI blob·SID·계정·인증 파일을 넣지 않는다. AuthStore/SteamSavedLogin의 문자열 표현도 redacted이고 공개 토큰 속성은 없다. ZIP은 기존 JSONL allowlist만 내보내며 Auth 폴더를 탐색하지 않는다. 실패한 저장은 '로그인 성공'과 분리하고, 파일/토큰 검증 실패는 인증 HTTP 미전송으로 안내한다. 서버 거절과 unknown은 disarm 상태라 다음 시작에서 자동 반복하지 않는다. 실제 서버 인증 복원 성공은 사용자 검증이 필요하다.
+
 ## 0.16.1 — HTTP 응답 형식의 근거 분리
 
 새 EventId **3005 ResponseContract**: 기존 OperationId/CorrelationId, Endpoint/HTTP200, PreviousState=MediaJson/MediaHtml/MediaText/MediaMissing/MediaOther, NewState=JsonBody/EmptyBody/OtherBody/HtmlMarket/HtmlLogin/HtmlChallenge/HtmlAccessDenied/HtmlUnknown, Reason=ResponseShape 또는 MediaTypeMismatch. 자유 문자열/원문 Content-Type·HTML·title·form값·계정·쿠키·URL·QR은 받지 않는다. 필드/미디어 불일치와 JSON 파서 실패(3003)를 분리한다. 유효한 JSON은 Content-Type만으로 버리지 않고 기존 endpoint 스키마를 모두 검증한다.

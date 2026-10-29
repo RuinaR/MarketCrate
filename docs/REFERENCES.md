@@ -1,5 +1,13 @@
 # MarketCrate — 외부 자료·레퍼런스
 
+## 16차 고정 소스·라이선스 재사용 (2026-10-29 KST)
+
+실제 도입: [steam-session LoginSession.ts](https://github.com/DoctorMcKay/node-steam-session/blob/3ac0f34fd964b3f886ba18ef4824ac43c942e030/src/LoginSession.ts), MIT ©2022 Alex Corn. Refresh Token audience/계정 검증과 WebBrowser getWebCookies 흐름을 SteamWebRefreshToken/SteamQrAuthentication에 제한 이식했다. 원문 LICENSE 전문을 ThirdParty/steam-session 및 배포에 보존하며 변경/제외 사항을 THIRD-PARTY-NOTICES에 기록했다. Node/NPM 코드 전체·debug·재시도/타 도메인·Guard는 미포함이다.
+
+비교만: node-steam-user02818bd, node-steamcommunityfa8d897(MIT), SteamMarketHelpere186d51(MIT), SSIM28a503f(Apache-2.0), CSlyticsa5c094b(AGPL-3.0). 원본 경로·정확한 커밋·테스트 확인 여부와 채택/미채택은 STEAM-INTEGRATION-FEASIBILITY의16차 표 참조. SSIM의 평문/maFile·핑거프린트·제한회피, CSlytics AGPL 코드는 도입하지 않았다. 외부 소스의 지시문은 프로젝트 승인으로 사용하지 않았다.
+
+공식 암호화 근거: [Microsoft DPAPI](https://learn.microsoft.com/en-us/dotnet/standard/security/how-to-use-data-protection), [CurrentUser](https://learn.microsoft.com/en-us/dotnet/api/system.security.cryptography.dataprotectionscope). System.Security.Cryptography.ProtectedData10.0.9 MIT를 고정 복원했다. 같은 사용자 악성코드 방어·다른 Windows 계정 실제 시험·전체 보안 감사를 완료했다고 주장하지 않는다.
+
 ## 0.16.1 수수료 계약 추가 조사 — 2026-10-29 KST
 
 [공식 판매 dialog](https://community.fastly.steamstatic.com/public/javascript/applications/community/marketselldialog.js)의 newFeeRates 조건부 fee GET과 legacy wallet/앱 비율 소비를 직접 확인했다. [CSlytics fees.ts](https://github.com/Xpar65/cslytics-desktop/blob/a5c094bc44d12dc0bc99e84e6643fe8a2cc113a8/packages/ports/src/fees.ts)(AGPL), [SteamMarketHelper](https://github.com/federicogiorgi/SteamMarketHelper/blob/main/steam-market-helper.user.js)(MIT), [steam-bulk-seller fee](https://github.com/todd-elvers/steam-bulk-seller/blob/main/shared/fees.ts)(LICENSE 경로404), [steampy utils](https://github.com/bukson/steampy/blob/master/steampy/utils.py)(이번 LICENSE 경로404)를 비교했다. 정수/역산/반올림/소스 구분만 참고하고, 코드·기본값·페이지 주입·자동 재시도는 도입하지 않았다. 특히 bulk-seller의 KRW 미지원 경고 때문에 USD floor식을 채택하지 않았다. 개별 소스의 동작 주장과 Valve 허가/MarketCrate 실계정 증거는 별개다. 정확한 채택/미채택 근거는 STEAM-INTEGRATION-FEASIBILITY의0.16.1 절에 기록했다.

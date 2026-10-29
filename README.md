@@ -1,5 +1,13 @@
 # MarketCrate
 
+## 0.17.0 — 선택적 Steam 로그인 유지
+
+QR 전에 **로그인 상태 유지**를 선택하면 MarketCrate 자체 Refresh Token을 DPAPI CurrentUser/사용자 전용 권한으로 암호화 저장합니다. 일반 앱 종료 후 다음 시작에서 새 Community 세션을 한 번만 복원하며, 명시적 로그아웃/저장 정보 삭제는 로컬 자격 증명을 지웁니다. 기존 Steam/브라우저 정보를 가져오지 않습니다. 실거래는 매 실행 기본 OFF이고 보관함/목록·과거 거래를 자동 실행하지 않습니다.
+
+MIT steam-session의 검증/웹 쿠키 발급을 C#으로 제한 이식했습니다. Node 런타임/AGPL 코드는 추가하지 않았습니다. 저장 토큰이 만료·거절되면 새 QR이 필요하며 자동 Refresh Token 회전/서버 철회·실계정 호환성까지 검증된 것은 아닙니다. 같은 사용자 악성코드를 DPAPI로 막는다고 주장하지 않습니다. [저장/복원·실패·삭제 및 최소 확인 절차](docs/SESSION-PERSISTENCE.md), [오픈소스 비교](docs/STEAM-INTEGRATION-FEASIBILITY.md), [고지](THIRD-PARTY-NOTICES.md).
+
+수수료 HTML/newFeeRates 적용·KRW 실제 수수료/스택/거래 검증은 여전히 별도입니다. 불완전한 계약을 임의 수수료나 합성 성공으로 대체하지 않습니다. 아래 이전 배포 기록은 이력입니다.
+
 ### 0.16.1 배포 확정 — 수수료 HTML 오분류 수정
 
 소스 **f5ed123aff841b85fa9a6865fa5a1f4a886004a9**, origin/main push 완료. 최신 Windows x64 self-contained LiveOnly portable: `artifacts/releases/MarketCrate-0.16.1-fees-f5ed123-win-x64.zip` (**66,475,258바이트 /412파일**), SHA256 **94F7E423D49AA0F0AF6C4651A50486F95548A93B45EAE850B488480C70012C2F**. 원본 폴더 `artifacts/releases/fee-f5ed123-windows-x64`, BuildVersion0.16.1+f5ed123aff841b85fa9a6865fa5a1f4a886004a9. Release 빌드·실제 전용 metadata/BAML·CLR/WPF10.0.9/SQLite x64·라이선스·민감/개발파일 제외·전체ZIP entry SHA 일치 검사 PASS. 실제 EXE/설치/서명·실계정/거래 미실행. 초기 NuGet 감사 메타데이터의 sandbox 네트워크 실패는 정상 접근으로 재빌드하여 해소했으며 감사/경고 검사를 끄지 않았다.

@@ -7,7 +7,7 @@ using Net.Codecrete.QrCodeGenerator;
 
 namespace MarketCrate.App.ViewModels;
 
-public enum SteamLoginState { Disconnected, RequestingQr, AwaitingMobile, Connected, Expired, Denied, Cancelled, NetworkFailure, AccessBlocked, ContractFailure }
+public enum SteamLoginState { Disconnected, RequestingQr, AwaitingMobile, Connected, Expired, Denied, Cancelled, NetworkFailure, AccessBlocked, ContractFailure, Restoring }
 // Uses the same real adapters in production and injected synthetic HTTP in contract tests.
 public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
 {
@@ -65,7 +65,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         Raise(nameof(EmptyAssets));Raise(nameof(EmptyListings));
         DiagnosticHub.Emit(DiagnosticEvent.UiSelection,DiagnosticArea.UI,level:LogLevel.Debug,reason:"Filter",count:VisibleAssets.Count,requirement:"C12");
     }
-    public SteamWorkspaceViewModel(Func<SteamGameScope, SteamExperimentalWorkspace>? factory = null, bool contractTest = false, bool offlineOnly = false, Action<Uri>? openOfficial = null)
+    public SteamWorkspaceViewModel(Func<SteamGameScope, SteamExperimentalWorkspace>? factory = null, bool contractTest = false, bool offlineOnly = false, Action<Uri>? openOfficial = null,string? authDirectory=null)
     {
 #if MARKETCRATE_LIVE_ONLY
         if(contractTest||offlineOnly||factory is not null)throw new InvalidOperationException("ProductionCompositionOnly");
@@ -73,7 +73,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         ModeText=offlineOnly?"ISOLATED GUI QA · Mock 전용 · Steam 네트워크 차단":contractTest?"CONTRACT TEST · 합성 서버 · 실제 Steam 요청 없음":"STEAM · 실제 계정 연결 · 서버 응답 기반";
         this.factory = offlineOnly ? (_ => throw new SteamException(SteamFailure.Disabled)) : factory ?? (scope => new(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MarketCrate", "SteamExperimental"), scope.AppId, scope.ContextId, scope.Name));
         InitializeConnection(contractTest, openOfficial);InitializeTrading();
-        game = Games[0];InitializeCatalog();InitializeSelfCheck();InitializeFeeComparison();
+        game = Games[0];InitializeCatalog();InitializeSelfCheck();InitializeFeeComparison();InitializePersistence(offlineOnly?null:authDirectory);
         BeginLogin = new(BeginAsync, Error, () => !offlineOnly && !Busy && !Connected && !AnyReview && RiskAccepted && CredentialsAccepted);
         CheckLogin = new(CheckAsync, Error, () => !Busy && LoginState == SteamLoginState.AwaitingMobile);
         Logout = new(LogoutNow);
@@ -151,7 +151,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     {
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.UiCommand,DiagnosticArea.UI,"G08",stage);
         LastOperationId=DiagnosticHub.Context?.OperationId;Raise(nameof(LastOperationId));
-        if(Busy)return;Busy=true;operation=new();authenticating=stage is nameof(BeginAsync) or nameof(CheckAsync);
+        if(Busy)return;Busy=true;operation=new();authenticating=stage is nameof(BeginAsync) or nameof(CheckAsync) or nameof(RestoreRememberedAsync);
         var read=ReadFor(stage);read?.Update(SteamReadState.Loading);if(read==PricesRead&&PricingMode==2)HistoryRead.Update(SteamReadState.Stale);
         try{await action(operation.Token);read?.Update(read==InventoryRead&&Assets.Count==0||read==ListingsRead&&Listings.Count==0?SteamReadState.Empty:SteamReadState.Ready);}
         catch(OperationCanceledException)
@@ -174,6 +174,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     {
         if (Connected || !RiskAccepted || !CredentialsAccepted) throw new SteamException(SteamFailure.Disabled);
         ClearData(); workspace?.Dispose(); workspace = factory(Game); workspace.Access.Acknowledge(true,true,true,false);
+        workspace.Authentication.RememberRequested=RememberLogin;
         LoginState = SteamLoginState.RequestingQr; Status = "공식 Steam 앱으로 QR을 스캔하세요. 외부 QR 서비스는 사용하지 않습니다.";
         await workspace.Authentication.BeginAsync(token); token.ThrowIfCancellationRequested();
         UpdateChallenge(); LoginState=SteamLoginState.AwaitingMobile;
@@ -181,7 +182,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     public Task CheckAsync() => Run(async token =>
     {
         if (workspace is null) throw new SteamException(SteamFailure.Disabled);
-        if (await workspace.Authentication.CheckAsync(token)) { token.ThrowIfCancellationRequested(); QrMatrix=null; displayedChallenge=null; LoginState=SteamLoginState.Connected; Status="Steam 인증 성공 · 실제 읽기 연결 · 거래는 별도 차단"; RestoreCatalog();RefreshRequests();RecordCheck("AuthTransfer",1); }
+        if (await workspace.Authentication.CheckAsync(token)) { token.ThrowIfCancellationRequested(); QrMatrix=null; displayedChallenge=null; LoginState=SteamLoginState.Connected; Status="Steam 인증 성공 · 실제 읽기 연결 · 거래는 별도 차단"; RestoreCatalog();RefreshRequests();RecordCheck("AuthTransfer",1);SaveLoginIfRequested(); }
         else { UpdateChallenge(); Status="모바일 승인 대기 · 갱신된 QR은 화면에 반영 · 서버 간격 이전에는 추가 요청하지 않습니다."; }
     });
     public Task LoadAsync() => Run(async token =>
@@ -268,11 +269,15 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     private void SetResults(BatchRecord record){Results.Clear();foreach(var result in record.Results)Results.Add(result);}
     private void RefreshRequests(){Requests.Clear();RepriceKeys.Clear();if(workspace is not null){foreach(var command in workspace.Store.Commands())Requests.Add(command.RequestKey);foreach(var plan in workspace.Store.Reprices())RepriceKeys.Add(plan.Key);var available=workspace.Store.AvailableAll(Assets.Select(x=>x.Asset).ToArray());Bulk(()=>{foreach(var row in Assets)row.UpdateAvailable(available[row.Asset.Key]);});}}
     private void ClearData(){tradeAccepted=false;Raise(nameof(TradeAccepted));ClearSelfCheck();foreach(var read in ReadStatuses)read.Update(SteamReadState.NotQueried);readChecks.Clear();displayedChallenge=null;Raise(nameof(ContractSummary));ResetCatalog();gameFees.Clear();TradingConfirmation="";TradingPreparation="기본 OFF · 새 연결에서 다시 계약을 확인하세요.";inventoryViews.Clear();selections.Clear();listingSelections.Clear();VisibleAssets.Clear();VisibleListings.Clear();QrMatrix=null;Assets.Clear();Listings.Clear();ReviewRows.Clear();Results.Clear();Requests.Clear();RepriceKeys.Clear();SelectedRequest=SelectedReprice=null;fees=null;ReviewOpen=ManagementOpen=false;managementBooks.Clear();EvidenceText="대조 증거 없음";HistoryText="중간가격 이력 미조회 (정확한 거래 VWAP 아님)";Raise(nameof(CurrencyText));}
-    private void LogoutNow(){imagesEnabled=false;Raise(nameof(ImagesEnabled));Raise(nameof(ImageLoader));DiagnosticHub.Emit(DiagnosticEvent.Logout,DiagnosticArea.Authentication,requirement:"A05");var cancelling=Busy||LoginState is SteamLoginState.AwaitingMobile or SteamLoginState.RequestingQr;operation?.Cancel();workspace?.Authentication.Dispose();ClearData();tradeAccepted=false;Raise(nameof(TradeAccepted));LoginState=cancelling?SteamLoginState.Cancelled:SteamLoginState.Disconnected;Status="로그아웃 · 인증정보 저장 없음 · 거래 저널 보존";if(Busy)logoutRequested=true;else{workspace?.Dispose();workspace=null;}Changed();}
+    private void LogoutNow()=>EndSession(true);
+    private void EndSession(bool forget){if(forget)DeleteRememberedLogin();imagesEnabled=false;Raise(nameof(ImagesEnabled));Raise(nameof(ImageLoader));DiagnosticHub.Emit(DiagnosticEvent.Logout,DiagnosticArea.Authentication,requirement:"A05");var cancelling=Busy||LoginState is SteamLoginState.AwaitingMobile or SteamLoginState.RequestingQr;operation?.Cancel();workspace?.Authentication.Dispose();ClearData();tradeAccepted=false;Raise(nameof(TradeAccepted));LoginState=cancelling?SteamLoginState.Cancelled:SteamLoginState.Disconnected;Status=forget?"로그아웃 · 로컬 저장 로그인 삭제 요청 · 거래 저널 보존":"앱 종료 · 메모리 세션 종료 · 선택한 로그인 유지와 거래 저널 보존";if(Busy)logoutRequested=true;else{workspace?.Dispose();workspace=null;}Changed();}
     private void Error(Exception error)
     {
+        if(authenticating||error is SteamException{Code:SteamFailure.Authentication or SteamFailure.Expired})PauseSavedLogin();
         DiagnosticHub.Emit(DiagnosticEvent.UiFailure,DiagnosticArea.UI,DiagnosticOutcome.Failed,LogLevel.Error,error is SteamException se?se.Code switch{SteamFailure.Authentication or SteamFailure.Expired=>DiagnosticError.Authentication,SteamFailure.RateLimited=>DiagnosticError.RateLimited,SteamFailure.Transport=>DiagnosticError.Transport,SteamFailure.ContractChanged=>DiagnosticError.Schema,_=>DiagnosticError.Validation}:DiagnosticError.Validation,exception:error);
-        if(error is SteamException {Code:SteamFailure.Authentication or SteamFailure.Expired})
+        if(authenticating&&workspace?.Authentication.LastFailureStage==SteamAuthStage.AccountValidation)
+        {QrMatrix=null;LoginState=SteamLoginState.ContractFailure;}
+        else if(error is SteamException {Code:SteamFailure.Authentication or SteamFailure.Expired})
         {workspace?.Authentication.Dispose();QrMatrix=null;ReviewOpen=ManagementOpen=false;LoginState=SteamLoginState.Expired;}
         else if(authenticating)
         {
@@ -285,6 +290,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     private void Changed()
     {
         if(bulkUpdate)return;
+        Raise(nameof(CanChangeRememberLogin));DeleteSavedLogin?.Refresh();
         CompareOfficialFees?.Refresh();Raise(nameof(FeeComparisonAvailability));InvalidateFeeComparison();
         CheckScopeChanged();ShowSelfCheck?.Refresh();SelfCheck?.Refresh();
         Raise(nameof(Connected));Raise(nameof(SessionPresent));Raise(nameof(CanRead));Raise(nameof(RequestsBlocked));Raise(nameof(AuthenticationText));Raise(nameof(ConnectionSummary));Raise(nameof(RequestAccessText));Raise(nameof(SelectionSummary));Raise(nameof(SelectionEstimate));Raise(nameof(AnyReview));LoadListings?.Refresh();LoadFees?.Refresh();OpenOfficialMarket?.Refresh();
@@ -296,7 +302,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         CancelOperation?.Refresh();AddScope?.Refresh();RemoveScope?.Refresh();Raise(nameof(ScopeSummary));
     }
     private void Bulk(Action action){bulkUpdate=true;try{action();}finally{bulkUpdate=false;Changed();}}
-    public void Dispose()=>LogoutNow();
+    public void Dispose()=>EndSession(false);
 }
 
 public sealed class SteamAssetRow(InventoryAsset asset,int available,Action changed):Observable

@@ -4,6 +4,8 @@ using MarketCrate.Core;
 using MarketCrate.Infrastructure;
 using MarketCrate.App.ViewModels;
 
+if(args.Contains("--sessions")&&OperatingSystem.IsWindows()){var focused=await SessionPersistenceTests.RunAsync();return focused.Failed==0?0:1;}
+
 if(args.Contains("--recovery-failure")){await RecoveryFailure();return 0;}
 if(args.Contains("--journal-recovery")){await JournalRecovery();return 0;}
 if(args.Contains("--fees")){var focused=await FeeResponseTests.RunAsync();return focused.Failed==0?0:1;}
@@ -65,7 +67,8 @@ var fifteenth=await FifteenthStageTests.RunAsync();failed+=fifteenth.Failed;
 var walletPatch=await WalletRedirectPatchTests.RunAsync();failed+=walletPatch.Failed;
 var liveOnly=await LiveOnlyTests.RunAsync();failed+=liveOnly.Failed;
 var feeResponse=await FeeResponseTests.RunAsync();failed+=feeResponse.Failed;
-var total = feeResponse.Passed+feeResponse.Failed+liveOnly.Passed+liveOnly.Failed+walletPatch.Passed+walletPatch.Failed+fifteenth.Passed+fifteenth.Failed+fourteenth.Passed+fourteenth.Failed+ thirteenth.Passed+thirteenth.Failed+ twelfth.Passed+twelfth.Failed+ eleventh.Passed+eleventh.Failed+tenth.Passed+tenth.Failed+ninth.Passed+ninth.Failed+eighth.Passed+eighth.Failed+seventh.Passed+seventh.Failed+sixth.Passed+sixth.Failed+tests.Length + next.Passed + next.Failed + third.Passed + third.Failed + fourth.Passed + fourth.Failed + fifth.Passed + fifth.Failed;
+var sessions=OperatingSystem.IsWindows()?await SessionPersistenceTests.RunAsync():(Passed:0,Failed:0);failed+=sessions.Failed;
+var total = sessions.Passed+sessions.Failed+feeResponse.Passed+feeResponse.Failed+liveOnly.Passed+liveOnly.Failed+walletPatch.Passed+walletPatch.Failed+fifteenth.Passed+fifteenth.Failed+fourteenth.Passed+fourteenth.Failed+ thirteenth.Passed+thirteenth.Failed+ twelfth.Passed+twelfth.Failed+ eleventh.Passed+eleventh.Failed+tenth.Passed+tenth.Failed+ninth.Passed+ninth.Failed+eighth.Passed+eighth.Failed+seventh.Passed+seventh.Failed+sixth.Passed+sixth.Failed+tests.Length + next.Passed + next.Failed + third.Passed + third.Failed + fourth.Passed + fourth.Failed + fifth.Passed + fifth.Failed;
 Console.WriteLine($"RESULT {total - failed}/{total} PASS; {failed} FAIL · synthetic data only, no GUI/network (Steam HTTP replaced by test handler)");
 return failed == 0 ? 0 : 1;
 

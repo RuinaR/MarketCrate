@@ -22,6 +22,12 @@ try{
     try{New-Item -ItemType Junction -Path $link -Target $target -ErrorAction Stop|Out-Null;$made=$true}catch{$made=$false;$notVerified++;Write-Output 'NOT VERIFIED junction creation unavailable; no escalation/settings change'}
     if($made){Case 'Junction boundary refused and target preserved' {Reject {Remove-ProvenFixture $folder};if((Get-Content (Join-Path $target 'sentinel.txt'))-ne'owned-junction-target'){throw 'Target touched'}}}
 }finally{if(Test-Path -LiteralPath $link){[IO.Directory]::Delete($link)};Remove-Item -LiteralPath (Join-Path $target 'sentinel.txt');Remove-Item -LiteralPath $target}
+Case 'Modern crypto fixture requires both exact stub and synthetic license' {
+    $crypto=Join-Path $folder 'System.Security.Cryptography.ProtectedData.dll';$notice=Join-Path $folder 'licenses/steam-session-LICENSE.txt'
+    [IO.File]::WriteAllBytes($crypto,$pe);Reject {Get-ProvenFixture $folder};Set-Content -LiteralPath $notice -Value 'synthetic notice'
+    if((Get-ProvenFixture $folder).Files.Count-ne24){throw 'Modern exact fixture not recognized'}
+    Remove-Item -LiteralPath $crypto;Remove-Item -LiteralPath $notice
+}
 Case 'Proven owned fixture removed without recursive delete' {$removed=Remove-ProvenFixture $folder;if($removed.Files.Count-ne22-or(Test-Path -LiteralPath $folder)){throw 'Incomplete removal'}}
 Write-Output "ARTIFACT CLEANUP RESULT $passed PASS / $failed FAIL / $notVerified NOT VERIFIED; synthetic owned files only"
 if($failed){exit 1}

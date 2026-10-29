@@ -1,5 +1,11 @@
 # Windows 배포 준비 — 3차 구현
 
+## 0.17.0 로그인 유지 배포 조건
+
+실제 전용 x64 self-contained 유지, Mock/BAML 테스트 주입 제외 검사 필수. ProtectedData10.0.9 DLL과 steam-session MIT LICENSE·원본 커밋/변경 고지를 포함한다. Auth 디렉터리/refresh.authbin/store.authlock/refresh.pending/restore.blocked가 있으면 패키징을 거부한다. 개인 DB/로그/암호문/토큰/QR/개발 파일은 포함하지 않는다. Auth는 사용자 LocalAppData 전용이며 앱 설치/업데이트 디렉터리에 쓰지 않는다.
+
+SQLite 저널/설정 마이그레이션 변경 없음. 최신 후보 생성·전체 entry/소스 커밋 해시 검증 뒤0.16.1을 롤백으로 등록하고 이전 배포본/사용자 자료는 보존한다. 실제 실행·설치/실계정 복원·다른 Windows 사용자·서명/전원 차단을 정적 PASS로 대신하지 않는다. 최종 ZIP/해시는 현재 상태·작업 기록에 확정한다.
+
 ### 0.16.1 배포 확정 — 수수료 HTML 오분류 수정
 
 소스 **f5ed123aff841b85fa9a6865fa5a1f4a886004a9**, origin/main push 완료. 최신 Windows x64 self-contained LiveOnly portable: `artifacts/releases/MarketCrate-0.16.1-fees-f5ed123-win-x64.zip` (**66,475,258바이트 /412파일**), SHA256 **94F7E423D49AA0F0AF6C4651A50486F95548A93B45EAE850B488480C70012C2F**. 원본 폴더 `artifacts/releases/fee-f5ed123-windows-x64`, BuildVersion0.16.1+f5ed123aff841b85fa9a6865fa5a1f4a886004a9. Release 빌드·실제 전용 metadata/BAML·CLR/WPF10.0.9/SQLite x64·라이선스·민감/개발파일 제외·전체ZIP entry SHA 일치 검사 PASS. 실제 EXE/설치/서명·실계정/거래 미실행. 초기 NuGet 감사 메타데이터의 sandbox 네트워크 실패는 정상 접근으로 재빌드하여 해소했으며 감사/경고 검사를 끄지 않았다.

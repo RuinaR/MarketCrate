@@ -1,5 +1,22 @@
 # Steam 연동 가능성 조사 — 2026-10-29 KST (13차)
 
+## 16차 / 0.17.0 — 실제 소스 대조와 로그인 복원
+
+아래 커밋의 실제 소스와 제공된 테스트를 읽었다(2026-10-29 KST). README의 동작 주장과 MarketCrate 실계정 성공은 구분한다. 기존0.16.1 수수료 HTML의 실제 분류/newFeeRates 적용 조건은 여전히 미확정이며, 이번 인증 복원으로 수수료 계약까지 해결됐다고 판단하지 않는다.
+
+| 프로젝트·고정 커밋 | 읽은 실제 코드/테스트와 비교 | 채택/제외 |
+|---|---|---|
+| [node-steam-session](https://github.com/DoctorMcKay/node-steam-session/tree/3ac0f34fd964b3f886ba18ef4824ac43c942e030) MIT ©2022 Alex Corn | src/LoginSession.ts(refreshToken setter/getWebCookies/renewRefreshToken), AuthenticationClient.ts, auth proto, test/LoginSession.test.ts·LoginSession_live.test.ts. WebBrowser audience web/derive와 계정 일치, finalizelogin→settoken 쿠키 발급. WebBrowser의 GenerateAccessTokenForApp는 AccessDenied 한계가 명시됨 | **MIT 로직을 C#으로 제한 이식**, 원본 커밋/저작권/전문 포함. Community만 허용, 크기/만료/계정/쿠키 검증 추가. debug 원문·5회 재시도·전체도메인 병렬전송·모바일 승인 미도입. Node 런타임 미추가 |
+| [node-steam-user](https://github.com/DoctorMcKay/node-steam-user/tree/02818bd08090b58ff54f1d9ce0073319b8e1eef7) MIT | components/09-logon.js의 issuer/client audience/계정 검사,07-web.js의 세션발급. CM/SteamClient audience와 WebBrowser의 차이를 확인. 트리에서 test/tests 폴더 없음 | SteamClient 토큰/CM·프로세스 세션을 WebBrowser에 사용하지 않음. 코드 복사0 |
+| [node-steamcommunity](https://github.com/DoctorMcKay/node-steamcommunity/tree/fa8d89759077152b0c38175f154e03d0eacd2d1e) MIT | components/market.js의 Market HTML/앱 목록/세션 요청. 전체 계정 게임 발견이나 최신 Beta fee API 계약을 보증하지 않음. 트리에서 test/tests 폴더 없음 | 기존 URI/세션/읽기 경계와 비교. 광범위 HTML/구 API를 최신 실제 데이터 성공으로 폴백하지 않음. 코드 복사0 |
+| [SteamMarketHelper](https://github.com/federicogiorgi/SteamMarketHelper/tree/e186d51efb742ddfb527d2ccb248c64fcee9c976) MIT | userscript의 wallet/market_fee·통화별 round/floor, 정수 호가/공유잔량/판매자 price·sellitem/removelisting, tests/run.js의 가격 gap/파싱. 로그인된 브라우저 페이지 자체 세션을 쓰는 구조 | 정수·양방향 금액·수수료 gap을 기존 순수 엔진과 대조. 페이지주입/기본율/429 재시도·자동 재가격은 미채택, 코드 복사0 |
+| [SSIM](https://github.com/Santerxyz/SSIM/tree/28a503fa79869f3233814d0deaa906a8b3f66621) Apache-2.0 | SessionManager/TokenStore/sessionHealth, MarketPricing/MarketListings/MarketService, tokenStoreDegraded.test.ts·marketFeeFloor.test.ts. 누락/손상 분리, 보존 상태, 통화 최소값 차이·수수료 전송 검사를 확인 | 손상파일을 빈 정상 파일로 덮어쓰지 않는 원칙과 저장 실패 분리를 독립 적용. 평문 refresh_tokens.json/maFile·비밀번호·Guard·프록시/핑거프린트·제한회피·재시도는 도입하지 않음. 코드 복사0 |
+| [CSlytics](https://github.com/Xpar65/cslytics-desktop/tree/a5c094bc44d12dc0bc99e84e6643fe8a2cc113a8) AGPL-3.0 | adapters-steam/auth.ts·기존 market.ts, ports/fees.ts 비교. 계정/금고/ClientSessionPool 경계, 접수/불명·게시 구분. 요청한 tests/unit/marketplace-fees.test.ts 경로는404, 테스트가 있다고 꾸미지 않음 | 구조만 참고. 직접 코드 복사/배포 라이선스 변경0. CS2/cent 고정표를 KRW 서버 수수료로 쓰지 않음 |
+
+공식 판매 dialog의 newFeeRates 조건부 GET과 구형 지갑 비율은 이전 조사와 대조했다. UI/JSON 스키마가 바뀌어도 실제 fee JSON이 없으면 기본5%/10%·USD floor·중앙값을 검증된 KRW 가격으로 바꾸지 않는다. 가용자산/marketable·지갑/게임fee·호가·Unknown/반환 인과관계가 불충분하면 기존 판매 차단을 유지한다. 쿠키를 발급받았다는 이유만으로 모든 조회 권한/거래 허용을 부여하지 않는다.
+
+IMPLEMENTED: 명시적 저장 동의→DPAPI CurrentUser/사설 ACL→실행당 단일 WebBrowser Community 세션 복원→삭제/실패 정지와 UI, 최소 응답 cookie 계약 보완. CONTRACT_VERIFIED: 공개 구현·프로토콜과 합성 HTTP, 실제 Windows 자체 DPAPI/ACL. LIVE_VERIFIED: 실제 저장 토큰 재사용/회전·수수료·등록/취소는 없음. 자동 Refresh Token 회전/서버 철회는 미지원이며 만료 후 새 QR이 필요하다. 기술적 구현 사례는 Valve 허용 근거가 아니다.
+
 ## 0.16.1 — 수수료 HTML 계약 조사 (2026-10-29 KST)
 
 사용자 0.16.0 진단의 관측 범위: QR 메모리 세션, 목록 첫8건, CS2 서버총0건, eligibilitycheck→Market 복귀 후 Wallet200/WalletObject 성공. Fees200 뒤 HTML 탐지로 Challenge가 기록됐다. 당시 Content-Type/HTML 종류는 저장하지 않았으므로 **실제 CAPTCHA·인증 만료·구형/신형 요율 적용 여부는 미확정**이다. 원문 ZIP/HTTP/계정 정보는 Git에 넣지 않았다.

@@ -14,8 +14,9 @@ function Assert-Distribution([string]$Path, [ValidateSet('FrameworkDependent','S
     $all = @(Get-ChildItem -LiteralPath $Path -Recurse -Force)
     if ($all | Where-Object { $_.Attributes -band [System.IO.FileAttributes]::ReparsePoint }) { throw 'Distribution links are forbidden' }
     $files = @($all | Where-Object { -not $_.PSIsContainer })
-    if ($files | Where-Object { $_.Extension -in @('.db','.sqlite','.log','.jsonl','.zip','.dmp','.mdmp','.pfx','.pem','.key','.p12') -or $_.Name -match '(?i)\.(?:sqlite3?|db)(?:-(?:wal|shm|journal))?$|^\.env|(?:session|cookie|credential|token).*\.json$' }) { throw 'Unexpected local data in distribution' }
-    foreach ($name in @('MarketCrate.App.exe','MarketCrate.App.dll','MarketCrate.Core.dll','MarketCrate.Infrastructure.dll','MarketCrate.App.deps.json','THIRD-PARTY-NOTICES.md','licenses/QrCodeGenerator-LICENSE.txt')) {
+    if ($all | Where-Object { $_.PSIsContainer -and $_.Name -eq 'Auth' }) { throw 'Authentication store directory in distribution' }
+    if ($files | Where-Object { $_.Extension -in @('.db','.sqlite','.log','.jsonl','.zip','.dmp','.mdmp','.pfx','.pem','.key','.p12','.authbin','.authlock') -or $_.Name -in @('refresh.pending','restore.blocked') -or $_.Name -match '(?i)\.(?:sqlite3?|db)(?:-(?:wal|shm|journal))?$|^\.env|(?:session|cookie|credential|token).*\.json$' }) { throw 'Unexpected local data in distribution' }
+    foreach ($name in @('MarketCrate.App.exe','MarketCrate.App.dll','MarketCrate.Core.dll','MarketCrate.Infrastructure.dll','MarketCrate.App.deps.json','THIRD-PARTY-NOTICES.md','licenses/QrCodeGenerator-LICENSE.txt','licenses/steam-session-LICENSE.txt','System.Security.Cryptography.ProtectedData.dll')) {
         if (-not (Test-Path -LiteralPath (Join-Path $Path $name) -PathType Leaf)) { throw 'Required application asset missing' }
     }
     Assert-X64Pe (Join-Path $Path 'MarketCrate.App.exe')
