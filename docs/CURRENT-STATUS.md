@@ -1,5 +1,11 @@
 # MarketCrate — 현재 상태 (2026-10-29 KST, 0.20.5)
 
+### 최신 배포 — 0.20.5
+
+소스 **18e115fb769eae12b15278d48e67336dfa6e396e**. `artifacts/releases/MarketCrate-0.20.5-flow-audit-18e115f-win-x64.zip` **66,515,643바이트 /413파일**, SHA256 **45F14D1B5CB1D0E73DBD8954D00B6799B02753379D30D77DA02ED849E996C698**. 모든 ZIP entry SHA와 폴더 일치·SourceCommit·x64 CLR/WPF/SQLite·DPAPI·라이선스·실제 전용 PE/BAML·개발/Mock/사용자DB/Auth/로그/PDB 제외 검사 PASS. 기능346/346·WPF67/67·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0. 앱 실행·물리 GUI·설치·실계정·실제 속도는 미검증이다.
+
+latest=0.20.5 /rollback=보존된 직전0.20.4. 사용자 Auth·DB·거래 저널·진단 및 이전 배포 삭제0. 로컬 portable ZIP이며 외부 Release 게시를 하지 않았다. 최종 승인 한 번의 전체 배치·Unknown 예약·수동 승인·서버 계약 보호는 유지한다. 새 요청 전 기존 Unknown을 공식 장터/보관함과 대조하고 재전송하지 않는다.
+
 ## 0.20.5 — 전체 경로 오픈소스 대조 및 실제 결함 수정
 
 [전체 경로 감사](OPEN-SOURCE-FLOW-AUDIT.md)에 로그인/복원→보관함/목록→호가/이력/수수료→다중 게임 최종 검토→등록→수동 승인→게시 대조→취소/재가격→SQLite 복구를 담당 코드와 연결해 기록했다. 다른 게임 추가 선택 시 기존 권한만 보고 준비를 건너뛰던 결함을 수정했다. helper의 정상 HTTP200 빈 취소 응답은 접수로 지원하며 실제 취소·반환 확인은 별도로 유지한다. 모바일/이메일/불명 승인 채널을 저널과 UI에 구분해 보존한다. 빈 저장 요청 선택기는 숨기고 안내를 표시한다.
@@ -7,7 +13,7 @@
 기능346/346·비표시WPF67/67·배포계약19/19·정리fixture9/9 PASS. 다중 게임 회귀의 수정 전 실패도 확보했다. 자체 렌더는 모바일/이메일/HTTP400 불명 결과를 분리하며, 물리 입력·실제 팝업·실계정은 미검증이다. SSIM의 비밀키 자동 승인·fingerprint/proxy 모사·반복 재등록은 도입하지 않았다. 이전400의 구체 원인은 미확정이며 Unknown 예약·중복 방지·서버 제한·사용자 자료를 보존한다.75개 판정47/16/0/3/9 유지, 실판매/수수료 실계약 검증 완료 미부여. 아래0.20.4는 이전 배포 근거다.
 
 
-### 최신 배포 — 0.20.4
+### 이전 배포 — 0.20.4
 
 최종 소스 **2680afb187b61baac1cd69e1efc1df06769e5dc9**(본수정3f4b74e + 캐시 실패 복구2680afb). **artifacts/releases/MarketCrate-0.20.4-sell-response-2680afb-win-x64.zip**, **66,514,084바이트/413파일**, SHA256 **AD88BC994CF68EF732D65571D74317F2A7195405AF7783B23273D2BF7ECAF1B2**. 전체 entry SHA/폴더/SourceCommit·CLR/WPF10.0.9·SQLite x64·ProtectedData·라이선스·실제 전용 PE/BAML·사용자DB/Auth/로그/PDB·Mock/개발 UI 제외 검사 PASS. 기능341/341·비표시WPF66/66·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0.
 

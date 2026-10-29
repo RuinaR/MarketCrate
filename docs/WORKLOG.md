@@ -399,3 +399,11 @@ main/origin6c40500 clean/fetch 일치에서 시작. 0.13 사용자부분관측 �
 ## 2026-10-29 — 0.20.5 전체 경로 대조
 
 사용자의 요청으로 Guard뿐 아니라 인증 복원부터 취소·재가격·재시작까지 node-steam-session/community, SteamMarketHelper, SSIM 및 공식 판매JS를 고정 버전으로 비교했다. 다중 게임 추가 선택의 준비 누락을 회귀 실패로 재현해 수정했다. 빈 HTTP200 취소는 접수만 허용하고 반환 증거는 유지했다. 승인 채널을 모바일/이메일/미확인으로 분리하고 이전 저널 기본값 호환을 유지했다. 자체 렌더에서 발견한 진행 요약의 '모바일 대기' 오표기를 '승인 대기'로 수정하고 빈 저장 요청 선택기를 숨겼다. 자동 mobileconf·identity_secret·proxy/fingerprint·지속 재등록은 적용하지 않았다. 전체 기능346/WPF67/배포19/정리9 PASS, 실제 앱·Steam 계정·타 프로세스 실행/접근0. 사용자 데이터·진단·기존 배포본 삭제0. 이전400 원인과 실거래 성공은 미확정.
+
+## 0.20.5 배포 확정
+
+### 최신 배포 — 0.20.5
+
+소스 **18e115fb769eae12b15278d48e67336dfa6e396e**. `artifacts/releases/MarketCrate-0.20.5-flow-audit-18e115f-win-x64.zip` **66,515,643바이트 /413파일**, SHA256 **45F14D1B5CB1D0E73DBD8954D00B6799B02753379D30D77DA02ED849E996C698**. 모든 ZIP entry SHA와 폴더 일치·SourceCommit·x64 CLR/WPF/SQLite·DPAPI·라이선스·실제 전용 PE/BAML·개발/Mock/사용자DB/Auth/로그/PDB 제외 검사 PASS. 기능346/346·WPF67/67·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0. 앱 실행·물리 GUI·설치·실계정·실제 속도는 미검증이다.
+
+latest=0.20.5 /rollback=보존된 직전0.20.4. 사용자 Auth·DB·거래 저널·진단 및 이전 배포 삭제0. 로컬 portable ZIP이며 외부 Release 게시를 하지 않았다. 최종 승인 한 번의 전체 배치·Unknown 예약·수동 승인·서버 계약 보호는 유지한다. 새 요청 전 기존 Unknown을 공식 장터/보관함과 대조하고 재전송하지 않는다.

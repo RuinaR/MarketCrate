@@ -415,3 +415,11 @@ ignored 증거 runtime/stage14-final-verify.txt, runtime/stage14-ui-final.txt, r
 ## 0.20.5 전체 경로 대조 회귀
 
 게임A 권한 후 게임B 추가 선택의 사전검증 누락을 수정 전 재현(341/342 PASS, 해당1 FAIL). 수정 후346/346 기능·67/67 비표시WPF·19/19 배포 계약·9/9 정리fixture PASS. 새 검사는 AdditionalGame, ApprovalChannels, EmailJournal, PendingWithoutId, EmptyCancellation 및 ProductAuditUiTests 승인채널/빈 요청 선택기다. 이메일 채널의 재시작 영속화·구 저널 호환·ID 없는 후보 오인 금지·200 빈 취소 ACK와400 Unknown을 확인했다. `runtime/ui-tests/flow25-approval-channels.png`를 직접 검토했다. 물리 입력/호스트 GUI/실계정/장시간 사용은 미검증. 원본과 실행 경로 대조는 OPEN-SOURCE-FLOW-AUDIT.md 참조.
+
+## 0.20.5 배포 확정
+
+### 최신 배포 — 0.20.5
+
+소스 **18e115fb769eae12b15278d48e67336dfa6e396e**. `artifacts/releases/MarketCrate-0.20.5-flow-audit-18e115f-win-x64.zip` **66,515,643바이트 /413파일**, SHA256 **45F14D1B5CB1D0E73DBD8954D00B6799B02753379D30D77DA02ED849E996C698**. 모든 ZIP entry SHA와 폴더 일치·SourceCommit·x64 CLR/WPF/SQLite·DPAPI·라이선스·실제 전용 PE/BAML·개발/Mock/사용자DB/Auth/로그/PDB 제외 검사 PASS. 기능346/346·WPF67/67·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0. 앱 실행·물리 GUI·설치·실계정·실제 속도는 미검증이다.
+
+latest=0.20.5 /rollback=보존된 직전0.20.4. 사용자 Auth·DB·거래 저널·진단 및 이전 배포 삭제0. 로컬 portable ZIP이며 외부 Release 게시를 하지 않았다. 최종 승인 한 번의 전체 배치·Unknown 예약·수동 승인·서버 계약 보호는 유지한다. 새 요청 전 기존 Unknown을 공식 장터/보관함과 대조하고 재전송하지 않는다.

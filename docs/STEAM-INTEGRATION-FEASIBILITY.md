@@ -369,3 +369,7 @@ FeeContext는 현재 계정 /profiles/.../inventory/ 요청의 동일 Steam cano
 ## 0.20.4 판매 응답·속도 보완 (2026-10-29 KST)
 
 사용자0.20.3의 실제 판매 요청은 HTTP400으로 끝났고 Unknown 저널을 남겼다. 승인 요청 생성/게시 성공은 확인되지 않아 LIVE_SELL_VERIFIED가 아니다. Wallet/Profile/ClassicInventoryContext VerifiedLegacy/KRW/실제 호가 읽기 통과는 관측했으나 공식 판매 UI 금액 대조까지 완료한 REAL_FEE_VERIFIED로 확대하지 않는다. 기존 오류 본문 미수집으로400의 구체 원인은 미확정이다. 현재 세션 쿠키/정상 AJAX 문맥은 공개 구현과 대조해 수정했지만 실제400 해결은 사용자 재검증이 필요하다. UA/Chromium 지문 위장·프록시/IP회전·제한 우회/자동Guard는 도입하지 않았다. 읽기1.5초는 자체 pacing이며 Valve의 보장 한도가 아니다.
+
+## 0.20.5 전체 경로 대조
+
+OPEN-SOURCE-FLOW-AUDIT.md에서 pinned node-steam-session/community·SteamMarketHelper·SSIM과 공식 JS의 전체 사용자 흐름을 비교했다. 이번 수정은 여러 게임 준비 검증, HTTP200 빈 취소 ACK, 모바일/이메일 승인 채널의 영속 표시다. SSIM의 identity_secret 자동 mobileconf 승인은 도입하지 않으며 공식 앱/이메일에서 사용자가 확인한 뒤 서버 대조한다. 과거400·listing ID 부재·스택 반환의 인과 근거 부족은 해결된 것으로 간주하지 않는다. 실계정 실행0, REAL_FEE_VERIFIED/LIVE_SELL_VERIFIED/RELEASE_READY 미부여. 합성346/WPF67/배포19/정리9 PASS는 실제 판매 성공 증거가 아니다.

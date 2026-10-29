@@ -180,3 +180,11 @@ Clean-Artifacts.ps1 기본dry-run은 후보·크기·참조수·보존이유를 
 ## 0.20.1 후속 보완 (2026-10-29 KST)
 
 0.20.1 후보: 실제 Steam 전용 Release와 기존 스키마3/사용자 Auth·Preferences·저널 유지. 소유 보관함 이동·빈 선택창·TBH 보완. 기능324/WPF66/배포계약19 PASS. 새 self-contained win-x64 ZIP은 소스 커밋 후 생성하고 전체 파일 해시/PE/BAML/CLR·WPF·SQLite·ProtectedData·라이선스/비밀·테스트 제외 검사 결과를 최신 배포 절에 확정한다. 실제 앱 실행/설치/서명/Steam 인증·조회·거래는 실행하지 않는다. 이전0.20와 사용자 관측 롤백0.17 및 진단 증거는 보존.
+
+## 0.20.5 배포 확정
+
+### 최신 배포 — 0.20.5
+
+소스 **18e115fb769eae12b15278d48e67336dfa6e396e**. `artifacts/releases/MarketCrate-0.20.5-flow-audit-18e115f-win-x64.zip` **66,515,643바이트 /413파일**, SHA256 **45F14D1B5CB1D0E73DBD8954D00B6799B02753379D30D77DA02ED849E996C698**. 모든 ZIP entry SHA와 폴더 일치·SourceCommit·x64 CLR/WPF/SQLite·DPAPI·라이선스·실제 전용 PE/BAML·개발/Mock/사용자DB/Auth/로그/PDB 제외 검사 PASS. 기능346/346·WPF67/67·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0. 앱 실행·물리 GUI·설치·실계정·실제 속도는 미검증이다.
+
+latest=0.20.5 /rollback=보존된 직전0.20.4. 사용자 Auth·DB·거래 저널·진단 및 이전 배포 삭제0. 로컬 portable ZIP이며 외부 Release 게시를 하지 않았다. 최종 승인 한 번의 전체 배치·Unknown 예약·수동 승인·서버 계약 보호는 유지한다. 새 요청 전 기존 Unknown을 공식 장터/보관함과 대조하고 재전송하지 않는다.
