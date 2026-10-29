@@ -40,4 +40,3 @@ This product bundles third-party open-source software. Each such component is
 distributed under its own license, and those licenses are included with the
 component in the distributed package. See package.json and the dependency tree
 for the authoritative list.
-
