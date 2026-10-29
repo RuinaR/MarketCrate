@@ -357,3 +357,7 @@ CSlytics 사이트가 연결한 실제 저장소 [Xpar65/cslytics-desktop](https
 ## 0.20.1 후속 보완 (2026-10-29 KST)
 
 FeeContext는 현재 계정 /profiles/.../inventory/ 요청의 동일 Steam canonical/vanity 이동을 한 번만 허용한다. vanity 페이지 g_bViewingOwnProfile=true와 g_steamID 현재 계정 일치 필요. 공개 HTML에서 변수 존재는 확인했으나 실제 인증 소유 페이지의 이동 목적지·fee props는 미검증. 구형 지갑 필드만으로 모드를 정하거나 신형 API 실패를 구형 성공으로 대체하지 않는다. 첨부 진단은 Wallet200→ModeMissing→FeeContext302/OtherRedirect, 목적지 미수집으로 원인 미확정. REAL_FEE_VERIFIED/LIVE_SELL_VERIFIED/RELEASE_READY 미부여. TBH 공식 App3678970, context2는 변경 가능한 조회 후보이며 게임 수수료/스택 계약 증거가 아니다. 비공식 자동화 제재 위험 유지.
+
+## 0.20.2 classic 수수료 분기 보완 (2026-10-29 KST)
+
+0.20.2: 공식 economy_v2 SellCurrentSelection은 g_bReactSellDialog가 false이면 SellItemDialog.Show를 사용한다. classic GetPublisherFeeRate는 앱 market_pubfee_rate, 없으면 실제 지갑 default를 쓰고 GetSteamFeeRate는 지갑 rate, OnInputKeyUp은 economy_common GetTotalWithFees를 사용한다. 따라서 React data-props가 없는 것만으로 모든 계정 계약을 미지원으로 판단하던 결함을 수정했다. 단, 명시적 false·소유/계정·동일 실제 지갑·앱 context를 모두 확인해야 하며 없는 플래그나 새 API 실패로 classic을 추측하지 않는다. 새 API와 구형 지갑 필드만의 fallback은 계속 금지한다. 실제 첨부 페이지의 flag는 미관측으로 REAL_FEE_VERIFIED/LIVE_SELL_VERIFIED/RELEASE_READY 미부여.

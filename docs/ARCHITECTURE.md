@@ -195,3 +195,7 @@ SteamReadStateViewModel partial은 5개 독립 상태와 사용자 요약을 담
 `Core.PriceDisplay`는 표시 이름·설명·이전 설정 alias의 경계다. Mock 전략은 내부 `PriceBasis`를 사용하고 설정은 `Immediate/ExactAverage`로 쓴다. 기존 저장값은 읽기 호환되며 배치/저널 schema와 Steam 가격 모드 인덱스는 유지한다.
 
 `SteamConnectionViewModel` partial은 기존 세션/Orders/Fees 어댑터를 독립 명령에 연결한다. `UpdateChallenge`는 기존 auth의 회전된 URI를 로컬 QR matrix에 반영한다. `ReadContract4202`는 현재 UI OperationId 안의 고정 endpoint/count/currency 관측이며 실응답 인증이나 거래 권한 증명이 아니다. 공식 장터 URI는 고정 값이며 명시적 사용자 명령만 기본 브라우저를 연다. 테스트는 delegate로 대체한다. 실제 쓰기 코디네이터·Unknown·SQLite 저널·예약은 변경하지 않았다.
+
+## 0.20.2 classic 수수료 분기 보완 (2026-10-29 KST)
+
+0.20.2 FeeContractResolver 입력 경로: React featuretarget props(newFeeRates/walletInfo) 또는 소유 inventory의 유일한 inline g_bReactSellDialog=false + 실제 g_rgWalletInfo. 후자는 소유 표시·현재 인증 계정 확인과 Market 지갑 일치 검증 후 동일한 앱별 설정·정수 계산 경로를 따른다. 분기 충돌/문자열·주석 위장/불명 필드/통화·수수료 불일치는 차단한다. 지갑·모드·앱 계약이 없는 값은 생성하지 않는다. 거래 권한·저널·Unknown/재전송 규칙은 변경하지 않았다.

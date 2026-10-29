@@ -1,4 +1,14 @@
-# MarketCrate — 현재 상태 (2026-10-29 KST, 0.20.1)
+# MarketCrate — 현재 상태 (2026-10-29 KST, 0.20.2)
+
+## 0.20.2 — classic 판매창 수수료 경로 지원
+
+검증: 기능329/329·비표시WPF66/66·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0. 실제 앱 실행/설치/물리입력/실서버 수수료는 NOT VERIFIED. 배포 확정 정보는 소스 커밋 후 추가한다.
+
+실제0.20.1 진단(사용자 작업f67d8e55-5171-4c25-8c53-01a2524fecb8)은 KRW 지갑200/구형 필드5개→ModeMissing→소유 보관함302 vanity 이동→200→다시 ModeMissing이다. 소유/계정 검증 실패나 CAPTCHA·수수료 API 응답 오류가 아니다. 기존 수정으로302 이동 통과가 실제 관측됐다. 페이지의 실제 React 플래그 값은 로그에 없어 최종 원인은 아직 미확정이다.
+
+공식 economy_v2에서 g_bReactSellDialog=false일 때 기존 SellItemDialog를 여는 경로를 확인했다. React data-props만 요구하던 파서의 누락을 수정해 명시적 유일한 false·소유 페이지·현재 인증 계정·Market과 같은 지갑·요청 앱 설정이 확인되는 경우에만 현재 economy_common 정수/가격증분 계산을 사용한다. 플래그 누락/주석·문자열 위장/모드 충돌/지갑·앱 증거 부족은 차단하며 신형 API 실패 때문에 classic을 선택하지 않는다. 토큰·지갑 원문을 남기지 않는 FeeUiObserved 진단을 추가했다.
+
+REAL_FEE_VERIFIED/LIVE_SELL_VERIFIED/RELEASE_READY는 미부여, 최초75개 판정47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED 유지. 새 계정 조회·인증·거래·호스트 GUI/타 프로세스 접근은 실행하지 않았고 기존 Auth/DB/저널/설정/진단·배포본을 보존한다. 아래0.20.1 정보는 이전 배포 기록이다.
 
 ### 최신 배포 — 0.20.1 (2026-10-29 KST)
 

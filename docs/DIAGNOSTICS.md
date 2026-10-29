@@ -252,3 +252,7 @@ ZIP은 `Logs/exports/marketcrate-diagnostics-<review-id>.zip`. 임시 파일을 
 ## 0.20.1 후속 보완 (2026-10-29 KST)
 
 FeeContext ReadContract/HttpRequest는 기존 OperationId에 FeeContextVanityRedirect, FeeContextCanonicalRedirect, FeeContextOtherProfile, FeeContextOtherRedirect와 이동 횟수를 연결한다. URL/vanity/계정 ID/HTML/쿠키는 저장하지 않는다. vanity 소유 표시 누락·거짓·중복은 OwnerPageMissing, 현재 인증 계정 일치도 별도 확인. 403/429는 기존 전역 중단 유지. 첨부0.20.0 작업87ff3254-3ccf-4185-a35b-2f427b0d0cad는 Wallet200→ModeMissing→FeeContext302/OtherRedirect이며 Location은 없어 원인 미확정. 수수료 API 실패/CAPTCHA 증거로 분류하지 않는다. 실패 시 수수료 조회 상태와 판매가격 검토 안내에 반영한다.
+
+## 0.20.2 classic 수수료 분기 보완 (2026-10-29 KST)
+
+0.20.2: FeeValidated/FeeUiObserved는 서버의 classic/React 분기 유무(ClassicUiSelected/ReactUiSelected/ModeMissing/ModeInvalid)와 판매창 target 개수만 기록한다. 값·HTML·계정 ID·쿠키는 기록하지 않는다. ClassicInventoryContext→VerifiedLegacy는 런타임 증거 판정이며 실서버 수수료 확인 선언이 아니다. ReactPropsMissing/OwnerPageMissing/WalletChanged/AppContextMissing으로 실패 원인을 구별한다. 첨부0.20.1의 두 번째 ModeMissing은 302 처리 후 도달한 페이지에서 발생했다. 사용자 OperationId f67d8e55-5171-4c25-8c53-01a2524fecb8를 따라 확인했으며 QR/토큰/원본 본문은 읽거나 기록하지 않았다.

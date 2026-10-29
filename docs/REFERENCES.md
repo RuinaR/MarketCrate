@@ -1,5 +1,13 @@
 # MarketCrate — 외부 자료·레퍼런스
 
+## 2026-10-29 KST — 0.20.2 classic 수수료 경로
+
+- [공식 economy_v2.js](https://community.fastly.steamstatic.com/public/javascript/economy_v2.js): SellCurrentSelection의 g_bReactSellDialog false→SellItemDialog.Show, GetPublisherFeeRate/GetSteamFeeRate/OnInputKeyUp 경로 확인. 공개 비인증 GET, 디코딩 소스 SHA256 A3BBDF0A135524102CD055FD89D37EB3FD672FAE20BFBA0ABC700648DCB52512.
+- [공식 economy_common.js](https://community.fastly.steamstatic.com/public/javascript/economy_common.js): GetTotalWithFees/CalculateFee/ToValidMarketPrice의 기존 구현과 일치 확인. SHA256 84429D06A9EF8C250AC567F9FEDC9FB155D23CEB7442C92A19B815840C102784. 과거 wallet_fee_base 공식을 도입하지 않았다.
+- [공식 React 판매창](https://community.fastly.steamstatic.com/public/javascript/applications/community/marketselldialog.js): false newFeeRates는 wallet/app rate, true만 ajaxfeestructure 요청. SHA256 CB84BB8A9B2970F71D277626A0B4E922B47CCE90BF437F704CF8F5100FA66726. React props 경로와 classic 선택 플래그를 혼동하지 않는다.
+
+공식 소스는 계약 조사에만 사용했고 원문/코드를 저장소나 배포본에 복사하지 않았다. MarketCrate의 기존 독립 C# 정수 계산을 재사용한다. 공개 소스의 분기 존재와 실제 사용자 계정의 분기 관측은 구분한다. 첨부 로그는 두 번째 ModeMissing만 확인하며 실제 flag/HTML은 미수집이다.
+
 ## 0.20 직접 확인한 공개 화면·구현 (2026-10-29 KST)
 
 - [SteamHelper](https://steamhelper.app/)의 [보관함 공개 PNG](https://steamhelper.app/images/landing/profile-inventory.png): 게임 전환/표시 완전성/아이템 목록을 직접 열람. 검색과 선택·가격 요약의 역할 구분을 참고했다. 제품 이미지/브랜드는 도입하지 않는다.

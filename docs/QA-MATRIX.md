@@ -393,3 +393,7 @@ ignored 증거 runtime/stage14-final-verify.txt, runtime/stage14-ui-final.txt, r
 ## 0.20.1 후속 보완 (2026-10-29 KST)
 
 기능324/324·비표시WPF66/66·배포계약19/19 PASS, 경고/오류0. FeeModeTests 신규8개: 소유 vanity/canonical 한 번 이동, 소유 표시 누락/거짓/중복·타 계정·외부·임의 쿼리·로그인/보안·두 번째 이동 거절, 403/429 중단/추가 전송0, ModeMissing에서 구형 추측 없음, 인증/독립 조회 보존. UsabilityTests: TBH 카탈로그 추가→제거→재로그인 미재추가, 자동 보관함 요청0. ProductAuditUiTests: 빈 계획 Collapsed→계획 존재 Visible→제거 Collapsed, TBH 미조회 표시. 자체 이미지 직접 검토. 실제 수수료 해결/TBH context2/물리입력·Popup·모니터DPI NOT VERIFIED. 최초75개 판정47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED 유지.
+
+## 0.20.2 최종 회귀
+
+추가 classic 정상/지갑 분류/모드 충돌 회귀3건 수정 전 FAIL→수정 후 PASS. 신규5건을 포함한 기능329/329 PASS. explicit false·소유 표시·계정/지갑 일치·앱별 설정 요구, 값 누락/잘못된 타입·중복/주석·문자열 위장/모드 충돌 차단, HTTP200·ModeMissing은 성공 추측 없음. 실제0.20.1 사용자 vanity302→200은 REAL_READ 관측이며 새 classic 계산의 REAL_FEE 검증은 아니다. 비표시 WPF·배포·정리 fixture 결과 및 ZIP 검사는 배포 확정 절에 기록한다. 최초75개 판정47/16/0/3/9 유지.

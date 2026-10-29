@@ -369,3 +369,7 @@ main/origin6c40500 clean/fetch 일치에서 시작. 0.13 사용자부분관측 �
 0.20.1: 첨부 ZIP에서 Wallet200/WalletLegacyComplete→ModeMissing→FeeContext302/OtherRedirect 확인. Location 미기록으로 실제 원인 미확정. 동일 Steam 소유 보관함 canonical 이동 한 번과 vanity 소유/계정 확인 구현. 다른 계정/외부/보안/추가 이동과 모드 누락 차단 유지. 빈 재등록 계획 선택창 숨김, 수수료 실패 안내 연결, TBH App3678970/context2(후자는 미검증 후보) 한 번 추가/사용자 제거 유지. 기능324/324·비표시WPF66/66·배포계약19/19 PASS, 경고/오류0. 빈 판매/TBH RTB 직접 열람. 실제 GUI/Steam 계정 실행0, 타 프로세스 접근0, 사용자 Auth/DB/저널/진단/이전배포 삭제0.
 
 0.20.1 배포 확정: source7dfe828, ZIP MarketCrate-0.20.1-fee-context-7dfe828-win-x64.zip (66,507,519바이트/413파일), SHA256 014EA96DF1AE13D55F7292220A1291DCD549FD9619BB96EAB8AF693757F4FCB1. 전체 entry SHA·실제 전용 PE/BAML·CLR/WPF/SQLite/ProtectedData·라이선스·비밀/사용자 자료 출하 제외 PASS. 앱 실행0, 기존0.20/롤백0.17 보존. 로컬 산출물만 생성.
+
+## 0.20.2 classic 수수료 분기 보완 (2026-10-29 KST)
+
+0.20.2 진단: 사용자0.20.1 작업 f67d8e55-5171-4c25-8c53-01a2524fecb8는 Wallet200/KRW/legacy5개→ModeMissing→FeeContext302/VanityRedirect→200→ModeMissing였다. 소유/계정 검증은 통과, 수수료 API/등록/취소 전송은 없었다. 기존 React props 전용 파서가 공식 classic UI 분기를 지원하지 않는 결함을 확인했다. 사용자 페이지의 g_bReactSellDialog 값은 기존 로그에 없어 이번 실계정 원인으로 확정하지 않는다. 회귀를 먼저 추가해 정상 classic/지갑 불일치 분류/충돌 모드3건 FAIL을 재현한 뒤 수정했다. 명시적 유일한 false·소유·계정·일치 지갑·앱 설정을 요구하고 현재 economy_common 계산을 재사용한다. 토큰/댓글/문자열 위장과 모드 충돌은 거절. 기존 Auth/DB/저널·배포본·진단 자료 보존, 실제 Steam/GUI/타 프로세스 작업0.

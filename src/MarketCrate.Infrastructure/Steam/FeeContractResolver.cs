@@ -9,8 +9,8 @@ namespace MarketCrate.Infrastructure.Steam;
 public enum FeeContractMode { VerifiedLegacy, VerifiedNew, Unsupported, Unverified, Restricted }
 public sealed record FeeContractEvidence(FeeContractMode Mode, SteamWalletObservation Wallet, long? PublisherMillionths, string Reason);
 
-// The official sell dialog receives newFeeRates/walletInfo in a feature target's data-props.
-// Its false branch uses wallet/app rates AND today's economy_common integer/increment calculator.
+// React receives newFeeRates/walletInfo in data-props. The classic inventory selects
+// SellItemDialog with explicit g_bReactSellDialog=false and the same current economy_common formula.
 // The obsolete wallet_fee_base formula is not that branch. No failure-driven fallback is allowed.
 public static class FeeContractResolver
 {
@@ -31,6 +31,9 @@ public static class FeeContractResolver
             // Parse attribute values, not arbitrary newFeeRates text inside script/comment content.
             var markup=Regex.Replace(html,@"<!--.*?(?:-->|$)|<script\b[^>]*>.*?(?:</script\s*>|$)|<style\b[^>]*>.*?(?:</style\s*>|$)","",RegexOptions.Singleline|RegexOptions.IgnoreCase,Timeout);
             var targets=Regex.Matches(markup,@"<[a-zA-Z][^>]*\bdata-featuretarget\s*=\s*(['""])marketselldialog\1[^>]*>",RegexOptions.IgnoreCase,Timeout);
+            var classicFlag=ReadInlineBoolean(html,"g_bReactSellDialog");
+            DiagnosticHub.Emit(DiagnosticEvent.FeeValidated,DiagnosticArea.Pricing,DiagnosticOutcome.Completed,requirement:"D10",endpoint:"Fees",reason:"FeeUiObserved",from:classicFlag.Invalid?"ModeInvalid":classicFlag.Value==false?"ClassicUiSelected":classicFlag.Value==true?"ReactUiSelected":"ModeMissing",count:targets.Count);
+            if(classicFlag.Invalid)return Result(FeeContractMode.Unverified,"ModeAmbiguous");
             JsonElement? props=null;
             foreach(Match target in targets)
             {
@@ -41,13 +44,29 @@ public static class FeeContractResolver
                 if(props is not null)return Result(FeeContractMode.Unverified,"ModeAmbiguous");
                 props=json.RootElement.Clone();
             }
-            if(props is not {} p||p.ValueKind!=JsonValueKind.Object)return Result(FeeContractMode.Unverified,"ModeMissing");
-            if(p.EnumerateObject().Select(x=>x.Name).Distinct(StringComparer.Ordinal).Count()!=p.EnumerateObject().Count())return Result(FeeContractMode.Unverified,"ModeAmbiguous");
-            // Only absence within a real, valid sell-dialog props object follows JS !newFeeRates.
+            var classic=props is null;
             var newer=false;
-            if(p.TryGetProperty("newFeeRates",out var flag))
-            {if(flag.ValueKind is not(JsonValueKind.True or JsonValueKind.False))return Result(FeeContractMode.Unverified,"ModeInvalid");newer=flag.GetBoolean();}
-            if(!p.TryGetProperty("walletInfo",out var info)||info.ValueKind!=JsonValueKind.Object)return Result(FeeContractMode.Unverified,"WalletMissing");
+            JsonElement info;
+            if(classic)
+            {
+                if(classicFlag.Value!=false)return Result(FeeContractMode.Unverified,classicFlag.Value==true?"ReactPropsMissing":"ModeMissing");
+                if(!SteamHttp.ViewingOwnInventory(html))return Result(FeeContractMode.Unverified,"OwnerPageMissing");
+                if(wallet.LoggedIn!=true)return Result(FeeContractMode.Unverified,"LoginRequired");
+                var ownWallet=ReadAssignedObject(html,"g_rgWalletInfo");
+                if(ownWallet is not {} own)return Result(FeeContractMode.Unverified,"WalletMissing");
+                info=own;
+            }
+            else
+            {
+                var p=props!.Value;
+                if(p.ValueKind!=JsonValueKind.Object)return Result(FeeContractMode.Unverified,"ModeInvalid");
+                if(p.EnumerateObject().Select(x=>x.Name).Distinct(StringComparer.Ordinal).Count()!=p.EnumerateObject().Count())return Result(FeeContractMode.Unverified,"ModeAmbiguous");
+                if(classicFlag.Value==false)return Result(FeeContractMode.Unverified,"ModeAmbiguous");
+                // Missing newFeeRates is false only inside a genuine sell-dialog props object.
+                if(p.TryGetProperty("newFeeRates",out var flag))
+                {if(flag.ValueKind is not(JsonValueKind.True or JsonValueKind.False))return Result(FeeContractMode.Unverified,"ModeInvalid");newer=flag.GetBoolean();}
+                if(!p.TryGetProperty("walletInfo",out info)||info.ValueKind!=JsonValueKind.Object)return Result(FeeContractMode.Unverified,"WalletMissing");
+            }
             var embedded=SteamFees.ObserveWallet("g_rgWalletInfo="+info.GetRawText()+";");
             if(embedded.Currency!=wallet.Currency||embedded.MinimumWire!=wallet.MinimumWire||embedded.IncrementWire!=wallet.IncrementWire||embedded.LegacyFees!=wallet.LegacyFees)
                 return Result(FeeContractMode.Unverified,"WalletChanged");
@@ -63,10 +82,18 @@ public static class FeeContractResolver
                 return Result(FeeContractMode.Unverified,"AppContextMissing");
             var publisher=context.TryGetProperty("market_pubfee_rate",out var rate)&&rate.ValueKind!=JsonValueKind.Null?Rate(rate):old.DefaultPublisherMillionths;
             if(publisher is null)return Result(FeeContractMode.Unverified,"PublisherMissing");
-            return Result(FeeContractMode.VerifiedLegacy,"WalletAndAppContext",publisher);
+            return Result(FeeContractMode.VerifiedLegacy,classic?"ClassicInventoryContext":"WalletAndAppContext",publisher);
         }
         catch(Exception error)when(error is JsonException or RegexMatchTimeoutException or FormatException or OverflowException or InvalidOperationException or SteamException)
         {return Result(FeeContractMode.Unverified,"ModeInvalid");}
+    }
+    private static (bool? Value,bool Invalid) ReadInlineBoolean(string html,string name)
+    {
+        var markup=Regex.Replace(html,@"<!--.*?(?:-->|$)","",RegexOptions.Singleline,Timeout);
+        var values=Regex.Matches(markup,@"<script\b[^>]*>(.*?)</script\s*>",RegexOptions.Singleline|RegexOptions.IgnoreCase,Timeout).Cast<Match>()
+            .Select(script=>Regex.Replace(script.Groups[1].Value,@"'(?:\\.|[^'\\])*'|""(?:\\.|[^""\\])*""|`(?:\\.|[^`\\])*`|/\*.*?\*/|//[^\r\n]*",m=>m.Value.StartsWith('/')?" ":"__quoted__",RegexOptions.Singleline,Timeout))
+            .SelectMany(script=>Regex.Matches(script,@"(?:^|(?<=[;\r\n]))\s*(?:var\s+)?"+Regex.Escape(name)+@"\s*=\s*([^;\r\n]+)\s*;",RegexOptions.CultureInvariant,Timeout).Cast<Match>()).Select(x=>x.Groups[1].Value.Trim()).ToArray();
+        return values.Length==0?(null,false):values.Length!=1||values[0] is not("true" or "false")?(null,true):(values[0]=="true",false);
     }
     internal static long Rate(JsonElement value)
     {
