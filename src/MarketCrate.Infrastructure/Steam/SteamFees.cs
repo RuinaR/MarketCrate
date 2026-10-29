@@ -5,8 +5,12 @@ using MarketCrate.Core;
 namespace MarketCrate.Infrastructure.Steam;
 
 public sealed record SteamWallet(string Currency,long MinimumWire,long IncrementWire);
+// Legacy parameters are evidence, not a replacement for the current fee schedule.
+public sealed record SteamLegacyFeeObservation(int Fields,bool Invalid,long? SteamMillionths,long? MinimumWire,long? BaseWire,long? DefaultPublisherMillionths)
+{ public bool Complete=>Fields==5&&!Invalid; }
 public sealed record SteamWalletObservation(string? Currency,long? MinimumWire,long? IncrementWire,bool? LoggedIn,string Shape)
 {
+    public SteamLegacyFeeObservation? LegacyFees{get;init;}
     public bool PricingMetadataAvailable=>Currency is not null&&MinimumWire is >0&&IncrementWire is >0;
     public SteamWallet PricingWallet()=>PricingMetadataAvailable?new(Currency!,MinimumWire!.Value,IncrementWire!.Value):throw new SteamException(SteamFailure.Unsupported);
 }
@@ -30,10 +34,25 @@ public static class SteamFees
             var currency=root.TryGetProperty("wallet_currency",out var c)?SteamContract.Currency(checked((int)SteamContract.Integer(c))):null;
             long? Optional(string field){if(!root.TryGetProperty(field,out var value)||value.ValueKind==JsonValueKind.Null)return null;var amount=SteamContract.Integer(value);if(amount<=0||amount>1_000_000)throw new SteamException(SteamFailure.ContractChanged);return amount;}
             var minimum=Optional("wallet_market_minimum");var increment=Optional("wallet_currency_increment");Fact("WalletObject",currency);if(currency is null)Fact("WalletCurrencyMissing");if(minimum is null)Fact("WalletMinimumMissing");if(increment is null)Fact("WalletIncrementMissing");
-            return new(currency,minimum,increment,loggedIn,"WalletObject");
+            var legacy=ObserveLegacyFields(root);
+            DiagnosticHub.Emit(DiagnosticEvent.WalletContract,DiagnosticArea.Data,endpoint:"Wallet",requirement:"D10",count:legacy.Fields,reason:legacy.Invalid?"WalletLegacyInvalid":legacy.Complete?"WalletLegacyComplete":"WalletLegacyPartial");
+            return new(currency,minimum,increment,loggedIn,"WalletObject"){LegacyFees=legacy};
         }
         catch(JsonException){throw new SteamException(SteamFailure.ContractChanged){Diagnostic=DiagnosticError.Parsing};}
         catch(Exception error)when(error is InvalidOperationException or KeyNotFoundException or ArgumentException or OverflowException){throw new SteamException(SteamFailure.ContractChanged);}
+    }
+    private static SteamLegacyFeeObservation ObserveLegacyFields(JsonElement root)
+    {
+        var names=new[]{"wallet_fee","wallet_fee_percent","wallet_fee_minimum","wallet_fee_base","wallet_publisher_fee_percent_default"};
+        var count=names.Count(name=>root.TryGetProperty(name,out _));
+        try
+        {
+            long? Rate(string name){if(!root.TryGetProperty(name,out var v))return null;var value=decimal.Parse(v.ValueKind==JsonValueKind.String?v.GetString()!:v.GetRawText(),System.Globalization.CultureInfo.InvariantCulture)*1_000_000;if(value is <0 or >1_000_000||value!=decimal.Truncate(value))throw new FormatException();return (long)value;}
+            long? Amount(string name){if(!root.TryGetProperty(name,out var v))return null;var value=SteamContract.Integer(v);if(value is <0 or >1_000_000)throw new FormatException();return value;}
+            if(root.TryGetProperty("wallet_fee",out var enabled)&&!(enabled.ValueKind is JsonValueKind.True or JsonValueKind.False)&&SteamContract.Integer(enabled) is not(0 or 1))throw new FormatException();
+            return new(count,false,Rate("wallet_fee_percent"),Amount("wallet_fee_minimum"),Amount("wallet_fee_base"),Rate("wallet_publisher_fee_percent_default"));
+        }
+        catch(Exception error)when(error is FormatException or InvalidOperationException or OverflowException){return new(count,true,null,null,null,null);}
     }
     public static SteamFeeStructure ObserveStructure(string json)=>SteamContract.Parse<SteamFeeStructure>(json,root=>
     {
@@ -75,7 +94,15 @@ public static class SteamFees
         try{return wallet.PricingWallet();}catch(SteamException error){error.Endpoint="Wallet";throw;}
     }
     public static async Task<SteamFeeStructure> FetchStructureObservationAsync(SteamHttp http,int appId,CancellationToken token)
-    {using var correlation=DiagnosticHub.Scope(correlation:true);using var request=new HttpRequestMessage(HttpMethod.Get,$"https://steamcommunity.com/market/ajaxfeestructure/?appid={appId}");return ObserveStructure(await http.SendAsync(request,token));}
+    {using var correlation=DiagnosticHub.Scope(correlation:true);using var request=StructureRequest(appId);return ObserveStructure(await http.SendAsync(request,token));}
     public static async Task<SteamFeeSchedule> FetchStructureAsync(SteamHttp http,int appId,SteamWallet wallet,CancellationToken token)
-    {using var correlation=DiagnosticHub.Scope(correlation:true);using var request=new HttpRequestMessage(HttpMethod.Get,$"https://steamcommunity.com/market/ajaxfeestructure/?appid={appId}");return Structure(await http.SendAsync(request,token),wallet);}
+    {using var correlation=DiagnosticHub.Scope(correlation:true);using var request=StructureRequest(appId);return Structure(await http.SendAsync(request,token),wallet);}
+    internal static HttpRequestMessage StructureRequest(int appId)
+    {
+        if(appId<=0)throw new ArgumentOutOfRangeException(nameof(appId));
+        // The official sell dialog fetches this GET only for its newFeeRates mode.
+        // JSON is requested explicitly; an HTML result is never a legacy-fee fallback.
+        var request=new HttpRequestMessage(HttpMethod.Get,$"https://steamcommunity.com/market/ajaxfeestructure/?appid={appId}");
+        request.Headers.Accept.Add(new("application/json"));return request;
+    }
 }

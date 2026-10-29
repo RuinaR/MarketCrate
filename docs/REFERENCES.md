@@ -1,5 +1,9 @@
 # MarketCrate — 외부 자료·레퍼런스
 
+## 0.16.1 수수료 계약 추가 조사 — 2026-10-29 KST
+
+[공식 판매 dialog](https://community.fastly.steamstatic.com/public/javascript/applications/community/marketselldialog.js)의 newFeeRates 조건부 fee GET과 legacy wallet/앱 비율 소비를 직접 확인했다. [CSlytics fees.ts](https://github.com/Xpar65/cslytics-desktop/blob/a5c094bc44d12dc0bc99e84e6643fe8a2cc113a8/packages/ports/src/fees.ts)(AGPL), [SteamMarketHelper](https://github.com/federicogiorgi/SteamMarketHelper/blob/main/steam-market-helper.user.js)(MIT), [steam-bulk-seller fee](https://github.com/todd-elvers/steam-bulk-seller/blob/main/shared/fees.ts)(LICENSE 경로404), [steampy utils](https://github.com/bukson/steampy/blob/master/steampy/utils.py)(이번 LICENSE 경로404)를 비교했다. 정수/역산/반올림/소스 구분만 참고하고, 코드·기본값·페이지 주입·자동 재시도는 도입하지 않았다. 특히 bulk-seller의 KRW 미지원 경고 때문에 USD floor식을 채택하지 않았다. 개별 소스의 동작 주장과 Valve 허가/MarketCrate 실계정 증거는 별개다. 정확한 채택/미채택 근거는 STEAM-INTEGRATION-FEASIBILITY의0.16.1 절에 기록했다.
+
 ## 5차 조사 (2026-10-28 KST, 최신)
 
 - 공식 Market/main.js가 불러오는 [marketselldialog.js](https://community.fastly.steamstatic.com/public/javascript/applications/community/marketselldialog.js)를 무인증으로 다운로드·정적 열람했다. wallet minimum/increment, ajaxfeestructure의 fee rate/cap, amount 전송/확인 대기 계약을 추가 확인했다. 원문 SHA256/구체적인 채택·확인 한계는 [연동 조사](STEAM-INTEGRATION-FEASIBILITY.md)의 5차 절 참조. 원 소스는 복사하지 않고 정수 계산·파서를 독립 작성했다.

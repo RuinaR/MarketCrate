@@ -1,5 +1,15 @@
 # 진단 시스템 (10차, 2026-10-28 KST)
 
+## 0.16.1 — HTTP 응답 형식의 근거 분리
+
+새 EventId **3005 ResponseContract**: 기존 OperationId/CorrelationId, Endpoint/HTTP200, PreviousState=MediaJson/MediaHtml/MediaText/MediaMissing/MediaOther, NewState=JsonBody/EmptyBody/OtherBody/HtmlMarket/HtmlLogin/HtmlChallenge/HtmlAccessDenied/HtmlUnknown, Reason=ResponseShape 또는 MediaTypeMismatch. 자유 문자열/원문 Content-Type·HTML·title·form값·계정·쿠키·URL·QR은 받지 않는다. 필드/미디어 불일치와 JSON 파서 실패(3003)를 분리한다. 유효한 JSON은 Content-Type만으로 버리지 않고 기존 endpoint 스키마를 모두 검증한다.
+
+HTML은 최대128KiB 표식 검사(전체 읽기8MiB 상한 유지). script/style/comment를 제외하고 고정 DOM 표식을 검사한다. 단어 captcha만으로 Challenge를 판정하지 않는다. JSON의 명시적 captcha_needed/requires_captcha=true는 기존 인증 계약과 같이 안전중단하며, 유효한 수수료 필드가 있어도 통과시키지 않는다. HtmlMarket은 '장터 화면 표식'이지 로그인·수수료 성공이 아니다. HTML 위젯/접근거부는 전역 안전중단, 로그인 폼은 endpoint Authorization, 장터 HTML은 endpoint ContractChanged, 분류불가는 ContractChanged로 추가 요청 중단. 분류 누락 가능성이 있으므로 unknown을 통과시키지 않는다.
+
+예: Fees3000 Started → 3001 HTTP200 → 3005 MediaHtml/HtmlMarket → 3002 Schema/HtmlMarket → 4204 Fees Failed/ContractMismatch. 동일 작업 ID로 Wallet 성공과 구분해 검색한다. HtmlUnknown이면 후속 항목은 Blocked이며 CAPTCHA로 단정하지 않는다. wallet legacy 필드는4205 WalletLegacyComplete/Partial/Invalid와 필드 수만 기록, 값/원문은 기록하지 않는다. OfficialFeeComparison은 사용자 입력 비교일 뿐 서버 검증/거래 활성화가 아니다.
+
+사용자는 자가검증에서 지갑·수수료 범위만 명시 승인해1회 실행한 뒤 해당 작업만 선택하여 ZIP을 검토·내보낸다. 자동 외부 업로드 없음. 새 진단도 원문 실패 HTML이 없으므로 서버의 내부 분기 원인까지 확정할 수 없다는 한계가 있다.
+
 ## 0.16.0 자격 확인과 실제 전용 시작
 
 AppStart는 일반 실행 LiveSession, 개발 격리 QA만 IsolatedQa이다. 실제 Release에는 Demo 시작 경로가 없다. ReadContract의 RedirectEligibilityPath와 HTTP MarketEligibilityRedirect/MarketEligibilityReturn, hop 수로 왕복을 연결한다. OperationId/CorrelationId를 유지하며 원문 Location/goto/cookie/HTML/계정값은 남기지 않는다. 서버가 발급한 cookie만 현재 세션에서 수신하고 디스크 저장/외부 추출/위조하지 않는다.

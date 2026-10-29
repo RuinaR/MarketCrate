@@ -1,5 +1,27 @@
 # 정상·오류·복구 QA 매트릭스 — 10차 (2026-10-28 KST)
 
+### 0.16.1 최종 자동 검증
+
+기능 **250/250 PASS**, 자체 비표시WPF **52/52 PASS**, 배포 파일계약 **14/14 PASS**, 최종FAIL0·빌드 경고/오류0. 안전정리7 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 환경제약), 이번 사용자 배포/데이터 정리0. 신규 수수료/복구 오류 주입·JSONL 원인 연결/비밀 canary 미노출 및 기존 거래 어댑터·가격·SQLite/Unknown 회귀 포함. runtime/fee-final-core.txt·fee-final-ui.txt·fee-final-build.txt·fee-distribution-contracts.txt·fee-cleanup-contracts.txt에 로컬 증거를 남겼다. RTB fee-response-error-row/fee-comparison-small/large·오류 화면 직접검토, 물리GUI/모니터DPI/설치·실계정 수수료/거래·서명 미실행. 최초75개 판정47/15/0/4/9 유지. 중간1회 기존 복구 검사 실패/미확정 원인과 결정적 게이트 보강은 WORKLOG에 보존했다. Release 정적 검사와 실제 실행 검증을 혼동하지 않는다.
+
+## 0.16.1 — Fees HTML 오류 주입 및 응답 분류
+
+| 경로 | 검증 기준 및 결과 |
+|---|---|
+| 인증→목록8→보관함0→Wallet성공→Fees HTML | 합성 관측 재현, 세션/빈 응답 사실 보존, fee Schema 실패·판매POST0 |
+| 장터 표식 HTML | Challenge 아님·endpoint 계약 차단·독립 목록 사용 가능·fee 재전송0 |
+| 분류불가 HTML | Schema/Blocked·후속 미전송·로그인 만료로 변경하지 않음 |
+| 로그인 폼 / 보안 위젯 / Access Denied | 각각 Authorization / Challenge / Forbidden, 세션/안전중단 규칙 확인 |
+| JSON의 명시적 captcha_needed/requires_captcha | 유효해 보이는 수수료 필드가 함께 있어도 안전중단·후속 요청0 |
+| HTTP401/403/429 | 기존 중단 유지, 후속 요청/등록0 |
+| JSON/HTML Content-Type 교차·깨진JSON·누락/추가fee | media/shape/parser 별도 진단, 유효 JSON은 endpoint 검증, 잘못된 계약은 성공으로 바꾸지 않음 |
+| script/comment/불완전 script의 CAPTCHA 문자열 | 위젯으로 오인하지 않음, unknown 보수중단 |
+| legacy wallet필드 | 완전/부분/잘못된 필드 관측, KRW minimum/increment 생성0·구형 fee 자동대체0 |
+| KRW/USD 공식 단가 비교 | 일치/불일치/잘못된 입력·로그아웃/새조회 무효화, HTTP/판매POST/권한변경0 |
+| JSONL 원인 연결·보안 | 3005→3002→4204 OperationId/CorrelationId 연결, 원문HTML·쿠키·계정 canary 미노출 |
+
+신규 FeeResponseTests14개 + FeeResponseUiTests2개, 기존 개발용 복구 IOException 게이트1개 추가. 최초 기존 재시작 검사1회 실패는 미재현/원인 미확정으로 WORKLOG에 보존했고 복구 오류 시 새 검토가 열리는 별도 경로를 결정적 주입으로 보강했다. 비표시 STA/RTB만 사용하며 실제 창/포인터/키보드/Popup/모니터DPI/계정 인증·거래는 NOT VERIFIED. 게스트/앱 실행0. 전체 결과는 이번 배포 확정 기록 참조. 실제 서버 Fees JSON 및 KRW wire/요율 적용 모드 증거가 없어 실계정 검증으로 승격하지 않는다.
+
 ## 0.16.0 실제 전용 검증
 
 | 항목 | 결과 |

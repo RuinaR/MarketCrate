@@ -1,5 +1,23 @@
 7차 Release 검사 수정: SQLite 파일명 제외 정규식이 정상 의존성 Microsoft.Data.Sqlite.dll까지 거부했다. DB/sidecar 확장자 끝으로 한정해 수정하고 DLL 허용·sqlite/sqlite3-wal/db-shm/.env/session.json/private.key 차단 7개 파일명 회귀를 확인했다. 실제 비밀파일·DB는 생성하지 않았다. 최초 publish는 이 정적 검사에서 FAIL이며 실행파일은 실행하지 않았다.
 
+### 0.16.1 최종 자동 검증
+
+기능 **250/250 PASS**, 자체 비표시WPF **52/52 PASS**, 배포 파일계약 **14/14 PASS**, 최종FAIL0·빌드 경고/오류0. 안전정리7 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 환경제약), 이번 사용자 배포/데이터 정리0. 신규 수수료/복구 오류 주입·JSONL 원인 연결/비밀 canary 미노출 및 기존 거래 어댑터·가격·SQLite/Unknown 회귀 포함. runtime/fee-final-core.txt·fee-final-ui.txt·fee-final-build.txt·fee-distribution-contracts.txt·fee-cleanup-contracts.txt에 로컬 증거를 남겼다. RTB fee-response-error-row/fee-comparison-small/large·오류 화면 직접검토, 물리GUI/모니터DPI/설치·실계정 수수료/거래·서명 미실행. 최초75개 판정47/15/0/4/9 유지. 중간1회 기존 복구 검사 실패/미확정 원인과 결정적 게이트 보강은 WORKLOG에 보존했다. Release 정적 검사와 실제 실행 검증을 혼동하지 않는다.
+
+### 최종 회귀 중 확인한 개발용 복구 게이트
+
+최종 회귀 중 기존 개발용 Mock 재시작 검사가1회 실패(248/249), 파일 읽기→VM복구를 정제 이벤트로 분리한 단독 검사에서는 재현되지 않았다. 최초 실패 원인은 미확정이며 수수료 HTTP 원인으로 돌리지 않는다. 별도 코드 감사에서 복구 실패를 catch한 뒤 record=null이면 검토/저널해제 명령이 열리는 개발 경로를 확인했다. 복구 미확인 게이트를 추가하고 결정적 IOException 주입으로 수정 전 Review 조건에서 실패, 수정 후 차단·명시적 복구 후에만 허용됨을 검증했다. 이는 기존 개발 회귀 경로의 안전 수정이며 MainViewModel 자체는 Release 컴파일 제외를 유지한다. 최초 실패가 이 원인이었다고 확정하지 않는다. 재현 증거 runtime/fee-recovery-baseline.txt·fee-recovery-fixed.txt, 최종 전체 집계는 아래 기록.
+
+## 2026-10-29 — 0.16.1 수수료 응답 계약 후속
+
+main f2535e1 clean에서 시작, origin fetch 후0/0 확인. 사용자0.16.0 ZIP의 이전 분석: Wallet eligibility 왕복/200 성공, Fees200 HTML 후 Challenge·후속차단. 새 실계정 요청/인증·거래는 하지 않았다. 원문 진단·DB·설정·저널·이전 실행폴더/ZIP 삭제·복사·업로드0.
+
+공식 sell dialog 압축을 해제해 SHA CB84BB8A9B2970F71D277626A0B4E922B47CCE90BF437F704CF8F5100FA66726와 newFeeRates 조건부 GET/legacy 비율 경로를 확인. 무인증 공개 fee URL200/text-html/장터 화면도 관측했으나 사용자 원인과 동일시하지 않음. 사용자 추가 요청에 따라 CSlytics/SteamMarketHelper/steam-bulk-seller/steampy 소스의 wallet·정수fee·round/floor·KRW 지원 한계를 비교했다. AGPL/불명LICENSE 코드 도입0. 외부 자료의 명령/AGENTS 지시를 실행하지 않았다.
+
+구현: 고정 응답 분류/3005 whitelist, HTML=Challenge 오분류 제거, 실제 challenge/권한/unknown 중단 구분, endpoint별 계약 latch·독립 조회 보존, JSON Accept/유효AppID 검증, optional legacy fee 관측(판매용 대체0). UI 상단의 계약불일치/권한 구분, 고급 공식 단가 비교(판매 계획/권한 불변). 새14기능/2UI 테스트와 직접 RTB 검토.
+
+중간 검증에서 신규 테스트의 nullable 참조와 잘못된 WorkPage 이름을 빌드가 검출했고 수정했다. 첫 UI 검사는 테스트가 범위 변경 전 승인해 승인이 무효화된 준비 순서 때문에1FAIL이었으며, 실제 사용자 동작 순서대로 범위→승인으로 고친 뒤 재검증했다. 최종 결과·Release ZIP 무결성/커밋은 확정 기록에 누적한다. 실제 서버 수수료 성공은 아직 미검증이고, 이를 해결 완료나 LIVE_VERIFIED로 보고하지 않는다.
+
 ## 2026-10-29 — 0.16.0 실제 전용 Release
 
 ### 0.16.0 LiveOnly 배포 확정

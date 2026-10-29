@@ -18,6 +18,7 @@ public sealed class MainViewModel : Observable, IDisposable
     private readonly CancellationTokenSource lifetime = new();
     private CancellationTokenSource? operation;
     private BatchRecord? record;
+    private bool recoveryUnverified=true;
     private bool bulkSelection;
     private MockListing[] cancellationSnapshot = [];
     private enum ManagementMode { Cancel, Reprice, RetryListing, RetryBatch }
@@ -70,7 +71,7 @@ public sealed class MainViewModel : Observable, IDisposable
         coordinator = new(new MockListingExecutor(data), journal);
         SelectAll = new(() => SetSelection(VisibleItems, true), () => !Busy && !AnyDialog);
         ClearSelection = new(() => SetSelection(Items, false), () => !Busy && !AnyDialog);
-        Review = new(BuildReview, () => !Busy && !AnyDialog && !HasInputErrors && SelectedCount > 0 && record == null);
+        Review = new(BuildReview, () => !recoveryUnverified && !Busy && !AnyDialog && !HasInputErrors && SelectedCount > 0 && record == null);
         CloseReview = new(() => IsReviewOpen = false, () => !Busy);
         Cancel = new(() => operation?.Cancel(), () => Busy);
         SelectAllListings = new(() => { foreach (var row in Listings) row.Selected = row.CanCancel; }, () => !Busy && !AnyDialog);
@@ -88,7 +89,7 @@ public sealed class MainViewModel : Observable, IDisposable
         Refresh = new(LoadAsync, Error, () => !Busy && !AnyDialog);
         Submit = new(SubmitAsync, Error, () => !Busy && !HasInputErrors && IsReviewOpen && ReviewLines.Count > 0 && ReviewLines.All(x => x.Valid) && record == null);
         Recover = new(RecoverAsync, Error, () => !Busy && !AnyDialog);
-        ClearDemo = new(() => Safe(() => { journal.ClearDemo(); record = null; Results.Clear(); History.Clear(); Status = "활성 Mock 배치 해제. 이전 요청 증거·예약 수량은 보존됩니다."; Update(); }), () => !Busy && !AnyDialog && (record == null || record.Results.All(x => x.State is SaleState.Ready or SaleState.Listed or SaleState.Failed)));
+        ClearDemo = new(() => Safe(() => { journal.ClearDemo(); recoveryUnverified=false; record = null; Results.Clear(); History.Clear(); Status = "활성 Mock 배치 해제. 이전 요청 증거·예약 수량은 보존됩니다."; Update(); }), () => !recoveryUnverified && !Busy && !AnyDialog && (record == null || record.Results.All(x => x.State is SaleState.Ready or SaleState.Listed or SaleState.Failed)));
         DeleteLocalDemoData = new(() => Safe(() => { if (journal is SqliteDemoStore sql) sql.DeleteDemoData(); record = null; Items.Clear(); VisibleItems.Clear(); Results.Clear(); Listings.Clear(); History.Clear(); ReviewLines.Clear(); Status = "SQLite 합성 데이터·설정·저널 삭제 완료. 이관 원본 JSON은 보존됩니다."; Raise(nameof(HasNoItems)); Update(); }), () => journal is SqliteDemoStore && !Busy && !IsReviewOpen && !IsCancelReviewOpen);
     }
     private string search = "", game = "모든 게임", sort = "이름순";
@@ -197,9 +198,10 @@ public sealed class MainViewModel : Observable, IDisposable
     }
     private async Task RecoverAsync()
     {
+        recoveryUnverified=true;
         Busy = true;
         using var cancellation = CancellationTokenSource.CreateLinkedTokenSource(lifetime.Token); operation = cancellation;
-        try { var saved = await coordinator.RecoverAsync(cancellation.Token); if (saved != null) { Display(saved); SyncListings(saved); Status = "저널 복구·Mock 결과 대조 완료 · 자동 재전송 없음"; } }
+        try { var saved = await coordinator.RecoverAsync(cancellation.Token); if (saved != null) { Display(saved); SyncListings(saved); Status = "저널 복구·Mock 결과 대조 완료 · 자동 재전송 없음"; } recoveryUnverified=false; }
         finally { operation = null; Busy = false; }
     }
     private async Task PublishMockAsync()

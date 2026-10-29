@@ -1,5 +1,26 @@
 # Steam 연동 가능성 조사 — 2026-10-29 KST (13차)
 
+## 0.16.1 — 수수료 HTML 계약 조사 (2026-10-29 KST)
+
+사용자 0.16.0 진단의 관측 범위: QR 메모리 세션, 목록 첫8건, CS2 서버총0건, eligibilitycheck→Market 복귀 후 Wallet200/WalletObject 성공. Fees200 뒤 HTML 탐지로 Challenge가 기록됐다. 당시 Content-Type/HTML 종류는 저장하지 않았으므로 **실제 CAPTCHA·인증 만료·구형/신형 요율 적용 여부는 미확정**이다. 원문 ZIP/HTTP/계정 정보는 Git에 넣지 않았다.
+
+공식 [marketselldialog.js](https://community.fastly.steamstatic.com/public/javascript/applications/community/marketselldialog.js)를 무인증 GET/압축 해제로 재확인했다. SHA256 `CB84BB8A9B2970F71D277626A0B4E922B47CCE90BF437F704CF8F5100FA66726`. `newFeeRates`가 참인 경우만 GET `/market/ajaxfeestructure/?appid=...`, credentials include, `steam_fee`/`publisher_fee` rate/cap을 소비한다. 거짓인 경우 지갑 wallet_fee_percent/게임 market_pubfee_rate 또는 지갑 기본 publisher 비율을 사용한다. 공식 코드의 fallback 0.05/0.1/default unit1을 사용자 계정의 검증된 값으로 채택하지 않았다. MarketCrate의 기존 URL·GET은 맞지만 **모든 계정에 같은 API가 JSON을 준다는 가정은 근거 부족**이었다.
+
+같은 수수료 URL을 쿠키·인증·자동 redirect 없이 공개 GET했을 때200/text-html/장터 HTML과 로그아웃 플래그를 확인했다. CAPTCHA 위젯은 관측되지 않았다. 이는 익명 공개 응답의 근거이며 사용자 HTML이 같았다는 증명은 아니다. JSON Accept 추가는 기대 형식의 명시이며 서버 지원/권한을 보장하지 않는다. 로그인·보안 페이지를 통과시키거나 요청을 재시도하지 않는다.
+
+비공식 프로젝트 실제 소스도 대조했다(참고만, 코드/의존성/자산 복사0).
+
+| 출처 | 확인한 구현과 채택/미채택 이유 | 라이선스/한계 |
+|---|---|---|
+| [CSlytics market.ts](https://github.com/Xpar65/cslytics-desktop/blob/a5c094bc44d12dc0bc99e84e6643fe8a2cc113a8/packages/adapters-steam/src/market.ts), [fees.ts](https://github.com/Xpar65/cslytics-desktop/blob/a5c094bc44d12dc0bc99e84e6643fe8a2cc113a8/packages/ports/src/fees.ts) | Wallet HTML 관측/접수와 결과불명 구분, 정수 금액 경계를 참고. fees 표의 CS2 500/1000bp·1cent·floor는 KRW/서버 적용 모드 증거가 아니므로 이식하지 않음. 광범위 redirect·원문 보관도 미채택 | AGPL-3.0, 구현 미복사 |
+| [SteamMarketHelper](https://github.com/federicogiorgi/SteamMarketHelper/blob/main/steam-market-helper.user.js), [LICENSE](https://github.com/federicogiorgi/SteamMarketHelper/blob/main/LICENSE) | 공식 페이지 계산 함수를 우선 사용, 지갑/아이템별 publisher 값과 통화별 round/floor, 도달 불가능 구매자 가격 고려. 계정 필드 없는 경우의 기본값/0수수료·페이지 주입·자동 재시도는 미채택 | MIT 확인. 브라우저 내부 사용자스크립트 구조를 WPF 세션 방식과 동일시하지 않음 |
+| [steam-bulk-seller fees.ts](https://github.com/todd-elvers/steam-bulk-seller/blob/main/shared/fees.ts), [sell.ts](https://github.com/todd-elvers/steam-bulk-seller/blob/main/server/src/steam/sell.ts) | 정수 cents와 판매자 수령액 전송 참고. 소스가 KRW/JPY round 미지원을 명시하므로 기본 USD식 계산을 KRW에 사용하지 않음 | LICENSE 경로404, 이전 조사도 미확인. 직접 재사용 금지 유지 |
+| [steampy utils.py](https://github.com/bukson/steampy/blob/master/steampy/utils.py) | 개별 fee floor·최소1cent·역산 한계 비교. 고정 steam 비율과 2-decimal 기준은 KRW의 실제 서버 증거가 아님 | LICENSE 단일 경로404로 이번 재확인 실패, 코드 도입 없음 |
+
+SteamFees는 기존 wallet_fee/percent/minimum/base/publisher-default의 존재·형식만 별도 관측한다. 누락/잘못된 구형 필드는 지갑 통화 성공을 지우지 않으며, 구형 필드가 완전해도 새 요율 모드·KRW 단위·게임별 실제 적용을 추정해 자동 판매용 SteamFeeSchedule로 변환하지 않는다. 이 경우 새 수수료 API 지원 여부/실계정 계약 확인이 계속 차단 요인이다. 정확한 최소금액/증분/통화/비율·cap·품목 비율·실제 등록 수수료의 사전 대조를 통과하지 못하면 전송 불가다.
+
+'구현 사례'는 Valve 허가 근거가 아니다. 새 합성 검증은 CONTRACT_VERIFIED(합성)이며 실계정 수수료 성공/거래 LIVE_VERIFIED는 아직 없다.
+
 ## 0.16.0 자격 확인 근거
 
 [Steam 공식 자격 확인](https://steamcommunity.com/market/eligibilitycheck/?goto=%2Fmarket%2F)을 쿠키/인증 없이 수동 redirect 금지 HTTP로 확인했다.302의 목적지는 같은 host /market/·추가query 없음이었다. [공개 steam-user 클라이언트 소스](https://docs.rs/crate/steam-user/latest/source/src/client.rs)도 eligibilitycheck를 포함한 수동 이동 처리를 구현한다. 참고만 했으며 코드/의존성을 복사하지 않았다.

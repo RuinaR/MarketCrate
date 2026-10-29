@@ -41,6 +41,7 @@ public sealed class SteamException(SteamFailure code, int? apiResult = null) : I
     public string? Endpoint { get; internal set; }
     public DiagnosticError? Diagnostic { get; internal set; }
     public bool Redirected { get; internal set; }
+    public SteamBodyKind? BodyKind { get; internal set; }
 }
 
 // No browser cookie import, external host, redirects, automatic retries or response-body logging.
@@ -55,7 +56,7 @@ public sealed partial class SteamHttp : IDisposable
     public SteamFailure? Halted { get; private set; }
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string,SteamFailure> featureBlocks=[];
     public SteamFailure? FeatureFailure(string endpoint)=>featureBlocks.TryGetValue(endpoint,out var failure)?failure:null;
-    internal void BlockFeature(string endpoint)=>featureBlocks[endpoint]=SteamFailure.Authorization;
+    internal void BlockFeature(string endpoint,SteamFailure failure=SteamFailure.Authorization)=>featureBlocks[endpoint]=failure;
     public SteamHttp(SteamAccess access, HttpMessageHandler? testHandler = null, TimeSpan? testGap = null)
     {
         Access = access; gap = testHandler is null ? TimeSpan.FromSeconds(3) : testGap ?? TimeSpan.Zero;
@@ -144,7 +145,26 @@ public sealed partial class SteamHttp : IDisposable
                 bytes.Write(buffer, 0, read);
             }
             var text = System.Text.Encoding.UTF8.GetString(bytes.ToArray());
-            if (text.TrimStart().StartsWith('<') && !(allowWalletHtml && request.RequestUri!.AbsoluteUri == "https://steamcommunity.com/market/")) { Stop(SteamFailure.Challenge); throw new SteamException(SteamFailure.Challenge); }
+            var bodyKind=SteamResponseContract.Inspect(text);
+            string? declaredMedia;
+            try{declaredMedia=response.Content.Headers.ContentType?.MediaType;}
+            catch(FormatException){declaredMedia="invalid";}
+            SteamResponseContract.Record(endpoint,declaredMedia,bodyKind,status);
+            if(bodyKind==SteamBodyKind.JsonBody&&SteamResponseContract.RequiresChallenge(text))
+            {Stop(SteamFailure.Challenge);throw new SteamException(SteamFailure.Challenge);}
+            if(bodyKind is SteamBodyKind.HtmlChallenge or SteamBodyKind.HtmlAccessDenied)
+            {
+                var blocked=bodyKind==SteamBodyKind.HtmlChallenge?SteamFailure.Challenge:SteamFailure.Forbidden;
+                Stop(blocked);throw new SteamException(blocked){BodyKind=bodyKind};
+            }
+            if(bodyKind is SteamBodyKind.HtmlLogin)
+            {BlockFeature(endpoint);throw new SteamException(SteamFailure.Authorization){BodyKind=bodyKind};}
+            if(bodyKind is (SteamBodyKind.HtmlMarket or SteamBodyKind.HtmlUnknown) && !(allowWalletHtml && request.RequestUri!.AbsoluteUri == "https://steamcommunity.com/market/"))
+            {
+                // Unknown HTML still stops further traffic; it is not evidence of CAPTCHA or logout.
+                if(bodyKind==SteamBodyKind.HtmlUnknown)Stop(SteamFailure.ContractChanged);else BlockFeature(endpoint,SteamFailure.ContractChanged);
+                throw new SteamException(SteamFailure.ContractChanged){BodyKind=bodyKind};
+            }
             DiagnosticHub.Emit(DiagnosticEvent.ResponseBody,DiagnosticArea.HTTP,DiagnosticOutcome.Completed,endpoint:endpoint,method:request.Method.Method,started:started,elapsed:watch.ElapsedMilliseconds);
             return text;
         }

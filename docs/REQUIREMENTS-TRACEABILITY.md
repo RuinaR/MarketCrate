@@ -1,5 +1,11 @@
 # 요구사항–구현–검증 추적표 (15차, 2026-10-29 KST)
 
+## 0.16.1 — ID/판정 보존, 수수료 실패 근거 보강
+
+최초75개 ID·판정 **47 COMPLETE /15 PARTIAL /0 MISSING /4 BLOCKED /9 UNVERIFIED** 유지. A04/D09/D10/G 오류안내 경로: SteamWorkspaceView→SteamReadSelfCheckViewModel→SteamReadSelfCheck→SteamFees.StructureRequest→SteamHttp→SteamResponseContract→3005/3002/4204→CheckRows/ConnectionSummary. legacy wallet fee 관측과 공식 단가 비교는 자동판매의 검증된 수수료를 대신하지 않는다. UI 비교는 조회된 schedule만 읽으며 저널/요청/권한 갱신0. 실제 거래의 SQLite intent/Unknown/재시작 보호 코드는 유지했다.
+
+증거: FeeResponseTests(Market/Unknown/Login/Security/Media/Markers/Limits/Trace/Request/Comparison/Contracts/Observed/Legacy/JsonChallenge), FeeResponseUiTests의 오류 상세/비교 버튼 연결·RTB. 사용자의0.16 Wallet 객체 성공은 관측 증거로 추가하되 실제 수수료/서버모드/KRW 단위·거래 성공이 충분히 검증되지 않았으므로 COMPLETE 승격0이다. 상세 결과는 QA-MATRIX/현재상태 참조.
+
 ## 0.16.0 — 기존75개 ID/판정 유지
 
 47 COMPLETE/15 PARTIAL/0 MISSING/4 BLOCKED/9 UNVERIFIED. A04/D09의 Wallet 자격 확인 왕복과 G UI의 실제 전용 Shell을 구현·합성 검증했다. App→ProductionShell→Steam VM→실제 provider/HTTP/SQLite→UI 경로를 확인하고 Release metadata로 Mock 실행 경로 부재를 검사했다. LiveOnlyTests8개/LiveOnlyUiTests2개와 전체235/50/14 PASS. 사용자 지갑의 실제 성공·실거래·물리 GUI 검증은 없으므로 COMPLETE로 승격하지 않는다. 과거 Mock 검증 이력은 남기되 현재 배포 기능으로 표현하지 않는다.

@@ -1,5 +1,11 @@
 # MarketCrate
 
+## 0.16.1 — 수수료 HTML 응답 진단·안전 처리
+
+사용자0.16.0에서 지갑 조회 성공이 관측됐습니다. 수수료는 HTML을 받아 아직 실계정 계약이 확인되지 않았습니다. 이 버전은 HTML을 일괄 CAPTCHA로 판정하던 오류를 수정하고 장터 화면/로그인 폼/보안 위젯/접근 거부/분류불가를 구분합니다. 공식 판매 UI와 유사 오픈소스의 수수료 경로를 대조했으며, 기본5%·10%나 USD 계산식을 검증된 KRW 계약으로 대신 넣지 않습니다.
+
+고급 설정의 공식 단가 비교는 서버에서 조회한 해당 게임의 수수료가 있을 때만 쓸 수 있습니다. 사용자 입력으로 판매 가격이나 거래 권한을 바꾸지 않습니다. **실제 전용은 실거래 검증 완료를 뜻하지 않습니다.** 읽기·수수료·KRW·스택 계약이 부족하면 거래는 계속 차단됩니다. [최소 재확인 절차](docs/READ-ONLY-VALIDATION.md), [소스 조사·미확정 사항](docs/STEAM-INTEGRATION-FEASIBILITY.md). 아래 이전 배포 설명은 이력입니다.
+
 ## 0.16.0 — 실제 Steam 전용 Release
 
 최신 portable: `artifacts/releases/MarketCrate-0.16.0-live-85756b4-win-x64.zip` (66,469,582바이트/412파일). SHA256 `1E758055EB23B5060EEE57BA6E819AEC323E2B698A5AC8518EF307FE48E9704A`. RuntimeMode=LiveOnly, Release/Mock 구현 제외/전체 파일 무결성 PASS. 실제 창·실계정 성공 검증은 별도입니다. 새 폴더에 풀어 MarketCrate.App.exe를 직접 실행하세요. 기존 데이터는 삭제하지 마세요.

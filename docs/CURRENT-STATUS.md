@@ -1,5 +1,20 @@
 # MarketCrate — 현재 상태 (2026-10-29 KST, 15차)
 
+### 0.16.1 최종 자동 검증
+
+기능 **250/250 PASS**, 자체 비표시WPF **52/52 PASS**, 배포 파일계약 **14/14 PASS**, 최종FAIL0·빌드 경고/오류0. 안전정리7 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 환경제약), 이번 사용자 배포/데이터 정리0. 신규 수수료/복구 오류 주입·JSONL 원인 연결/비밀 canary 미노출 및 기존 거래 어댑터·가격·SQLite/Unknown 회귀 포함. runtime/fee-final-core.txt·fee-final-ui.txt·fee-final-build.txt·fee-distribution-contracts.txt·fee-cleanup-contracts.txt에 로컬 증거를 남겼다. RTB fee-response-error-row/fee-comparison-small/large·오류 화면 직접검토, 물리GUI/모니터DPI/설치·실계정 수수료/거래·서명 미실행. 최초75개 판정47/15/0/4/9 유지. 중간1회 기존 복구 검사 실패/미확정 원인과 결정적 게이트 보강은 WORKLOG에 보존했다. Release 정적 검사와 실제 실행 검증을 혼동하지 않는다.
+
+## 0.16.1 — 수수료 응답 계약 분리와 비교 도구
+
+사용자0.16.0 진단으로 eligibility 왕복 후 Wallet HTTP200/객체 파싱 성공이 관측됐다. 목록 첫8건·CS2 서버총0건은 기존 범위만 인정한다. Fees200 HTML의 실제 내용/Content-Type은 구 로그에 없어 서버 쪽 원인은 미확정이다. 확인된 코드 결함은 'JSON 기대 경로의 모든 HTML=Challenge'라는 오분류이며 이를 수정했다.
+
+- SteamHttp→SteamResponseContract는 선언 media/본문 형식/고정 HTML 표식을 별도3005 이벤트로 기록. 장터 HTML은 수수료 endpoint 계약오류, 로그인 폼은 해당 조회 권한, 보안 위젯/접근거부는 안전중단, 분류불가 HTML은 계약미확정 안전중단. HTML/200만으로 성공·CAPTCHA·세션 만료를 추측하지 않는다. 같은 endpoint는 재전송하지 않는다.
+- 공식 sell dialog는 newFeeRates 조건에서만 현재 fee GET을 사용한다. 기존 지갑 fee 필드는 관측 정보로 분리하며, 기본 비율/단위·구형 모드를 추측해 자동 판매용 계약으로 대체하지 않는다. 유사 프로그램의 고정 CS2/USD floor 계산을 KRW에 이식하지 않았다.
+- 고급 설정의 공식 장터 단가 비교는 현재 게임의 조회된 정확한 fee schedule이 있을 때만 가능. 수동 입력은 판매계획/권한에 반영하지 않고 불일치/입력오류를 표시한다. 수수료 미확인 상태에서는 버튼이 비활성화된다.
+- 인증/조회 계약 오류의 상단 안내도 분리했다. 실제 전용 Release/Mock 컴파일 제외·기본 거래OFF·저널·Unknown/예약/중복 보호 유지. 실제 fee/읽기 전체/거래/KRW/스택의 LIVE_VERIFIED는 없음. 실계정 수수료 계약이 확인되지 않으면 전송을 계속 차단한다.
+
+최종 검증·ZIP/커밋은 아래 확정 기록에 기재한다. 최초75개는47 COMPLETE/15 PARTIAL/0 MISSING/4 BLOCKED/9 UNVERIFIED 유지한다. 사용자0.16.0 Wallet 관측은 0.16.1의 실계정 수수료/판매 성공을 뜻하지 않는다.
+
 ## 0.16.0 — 실제 Steam 전용 배포 및 자격 확인 처리
 
 ### 0.16.0 LiveOnly 배포 확정

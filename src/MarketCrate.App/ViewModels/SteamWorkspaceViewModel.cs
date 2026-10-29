@@ -73,7 +73,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         ModeText=offlineOnly?"ISOLATED GUI QA · Mock 전용 · Steam 네트워크 차단":contractTest?"CONTRACT TEST · 합성 서버 · 실제 Steam 요청 없음":"STEAM · 실제 계정 연결 · 서버 응답 기반";
         this.factory = offlineOnly ? (_ => throw new SteamException(SteamFailure.Disabled)) : factory ?? (scope => new(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "MarketCrate", "SteamExperimental"), scope.AppId, scope.ContextId, scope.Name));
         InitializeConnection(contractTest, openOfficial);InitializeTrading();
-        game = Games[0];InitializeCatalog();InitializeSelfCheck();
+        game = Games[0];InitializeCatalog();InitializeSelfCheck();InitializeFeeComparison();
         BeginLogin = new(BeginAsync, Error, () => !offlineOnly && !Busy && !Connected && !AnyReview && RiskAccepted && CredentialsAccepted);
         CheckLogin = new(CheckAsync, Error, () => !Busy && LoginState == SteamLoginState.AwaitingMobile);
         Logout = new(LogoutNow);
@@ -285,6 +285,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     private void Changed()
     {
         if(bulkUpdate)return;
+        CompareOfficialFees?.Refresh();Raise(nameof(FeeComparisonAvailability));InvalidateFeeComparison();
         CheckScopeChanged();ShowSelfCheck?.Refresh();SelfCheck?.Refresh();
         Raise(nameof(Connected));Raise(nameof(SessionPresent));Raise(nameof(CanRead));Raise(nameof(RequestsBlocked));Raise(nameof(AuthenticationText));Raise(nameof(ConnectionSummary));Raise(nameof(RequestAccessText));Raise(nameof(SelectionSummary));Raise(nameof(SelectionEstimate));Raise(nameof(AnyReview));LoadListings?.Refresh();LoadFees?.Refresh();OpenOfficialMarket?.Refresh();
         PrepareTrading?.Refresh();Raise(nameof(Totals));Raise(nameof(TradingText));Raise(nameof(CanTrade));Raise(nameof(CanTradeReview));Raise(nameof(PricingContractText));
