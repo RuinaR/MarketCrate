@@ -19,7 +19,13 @@ public static class UsabilityTests
             ("Lost cancel response preserves Unknown and unsent remainder across restart",Unknown),
             ("Changed return ID cannot be matched by same hash or increased inventory",Return),
             ("Busy label appears immediately and clears after cancellation",Busy),
-            ("Recovery never modifies a different Steam account batch journal",OtherAccount)};
+            ("Recovery never modifies a different Steam account batch journal",OtherAccount),
+            ("External changed asset IDs relist by fresh whole-asset approval after restart",NewTargets),
+            ("Accepted cancellation alone never submits newly found assets",NoAutomaticSale),
+            ("Unknown external cancellation blocks new asset review without retransmission",ExternalUnknown),
+            ("Insufficient returned or owned quantity cannot create a partial relist review",NewShortage),
+            ("Changed new-target book consumes no sales and cannot replay prior approval",NewBookChanged),
+            ("Relist journal snapshot cannot change account or source listings",PlanImmutable)};
         int passed=0,failed=0;foreach(var(name,run)in tests)try{await run();passed++;Console.WriteLine("PASS "+name);}catch(Exception e){failed++;Console.WriteLine("FAIL "+name+": "+e);}return(passed,failed);
     }
     private static Task Default(){using var vm=new SteamWorkspaceViewModel();Check(vm.Games.Count==1&&vm.Game.AppId==753&&vm.Game.ContextId=="6"&&vm.Game.Name=="Steam 커뮤니티");return Task.CompletedTask;}
@@ -35,6 +41,23 @@ public static class UsabilityTests
     private static async Task Return(){using var f=new Fixture();await f.Owned();await f.Load();await f.Vm.PrepareListingRepriceAsync();f.Server.ChangedReturn=true;await f.Confirm();Check(f.Server.Cancels==1&&f.Server.Sells==2&&f.Vm.Results[0].State==SaleState.Unknown);}
     private static async Task Busy(){using var f=new Fixture();await f.Login();f.Server.External(1);await f.Load();f.Server.BookStarted=new(TaskCreationOptions.RunContinuationsAsynchronously);f.Server.BookRelease=new(TaskCreationOptions.RunContinuationsAsynchronously);var task=f.Vm.PrepareListingRepriceAsync();await f.Server.BookStarted.Task;Check(f.Vm.Busy&&f.Vm.OperationLabel.Contains("호가")&&f.Vm.CancelOperation.CanExecute(null));f.Vm.CancelOperation.Execute(null);f.Server.BookRelease.SetResult();await task;Check(!f.Vm.Busy&&!f.Vm.ManagementOpen&&f.Server.Cancels==0);}
     private static async Task OtherAccount(){using var f=new Fixture();await f.Login();var asset=(await f.Workspace!.Inventory.GetAsync(default)).First();var line=new SaleLineSnapshot("other-account",asset,1,"KRW",f.Server.Schedule.FromBuyer(115),DateTimeOffset.UtcNow);var batch=new SaleBatchSnapshot(Guid.NewGuid(),"76561198000000002",DateTimeOffset.UtcNow,[line]);await f.Workspace.Store.SaveAsync(new(1,batch,[new(line.LineId,SaleState.Submitting,"synthetic intent")]),default);var before=System.Text.Json.JsonSerializer.Serialize(await f.Workspace.Store.LoadAsync(default));await f.Vm.RecoverAsync();Check(before==System.Text.Json.JsonSerializer.Serialize(await f.Workspace.Store.LoadAsync(default))&&f.Vm.Results.Count==0&&f.Server.Sells==0&&f.Server.Cancels==0);}
+    private static async Task PrepareNewTargets(Fixture f)
+    {
+        await f.Login();f.Server.Available.Clear();f.Server.External(2);f.Server.ChangedReturn=true;await f.Load();await f.Vm.PrepareListingRepriceAsync();f.Arm();await f.Vm.CancelForNewReviewAsync();
+        Check(f.Server.Cancels==2&&f.Server.Sells==0&&!f.Vm.ManagementOpen&&f.Workspace!.Store.RelistPlans(f.Workspace.Authentication.SteamId!).Count==1);
+    }
+    private static async Task NewTargets()
+    {
+        using var f=new Fixture();await PrepareNewTargets(f);f.Vm.Logout.Execute(null);await f.Login();f.Arm();await f.Vm.ReviewCancelledTargetsAsync();
+        Check(f.Vm.ReviewOpen&&f.Vm.ReviewRows.Count==2&&f.Vm.ReviewRows.All(x=>x.Asset.Key.AssetId is "3100" or "3101")&&f.Vm.ReviewContextText.Contains("기존 보유분"));
+        await f.Vm.SubmitAsync();Check(f.Server.Sells==2&&f.Server.Cancels==2&&f.Vm.Results.All(x=>x.State==SaleState.AwaitingSteamGuard)&&!f.Vm.ReviewOpen);
+        await f.Vm.SubmitAsync();await f.Vm.ReviewCancelledTargetsAsync();Check(f.Server.Sells==2&&!f.Vm.ReviewOpen&&f.Workspace!.Store.RelistPlans(f.Workspace.Authentication.SteamId!).Single().SubmissionBatch is not null);
+    }
+    private static async Task NoAutomaticSale(){var log=new Trace();using var trace=DiagnosticHub.Use(log);using var f=new Fixture();await PrepareNewTargets(f);await f.Vm.ReviewCancelledTargetsAsync();Check(f.Vm.ReviewRows.Count==2&&f.Server.Sells==0&&f.Workspace!.Store.Commands().Where(x=>x.Kind=="cancel").All(x=>x.State==SaleState.Submitted));Check(log.Events.Any(x=>x.Reason=="NewAssetReview"&&x.Context.OperationId==f.Vm.LastOperationId)&&log.Events.Any(x=>x.Reason=="Prepared"&&x.JournalState=="Committed"));var json=System.Text.Json.JsonSerializer.Serialize(log.Events);Check(!json.Contains("76561198000000001")&&!json.Contains("Synthetic stack"));f.Vm.CloseReview.Execute(null);Check(!f.Vm.ReviewOpen&&f.Server.Sells==0);}
+    private static async Task ExternalUnknown(){using var f=new Fixture();await f.Login();f.Server.External(2);f.Server.CancelTimeout=true;await f.Load();await f.Vm.PrepareListingRepriceAsync();f.Arm();await f.Vm.CancelForNewReviewAsync();await f.Vm.ReviewCancelledTargetsAsync();Check(f.Server.Cancels==1&&f.Server.Sells==0&&!f.Vm.ReviewOpen&&f.Vm.ListingPriceStatus.Contains("불명")&&f.Workspace!.Store.Commands().Single(x=>x.Kind=="cancel") is {Accepted:false,State:SaleState.Unknown});}
+    private static async Task NewShortage(){using var f=new Fixture();await PrepareNewTargets(f);f.Server.Available.Clear();await f.Vm.ReviewCancelledTargetsAsync();Check(!f.Vm.ReviewOpen&&f.Vm.ListingPriceStatus.Contains("부족")&&f.Server.Sells==0);}
+    private static async Task NewBookChanged(){using var f=new Fixture();await PrepareNewTargets(f);await f.Vm.ReviewCancelledTargetsAsync();f.Server.TopQuantity=1;await f.Vm.SubmitAsync();Check(f.Server.Sells==0&&!f.Vm.ReviewOpen);await f.Vm.SubmitAsync();Check(f.Server.Sells==0&&f.Workspace!.Store.RelistPlans(f.Workspace.Authentication.SteamId!).Single().SubmissionBatch is not null);}
+    private static async Task PlanImmutable(){using var f=new Fixture();await PrepareNewTargets(f);var plan=f.Workspace!.Store.RelistPlans(f.Workspace.Authentication.SteamId!).Single();try{f.Workspace.Store.SaveRelistPlan(plan with{Account="76561198000000002"});throw new Exception("mutated plan accepted");}catch(InvalidDataException){}Check(f.Workspace.Store.RelistPlans(plan.Account).Single().SubmissionBatch is null);}
     private sealed class Fixture:IDisposable
     {
         private readonly string folder=Path.Combine(Directory.GetCurrentDirectory(),"runtime","usability-"+Guid.NewGuid().ToString("N"));

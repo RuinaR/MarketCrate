@@ -50,7 +50,21 @@ internal static class UsabilityUiTests
             }
             Directory.Delete(root,true);
         });
+        test("외부 취소 후 새 자산 전체 검토·단일 승인 명령 연결",()=>
+        {
+            var root=Path.Combine(Directory.GetCurrentDirectory(),"runtime","new-target-ui-"+Guid.NewGuid().ToString("N"));using var server=new BulkRepriceContractServer();server.External(2);server.ChangedReturn=true;server.Available.Clear();SteamExperimentalWorkspace? workspace=null;
+            using(var vm=new SteamWorkspaceViewModel(scope=>workspace=new(root,scope.AppId,scope.ContextId,scope.Name,new(true,"synthetic fixture only"),server.Connection(),server.Clock),true){RiskAccepted=true,CredentialsAccepted=true})
+            {
+                Complete(vm.BeginAsync());server.Clock.Advance();Complete(vm.CheckAsync());Complete(vm.LoadListingsAsync());vm.SelectAllListings.Execute(null);Complete(vm.PrepareListingRepriceAsync());vm.TradeAccepted=true;workspace!.Access.Acknowledge(true,true,true,true);
+                var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,800,1,"usability-new-target-cancel.png");Check(Find<Button>(view).Any(x=>ReferenceEquals(x.Command,vm.CancelForNewReview)&&x.IsEnabled),"cancel bridge disconnected");
+                Complete(vm.CancelForNewReviewAsync());Complete(vm.ReviewCancelledTargetsAsync());render(view,1100,800,1.25,"usability-new-target-review.png");render(view,1380,900,2,"usability-new-target-review-200.png");
+                Check(vm.ReviewOpen&&vm.ReviewRows.Count==2&&Find<TextBlock>(view).Any(x=>x.Text.Contains("3100"))&&Find<Button>(view).Any(x=>ReferenceEquals(x.Command,vm.Submit)&&x.IsEnabled)&&server.Sells==0,"new actual asset approval missing");
+                Complete(vm.SubmitAsync());Check(server.Sells==2&&server.Cancels==2,"whole sale did not execute once");
+            }
+            Directory.Delete(root,true);
+        });
     }
+        // Detached control only; no desktop input, popup, or native window.
     private static void Complete(Task task){var watch=Stopwatch.StartNew();while(!task.IsCompleted){if(watch.Elapsed>TimeSpan.FromSeconds(20))throw new TimeoutException();var frame=new DispatcherFrame();Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Background,new Action(()=>frame.Continue=false));Dispatcher.PushFrame(frame);Thread.Sleep(1);}task.GetAwaiter().GetResult();}
     private static IEnumerable<T> Find<T>(DependencyObject root)where T:DependencyObject{for(var i=0;i<VisualTreeHelper.GetChildrenCount(root);i++){var c=VisualTreeHelper.GetChild(root,i);if(c is T found)yield return found;foreach(var n in Find<T>(c))yield return n;}}
     private static void Check(bool value,string reason){if(!value)throw new Exception(reason);}

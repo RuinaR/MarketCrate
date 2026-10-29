@@ -18,5 +18,5 @@ foreach($name in $forbidden){if($name-in@($app.Types+$core.Types+$infrastructure
 if($core.MockRetry){throw 'Mock-only retry behavior leaked'}
 foreach($name in @('ProductionShellView','ProductionShellViewModel','SteamWorkspaceViewModel','DiagnosticsViewModel','BusyIndicator')){if($name-notin$app.Types){throw "Production UI missing: $name"}}
 if('developmentreadcheckview.baml'-in$app.Resources-or'mainview.baml'-in$app.Resources-or'productionshellview.baml'-notin$app.Resources){throw 'Production/development WPF resource mismatch'}
-if('FeeContractResolver'-notin$infrastructure.Types-or'SteamAuthStore'-notin$infrastructure.Types-or'SteamListingExecutor'-notin$infrastructure.Types-or'UserPreferencesStore'-notin$infrastructure.Types){throw 'Actual services missing'}
+if('SteamRelistPlan'-notin$infrastructure.Types-or'FeeContractResolver'-notin$infrastructure.Types-or'SteamAuthStore'-notin$infrastructure.Types-or'SteamListingExecutor'-notin$infrastructure.Types-or'UserPreferencesStore'-notin$infrastructure.Types){throw 'Actual services missing'}
 Write-Output 'PASS production metadata: no Demo/Mock implementations, offline owner, legacy/self-check UI/BAML or Mock retry; actual Steam shell/services retained. Binaries NOT executed.'

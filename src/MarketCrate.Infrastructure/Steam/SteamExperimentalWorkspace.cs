@@ -17,6 +17,7 @@ public sealed class SteamExperimentalWorkspace : IDisposable
     public SteamListingExecutor Executor { get; private set; }
     public SaleBatchCoordinator Batches { get; private set; }
     public SteamStateStore Store => store;
+    public SteamInventoryProvider InventoryFor(int appId,string contextId,string game)=>new(http,Authentication,appId,contextId,game);
     public SteamTradingPolicy Policy { get; private set; }
     private readonly bool synthetic;
     private readonly HashSet<int> verifiedApps=[];

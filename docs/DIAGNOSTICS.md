@@ -1,5 +1,12 @@
 # 진단 시스템 (10차, 2026-10-28 KST)
 
+## 0.19.0 추가 — 외부 등록의 새 자산 재판매
+
+SteamMarketHelper의 취소→보관함 재조회→같은 상품의 새 자산 ID 선택 방식을 실제 서비스에 연결했다. 전체 취소 승인 후 서버 접수·목록 부재를 확인하고, 실제 보관함·가용 수량·수수료·공유 호가로 새 대상을 제안한다. 원래 아이템의 반환 확정은 아니며 다른 기존 보유분일 수 있음을 표시한다. 새 실제 자산 ID·수량·가격을 전체 검토해 판매등록 한 번 승인하면 기존 Coordinator가 배치 처리한다. 항목별 추가 판매 클릭은 없다. SQLite 취소 계획/새 배치 연결을 보존하고 불명 취소·원래 예약은 추측으로 해제하지 않는다. 최근 미제출 계획은 사용자 요청 시 재조회하며 자동 거래하지 않는다. 개별 수량1, 최대100등록/10상품만 지원한다.
+
+추가 합성6개/비표시WPF1개: 변경ID·재시작 후 새 승인, 취소만으로 판매0, Unknown 재전송0, 전체 수량 부족·호가 변경 차단, 계획 불변·OperationId/비밀정보 보호. 최종 기능305/305·WPF61/61·배포19/19 PASS, 경고/오류0. 취소/새 대상 검토125%·200% RTB를 직접 검토했다. 실제 계정/수수료·판매/물리 입력은 미검증이다. 상세 호출 경로·보존/재시도 제약은 [판매 실행 계약](SALE-EXECUTION-SPEC.md)의 0.19 추가 절을 따른다.
+
+
 ## 0.19.0 처리 피드백과 재등록
 
 PrepareListingRepriceAsync→같은 OperationId의 Fees/Orderbook→PricePlan(5000,D05/D08/B10)→BuildManagement→FinalValidation→Reprice(7003)/Cancel→저널/결과를 추적한다. 외부 반환 인과가 없으면5004/Management/Blocked/EvidenceMissing/endpoint RepriceReturn/reason NoCausalEvidence만 기록한다. 실제 URL/이름/계정/자산ID/QR/토큰/원문은 이벤트에 넣지 않는다. 신규 External 검사에서 원인·OperationId와 계정/아이템 이름 미노출을 확인했다.

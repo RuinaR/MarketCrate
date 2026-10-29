@@ -9,7 +9,7 @@ public sealed record SteamCommandRecord(string RequestKey, string Account, SaleL
     DateTimeOffset? SentAt = null, string[]? BeforeListingIds = null, int AvailableBefore = 0, bool Accepted = false);
 
 // Separate from Demo; no delete/reset UI and no auth material. A missing response never removes intent.
-public sealed class SteamStateStore : IBatchJournal, IDisposable
+public sealed partial class SteamStateStore : IBatchJournal, IDisposable
 {
     private readonly FileStream lease;
     private readonly SqliteConnection connection;
