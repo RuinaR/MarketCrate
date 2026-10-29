@@ -360,6 +360,8 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         SelectedRequest=RequestOptions.Any(x=>x.Key==previous)?previous:null;
         var available=workspace.Store.AvailableAll(Assets.Select(x=>x.Asset).ToArray());
         Bulk(()=>{foreach(var row in Assets)row.UpdateAvailable(available[row.Asset.Key]);});
+        DiagnosticHub.Emit(DiagnosticEvent.InventoryContract,DiagnosticArea.Data,HasInventoryReservations?DiagnosticOutcome.Blocked:DiagnosticOutcome.Completed,endpoint:"Inventory",reason:"InventoryReservedRows",count:Assets.Count(x=>x.Available<x.Owned),requirement:"C10");
+        DiagnosticHub.Emit(DiagnosticEvent.InventoryContract,DiagnosticArea.Data,endpoint:"Inventory",reason:"InventorySelectableRows",count:Assets.Count(x=>x.CanSelect),requirement:"C10");
     }
     private void ClearData(){LastFailedOperationId=null;Raise(nameof(DiagnosticOperationId));relistReview=null;ReviewContextText="";PendingRelists.Clear();SelectedRelist=null;tradeAccepted=!syntheticConnection;Raise(nameof(TradeAccepted));ResetDevelopmentTools();foreach(var read in ReadStatuses)read.Update(SteamReadState.NotQueried);readChecks.Clear();displayedChallenge=null;Raise(nameof(ContractSummary));ResetCatalog();gameFees.Clear();assetPublisherFees.Clear();TradingConfirmation=syntheticConnection?"":"실제 거래";TradingPreparation="실거래 모드 기본 선택 · 새 연결의 전송 권한은 서버 계약 확인 후 준비됩니다.";inventoryViews.Clear();retainedSelections.Clear();selections.Clear();listingSelections.Clear();VisibleAssets.Clear();VisibleListings.Clear();QrMatrix=null;Assets.Clear();Listings.Clear();ReviewRows.Clear();Results.Clear();Requests.Clear();RequestOptions.Clear();RepriceKeys.Clear();SelectedRequest=SelectedReprice=null;fees=null;ReviewOpen=ManagementOpen=false;managementBooks.Clear();EvidenceText="대조 증거 없음";HistoryText="중간가격 이력 미조회 (정확한 거래 VWAP 아님)";Raise(nameof(CurrencyText));}
     private void LogoutNow()=>EndSession(true);
@@ -387,6 +389,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     {
         if(bulkUpdate)return;
         Raise(nameof(BatchProgressText));
+        Raise(nameof(HasInventoryReservations));Raise(nameof(InventoryReservationSummary));OpenInventoryReservations?.Refresh();
         Raise(nameof(InventoryEmptyTitle));Raise(nameof(InventoryEmptyHint));
         Raise(nameof(CanChangeRememberLogin));DeleteSavedLogin?.Refresh();
         CompareOfficialFees?.Refresh();Raise(nameof(FeeComparisonAvailability));InvalidateFeeComparison();
@@ -409,11 +412,12 @@ public sealed class SteamAssetRow(InventoryAsset asset,int available,Action chan
     public ItemImageReference? Image{get;init;}public Guid? ImageOperation{get;init;}
     public InventoryAsset Asset {get;}=asset;public string Name=>Asset.Name;public int Owned=>Asset.Quantity;public int Available {get;private set;}=available;public int Maximum=>Math.Max(1,Available);
     public bool CanSelect=>Asset.Marketable&&!Asset.Locked&&Available>0;public string Flags=>$"보유 {Owned} · 예약 {Math.Max(0,Owned-Available)} · 가용 {Available} · {(Asset.Marketable?"장터 판매 가능":"장터 판매 불가")} · {(Asset.Tradable?"거래 가능":"거래 제한")}";
+    public string SelectionHint=>!Asset.Marketable?"Steam이 장터 판매 불가로 표시한 아이템입니다.":Asset.Locked?"현재 판매 제한이 있는 아이템입니다.":Available<Owned?"이전 판매 요청으로 예약 중입니다. 보관함을 갱신해도 예약은 해제되지 않습니다. ‘예약된 항목 확인’에서 요청 상태를 대조하세요.":"판매 수량을 정한 뒤 시세를 갱신하세요.";
     private bool selected;private int quantity=1;public bool Selected{get=>selected;set{if(Set(ref selected,value&&CanSelect))changed();}}public int Quantity{get=>quantity;set{if(Set(ref quantity,Math.Clamp(value,1,Maximum)))changed();}}
     public PriceSnapshot? Price {get;private set;}public string PriceText=>Price?.Estimate is {} indicator?$"Steam pricehistory 추정 중앙값 {new Money(indicator.Minor,indicator.Currency)} (실제 평균 아님) · {indicator.Buckets}개 기간 / 거래량 {indicator.Volume} · {indicator.WindowStart:MM-dd HH:mm}–{indicator.WindowEnd:MM-dd HH:mm} UTC · 수집 {indicator.CapturedAt:HH:mm:ss}":Price is null?"시세 미조회":$"{PriceDisplay.Immediate} · 최고 구매주문  {(Price.Bids.IsEmpty?"매수 잔량 없음":new Money(Price.Bids[0].BuyerPays,Price.Currency).ToString())} · 최저 판매호가 정보 없음 · {Price.CapturedAt:HH:mm:ss} UTC";
     public void ClearPrice(){Price=null;Raise(nameof(PriceText));}
     public void SetPrice(PriceSnapshot price){Price=price;Raise(nameof(PriceText));changed();}
-    public void UpdateAvailable(int value){Available=value;if(value==0)Selected=false;quantity=Math.Clamp(quantity,1,Maximum);Raise(nameof(Available));Raise(nameof(Flags));Raise(nameof(Maximum));Raise(nameof(CanSelect));Raise(nameof(Quantity));changed();}
+    public void UpdateAvailable(int value){Available=value;if(value==0)Selected=false;quantity=Math.Clamp(quantity,1,Maximum);Raise(nameof(Available));Raise(nameof(Flags));Raise(nameof(SelectionHint));Raise(nameof(Maximum));Raise(nameof(CanSelect));Raise(nameof(Quantity));changed();}
 }
 public sealed class SteamReviewRow:Observable
 {

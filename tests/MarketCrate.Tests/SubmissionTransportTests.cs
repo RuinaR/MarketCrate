@@ -20,7 +20,9 @@ public static class SubmissionTransportTests
             ("Approval response distinguishes mobile email unspecified and no request",ApprovalChannels),
             ("Email approval persists without claiming phone approval and old journals remain compatible",EmailJournal),
             ("Missing server ID cannot turn a pending mobile request into a coincidental listing",PendingWithoutId),
-            ("Empty HTTP200 cancel is an acknowledgement while empty HTTP400 stays Unknown",EmptyCancellation)
+            ("Empty HTTP200 cancel is an acknowledgement while empty HTTP400 stays Unknown",EmptyCancellation),
+            ("Owned item reserved by HTTP400 stays blocked across refresh and restart with a reachable request",ReservedInventory),
+            ("Partial reservation retains only the unreserved selectable quantity",PartialReservation)
         };
         int passed=0,failed=0;foreach(var(name,run)in tests)try{await run();passed++;Console.WriteLine("PASS "+name);}catch(Exception error){failed++;Console.WriteLine("FAIL "+name+": "+error);}return(passed,failed);
     }
@@ -107,9 +109,30 @@ public static class SubmissionTransportTests
             var listing=(await f.Workspace!.Orders.RefreshAsync()).Single();f.Server.EmptyCancelBody=true;f.Server.CancelStatus=status;
             var result=await f.Workspace.Executor.CancelAsync(listing,"empty-cancel");
             Check(f.Server.Cancels==1&&f.Server.Sends==1&&result.State==(status==200?SaleState.Submitted:SaleState.Unknown));
-            if(status==200)Check((await f.Workspace.Executor.ReconcileCancellationAsync("empty-cancel")).State==SaleState.Reconciled);
+            if(status==200){Check((await f.Workspace.Executor.ReconcileCancellationAsync("empty-cancel")).State==SaleState.Reconciled);Check(f.Workspace.Store.ReservedSells().Count==0);}
             else Check(f.Workspace.Store.ReadCommand("empty-cancel")!.State==SaleState.Unknown);
         }
+    }
+    private static async Task ReservedInventory()
+    {
+        var trace=new Trace();using var diagnostics=DiagnosticHub.Use(trace);
+        using var f=new FifthStageTests.Fixture();f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();
+        f.Server.SellStatus=400;f.Server.SellBody="{\"success\":false}";await f.Vm.SubmitAsync();
+        var original=f.Workspace!.Store.Commands().Single(x=>x.Kind=="sell");Check(original.State==SaleState.Unknown);
+        f.Vm.Logout.Execute(null);await f.Login();await f.Vm.LoadAsync();
+        var row=f.Vm.Assets.Single();Check(row.Owned==1&&row.Available==0&&!row.CanSelect&&row.SelectionHint.Contains("이전")&&f.Vm.HasInventoryReservations&&f.Vm.InventoryReservationSummary.Contains("이전 판매 요청"));
+        f.Vm.SelectAll.Execute(null);Check(!row.Selected&&f.Vm.OpenInventoryReservations.CanExecute(null));
+        var sends=f.Server.Sends;f.Vm.OpenInventoryReservations.Execute(null);
+        Check(f.Vm.WorkPage==3&&f.Vm.SelectedRequest==original.RequestKey&&f.Vm.Results.Any(x=>x.State==SaleState.Unknown)&&f.Server.Sends==sends&&f.Workspace.Store.Available(row.Asset)==0);
+        Check(trace.Events.Any(x=>x.Reason=="InventoryReservedRows"&&x.Count==1)&&trace.Events.Any(x=>x.Reason=="InventorySelectableRows"&&x.Count==0)&&trace.Events.Any(x=>x.Reason=="InventoryReservationOpened"&&x.Count==1));
+        Check(!JsonSerializer.Serialize(trace.Events).Contains(original.RequestKey));
+        await f.Vm.RefreshSelectedRequestAsync();Check(f.Server.Sends==1&&f.Workspace.Store.Available(row.Asset)==0&&f.Workspace.Store.ReadCommand(original.RequestKey)!.State==SaleState.Unknown);
+    }
+    private static async Task PartialReservation()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.Free=2;await f.Login();await f.Prepare(1);f.EnableTrading();f.Server.SellStatus=400;f.Server.SellBody="{\"success\":false}";await f.Vm.SubmitAsync();
+        f.Vm.Logout.Execute(null);await f.Login();await f.Vm.LoadAsync();var row=f.Vm.Assets.Single();
+        Check(row.Owned==2&&row.Available==1&&row.Maximum==1&&row.CanSelect&&f.Vm.HasInventoryReservations);row.Quantity=2;row.Selected=true;Check(row.Quantity==1&&row.Selected&&f.Server.Sends==1);
     }
     private sealed class Trace:IDiagnosticLog{public Guid SessionId{get;}=Guid.NewGuid();public List<DiagnosticRecord> Events{get;}=[];public void Write(DiagnosticRecord value)=>Events.Add(value);}
     private static void Check(bool value){if(!value)throw new Exception("submission transport contract assertion");}

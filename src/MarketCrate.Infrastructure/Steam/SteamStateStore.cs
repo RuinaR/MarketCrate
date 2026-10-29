@@ -151,11 +151,20 @@ public sealed partial class SteamStateStore : IBatchJournal, IDisposable
     }
     public int Available(InventoryAsset current)
         => AvailableAll([current])[current.Key];
+    public IReadOnlyList<SteamCommandRecord> ReservedSells()
+    {
+        var released=ReleasedSellKeys();
+        return Commands().Where(x=>x.Kind=="sell"&&x.State!=SaleState.Failed&&!released.Contains(x.RequestKey)).ToArray();
+    }
+    private HashSet<string> ReleasedSellKeys()
+    {
+        using var query=connection.CreateCommand();query.CommandText="SELECT value FROM state WHERE kind='return'";using var reader=StorageDiagnostics.Reader(query);
+        var released=new HashSet<string>();while(reader.Read()){var proof=JsonSerializer.Deserialize<SteamReturnProof>(reader.GetString(0))!;if(proof.SellKey is not null)released.Add(proof.SellKey);}return released;
+    }
     public IReadOnlyDictionary<AssetKey,int> AvailableAll(IReadOnlyList<InventoryAsset> assets)
     {
         var groups=Commands().Where(x=>x.Kind=="sell").GroupBy(x=>x.Line.Asset.Key).ToDictionary(x=>x.Key,x=>x.ToArray());
-        using var query = connection.CreateCommand(); query.CommandText = "SELECT value FROM state WHERE kind='return'"; using var reader = StorageDiagnostics.Reader(query);
-        var released = new HashSet<string>(); while (reader.Read()) { var proof = JsonSerializer.Deserialize<SteamReturnProof>(reader.GetString(0))!; if (proof.SellKey is not null) released.Add(proof.SellKey); }
+        var released=ReleasedSellKeys();
         return assets.ToDictionary(x=>x.Key,x=>
         {
             if(!groups.TryGetValue(x.Key,out var commands))return x.Quantity;

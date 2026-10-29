@@ -270,3 +270,7 @@ FeeContext ReadContract/HttpRequest는 기존 OperationId에 FeeContextVanityRed
 ## 0.20.5 승인 채널 추적
 
 기존 OperationId 안의 ReadContract/Sales, endpoint Sell에 MobileConfirmationRequired / EmailConfirmationRequired / EitherConfirmationRequired / ConfirmationChannelUnknown / NoConfirmationFlag를 화이트리스트 이유로 기록한다. 저널 Approval과 상태 전이를 연결하지만 QR·토큰·주소·응답 원문은 기록하지 않는다. HTTP400은 Unknown이며 승인 대기 증거로 간주하지 않는다. ID 없는 후보는 근거 부족으로 유지한다. 로그는 SQLite 거래 상태의 대체물이 아니다. 전체 경로는 OPEN-SOURCE-FLOW-AUDIT.md.
+
+## 0.20.6 예약 진단
+
+갱신 완료의 기존 OperationId 아래 InventoryContract/C10에서 InventoryReservedRows(예약된 자산 종류 수), InventorySelectableRows(선택 가능한 자산 종류 수)를 고정 이유로 기록한다. 이전 요청 열기는 EvidenceChecked/InventoryReservationOpened와 연결하며 현재 계정·자산을 내부 비교할 뿐 ID/상품명/원문은 로그에 넣지 않는다. 예약 수량과 자산/description 총계는 서로 다른 지표다. 사용자99b85195 진단은 조회1건 성공만 증명하며 예약의 상세 원인까지 기록돼 있지 않았다. 앞으로 보관함의 '예약된 항목 확인'→선택 요청 상태 확인 후 해당 작업을 내보내면 서버 대조 근거를 추적할 수 있다. 진단 ZIP에는 사용자 DB/인증/원문을 추가하지 않는다.
