@@ -1,5 +1,14 @@
 # 진단 시스템 (10차, 2026-10-28 KST)
 
+## 0.18 수수료 모드·독립 지갑 추적
+
+UI LoadFeesAsync/LoadWalletAsync→동일 OperationId→HTTP3000/3001/3005→wallet4205→FeeValidated5002→ReadState4203→UI를 추적한다. FeeContext는 자기 계정의 정확한 inventory HTML GET 목적의 고정 endpoint 식별자이며 URL/계정/HTML/props/쿠키를 기록하지 않는다. mode는 Reason/새 상태에 VerifiedLegacy/VerifiedNew/Unverified/Unsupported/Restricted, 이전 상태에는 ModeMissing/ModeInvalid/ModeAmbiguous/WalletChanged/AppContextMissing/LegacyFormulaConflict/WalletAndAppContext/ExplicitNewMode 등의 고정 화이트리스트 원인만 남긴다.
+
+정상 예: LoadFeesAsync → Wallet200 →5002 Unverified/ModeMissing→FeeContext200→5002 VerifiedLegacy/WalletAndAppContext→FeesRead Ready(API 전송0). 오류 예:5002 VerifiedNew/ExplicitNewMode→Fees200/HtmlMarket→3002 Schema→FeesRead Failed; 인증과 마지막 KRW wallet 관측은 유지, 지갑 단독 갱신과 목록은 독립 사용 가능하다. Challenge로 추측하지 않는다. 모드 증거가 없으면 Unsupported로 종료하며 사용자에게 raw HTML 저장을 요청하지 않는다.
+
+정식 전용 자가검증4204 UI/실행 모델은 제외했지만 과거 JSONL을 읽기 위한 이벤트 식별자는 유지한다. 문제 해결에서 최근 오류→관련 작업 검색→범위 검토→진단 ZIP 로컬 내보내기를 사용한다. 진단 ZIP은 외부 자동 전송0, Auth/QR/토큰/원문/사용자 ID 제외. FeeModeTests.Diagnostics/WalletIndependent와 기존 누출 canary·회전/보존/ZIP 회귀 PASS. 로그는 여전히 거래 저널의 대체가 아니다.
+
+
 ## 16차 — 로그인 유지 진단
 
 새2006 SessionCredential 이벤트는 CredentialLoad/LoadFailed, CredentialSaved/SaveFailed, CredentialDeleted/DeleteFailed, CredentialPauseFailed/Unavailable 고정 분류만 기록한다. AuthRestore/TokenValidation/AccountValidation/SessionRestored를 기존2004/2005와 연결한다. UI Run의 OperationId를 finalizelogin/AuthTransfer HTTP CorrelationId 및 저장 결과까지 유지한다. CryptographicException은 메시지 없이 타입/앱 내부 stack만 허용한다.

@@ -17,6 +17,7 @@ public sealed class SteamContractServer : HttpMessageHandler
     public int ManyAssets;
     public TaskCompletionSource? InventoryStarted,InventoryRelease;
     public SteamFeeSchedule Schedule=>new(Currency,Currency=="KRW"?100:1,Currency=="KRW"?100:1,new(50000),new(100000));
+    public static string HistoryJson(int gap=1)=>JsonSerializer.Serialize(new{success=true,prices=new object[][]{[DateTimeOffset.UtcNow.AddHours(-3).ToString("MMM dd yyyy HH: '+0'",System.Globalization.CultureInfo.InvariantCulture),115,"2"],[DateTimeOffset.UtcNow.AddHours(-3+gap).ToString("MMM dd yyyy HH: '+0'",System.Globalization.CultureInfo.InvariantCulture),115,"1"]}});
     // A fresh handler forwards to the same synthetic state for reconnect tests without reusing disposed HttpClient handlers.
     public HttpMessageHandler Connection()=>new Forward(this);
     private sealed class Forward(SteamContractServer server):HttpMessageHandler{protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage r,CancellationToken t)=>server.Respond(r,t);}
@@ -42,9 +43,10 @@ public sealed class SteamContractServer : HttpMessageHandler
             if(DynamicInventory){var parts=path.Split('/');json=json.Replace("\"appid\":730","\"appid\":"+parts[3],StringComparison.Ordinal).Replace("\"contextid\":\"2\"","\"contextid\":\""+parts[4]+"\"",StringComparison.Ordinal);}
         }
         else if(path=="/market/")json="<script>var g_rgWalletInfo = "+JsonSerializer.Serialize(new{wallet_currency=Currency=="KRW"?16:1,wallet_market_minimum=Schedule.MinimumWire,wallet_currency_increment=Schedule.IncrementWire})+";</script>";
+        else if(path=="/profiles/76561198000000001/inventory/")json="<script>g_bLoggedIn=true;g_steamID='76561198000000001';</script><div data-featuretarget='marketselldialog' data-props='"+System.Net.WebUtility.HtmlEncode(JsonSerializer.Serialize(new{newFeeRates=true,walletInfo=new{wallet_currency=Currency=="KRW"?16:1,wallet_market_minimum=Schedule.MinimumWire,wallet_currency_increment=Schedule.IncrementWire}}))+"'></div>";
         else if(path=="/market/ajaxfeestructure/")json="{\"steam_fee\":{\"fee_rate\":\"0.05\",\"fee_cap\":\"0\"},\"publisher_fee\":{\"fee_rate\":\"0.1\",\"fee_cap\":\"0\"}}";
         else if(path=="/market/orderbook")json=JsonSerializer.Serialize(new{data=new{success=true,data=new{eCurrency=Currency=="KRW"?16:1,rgCompactBuyOrders=new long[]{new Money(115,Currency).Wire,3,new Money(Currency=="KRW"?113:112,Currency).Wire,4,new Money(110,Currency).Wire,3}}}});
-        else if(path=="/market/pricehistory/"){HistoryStarted?.TrySetResult();if(HistoryRelease is not null)await HistoryRelease.Task.WaitAsync(token);json=HistoryOverride??"{\"success\":true,\"prices\":[[\"Oct 28 2026 01: +0\",115,\"3\"]]}";}
+        else if(path=="/market/pricehistory/"){HistoryStarted?.TrySetResult();if(HistoryRelease is not null)await HistoryRelease.Task.WaitAsync(token);json=HistoryOverride??HistoryJson();}
         else if(path=="/market/mylistings/render/")json=ListingsJson();
         else if(path=="/market/sellitem/")
         {

@@ -1,4 +1,11 @@
-# 요구사항–구현–검증 추적표 (15차, 2026-10-29 KST)
+# 요구사항–구현–검증 추적표 (17차, 2026-10-29 KST)
+
+## 17차 / 0.18.0 —75개 ID·판정 유지
+
+**47 COMPLETE /15 PARTIAL /0 MISSING /4 BLOCKED /9 UNVERIFIED**, 승격0. D09/D10/E/F/B09–B10: SteamWorkspace.LoadFees→Workspace.FeesAsync→FeeContractResolver→SteamFeeSchedule→FeeFor→BuildReview→SaleBatchCoordinator→Executor.ValidateBatch/재가격→SQLite/결과. FeeModeTests16개와WPF 비교1개를 추가했다. 현재 공식 조건을 확인한 코드/합성 검증과 해당 계정의 실제 수수료 검증은 분리한다.
+
+A01–A06 로그인 유지 부가 경로는 사용자0.17 종료/재시작 실제 복원 성공으로 증거를 보완한다. 새0.18 실서버 복원·회전/장기 만료/다른 Windows 사용자는 미검증이고 원75개 인증/실거래 전체 COMPLETE로 확대하지 않는다. 정식 자가검증 UI 제거는 요구사항 삭제가 아니며 정상 조회·문제 해결·로그/회귀는 유지한다. 원본75행/ID/기준은 아래 그대로 보존한다.
+
 
 ## 16차 — 최초75개 ID/판정 보존
 

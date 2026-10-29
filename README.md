@@ -1,5 +1,38 @@
 # MarketCrate
 
+Windows용 Steam 보관함·장터 관리 도구입니다. 공식 Steam 제품이 아니며 비공식 연동에는 계정 제재 위험이 있습니다.
+
+## 설치와 로그인
+
+1. `artifacts/releases.json`의 **Latest**에 표시된0.18.0 Windows x64 portable ZIP 전체를 새 폴더에 압축 해제합니다. 별도 .NET 설치 없이 실행하도록 런타임을 포함하며 Windows10/11 x64가 대상입니다.
+2. `MarketCrate.App.exe`를 직접 실행하고 **계정 및 설정**에서 위험 안내를 확인합니다. 기존 Steam·브라우저 쿠키를 가져오지 않습니다.
+3. 원하면 QR 시작 전에 **로그인 상태 유지**를 선택합니다. 공식 Steam 모바일 앱에서 직접 QR을 승인한 후 앱에서 승인 상태를 확인합니다.
+4. 일반 앱 종료는 암호화 저장 로그인을 보존합니다. 명시적 로그아웃/이 PC 저장 로그인 삭제는 로컬 자격 증명을 지웁니다. 사용자0.17에서 실제 재시작 복원이 성공했으며 새 버전/장기 만료·회전까지 확인한 것은 아닙니다.
+
+## 보관함과 판매 관리
+
+- **보관함:** 게임 선택→보관함 갱신→검색/아이템 선택·수량→지갑·수수료 조회→선택 시세 갱신→최종 가격 검토 순서로 사용합니다. 필요한 게임이 없으면 게임·판매 설정에서 확인한 AppID/context를 추가합니다.
+- **즉시거래가능가:** 현재 구매주문 기준 예상 가격이며 실제 즉시 체결을 보장하지 않습니다. 동일 상품은 호가 잔량을 공유하고 가격별 수량으로 나뉩니다. 정확한 평균 자료가 없으면 중앙값 추정치를 평균이라고 표시하지 않습니다.
+- **판매 중:** 판매목록을 직접 갱신하고 선택·취소 검토·재가격을 진행합니다. 취소/반환이나 등록 결과가 불명이면 자동 재전송하지 않습니다.
+- **전체 판매등록:** 최종 검토의 한 번 승인으로 검토된 전체 배치를 시작하는 구조입니다. 실제 거래는 매 실행 기본 OFF이며 계정·자산·통화·수수료·가격을 검증하고 별도로 해당 세션에서 활성화해야 합니다. 공식 Steam 모바일 승인은 사용자가 직접 합니다. 승인 대기는 게시 완료가 아닙니다.
+
+## 수수료 확인과 문제 해결
+
+0.18은 공식 판매 화면이 선택한 수수료 모드를 확인합니다. 구형 wallet/app 설정 모드에서는 불필요한 새 수수료 API를 호출하지 않고, 신형 모드에서만 JSON 계약을 조회합니다. HTML 실패를 성공이나 구형 모드로 대체하지 않습니다. 확인하지 못한 가격·통화·수수료·스택은 전송을 차단합니다. 지갑 통화만 독립 갱신할 수도 있습니다.
+
+**현재 실제 계정의 수수료 계약과 판매 게시 성공은 미검증입니다. 완전 실거래 검증/RELEASE_READY를 선언한 버전이 아닙니다.** 먼저 지갑·수수료를1회 조회하고 공식 Steam 판매 화면의 최소/일반/다른 가격 구간을 비교하세요. 게임·판매 설정에서 판매자 수령액·구매자 결제액·Steam/게임 수수료를 직접 입력할 수 있습니다. 보이지 않는 금액은 추측하지 마세요. 사용자 비교값은 서버 검증/거래 권한이 아닙니다.
+
+오류가 나면 반복 거래하지 말고 **문제 해결→관련 로그 검색→내보낼 범위 검토→진단 ZIP 로컬 저장**을 사용하세요. QR·토큰·쿠키·Auth 폴더·원본 HTTP 응답을 전달하지 않습니다. 진단을 자동으로 외부에 보내지 않습니다.
+
+설정·저장 로그인·SQLite 거래 저널은 `%LOCALAPPDATA%/MarketCrate`에 보존됩니다. 업데이트는 새 앱 폴더에 풀어 실행하며 사용자 데이터 폴더를 삭제하거나 배포 폴더로 복사하지 않습니다. Latest/롤백의 정확한 ZIP·SHA256은 [현재 상태](docs/CURRENT-STATUS.md), [배포 확인](docs/DEPLOYMENT-CHECKLIST.md)을 보세요. 최신0.18과 사용자 복원이 확인된0.17 롤백본을 보존합니다.
+
+일반 앱에는 Mock/연결 자가검증 화면이 없습니다. 타 프로세스·게임 메모리/입력/창/화면에 접근하거나 Steam Guard를 자동화하지 않습니다. 라이선스와 코드 출처는 [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES.md), 개발 계약·검증 범위는 [연동 조사](docs/STEAM-INTEGRATION-FEASIBILITY.md), [QA](docs/QA-MATRIX.md), [로그인 유지](docs/SESSION-PERSISTENCE.md)를 확인하세요.
+
+<details>
+<summary>이전 배포·개발 기록 (아래 내용은 당시 상태이며 현재 지원 판정이 아닙니다)</summary>
+
+# MarketCrate
+
 ### 0.17.0 배포 확정 — 로그인 유지
 
 구현 소스 **1700bfdc6cb3cf0df984e7c76b0a14fff8558372**, origin/main push. Windows x64 self-contained LiveOnly portable **artifacts/releases/MarketCrate-0.17.0-session-1700bfd-win-x64.zip**, **66,486,397바이트 /413파일**, SHA256 **A025E48C5D2FEBBA1C19D99F6F3B1F0DD3A947DBD77F67850910D9FD3363E1CC**. 원본 `artifacts/releases/session-1700bfd-windows-x64`, BuildVersion0.17.0+1700bfdc6cb3cf0df984e7c76b0a14fff8558372. 전체 entry SHA/SourceCommit·CLR/WPF10.0.9·SQLite x64·ProtectedData DLL/steam-session MIT 전문/고지·인증/DB/로그/개발파일 제외 검사 PASS. PE/BAML은 Mock 부재와 실제 Shell/Steam/AuthStore/refresh-token 검증 코드 존재를 확인했다. 경고·오류0, 실제 EXE/설치/서명은 미실행이다.
@@ -159,3 +192,5 @@ WPF 검사는 MainView/UserControl을 직접 Measure/Arrange하고 RenderTargetB
 `scripts/Publish-SelfContained.ps1`는 Windows에 .NET을 설치하지 않고 CLR/WPF 런타임을 포함하는 새 artifacts 폴더를 만듭니다. 공식 NuGet 접근과 build pack 복원이 필요할 수 있으며 기존 FDD `scripts/Publish.ps1`도 유지합니다. `Prepare-IsolatedGuiQa.ps1 -Deployment SelfContained`와 **실제 생성한** `-SourceDirectory/-OutputDirectory`를 사용해 기존 guest QA 패키지를 만드세요. 호스트에서 앱/guest launcher를 실행하지 않습니다. 실제 게스트가 없어서 GUI24개는 여전히 NOT VERIFIED입니다. OS/native 전제·런타임 업데이트·라이선스·게스트 수동 절차는 [ISOLATED-GUI-QA](docs/ISOLATED-GUI-QA.md)를 확인하세요.
 
 0.12.0 로컬 배포본: `artifacts/MarketCrate-0.12.0-stage12-49a3ffa-win-x64.zip` (78.30MiB,412파일). 구현 커밋49a3ffa. 기능187/187·비표시 WPF42/42·배포계약14/14 PASS, 실제 현재 GUI/Steam 인증·조회는 미검증입니다. Release 빌드/파일 검사는 실계정·설치·서명 검증을 뜻하지 않습니다.
+
+</details>

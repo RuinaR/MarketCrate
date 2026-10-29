@@ -10,5 +10,5 @@
     <None Update="ThirdParty/QrCodeGenerator/LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" TargetPath="licenses/QrCodeGenerator-LICENSE.txt" />
     <None Update="ThirdParty/steam-session/LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" TargetPath="licenses/steam-session-LICENSE.txt" />
   </ItemGroup>
-  <ItemGroup Condition="'$(MarketCrateProduction)' == 'true'"><Compile Remove="DemoProviders.cs;SqliteDemoStore.cs;FileBatchJournal.cs" /></ItemGroup>
+  <ItemGroup Condition="'$(MarketCrateProduction)' == 'true'"><Compile Remove="DemoProviders.cs;SqliteDemoStore.cs;FileBatchJournal.cs;Steam/SteamReadSelfCheck.cs" /></ItemGroup>
 </Project>

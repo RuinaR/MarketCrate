@@ -13,6 +13,7 @@ public sealed partial class SteamWorkspaceViewModel
     public bool ContractToolsVisible=>syntheticConnection;
     public AsyncCommand LoadListings {get;private set;}=null!;
     public AsyncCommand LoadFees {get;private set;}=null!;
+    public AsyncCommand LoadWallet {get;private set;}=null!;
     public Command OpenOfficialMarket {get;private set;}=null!;
     public string ContractSummary => "마지막 파싱 관측 · "+(syntheticConnection?"합성 계약 (실서버 아님)":"실험 연결 (READ_ONLY_READY 판정 아님)")+"\n"+
         (readChecks.Count==0?"조회 증거 없음":string.Join("\n",readChecks.OrderBy(x=>x.Key).Select(x=>$"{x.Key} · {x.Value.Count}건 · {x.Value.Currency??"—"} · {x.Value.At:yyyy-MM-dd HH:mm:ss} UTC · 작업 {x.Value.Operation}")))+
@@ -28,7 +29,8 @@ public sealed partial class SteamWorkspaceViewModel
         officialPage=open??(uri=>System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri){UseShellExecute=true}));
         OpenOfficialMarket=new(()=>{DiagnosticHub.Emit(DiagnosticEvent.UiPage,DiagnosticArea.UI,requirement:"F01",reason:"OfficialMarket");officialPage(new("https://steamcommunity.com/market/"));},()=>!Busy&&!AnyReview);
         LoadListings=new(LoadListingsAsync,Error,()=>CanReadFeature("Listings")&&!Busy&&!AnyReview);
-        LoadFees=new(LoadFeesAsync,Error,()=>CanReadFeature("Wallet")&&CanReadFeature("Fees")&&!Busy&&!AnyReview);
+        LoadFees=new(LoadFeesAsync,Error,()=>CanReadFeature("Wallet")&&CanReadFeature("Fees")&&CanReadFeature("FeeContext")&&!Busy&&!AnyReview);
+        LoadWallet=new(LoadWalletAsync,Error,()=>CanReadFeature("Wallet")&&!Busy&&!AnyReview);
     }
     private void RecordCheck(string endpoint,int count,string? currency=null)
     {
@@ -57,5 +59,11 @@ public sealed partial class SteamWorkspaceViewModel
         RequireConnection();var schedule=await workspace!.FeesAsync(Game.AppId,token);token.ThrowIfCancellationRequested();
         fees=schedule;gameFees[Game.AppId]=schedule;Raise(nameof(CurrencyText));RecordCheck("Fees",1,schedule.Currency);Changed();
         Status="지갑·게임 수수료 조회 완료 · 등록 전 다시 검증 · 실제 거래 활성화 아님";
+    });
+    public Task LoadWalletAsync()=>Run(async token=>
+    {
+        RequireConnection();var wallet=await workspace!.WalletAsync(token);token.ThrowIfCancellationRequested();
+        Raise(nameof(CurrencyText));if(wallet.Currency is null)throw new SteamException(SteamFailure.WalletUnavailable);
+        RecordCheck("Wallet",1,wallet.Currency);Status="지갑 통화 확인 · 판매 수수료 검증과 별개이며 거래는 자동 활성화되지 않습니다.";
     });
 }

@@ -65,6 +65,7 @@ public sealed partial class SteamHttp : IDisposable
         client.DefaultRequestHeaders.UserAgent.ParseAdd("MarketCrate/0.4 (experimental; user-initiated)");
     }
     public void Stop(SteamFailure failure) => Halted ??= failure;
+    private static bool IsFeeContext(Uri uri)=>uri.Host=="steamcommunity.com"&&uri.Query.Length==0&&System.Text.RegularExpressions.Regex.IsMatch(uri.AbsolutePath,@"^/profiles/[0-9]{17}/inventory/$",System.Text.RegularExpressions.RegexOptions.CultureInvariant,TimeSpan.FromMilliseconds(100));
     internal static void ValidateUri(Uri uri)
     {
         if (uri.Scheme != "https" || uri.Port != 443 || uri.UserInfo.Length != 0 || uri.Fragment.Length != 0) throw new SteamException(SteamFailure.ContractChanged);
@@ -74,7 +75,7 @@ public sealed partial class SteamHttp : IDisposable
             "api.steampowered.com" => path is "/IAuthenticationService/BeginAuthSessionViaQR/v1/" or "/IAuthenticationService/PollAuthSessionStatus/v1/",
             "login.steampowered.com" => path == "/jwt/finalizelogin",
             "steamcommunity.com" => path is "/login/settoken" or "/market/" or "/market/ajaxfeestructure/" or "/market/orderbook" or "/market/pricehistory/" or "/market/mylistings/render/" or "/market/sellitem/" ||
-                path.StartsWith("/inventory/", StringComparison.Ordinal) || path.StartsWith("/market/removelisting/", StringComparison.Ordinal),
+                path.StartsWith("/inventory/", StringComparison.Ordinal) || path.StartsWith("/market/removelisting/", StringComparison.Ordinal) || IsFeeContext(uri),
             _ => false
         };
         if (!valid) throw new SteamException(SteamFailure.ContractChanged);
@@ -89,7 +90,7 @@ public sealed partial class SteamHttp : IDisposable
             "/IAuthenticationService/BeginAuthSessionViaQR/v1/"=>"AuthBegin", "/IAuthenticationService/PollAuthSessionStatus/v1/"=>"AuthPoll",
             "/jwt/finalizelogin"=>"AuthFinalize", "/login/settoken"=>"AuthTransfer", "/market/"=>"Wallet", "/market/ajaxfeestructure/"=>"Fees",
             "/market/orderbook"=>"Orderbook", "/market/pricehistory/"=>"History", "/market/mylistings/render/"=>"Listings", "/market/sellitem/"=>"Sell",
-            _=>path.StartsWith("/inventory/",StringComparison.Ordinal)?"Inventory":"Cancel"};
+            _=>IsFeeContext(request.RequestUri!)?"FeeContext":path.StartsWith("/inventory/",StringComparison.Ordinal)?"Inventory":"Cancel"};
         DiagnosticHub.Emit(DiagnosticEvent.HttpRequest,DiagnosticArea.HTTP,DiagnosticOutcome.Started,endpoint:endpoint,method:request.Method.Method);
         var mustPost = path.Contains("AuthSession", StringComparison.Ordinal) || path is "/jwt/finalizelogin" or "/login/settoken" or "/market/sellitem/" || path.StartsWith("/market/removelisting/", StringComparison.Ordinal);
         if (request.Method != (mustPost ? HttpMethod.Post : HttpMethod.Get)) throw new SteamException(SteamFailure.ContractChanged);
@@ -159,7 +160,7 @@ public sealed partial class SteamHttp : IDisposable
             }
             if(bodyKind is SteamBodyKind.HtmlLogin)
             {BlockFeature(endpoint);throw new SteamException(SteamFailure.Authorization){BodyKind=bodyKind};}
-            if(bodyKind is (SteamBodyKind.HtmlMarket or SteamBodyKind.HtmlUnknown) && !(allowWalletHtml && request.RequestUri!.AbsoluteUri == "https://steamcommunity.com/market/"))
+            if(bodyKind is (SteamBodyKind.HtmlMarket or SteamBodyKind.HtmlUnknown) && !(allowWalletHtml && (request.RequestUri!.AbsoluteUri == "https://steamcommunity.com/market/"||IsFeeContext(request.RequestUri!))))
             {
                 // Unknown HTML still stops further traffic; it is not evidence of CAPTCHA or logout.
                 if(bodyKind==SteamBodyKind.HtmlUnknown)Stop(SteamFailure.ContractChanged);else BlockFeature(endpoint,SteamFailure.ContractChanged);

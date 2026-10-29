@@ -91,6 +91,7 @@ internal static class FourthStageTests
             else if(path.StartsWith("/inventory/"))body=InventoryBody??FourthStageTests.Inventory();
             else if(path=="/market/orderbook")body=BookBody??Book(1,[115,10]);
             else if(path=="/market/")body=Wallet;
+            else if(path=="/profiles/76561198000000001/inventory/")body="<script>g_steamID=\"76561198000000001\";</script><div data-featuretarget=\"marketselldialog\" data-props=\u0027{\"newFeeRates\":true,\"walletInfo\":{\"wallet_market_minimum\":1,\"wallet_currency_increment\":1,\"wallet_fee\":1,\"wallet_currency\":1,\"wallet_fee_percent\":0.05,\"wallet_fee_minimum\":1,\"wallet_fee_base\":0}}\u0027></div>";
             else if(path=="/market/ajaxfeestructure/")body="{\"steam_fee\":{\"fee_rate\":0.05},\"publisher_fee\":{\"fee_rate\":0.1}}";
             else if(path=="/market/sellitem/"){Sells++;SellForm=await request.Content!.ReadAsStringAsync();SellForms.Add(SellForm);if(TimeoutSell)throw new HttpRequestException("synthetic timeout");body=Sells>1?SellBody.Replace("501",(500+Sells).ToString()):SellBody;}
             else if(path.StartsWith("/market/removelisting/")){Cancels++;if(TimeoutCancel)throw new HttpRequestException("synthetic timeout");body="[]";}

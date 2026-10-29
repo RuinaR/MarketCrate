@@ -125,7 +125,7 @@ public static class SeventhStageTests
         using(var f=new FifthStageTests.Fixture(medianContract:true)){await f.Login();await f.Prepare(1);f.EnableTrading();f.Server.HidePublisherFee=true;await f.Vm.SubmitAsync();Equal(0,f.Server.Sends);Check(await f.Workspace!.Store.LoadAsync(default)is null);}
         using(var f=new FifthStageTests.Fixture(medianContract:true))
         {
-            await f.Login();await f.Prepare(1);f.Vm.CloseReview.Execute(null);f.Vm.PricingMode=2;f.Server.HistoryOverride="{\"success\":true,\"prices\":[[\"Oct 28 2026 01: +0\",115,\"2\"],[\"Oct 28 2026 02: +0\",115,\"1\"]]}";await f.Vm.RefreshPricesAsync();f.Vm.BuildReview();f.EnableTrading();f.Server.HistoryOverride=f.Server.HistoryOverride.Replace("02:","03:");await f.Vm.SubmitAsync();Equal(0,f.Server.Sends);Check(await f.Workspace!.Store.LoadAsync(default)is null);
+            await f.Login();await f.Prepare(1);f.Vm.CloseReview.Execute(null);f.Vm.PricingMode=2;f.Server.HistoryOverride=SteamContractServer.HistoryJson();await f.Vm.RefreshPricesAsync();f.Vm.BuildReview();f.EnableTrading();f.Server.HistoryOverride=SteamContractServer.HistoryJson(2);await f.Vm.SubmitAsync();Equal(0,f.Server.Sends);Check(await f.Workspace!.Store.LoadAsync(default)is null);
         }
     }
     private static async Task Until(Func<bool> condition){using var timeout=new CancellationTokenSource(5000);while(!condition())await Task.Delay(10,timeout.Token);}

@@ -1,5 +1,14 @@
 # Windows 배포 준비 — 3차 구현
 
+## 0.18 제품 후보
+
+- Windows x64 self-contained LiveOnly·현재CLR/WPF·SQLite·DPAPI·라이선스/암호화 인증 제외·전체 ZIP entry SHA·버전/commit을 검사한다. 바이너리 실행/설치/서명 성공으로 표시하지 않는다.
+- Test-ProductionAssembly에서 Mock/자가검증 VM·infra 모델·DevelopmentReadCheckView BAML 부재, 실제 FeeContractResolver/AuthStore/ListingExecutor 존재를 필수 검사한다. 테스트 소스는 개발 구성에 보존한다.
+- 기존 Auth/Preferences/SteamExperimental/저널/설정/진단0건 삭제·초기화. 새 ZIP 성공 후 latest를 등록하고 사용자 복원이 관측된0.17 ZIP을 rollback으로 보존한다.0.16.1 이전본도 삭제하지 않는다.
+- 사용자 첫 확인: 동일 Windows 계정에서 새 폴더에 압축 해제→실행/로그인 복원→정상 조회/지갑·수수료1회→실패 시 거래 중단·문제 해결 ZIP. 파일들을 일부만 덮어쓰거나 Auth를 패키지에 복사하지 않는다.
+- 실제 새 버전 실행/복원/공식 수수료·실판매/물리 DPI는 사용자 단계다. 배포 산출물 정적 PASS는 RELEASE_READY/REAL_FEE_VERIFIED/LIVE_SELL_VERIFIED가 아니다.
+
+
 ### 0.17.0 배포 확정 — 로그인 유지
 
 구현 소스 **1700bfdc6cb3cf0df984e7c76b0a14fff8558372**, origin/main push. Windows x64 self-contained LiveOnly portable **artifacts/releases/MarketCrate-0.17.0-session-1700bfd-win-x64.zip**, **66,486,397바이트 /413파일**, SHA256 **A025E48C5D2FEBBA1C19D99F6F3B1F0DD3A947DBD77F67850910D9FD3363E1CC**. 원본 `artifacts/releases/session-1700bfd-windows-x64`, BuildVersion0.17.0+1700bfdc6cb3cf0df984e7c76b0a14fff8558372. 전체 entry SHA/SourceCommit·CLR/WPF10.0.9·SQLite x64·ProtectedData DLL/steam-session MIT 전문/고지·인증/DB/로그/개발파일 제외 검사 PASS. PE/BAML은 Mock 부재와 실제 Shell/Steam/AuthStore/refresh-token 검증 코드 존재를 확인했다. 경고·오류0, 실제 EXE/설치/서명은 미실행이다.

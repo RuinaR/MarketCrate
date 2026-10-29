@@ -1,4 +1,24 @@
-# MarketCrate — 현재 상태 (2026-10-29 KST, 15차)
+# MarketCrate — 현재 상태 (2026-10-29 KST, 17차)
+
+## 17차 / 0.18.0 — 수수료 모드와 실사용 화면
+
+**구현:** FeeContractResolver(VerifiedLegacy/VerifiedNew/Unsupported/Unverified/Restricted), 공식 sell props와 현재 지갑·앱 context 대조, 조건부 fee API 호출. FeesAsync·실거래 사전검증·배치 제출·재가격3곳을 같은 resolver로 연결했다. Wallet 통화 관측과 수수료 실패를 분리해 지갑 단독 조회를 유지한다. 자산 publisher 비율 누락/충돌은 검토 전에 차단한다. 기존 등록이 없더라도 최신 공식 모드/서버 지갑·앱·품목 계약을 충족하는 경우만 사전검증 가능하며, 기존 목록의 수수료 충돌 veto는 유지한다.
+
+정식 UI에서 전용 자가검증 페이지·범위/동의·임시 실행 명령/모델을 컴파일 제외했다. 일반 계정/보관함/목록/가격/수수료/최종 검토/등록·취소·재가격/결과/로그는 보존했다. 상시 내부 코드·OperationId를 제거하고 문제 해결→진단 ZIP으로 모았다. 공식 수수료 비교는3구간×4금액, 게임·통화·시각·최소 가격/수수료 구간·증분별 일치를 표시하며 입력은 거래 활성화 근거가 아니다.
+
+**새 사용자 실환경 증거(0.17.0):** 종료/재실행 후 저장 로그인 복원 성공, QR/Community 성공, 판매목록8건, CS2 730/context2 명시적 빈 보관함, KRW wallet 객체/기존 수수료5필드 관측, fee API200 HtmlMarket. 호가/이력/이미지는 선택 품목 없음으로 미검증이다. 과거 아래 '복원 미검증'은 당시 개발자 검증 범위이며 이번 사용자 보고로 0.17 복원 한 경로를 보완한다. 새0.18 복원·장기 만료/회전·타 Windows 사용자까지 확대한 것은 아니다.
+
+| 판정 | 현재 증거 |
+|---|---|
+| IMPLEMENTED | 모드 resolver/정수 견적/단일 승인 배치·저널·Guard 대기·대조·취소/재가격·로그인 유지·실제 전용 UI 코드 |
+| SYNTHETIC_VERIFIED | 기능286/286, 비표시WPF56/56, 배포계약19/19 PASS. 경고/오류0. 새 수수료 모드16개 및 기존 전 회귀 포함 |
+| REAL_READ_VERIFIED | 사용자의0.17 로그인 복원·목록 첫8건·명시적 빈CS2·KRW wallet 관측에 한함. 모든 읽기 지원 완료 아님 |
+| REAL_FEE_VERIFIED | **NOT VERIFIED**. 실제 sell props/newFeeRates·공식 UI3구간·API JSON 계약 미확보 |
+| LIVE_SELL_VERIFIED | **NOT VERIFIED**. Codex 실계정/등록·취소0 |
+| RELEASE_READY | **미달**. 실제 수수료/실판매·새 버전 물리 GUI/실행 검증이 남음. 정적 배포 성공과 구별 |
+
+75개 판정47 COMPLETE/15 PARTIAL/0 MISSING/4 BLOCKED/9 UNVERIFIED 유지. 운영 Auth/설정/SQLite/Unknown 저널/진단·과거 배포본 삭제0. 실거래 매 실행 OFF, 자동 승인/재전송0. 상세 근거는 STEAM-INTEGRATION-FEASIBILITY와 QA-MATRIX. 새 ZIP/해시는 배포 확정 절에 추가한다.
+
 
 ### 0.17.0 배포 확정 — 로그인 유지
 

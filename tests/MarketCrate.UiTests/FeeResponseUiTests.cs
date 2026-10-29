@@ -33,6 +33,17 @@ internal static class FeeResponseUiTests
             button.Command.Execute(null);Check(vm.FeeComparison.Contains("계산 일치")&&server.Sends==0&&server.Cancels==0,"comparison wrote transaction");render(view,1380,900,1.5,"fee-comparison-large.png");
             vm.OfficialBuyer="100";button.Command.Execute(null);Check(vm.FeeComparison.Contains("불일치"),"mismatch hidden");
         }));
+        test("제품 수수료 3구간 네 금액 바인딩·DPI 자체 렌더·권한 불변",()=>WithVm(false,(vm,server)=>
+        {
+            Complete(vm.LoadFeesAsync());vm.WorkPage=4;
+            var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,850,1,"product-fees-empty.png");
+            var inputs=new[]{new[]{"1","3","1","1"},new[]{"100","115","5","10"},new[]{"1000","1150","50","100"}};
+            for(var i=0;i<3;i++){var row=vm.OfficialCases[i];row.Seller=inputs[i][0];row.Buyer=inputs[i][1];row.Steam=inputs[i][2];row.Publisher=inputs[i][3];}
+            vm.CompareOfficialFees.Execute(null);Check(vm.OfficialCases.All(x=>x.Result.Contains("4금액 일치")),"component comparison disconnected");
+            render(view,1100,850,1.25,"product-fees-125.png");render(view,1380,1050,2,"product-fees-200.png");
+            Check(Find<TextBox>(view).Count(x=>x.GetBindingExpression(TextBox.TextProperty)?.ParentBinding.Path?.Path is "Seller" or "Buyer" or "Steam" or "Publisher")==12,"price inputs missing");
+            Check(server.Sends==0&&server.Cancels==0&&!vm.CanTrade&&PresentationSource.FromVisual(view)is null,"comparison acquired live permission/window");
+        }));
     }
     private static void WithVm(bool html,Action<SteamWorkspaceViewModel,SteamContractServer> test)
     {

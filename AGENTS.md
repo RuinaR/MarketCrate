@@ -1,5 +1,12 @@
 # MarketCrate — Codex 공통 작업 지침 (AGENTS.md)
 
+## 0.18 수수료·제품 구성 규칙
+
+- 수수료는 서버 판매 화면 `marketselldialog`의 실제 `data-props`/`newFeeRates`와 지갑·게임 설정으로 모드를 판정한다. 별도 API 실패/HTML이나 구형 필드 5개 존재만으로 Legacy를 선택하지 않는다. VerifiedLegacy/VerifiedNew는 런타임 모드 판정이며 REAL_FEE_VERIFIED/실판매 검증의 선언이 아니다.
+- 현재 공식 wallet 기반 분기는 최신 economy_common의 floor/increment 계산을 사용한다. 과거 base 포함 공식을 임의 적용하지 않으며 충돌하는 base/minimum·불명 모드는 차단한다. 일반 안내 수수료율·사용자 비교 입력은 서버 계약의 대체가 아니다.
+- Release에서 연결 자가검증 UI/VM/실행 모델을 컴파일 제외한다. 개발 테스트 구성에는 보존한다. 정상 지갑·보관함·목록·가격 조회와 문제 해결/진단 ZIP은 유지한다.
+- 사용자 보고의0.17.0 실제 재시작 로그인 복원 성공을 보존한다. 이를 새 버전·장기 만료·회전·다른 사용자·수수료/실판매 검증으로 확대하지 않는다. 운영 Auth/설정/저널/진단은 초기화하지 않는다.
+
 ## 16차 명시적 로그인 유지 예외
 
 - 사용자가 선택한 로그인 유지에 한해 MarketCrate 자체 QR에서 받은 WebBrowser Refresh Token을 LocalAppData/MarketCrate/Auth에 DPAPI CurrentUser로 암호화 저장할 수 있다. 비밀번호/Guard 비밀/기존 Steam·브라우저 세션 추출은 계속 금지한다.

@@ -21,8 +21,6 @@ public sealed partial class SteamWorkspaceViewModel
 {
     private bool checkApproved,checkListings,checkInventory,checkWallet,checkFees,checkOrders,checkHistory,checkImage;
     private string checkFingerprint="",checkContext="아직 실행하지 않음";
-    private int workPage;
-    public int WorkPage{get=>workPage;set{if(value is >=0 and <=5)Set(ref workPage,value);}}
     public Command ShowSelfCheck{get;private set;}=null!;
     public AsyncCommand SelfCheck{get;private set;}=null!;
     public bool CheckApproved{get=>checkApproved;set{Set(ref checkApproved,value);SelfCheck?.Refresh();}}
@@ -40,11 +38,12 @@ public sealed partial class SteamWorkspaceViewModel
     public string CheckContext{get=>checkContext;private set=>Set(ref checkContext,value);}
     public string CheckScope=>$"게임: {Game.Name} ({Game.Key}) · "+(Assets.Count(x=>x.Selected)==1?$"품목: {Assets.Single(x=>x.Selected).Name}":"가격·이력·이미지는 보관함에서 한 품목만 선택해야 합니다.")+"\n목록/보관함 각 첫 페이지, 지갑/수수료/호가/이력/이미지 각 최대 1요청. 범위·품목 변경 시 승인을 다시 확인하세요.";
     public ObservableCollection<ReadSelfCheckRow> CheckRows{get;}=[new("SessionCheck","인증 세션"),new("Listings","판매목록"),new("Inventory","선택 게임 보관함"),new("Marketable","장터 판매 가능 여부"),new("Wallet","지갑 통화"),new("Fees","서버 수수료 설정"),new("Orderbook","선택 품목 구매주문"),new("History","기간별 가격 이력"),new("Image","선택 품목 이미지")];
-    private void InitializeSelfCheck()
+    partial void InitializeDevelopmentTools()
     {
         ShowSelfCheck=new(()=>WorkPage=5,()=>!AnyReview);
         SelfCheck=new(SelfCheckAsync,Error,()=>CanRead&&!Busy&&!AnyReview&&CheckApproved&&(CheckListings||CheckInventory||CheckWallet||CheckFees||CheckOrders||CheckHistory||CheckImage));
     }
+    partial void RefreshDevelopmentTools(){CheckScopeChanged();ShowSelfCheck?.Refresh();SelfCheck?.Refresh();}
     private void CheckScopeChanged()
     {
         if(game is null)return;
@@ -63,5 +62,5 @@ public sealed partial class SteamWorkspaceViewModel
         if(!Connected&&CheckRows.Any(x=>x.Result?.Error==DiagnosticError.Authentication))Error(new SteamException(SteamFailure.Authentication));
         Status="읽기 전용 자가검증 완료 · 성공/실패/미검증과 다음 조치를 확인하세요. 자동 재시도하지 않았습니다.";Changed();
     });
-    private void ClearSelfCheck(){CheckApproved=false;CheckContext="아직 실행하지 않음";foreach(var row in CheckRows)row.Update(null);UpdateCheckSummary();}
+    partial void ResetDevelopmentTools(){CheckApproved=false;CheckContext="아직 실행하지 않음";foreach(var row in CheckRows)row.Update(null);UpdateCheckSummary();}
 }

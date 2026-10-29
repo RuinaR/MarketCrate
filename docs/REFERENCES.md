@@ -1,5 +1,12 @@
 # MarketCrate — 외부 자료·레퍼런스
 
+## 17차 재확인 (2026-10-29 KST)
+
+공식 공개 marketselldialog.js/main.js/economy_common.js/economy_v2.js의 실제 code/현재 hash·분기·채택 사유는 STEAM-INTEGRATION-FEASIBILITY 17차 절에 기록했다. wallet 기반 false 분기와 new API true 분기, data-featuretarget/data-props 전달, 금액 floor/increment/역산·앱 publisher 우선순위를 대조했다. Valve 소스는 재배포하지 않았으며 독립 구현/합성 fixture만 작성했다.
+
+SteamMarketHelper e186d51 MIT의 실제 userscript fallback/base/통화 round, node-steamcommunity fa8d897 MIT components/market.js, SSIM28a503f Apache2 MarketPricing.ts를 재확인했다. 오래된 wallet formula·고정 기본값을 최신 계약이나 실제 계정 모드의 증거로 채택하지 않는다. 새 직접 코드 복사0·기존 MIT steam-session 고지 유지·AGPL 도입0. 실제 작동 주장과 Valve 허용 여부는 별개다.
+
+
 ## 16차 고정 소스·라이선스 재사용 (2026-10-29 KST)
 
 실제 도입: [steam-session LoginSession.ts](https://github.com/DoctorMcKay/node-steam-session/blob/3ac0f34fd964b3f886ba18ef4824ac43c942e030/src/LoginSession.ts), MIT ©2022 Alex Corn. Refresh Token audience/계정 검증과 WebBrowser getWebCookies 흐름을 SteamWebRefreshToken/SteamQrAuthentication에 제한 이식했다. 원문 LICENSE 전문을 ThirdParty/steam-session 및 배포에 보존하며 변경/제외 사항을 THIRD-PARTY-NOTICES에 기록했다. Node/NPM 코드 전체·debug·재시도/타 도메인·Guard는 미포함이다.

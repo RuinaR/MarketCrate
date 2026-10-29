@@ -12,6 +12,7 @@ public sealed class SteamInventoryProvider(SteamHttp http, SteamQrAuthentication
     internal string GameName=>game;
     public Dictionary<AssetKey,ItemImageReference> Images{get;}=[];
     internal Dictionary<AssetKey, int> PublisherFees { get; } = [];
+    public int? PublisherFeeBasisPoints(AssetKey key)=>PublisherFees.TryGetValue(key,out var value)?value:null;
     public Capability Capability => auth.Connected && http.Halted is null ? Capability.Experimental : Capability.IntegrationBlocked;
     public async Task<IReadOnlyList<InventoryAsset>> GetAsync(CancellationToken cancellationToken)
     {

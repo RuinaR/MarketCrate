@@ -1,5 +1,40 @@
 # Steam 연동 가능성 조사 — 2026-10-29 KST (13차)
 
+## 17차 / 0.18.0 — 수수료 API 호출 조건 수정 (2026-10-29 KST)
+
+**확인된 코드 결함:** 기존 SteamFees.FetchAsync는 모드와 무관하게 ajaxfeestructure를 호출했다. 공식 [marketselldialog.js](https://community.fastly.steamstatic.com/public/javascript/applications/community/marketselldialog.js)의 aN은 `!newFeeRates`이면 wallet_fee_percent와 appContext.market_pubfee_rate(없으면 지갑 publisher 기본값)를 사용하고, true일 때만 해당 API를 GET한다. [main.js](https://community.fastly.steamstatic.com/public/javascript/applications/community/main.js)의 QN/$N은 `data-featuretarget=marketselldialog` 요소의 data-props JSON을 컴포넌트에 전달한다. flag 생략은 **실제 유효한 props 객체 안에서만** 공식 !flag 분기로 해석한다. 단순 변수 검색/HTML 실패 기반 추정은 하지 않는다.
+
+사용자0.17의 HTTP200 HtmlMarket은 JSON 계약 실패 증거다. CAPTCHA/로그아웃 또는 실제 계정의 legacy 적용 증거는 아니다. 해당 계정의 원본 HTML/모드 props는 확보하지 않았다. 모드 조건 누락은 확인했지만, 이것이 사용자의 HTML 응답을 모두 설명한다고 단정하지 않는다.
+
+| 모드 | 필요한 관측과 동작 |
+|---|---|
+| VerifiedLegacy | 현재 세션의 유효한 sell props(false/생략), Market/props 지갑 일치, 명시적 최소/증분, 유효한 구형 5필드, 해당 앱 context 존재. 실제 app publisher override(0 포함), 없으면 서버 지갑 기본값을 사용. API 호출0 |
+| VerifiedNew | 명시적 true와 지갑 일치 후에만 수수료 API. strict steam_fee/publisher_fee/rate/cap JSON 검증 성공이 있어야 견적 반환 |
+| Unverified | props/앱 증거 누락, 잘못된/중복 모드, 지갑 변경. 견적 반환/전송 없음 |
+| Unsupported | 최소/증분 누락, 현재 공식 계산과 충돌하는 역사적 base/minimum/활성 플래그. 임의 옛 공식 적용 없음 |
+| Restricted | 로그아웃/권한·403/429/Challenge. HTTP 안전 중단 규칙을 유지하고 우회/재시도 없음 |
+
+정상 FeesAsync→FetchResolvedAsync는 Market1회, 필요 시 **자기 계정의 정확한 /profiles/{account}/inventory/** HTML1회(계정 대조), new일 때 API1회를 직렬 조회한다. 전체 게임/자산을 무차별 탐색하지 않는다. URI·메서드·응답 크기·리다이렉트 제한과3초 요청 간격을 유지한다. 별도 API HTML 실패 후 legacy fallback은 없다. 지갑 통화만 독립 조회할 수 있으며 수수료 실패가 인증/지갑 관측까지 지우지 않는다.
+
+### 계산 근거와 제한
+
+[현재 economy_common.js](https://community.fastly.steamstatic.com/public/javascript/economy_common.js)의 CalculateFee/ToValidMarketPrice/GetTotalWithFees와 현대 sell dialog의 EM/wM/SM 경로는 각 비율×판매자 wire 금액을 먼저 절사하고 최소 금액·통화 증분의 half-up으로 맞춘다. API cap은 그 뒤 적용한다. publisher0은 게임 수수료0이다. [economy_v2.js](https://community.fastly.steamstatic.com/public/javascript/economy_v2.js)의 GetPublisherFeeRate도 앱 context를 지갑 기본값보다 우선한다. 현대 false 분기는 wallet_fee_base를 소비하지 않으므로 base≠0 등의 역사적 프로필은 **Unsupported**, 과거 공식을 강제 적용하지 않는다. 구형 필드 존재만으로 계산식을 결정하지 않는다.
+
+모든 계산은 정수/rational이며 checked overflow는 전송 차단이다. Money.Minor는 KRW **원**, USD **센트**다. Steam의 JS GetPriceValueAsInt는 입력 표시 금액×100 wire를 만든다. KRW 표시1원과 wire100을 구분하고 fractional won은 거부한다. 지갑의 최소·증분은 반드시 실제 명시값을 검증하며 1/100원으로 UI 표시하거나 USD 기본 최소값을 KRW에 대입하지 않는다. 역산은 단조 이진 탐색으로 도달 가능한 구매자 가격만 확정하고 gap은 정확 모드에서 거부한다. 견적용 하한은 명시적으로만 사용한다.
+
+FeeFor는 자산의 실제 publisher 비율과 앱 schedule이 다르거나 누락되면 검토를 차단한다. 제출/취소 후 재가격/새 재가격 승인까지 모두 resolver를 다시 호출한다. 이전에는 재가격3곳에 무조건 API 경로가 남아 있었으며 이번에 제거했다. 최종 요청은 여전히 계정·자산·가격·수량·호가 지문·최신 수수료와 일치해야 한다.
+
+첫 판매의 순환 의존성은 '같은 게임의 과거 등록'을 필수로 요구하는 대신 위 공식 모드·서버 지갑/앱/품목 증거를 필수로 검증하여 해소했다. 기존 등록은 있으면 대조하며 충돌은 계속 차단한다. 사용자 수기 비교나 위험 체크박스는 이 조건을 대신하지 못한다. 스택 지원/Unknown/반환 인과관계/기본 OFF/세션별 승인 보호는 그대로다.
+
+### 공개 구현 비교와 라이선스
+
+SteamMarketHelper e186d51(MIT)의 과거 CalculateAmountToSendForDesiredReceivedAmount/base·round/floor fallback은 현재 공식 false 분기와 다르다. 따라서 그대로 복사하지 않았다. node-steamcommunity fa8d897(MIT) components/market.js와 SSIM28a503f(Apache2) MarketPricing.ts를 재확인했으며 현재 계정의 newFeeRates 증거로 사용할 수 없다. 이번 수수료 소스 복사/새 런타임/AGPL 도입0. 기존 MIT steam-session 이식 고지를 보존한다.
+
+공식 공개 파일을 계정 인증 없이 다시 받아 확인했다(브라우저 도구는 접근 실패, .NET 자동 압축 해제 GET으로 성공). SHA256: sell dialog CB84BB8A9B2970F71D277626A0B4E922B47CCE90BF437F704CF8F5100FA66726; economy_common 84429D06A9EF8C250AC567F9FEDC9FB155D23CEB7442C92A19B815840C102784; economy_v2 A3BBDF0A135524102CD055FD89D37EB3FD672FAE20BFBA0ABC700648DCB52512; main 7045DB3B8FBC9FBAD09A6C1234B36055379873BA41BF93545649020A8355FAED. 원본은 ignored runtime/public-contract에만 있으며 배포하지 않는다.
+
+실서버 모드 props/새API JSON/공식 UI 실제3구간 대조·KRW 등록/취소/스택은 아직 NOT VERIFIED. REAL_FEE_VERIFIED·LIVE_SELL_VERIFIED·RELEASE_READY를 부여하지 않는다. 비공식 자동화의 정책/계정 제재 위험은 남는다.
+
+
 ## 16차 / 0.17.0 — 실제 소스 대조와 로그인 복원
 
 아래 커밋의 실제 소스와 제공된 테스트를 읽었다(2026-10-29 KST). README의 동작 주장과 MarketCrate 실계정 성공은 구분한다. 기존0.16.1 수수료 HTML의 실제 분류/newFeeRates 적용 조건은 여전히 미확정이며, 이번 인증 복원으로 수수료 계약까지 해결됐다고 판단하지 않는다.

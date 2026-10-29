@@ -1,5 +1,14 @@
 # MarketCrate — Sale Execution Product Contract
 
+## 0.18 수수료 사전조건과 첫 등록
+
+새/기존 배치 및 취소 후 재가격의 모든 견적은 FeeContractResolver로 현재 서버 모드·wallet 최소/증분·앱 publisher 설정을 검증한다. item publisher 누락/불일치는 전체 검토 전에 거부한다. 계정/자산/금액/호가·수수료 변경은 전송 전에 거부하며 승인 가격을 자동 인하하지 않는다.
+
+같은 게임의 과거 판매등록이 반드시 있어야 한다는 순환 조건을 제거했다. 대체 조건은 실제 sell props의 모드 및 새 API 또는 wallet/app 설정, wallet 계정 일치, 새 보관함의 marketable/locked/수량과 item publisher 일치이다. 과거 판매등록이 있으면 추가 대조하고 충돌을 거부한다. 사용자 수기 비교/위험 동의만으로는 활성화할 수 없다. 이 변경은 합성 계약 검증이며 실제 계정에서 첫 등록 성공이나 정책 허가의 근거가 아니다.
+
+실거래 매 실행 OFF, 단 한 번 최종 승인→검토 전체 불변 snapshot→순차 처리 목표 유지. 로컬 키는 서버 idempotency 보증이 아니며 Unknown은 재전송하지 않는다. 스택과 중앙값 가격 제출의 별도 계약 차단/Guard 수동 승인/실제Listed 대조/취소 반환 증거 보호는 유지한다.
+
+
 ## 0.16.0 실제 전용 배포 경계
 
 Release의 SaleBatchCoordinator는 IAuthorizedListingExecutor.CanExecute/CanReconcile을 요구하며 Mock capability를 실행 허가로 사용하지 않는다. Mock 재시도·Demo 예약·Mock 결과 생성은 개발 구성에만 존재한다. 일반 시작은 실제 서버 공급자와 기존 SteamStateStore이며 실패를 합성 성공으로 대체하지 않는다. 단일 승인/불변 snapshot/저널 선기록/직렬 요청/Guard 수동 승인/Unknown 및 반환 인과 보호는 변경하지 않는다. 실제 거래는 기본 OFF이고 미검증 계약을 강제로 활성화하지 않는다.

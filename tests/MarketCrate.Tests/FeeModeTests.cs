@@ -1,0 +1,53 @@
+using System.Net;
+using System.Text.Json;
+using MarketCrate.Core;
+using MarketCrate.Infrastructure.Steam;
+namespace MarketCrate.Tests;
+
+public static class FeeModeTests
+{
+    private const string Wallet="{\"wallet_currency\":16,\"wallet_market_minimum\":100,\"wallet_currency_increment\":100,\"wallet_fee\":1,\"wallet_fee_percent\":0.05,\"wallet_fee_minimum\":100,\"wallet_fee_base\":0,\"wallet_publisher_fee_percent_default\":0.1}";
+    internal static string Page(string wallet=Wallet,string? flag="false",string appRate="0.10")=>
+        "<script>g_bLoggedIn=true;g_steamID='76561198000000001';g_rgWalletInfo="+wallet+";g_rgAppContextData={\"730\":{\"market_pubfee_rate\":"+appRate+"}};</script>"+
+        "<div data-props='"+WebUtility.HtmlEncode("{"+(flag is null?"":"\"newFeeRates\":"+flag+",")+"\"walletInfo\":"+wallet+"}")+"' data-featuretarget='marketselldialog'></div>";
+    public static async Task<(int Passed,int Failed)> RunAsync()
+    {
+        var tests=new(string,Func<Task>)[]{
+            ("Verified legacy mode never sends fee API even when endpoint would return Market HTML",LegacyRead),
+            ("Explicit new mode uses JSON and cannot fall back on HTML failure",NewRead),
+            ("No mode evidence never selects legacy from five wallet fields or API failure",Missing),
+            ("Official absent flag is false only inside genuine valid sell props",()=>Sync(()=>{var w=SteamFees.ObserveWallet(Page());Check(FeeContractResolver.Observe(Page(flag:null),730,w).Mode==FeeContractMode.VerifiedLegacy);Check(FeeContractResolver.Observe("<script>newFeeRates=false</script>",730,w).Mode==FeeContractMode.Unverified);})),
+            ("Malformed duplicate and script-only mode evidence stays unverified",BadModes),
+            ("Publisher app override including zero is distinct from wallet default",()=>Sync(()=>{var page=Page(appRate:"0");var e=FeeContractResolver.Observe(page,730,SteamFees.ObserveWallet(page));Check(e.PublisherMillionths==0&&FeeContractResolver.Legacy(e).FromSeller(1000).GameFee==0);Check(FeeContractResolver.Observe(page,570,e.Wallet).Mode==FeeContractMode.Unverified);})),
+            ("Changed wallet between Market and sell-dialog evidence cannot price",()=>Sync(()=>{var w=SteamFees.ObserveWallet(Page());Check(FeeContractResolver.Observe(Page(Wallet.Replace("0.05","0.06")),730,w).Mode==FeeContractMode.Unverified);})),
+            ("Conflicting old base minimum and fee-enabled fields cannot silently use modern arithmetic",Conflicts),
+            ("KRW minima increment half-up and inverse unreachable prices preserve won",Krw),
+            ("USD floor at integer wire then minimum differs from KRW rounding",Usd),
+            ("Fee endpoint denial halts new mode without legacy fallback",Restricted),
+            ("Missing mode keeps authenticated session and independent listings usable",Independent),
+            ("Session identity mismatch rejects sell-context evidence without requesting fee API",Owner),
+            ("Current fee resolution diagnostic has operation ID and no source payload",Diagnostics),
+            ("Three independent official price cases compare all four amounts without enabling trading",Comparison),
+            ("Wallet KRW observation and direct refresh survive fee HTML failure without retrying API",WalletIndependent)
+        };
+        int passed=0,failed=0;foreach(var(name,run)in tests)try{await run();passed++;Console.WriteLine("PASS "+name);}catch(Exception e){failed++;Console.WriteLine("FAIL "+name+": "+e);}return(passed,failed);
+    }
+    private static async Task LegacyRead(){using var f=new ThirteenthStageTests.Fixture();await f.Login();f.Route=p=>p=="/market/"?Response(Page()):p.Contains("ajaxfee")?Response("<div id='market_home'>secret-body</div>"):null;var schedule=await f.Workspace!.FeesAsync(730);Check(schedule.Currency=="KRW"&&schedule.FromSeller(1000).BuyerPays==1150&&!f.Reads.Any(x=>x.Path.Contains("ajaxfee"))&&f.Server.Sends==0);}
+    private static async Task NewRead(){using var f=new ThirteenthStageTests.Fixture();await f.Login();f.Route=p=>p=="/market/"?Response(Page(flag:"true")):p.Contains("ajaxfee")?Response("<div id='market_home'>secret-body</div>"):null;var error=await Fail(()=>f.Workspace!.FeesAsync(730));Check(error.Code==SteamFailure.ContractChanged&&f.Reads.Count(x=>x.Path.Contains("ajaxfee"))==1&&f.Workspace!.Failure is null);}
+    private static async Task Missing(){using var f=new ThirteenthStageTests.Fixture();await f.Login();f.Route=p=>p=="/market/"?Response("<script>g_bLoggedIn=true;g_rgWalletInfo="+Wallet+";</script>"):p.StartsWith("/profiles/")?Response("<script>g_steamID='76561198000000001';</script>"):null;await Fail(()=>f.Workspace!.FeesAsync(730));Check(!f.Reads.Any(x=>x.Path.Contains("ajaxfee"))&&f.Vm.Connected);}
+    private static Task BadModes()=>Sync(()=>{foreach(var flag in new[]{"\"false\"","null","0","{}"}){var page=Page(flag:flag);Check(FeeContractResolver.Observe(page,730,SteamFees.ObserveWallet(page)).Mode==FeeContractMode.Unverified);}var good=Page();var wallet=SteamFees.ObserveWallet(good);Check(FeeContractResolver.Observe(good+good,730,wallet).Mode==FeeContractMode.Unverified);Check(FeeContractResolver.Observe("<!--"+good+"-->",730,wallet).Mode==FeeContractMode.Unverified);});
+    private static Task Conflicts()=>Sync(()=>{foreach(var w in new[]{Wallet.Replace("\"wallet_fee_base\":0","\"wallet_fee_base\":1"),Wallet.Replace("\"wallet_fee_minimum\":100","\"wallet_fee_minimum\":200"),Wallet.Replace("\"wallet_fee\":1","\"wallet_fee\":0")}){var page=Page(w);Check(FeeContractResolver.Observe(page,730,SteamFees.ObserveWallet(page)).Mode==FeeContractMode.Unsupported);}var disabled=Page(Wallet.Replace("\"wallet_fee\":1","\"wallet_fee\":0").Replace("0.05","0"),appRate:"0");var e=FeeContractResolver.Observe(disabled,730,SteamFees.ObserveWallet(disabled));Check(FeeContractResolver.Legacy(e).FromSeller(1).BuyerPays==1);});
+    private static Task Krw()=>Sync(()=>{var p=Page();var f=FeeContractResolver.Legacy(FeeContractResolver.Observe(p,730,SteamFees.ObserveWallet(p)));Check(f.FromSeller(1)==new FeeQuote(3,1,1,1));Check(f.FromSeller(15)==new FeeQuote(18,15,1,2));Check(f.FromSeller(1000)==new FeeQuote(1150,1000,50,100));for(long n=1;n<1000;n++){var q=f.FromSeller(n);Check(f.FromBuyer(q.BuyerPays)==q&&q.BuyerPays==q.SellerReceives+q.Fees);}try{f.FromBuyer(17);throw new Exception("gap accepted");}catch(ArgumentException){}Check(f.FromBuyer(17,false).BuyerPays<17);});
+    private static Task Usd()=>Sync(()=>{var p=Page(Wallet.Replace("\"wallet_currency\":16","\"wallet_currency\":1").Replace(":100,",":1,"));var f=FeeContractResolver.Legacy(FeeContractResolver.Observe(p,730,SteamFees.ObserveWallet(p)));Check(f.FromSeller(15).GameFee==1&&f.FromSeller(15).SteamFee==1&&f.FromSeller(1000).BuyerPays==1150);});
+    private static async Task Restricted(){using var f=new ThirteenthStageTests.Fixture();await f.Login();f.Route=p=>p=="/market/"?Response(Page(flag:"true")):p.Contains("ajaxfee")?new(HttpStatusCode.Forbidden){Content=new StringContent("restricted")} :null;await Fail(()=>f.Workspace!.FeesAsync(730));var count=f.Reads.Count;await Fail(()=>f.Workspace!.FeesAsync(730));Check(f.Reads.Count==count&&f.Workspace!.Failure==SteamFailure.Forbidden&&f.Server.Sends==0);}
+    private static async Task Independent(){using var f=new ThirteenthStageTests.Fixture();await f.Login();f.Route=p=>p=="/market/"?Response(Page(flag:"null")):null;await Fail(()=>f.Workspace!.FeesAsync(730));await f.Workspace!.Orders.RefreshAsync();Check(f.Vm.Connected&&f.Workspace.Failure is null&&f.Server.Sends==0);}
+    private static async Task Owner(){using var f=new ThirteenthStageTests.Fixture();await f.Login();f.Route=p=>p.StartsWith("/profiles/")?Response(Page().Replace("76561198000000001","76561198000000002")):null;var error=await Fail(()=>f.Workspace!.FeesAsync(730));Check(error.Code==SteamFailure.Authorization&&!f.Reads.Any(x=>x.Path.Contains("ajaxfee")));}
+    private static async Task Diagnostics(){var log=new Capture();using var use=DiagnosticHub.Use(log);using var op=DiagnosticHub.Operation(DiagnosticEvent.FeeValidated,DiagnosticArea.Pricing,"D10");await LegacyRead();Check(log.Events.Any(x=>x.Reason=="VerifiedLegacy"&&x.Context.OperationId!=Guid.Empty));var text=JsonSerializer.Serialize(log.Events);Check(!text.Contains("76561198000000001")&&!text.Contains("wallet_fee_percent")&&!text.Contains("secret-body"));}
+    private static async Task Comparison(){using var f=new ThirteenthStageTests.Fixture();await f.Login();await f.Vm.LoadFeesAsync();var inputs=new[]{new[]{"1","3","1","1"},new[]{"100","115","5","10"},new[]{"1000","1150","50","100"}};for(var i=0;i<3;i++){var row=f.Vm.OfficialCases[i];row.Seller=inputs[i][0];row.Buyer=inputs[i][1];row.Steam=inputs[i][2];row.Publisher=inputs[i][3];}f.Vm.CompareOfficialFees.Execute(null);Check(f.Vm.OfficialCases.All(x=>x.Result.Contains("4금액 일치"))&&f.Vm.FeeComparison.Contains("3/3")&&!f.Vm.CanTrade&&f.Server.Sends==0);f.Vm.OfficialCases[1].Steam="6";Check(f.Vm.OfficialCases.All(x=>x.Result.Contains("재비교")));f.Vm.CompareOfficialFees.Execute(null);Check(f.Vm.OfficialCases[1].Result.Contains("불일치")&&f.Vm.FeeComparison.Contains("2/3"));}
+    private static async Task WalletIndependent(){using var f=new ThirteenthStageTests.Fixture();await f.Login();f.Route=p=>p=="/market/"?Response(Page(flag:"true")):p.Contains("ajaxfee")?Response("<div id='market_home'>private</div>"):null;await f.Vm.LoadFeesAsync();Check(f.Vm.Connected&&f.Vm.CurrencyText.Contains("KRW")&&f.Vm.LoadWallet.CanExecute(null)&&!f.Vm.LoadFees.CanExecute(null));await f.Vm.LoadWalletAsync();Check(f.Vm.WalletRead.State==MarketCrate.App.ViewModels.SteamReadState.Ready&&f.Vm.FeesRead.State!=MarketCrate.App.ViewModels.SteamReadState.Ready&&f.Reads.Count(x=>x.Path.Contains("ajaxfee"))==1&&!f.Vm.CanTrade);}
+    private sealed class Capture:IDiagnosticLog{public Guid SessionId{get;}=Guid.NewGuid();public List<DiagnosticRecord> Events{get;}=[];public void Write(DiagnosticRecord value)=>Events.Add(value);}
+    private static HttpResponseMessage Response(string body)=>new(HttpStatusCode.OK){Content=new StringContent(body)};
+    private static async Task<SteamException> Fail(Func<Task> action){try{await action();}catch(SteamException error){return error;}throw new Exception("expected safe failure");}
+    private static Task Sync(Action action){action();return Task.CompletedTask;}
+    private static void Check(bool value){if(!value)throw new Exception("fee contract assertion");}
+}

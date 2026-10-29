@@ -1,5 +1,16 @@
 7차 Release 검사 수정: SQLite 파일명 제외 정규식이 정상 의존성 Microsoft.Data.Sqlite.dll까지 거부했다. DB/sidecar 확장자 끝으로 한정해 수정하고 DLL 허용·sqlite/sqlite3-wal/db-shm/.env/session.json/private.key 차단 7개 파일명 회귀를 확인했다. 실제 비밀파일·DB는 생성하지 않았다. 최초 publish는 이 정적 검사에서 FAIL이며 실행파일은 실행하지 않았다.
 
+## 2026-10-29 — 17차 / 0.18.0
+
+main07056d8 clean·origin/main0/0에서 시작. AGENTS/제품 목표/상태/기록/관련 QA·설계를 읽었다. 공식 공개 JS를 압축 해제해 재검토하고 main feature props 생산/현대 dialog !newFeeRates 분기를 확인했다. 사용자 계정의 실제 mode HTML은 읽지 않았으며 운영 Auth/DB/로그/진단을 변경하지 않았다.
+
+FeeContractResolver와 동일 계정 sell-context 읽기 allowlist를 추가하고, 무조건 새 API 호출을 제거했다. 앱 조회·활성화·최종 배치·재가격3곳을 모두 연결했다. legacy 5필드의 enabled도 보존/검증하고 현재 false 분기와 충돌하는 historical base/minimum은 지원하지 않는다고 명시했다. KRW 원/wire·USD·최소/증분/역산은 기존 정수 엔진을 재사용했다. 자산 publisher 비율 누락/충돌의 UI 검토 차단을 추가했다. 과거 등록을 필수로 요구하던 순환 조건을 현재 서버 모드/앱/품목 증거로 대체하고 기존 등록의 충돌 veto를 보존했다.
+
+최초 모드 구현 후 전체 기능284/284 PASS를 확인한 뒤 UI 제품화를 시작했다. 전용 자가검증 UI/VM/infra 모델은 개발 구성에 보존하되 Release 컴파일 제외. 정상 직접 조회·저장 로그인 관리·실제 거래/저널·진단은 유지했다. 지갑 단독 조회 및 마지막 KRW 관측 표시,3구간×4금액 비교, 내부 코드 상시 노출 제거, 문제 해결 내비게이션을 연결했다. 역사 고정 날짜로 만료되던 합성 이력을 상대 시각으로 수정했으며 실제 신선도 정책은 유지했다.
+
+최종 기능286/286·비표시 WPF56/56·배포 계약19/19 PASS, 정리 fixture8/0/1미검증. 새UI RTB를 직접 확인했다. 사용자 제공0.17 재시작 복원 성공은 실제 인간 관측으로 기록하며 새 버전/장기 회전·수수료/거래 검증으로 확대하지 않았다. 실제 계정/앱 창/타 프로세스/전역 입력/화면·설정 조작0. RELEASE_READY·REAL_FEE_VERIFIED·LIVE_SELL_VERIFIED 부여0. 새 릴리즈/롤백 파일과 최종 커밋은 배포 확정 절 참조.
+
+
 ### 0.17.0 배포 확정 — 로그인 유지
 
 구현 소스 **1700bfdc6cb3cf0df984e7c76b0a14fff8558372**, origin/main push. Windows x64 self-contained LiveOnly portable **artifacts/releases/MarketCrate-0.17.0-session-1700bfd-win-x64.zip**, **66,486,397바이트 /413파일**, SHA256 **A025E48C5D2FEBBA1C19D99F6F3B1F0DD3A947DBD77F67850910D9FD3363E1CC**. 원본 `artifacts/releases/session-1700bfd-windows-x64`, BuildVersion0.17.0+1700bfdc6cb3cf0df984e7c76b0a14fff8558372. 전체 entry SHA/SourceCommit·CLR/WPF10.0.9·SQLite x64·ProtectedData DLL/steam-session MIT 전문/고지·인증/DB/로그/개발파일 제외 검사 PASS. PE/BAML은 Mock 부재와 실제 Shell/Steam/AuthStore/refresh-token 검증 코드 존재를 확인했다. 경고·오류0, 실제 EXE/설치/서명은 미실행이다.

@@ -21,15 +21,15 @@ public sealed partial class SteamWorkspaceViewModel
         RequireConnection();
         if(syntheticConnection||!TradeAccepted||TradingConfirmation!="실제 거래")throw new SteamException(SteamFailure.Disabled);
         TradingConfirmation="";
-        TradingPreparation="선택 게임의 계정·지갑·수수료·자산·기존 등록 수수료를 읽기 전용으로 재확인 중 · 거래 전송 없음";
+        TradingPreparation="선택 게임의 계정·지갑·수수료·자산·판매 화면 설정을 읽기 전용으로 재확인 중 · 거래 전송 없음";
         try
         {
             await workspace!.EnableUserTradingAsync(Game.AppId,Game.ContextId,Game.Name,RiskAccepted&&CredentialsAccepted,TradeAccepted,token);
             TradingPreparation="비공식 실제 거래 모드 · 이 세션 한정 · Valve 허용/실거래 검증 완료를 뜻하지 않습니다. 각 배치는 최종 검토 후 한 번 승인해야 합니다.";
         }
-        catch(SteamException failure)
+        catch(SteamException)
         {
-            TradingPreparation=$"활성화하지 않음 ({failure.Code}) · 지갑 계정/단위/증분·수수료·판매 가능 단일 자산·같은 게임의 기존 등록 수수료 증거가 모두 필요합니다. 작업 상세 진단을 확인하세요. 자동 재시도하지 않습니다.";
+            TradingPreparation="활성화하지 않았습니다. 계정·지갑 단위·게임별 수수료·판매 가능 자산·공식 판매 화면 설정을 확인해야 합니다. 문제 해결에서 실패 단계를 확인하세요. 자동 재시도하지 않습니다.";
             throw;
         }
         finally{Changed();}

@@ -22,6 +22,9 @@ public sealed class SteamExperimentalWorkspace : IDisposable
     private readonly HashSet<int> verifiedApps=[];
     public SteamFailure? Failure => http.Halted;
     public SteamFailure? FeatureFailure(string endpoint)=>http.FeatureFailure(endpoint);
+    public SteamWalletObservation? WalletObservation{get;private set;}
+    public DateTimeOffset? WalletObservedAt{get;private set;}
+    private void ObserveWallet(SteamWalletObservation value){WalletObservation=value;WalletObservedAt=DateTimeOffset.UtcNow;}
     public SteamExperimentalWorkspace(string isolatedDataDirectory, int appId, string contextId, string game,
         SteamTradingPolicy? policy = null, HttpMessageHandler? contractHandler = null, TimeProvider? clock = null,HttpMessageHandler? imageHandler=null)
     {
@@ -51,14 +54,17 @@ public sealed class SteamExperimentalWorkspace : IDisposable
         using var operation=DiagnosticHub.Operation(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,"F01","TradingReadiness");
         var account=Authentication.SteamId!;
         var wallet=await SteamFees.FetchTradingWalletAsync(http,account,token);
-        var schedule=await SteamFees.FetchStructureAsync(http,appId,wallet,token);
+        var schedule=await SteamFees.FetchResolvedAsync(http,Authentication,appId,token);
+        if(schedule.Currency!=wallet.Currency||schedule.MinimumWire!=wallet.MinimumWire||schedule.IncrementWire!=wallet.IncrementWire)throw new SteamException(SteamFailure.Restricted);
         var provider=new SteamInventoryProvider(http,Authentication,appId,context,game);
         var assets=await provider.GetAsync(token);
         if(!assets.Any(x=>x.Marketable&&!x.Locked&&!x.Stackable&&store.Available(x)>0))throw new SteamException(SteamFailure.Restricted);
         if(assets.Where(x=>x.Marketable&&!x.Locked).Any(x=>!provider.PublisherFees.TryGetValue(x.Key,out var fee)||fee*100L!=schedule.Publisher.Millionths))throw new SteamException(SteamFailure.Restricted);
         var listings=await Orders.RefreshAsync(token);
         var samples=listings.Where(x=>x.Asset.AppId==appId&&x.Currency==schedule.Currency&&x.State==SaleState.Listed).ToArray();
-        if(samples.Length==0||samples.Any(x=>schedule.FromSeller(x.SellerReceives).Fees!=x.Fees))throw new SteamException(SteamFailure.Restricted);
+        // Resolved server sell-dialog mode + wallet/app/item contracts replace the circular
+        // prerequisite of having sold this game before. Existing listings remain a veto on conflict.
+        if(samples.Any(x=>schedule.FromSeller(x.SellerReceives).Fees!=x.Fees))throw new SteamException(SteamFailure.Restricted);
         token.ThrowIfCancellationRequested();
         if(!Authentication.Connected||Authentication.SteamId!=account||Failure is not null)throw new SteamException(SteamFailure.Authentication);
         verifiedApps.Add(appId);
@@ -67,10 +73,13 @@ public sealed class SteamExperimentalWorkspace : IDisposable
         SetGame(appId,context,game);
         DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,DiagnosticOutcome.Completed,reason:"TradingEnabled",count:samples.Length,currency:schedule.Currency);
     }
-    public Task<SteamFeeSchedule> FeesAsync(int appId, CancellationToken token = default) => SteamFees.FetchAsync(http, appId, token);
+    public Task<SteamFeeSchedule> FeesAsync(int appId, CancellationToken token = default) => SteamFees.FetchResolvedAsync(http, Authentication, appId, token,ObserveWallet);
+    public async Task<SteamWalletObservation> WalletAsync(CancellationToken token=default){if(!Authentication.Connected)throw new SteamException(SteamFailure.Authentication);var result=await SteamFees.FetchWalletObservationAsync(http,token);ObserveWallet(result);return result;}
+#if MARKETCRATE_DEMO
     public Task<SteamInventoryPage> ProbeInventoryAsync(int appId,string contextId,string game,CancellationToken token)=>new SteamInventoryProvider(http,Authentication,appId,contextId,game).ProbeAsync(token);
     public Task<SteamWalletObservation> ProbeWalletAsync(CancellationToken token)=>SteamFees.FetchWalletObservationAsync(http,token);
     public Task<SteamFeeStructure> ProbeFeeStructureAsync(int appId,CancellationToken token)=>SteamFees.FetchStructureObservationAsync(http,appId,token);
     public Task<SteamFeeSchedule> ProbeFeesAsync(int appId,SteamWallet wallet,CancellationToken token)=>SteamFees.FetchStructureAsync(http,appId,wallet,token);
+#endif
     public void Dispose() { Authentication.Dispose(); Images.Dispose();http.Dispose(); store.Dispose(); }
 }

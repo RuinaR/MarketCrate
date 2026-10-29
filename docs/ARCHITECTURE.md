@@ -1,5 +1,14 @@
 # MarketCrate — 아키텍처 (최초 Mock 구현 / 후속 계획)
 
+## 0.18 — 모드 기반 수수료와 제품/개발 구성
+
+정상 경로는 SteamWorkspace.LoadFees/LoadWallet→SteamExperimentalWorkspace→SteamFees.FetchResolvedAsync→FeeContractResolver→(WalletContext 또는 explicit new API)→SteamFeeSchedule→자산 publisher 대조→검토/최종 executor 재검증이다. 세션별 wallet 관측은 별도 메타데이터로 보존하며 견적/권한과 동일시하지 않는다. 미확인 모드에서 예전 공식이나 고정 수수료로 폴백하지 않는다. 재가격에서도 같은 경로를 사용한다.
+
+Production=true에서는 DevelopmentReadCheckView의Page/BAML/code-behind, SteamReadSelfCheckViewModel, SteamReadSelfCheck/계획·결과 모델을 제외한다. partial 개발 hook은 구현이 없을 때 호출도 제거된다. 공통 WorkPage는 별도 SteamNavigationViewModel에 두고 정식5페이지/개발6페이지 범위를 구분한다. 테스트는 기존 dev ProjectReference를 사용해 전 회귀를 보존한다. Test-ProductionAssembly는 Mock과 자가검증 타입/리소스 부재 및 실제 resolver/Auth/서비스 존재를 PE만 읽어 검사한다.
+
+단일 최종 승인·불변 배치·순차 요청·저널 선기록·Unknown/예약·모바일 승인/서버 게시 분리·반환 인과관계는 변경하지 않았다. DB/Auth 스키마와 사용자 데이터 이관/초기화 없음. 상세 현재 공식 계산은 STEAM-INTEGRATION-FEASIBILITY 참조.
+
+
 ## 16차 — 동의 기반 인증 저장과 복원
 
 App→ProductionShellViewModel(authDirectory=DataRoot/Auth)→SteamWorkspaceViewModel.InitializePersistence. Loaded에서 RestoreRememberedAsync를 호출하되 정상 저장 동의/파일이 있고 실행당 최초일 때만 Run한다. 기본 생성은 네트워크를 보내지 않는다. 개발/비표시 tests는 별도 authDirectory 또는 저장소 없는 composition을 사용한다.

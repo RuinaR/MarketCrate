@@ -15,7 +15,7 @@ public static class FifteenthStageTests
             ("User session activation requires independent identity and fee evidence",Activation),
             ("User-mode adapter activation through Guard listing and reprice preserves journal",UserFlow),
             ("Wrong wallet account cannot activate or send a transaction",WrongAccount),
-            ("Missing pricing metadata or previous fee evidence blocks activation",MissingEvidence),
+            ("Missing pricing metadata blocks; verified server sell-mode permits first sale without prior listing",MissingEvidence),
             ("User account binding is lost on consent revocation and logout",Revocation),
             ("Changed order quantity invalidates complete approval before first intent",ChangedBook),
             ("Multiple app scopes execute one immutable batch with one approval",MixedBatch),
@@ -54,7 +54,7 @@ public static class FifteenthStageTests
     private static async Task WrongAccount(){using var f=new Harness();await f.Login();f.Route.Account="76561198000000002";await Fails(f.Arm);Check(!f.Workspace.Access.Trading&&f.Server.Sends==0,"account mismatch armed");}
     private static async Task MissingEvidence()
     {
-        using var f=new Harness();await f.Login();f.Route.MissingMinimum=true;await Fails(f.Arm);Check(!f.Workspace.Executor.CanExecute,"missing pricing armed");f.Route.MissingMinimum=false;f.Server.Rows.Clear();await Fails(f.Arm);Check(!f.Workspace.Access.Trading&&f.Server.Sends==0,"absent fee sample armed");
+        using var f=new Harness();await f.Login();f.Route.MissingMinimum=true;await Fails(f.Arm);Check(!f.Workspace.Executor.CanExecute,"missing pricing armed");f.Route.MissingMinimum=false;f.Server.Rows.Clear();await f.Arm();Check(f.Workspace.Access.Trading&&f.Server.Sends==0,"verified first-sale preflight failed or submitted a write");
     }
     private static async Task Revocation(){using var f=new Harness();await f.Login();await f.Arm();f.Workspace.Access.Acknowledge(true,true,true,false);f.Workspace.Access.Acknowledge(true,true,true,true);Check(!f.Workspace.Executor.CanExecute,"generic checkbox bypassed binding");await f.Arm();f.Workspace.Authentication.Dispose();Check(!f.Workspace.Access.Trading&&!f.Workspace.Executor.CanExecute,"logout retained arming");}
     private static async Task ChangedBook()

@@ -1,5 +1,24 @@
 # 정상·오류·복구 QA 매트릭스 — 10차 (2026-10-28 KST)
 
+## 17차 / 0.18.0 (2026-10-29)
+
+| 범위 | 결과 및 증거 |
+|---|---|
+| 기능 전 회귀 | **286/286 PASS**, runtime/product17-core.txt. 새 FeeModeTests16개, 기존270개 유지 |
+| 모드·오류 주입 | legacy API호출0/new HTML→실패·fallback0/필드만으로 모드 추정 금지/잘못된·중복·script/comment 모드/지갑 변경/앱 override0/기본 수수료 충돌/403 중단/계정 불일치/독립 지갑·목록 보존 PASS |
+| 정수 금액 | KRW1→3,15→18,1000→1150 및1..999 역산/최소/절사 후 증분 half-up/불가능 구매자17 거부·명시적 하한16/USD15의 수수료1+1 PASS. 모두 합성 서버 메타데이터; 실제 Steam UI 비교값 아님 |
+| 첫 판매·거래 보호 | 실제 resolver 계약을 통과한 합성 서버에서 이전 등록0이어도 사전검증(전송0), 충돌/필수 증거 누락 차단. 단일 승인·다중게임·스택 계약OFF·Unknown/재시작·Guard·취소/반환·재가격 기존 회귀 PASS |
+| 공식 UI 대조 기능 |3독립 사례×판매자/구매자/Steam/게임4금액,3단가 일치 및 수수료1원 불일치/재입력 무효화, 거래 권한/저널 불변 PASS. **실제 사용자가 공식 화면에서 확인한3사례는 미확보** |
+| 비표시 WPF | **56/56 PASS**, runtime/product17-ui.txt. 제품 비교 화면12입력 바인딩·125/200% RTB, 기존100/150%/TabHeader/가상화/선택/로그인 복원 포함. Window/PresentationSource0; 물리 입력·Popup·모니터 DPI 대체 아님 |
+| 배포·정리 | 배포계약19/19 PASS; 안전 정리 fixture8 PASS/0 FAIL/1 NOT VERIFIED(실제 junction 제약). 운영 파일 정리0 |
+| 실환경 사용자 관측 |0.17 재시작 로그인 복원·QR/Community·목록8·CS2 명시적0·KRW wallet/legacy5필드 확인. fee200 HtmlMarket은 실패, 모드/수수료/가격/실판매는 미검증 |
+| 새 EXE/설치/서명/실계정 | Codex 미실행. 새 버전 실제 복원/모드/수수료/등록·취소·장기 누수는 NOT VERIFIED |
+
+초기9실패:5개 fixture가 새 sell-context GET을 정의하지 않아 실패했고,4개 가격 이력 fixture는 Oct28 고정 날짜가24시간 창 밖으로 만료되어 실패했다. 실제 계약 shape를 추가하고 이력을 현재 시각 기준으로 만들어 해결했으며 가격 신선도 기준은 낮추지 않았다. 중간 WPF1실패는 삭제한 상시 '계약 요약' 표시를 요구하던 구 UI assertion을 정상화하고 '일반 화면 내부 코드 부재' 회귀로 대체했다. 최종 FAIL0.
+
+RTB product-fees-125/200, live-only-shell-small, 세션/기존 탭 상태 출력을 직접 검토했다. 개발 렌더에는 테스트용 탭이 보일 수 있으며 정식 PE/BAML의 자가검증 타입/리소스 부재 검사는 별도로 수행한다. 라이선스·전체 ZIP 해시 결과는 배포 확정 기록 참조.
+
+
 ### 0.17.0 최종 자동 검증
 
 기능 **270/270 PASS**, 자체 비표시 WPF **55/55 PASS**, 배포 파일계약 **19/19 PASS**, 안전 fixture 정리 **8 PASS/0 FAIL/1 NOT VERIFIED**(실제 junction 생성 환경제약). 최종 빌드 경고·오류0. 신규 세션20/자체UI3개와 기존 전 회귀 포함. 직접 Windows CurrentUser DPAPI·ACL/암호문만 저장, 로그·검토ZIP canary 미노출, 인증 복원 시 Unknown 저널/예약 보존·거래0을 확인했다. 마지막 저장 예외 분류/계정 검증을 반영한 최종 source 증거는 runtime/session-build.txt·session-core.txt·session-ui.txt·session-distribution.txt·session-cleanup.txt에 있다.

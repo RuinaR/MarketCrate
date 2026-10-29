@@ -5,9 +5,9 @@ using MarketCrate.Core;
 namespace MarketCrate.Infrastructure.Steam;
 
 public sealed record SteamWallet(string Currency,long MinimumWire,long IncrementWire);
-// Legacy parameters are evidence, not a replacement for the current fee schedule.
+// Historical fields are evidence only. Resolver also requires current server mode/app context.
 public sealed record SteamLegacyFeeObservation(int Fields,bool Invalid,long? SteamMillionths,long? MinimumWire,long? BaseWire,long? DefaultPublisherMillionths)
-{ public bool Complete=>Fields==5&&!Invalid; }
+{ public bool Complete=>Fields==5&&!Invalid; public bool? Enabled{get;init;} }
 public sealed record SteamWalletObservation(string? Currency,long? MinimumWire,long? IncrementWire,bool? LoggedIn,string Shape)
 {
     public SteamLegacyFeeObservation? LegacyFees{get;init;}
@@ -50,7 +50,7 @@ public static class SteamFees
             long? Rate(string name){if(!root.TryGetProperty(name,out var v))return null;var value=decimal.Parse(v.ValueKind==JsonValueKind.String?v.GetString()!:v.GetRawText(),System.Globalization.CultureInfo.InvariantCulture)*1_000_000;if(value is <0 or >1_000_000||value!=decimal.Truncate(value))throw new FormatException();return (long)value;}
             long? Amount(string name){if(!root.TryGetProperty(name,out var v))return null;var value=SteamContract.Integer(v);if(value is <0 or >1_000_000)throw new FormatException();return value;}
             if(root.TryGetProperty("wallet_fee",out var enabled)&&!(enabled.ValueKind is JsonValueKind.True or JsonValueKind.False)&&SteamContract.Integer(enabled) is not(0 or 1))throw new FormatException();
-            return new(count,false,Rate("wallet_fee_percent"),Amount("wallet_fee_minimum"),Amount("wallet_fee_base"),Rate("wallet_publisher_fee_percent_default"));
+            return new(count,false,Rate("wallet_fee_percent"),Amount("wallet_fee_minimum"),Amount("wallet_fee_base"),Rate("wallet_publisher_fee_percent_default")){Enabled=root.TryGetProperty("wallet_fee",out var active)?active.ValueKind is JsonValueKind.True or JsonValueKind.False?active.GetBoolean():SteamContract.Integer(active)==1:null};
         }
         catch(Exception error)when(error is FormatException or InvalidOperationException or OverflowException){return new(count,true,null,null,null,null);}
     }
@@ -73,16 +73,38 @@ public static class SteamFees
         var data=ObserveStructure(json);if(data.AdditionalFields)throw new SteamException(SteamFailure.ContractChanged);
         var result=new SteamFeeSchedule(wallet.Currency,wallet.MinimumWire,wallet.IncrementWire,data.Steam,data.Publisher);result.Validate();DiagnosticHub.Emit(DiagnosticEvent.FeeValidated,DiagnosticArea.Pricing,requirement:"D10");return result;
     }
-    public static async Task<SteamFeeSchedule> FetchAsync(SteamHttp http,int appId,CancellationToken token)
-    {var wallet=await FetchWalletAsync(http,token);return await FetchStructureAsync(http,appId,wallet,token);}
+    public static async Task<SteamFeeSchedule> FetchResolvedAsync(SteamHttp http,SteamQrAuthentication auth,int appId,CancellationToken token,Action<SteamWalletObservation>? observed=null)
+    {
+        if(!auth.Connected||auth.SteamId is not {} account)throw new SteamException(SteamFailure.Authentication);
+        using var correlation=DiagnosticHub.Scope(correlation:true);
+        using var request=new HttpRequestMessage(HttpMethod.Get,"https://steamcommunity.com/market/");
+        var html=await http.SendAsync(request,token,true);var wallet=ObserveWallet(html);
+        if(wallet.LoggedIn==false){http.BlockFeature("Wallet");throw new SteamException(SteamFailure.Authorization){Endpoint="Wallet"};}
+        observed?.Invoke(wallet);
+        var evidence=FeeContractResolver.Observe(html,appId,wallet);
+        if(evidence.Mode==FeeContractMode.Unverified&&evidence.Reason=="ModeMissing")
+        {
+            using var profile=new HttpRequestMessage(HttpMethod.Get,$"https://steamcommunity.com/profiles/{account}/inventory/");
+            html=await http.SendAsync(profile,token,true);
+            var identity=Regex.Match(html,@"\bg_steamID\s*=\s*['"" ]?([0-9]{17})['""]?\s*;",RegexOptions.CultureInvariant,TimeSpan.FromMilliseconds(100));
+            if(!identity.Success||identity.Groups[1].Value!=account){http.BlockFeature("FeeContext");DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Pricing,DiagnosticOutcome.Blocked,LogLevel.Warning,DiagnosticError.Authorization,endpoint:"FeeContext",reason:"AccountMismatch");throw new SteamException(SteamFailure.Authorization){Endpoint="FeeContext"};}
+            evidence=FeeContractResolver.Observe(html,appId,wallet);
+        }
+        if(!auth.Connected||auth.SteamId!=account)throw new SteamException(SteamFailure.Authentication);
+        return evidence.Mode switch
+        {
+            FeeContractMode.VerifiedLegacy=>FeeContractResolver.Legacy(evidence),
+            FeeContractMode.VerifiedNew=>await FetchStructureAsync(http,appId,wallet.PricingWallet(),token),
+            FeeContractMode.Restricted=>throw new SteamException(SteamFailure.Authorization){Endpoint="Fees"},
+            _=>throw new SteamException(SteamFailure.Unsupported){Endpoint="Fees"}
+        };
+    }
     public static async Task<SteamWalletObservation> FetchWalletObservationAsync(SteamHttp http,CancellationToken token)
     {
         using var correlation=DiagnosticHub.Scope(correlation:true);using var request=new HttpRequestMessage(HttpMethod.Get,"https://steamcommunity.com/market/");var result=ObserveWallet(await http.SendAsync(request,token,true));
         if(result.LoggedIn==false){http.BlockFeature("Wallet");throw new SteamException(SteamFailure.Authorization){Endpoint="Wallet"};}
         return result;
     }
-    public static async Task<SteamWallet> FetchWalletAsync(SteamHttp http,CancellationToken token)
-    {var result=await FetchWalletObservationAsync(http,token);if(result.Currency is null)throw new SteamException(SteamFailure.WalletUnavailable);return result.PricingWallet();}
     internal static async Task<SteamWallet> FetchTradingWalletAsync(SteamHttp http,string account,CancellationToken token)
     {
         using var request=new HttpRequestMessage(HttpMethod.Get,"https://steamcommunity.com/market/");
@@ -95,7 +117,7 @@ public static class SteamFees
     }
     public static async Task<SteamFeeStructure> FetchStructureObservationAsync(SteamHttp http,int appId,CancellationToken token)
     {using var correlation=DiagnosticHub.Scope(correlation:true);using var request=StructureRequest(appId);return ObserveStructure(await http.SendAsync(request,token));}
-    public static async Task<SteamFeeSchedule> FetchStructureAsync(SteamHttp http,int appId,SteamWallet wallet,CancellationToken token)
+    internal static async Task<SteamFeeSchedule> FetchStructureAsync(SteamHttp http,int appId,SteamWallet wallet,CancellationToken token)
     {using var correlation=DiagnosticHub.Scope(correlation:true);using var request=StructureRequest(appId);return Structure(await http.SendAsync(request,token),wallet);}
     internal static HttpRequestMessage StructureRequest(int appId)
     {

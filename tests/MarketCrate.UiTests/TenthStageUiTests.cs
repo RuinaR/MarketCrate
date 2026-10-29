@@ -28,14 +28,14 @@ internal static class TenthStageUiTests
             }
             Directory.Delete(folder,true);
         });
-        test("독립 판매목록·계약 요약·최종 즉시거래가능가 검토 자체 렌더",()=>
+        test("독립 판매목록·일반 화면 내부 코드 제거·최종 가격 검토 자체 렌더",()=>
         {
             var folder=Path.Combine(Directory.GetCurrentDirectory(),"runtime","stage10-connected-ui-"+Guid.NewGuid().ToString("N"));using var server=new SteamContractServer();
             using(var vm=new SteamWorkspaceViewModel(scope=>new SteamExperimentalWorkspace(folder,scope.AppId,scope.ContextId,scope.Name,contractHandler:server.Connection(),clock:server.Clock),true))
             {
                 vm.RiskAccepted=vm.CredentialsAccepted=true;Complete(vm.BeginAsync());server.Clock.Advance();Complete(vm.CheckAsync());Complete(vm.LoadAsync());vm.SelectAll.Execute(null);Complete(vm.RefreshPricesAsync());
                 var view=new SteamWorkspaceView{DataContext=vm};vm.WorkPage=4;render(view,1100,700,1,"stage10-contract-summary.png");
-                Check(Find<TextBlock>(view).Any(x=>x.Text.Contains("마지막 파싱 관측")&&x.Text.Contains("합성 계약")));
+                Check(!Find<TextBlock>(view).Any(x=>x.Text.Contains("마지막 파싱 관측")||x.Text.Contains("진단 작업 ID:")));
                 vm.BuildReview();render(view,1100,800,1.25,"stage10-review-terms.png");
                 Check(Find<TextBlock>(view).Any(x=>x.Text==PriceDisplay.ImmediateExplanation)&&vm.ReviewRows.All(x=>x.PriceBasis.Contains(PriceDisplay.Immediate)));
                 vm.CloseReview.Execute(null);((TabControl)view.FindName("SteamPages")).SelectedIndex=2;render(view,1100,700,1,"stage10-listings-independent.png");
