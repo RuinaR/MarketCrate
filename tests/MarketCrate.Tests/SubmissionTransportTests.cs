@@ -30,7 +30,10 @@ public static class SubmissionTransportTests
             ("ID-less request reports exact server asset membership without claiming attribution",IdlessObservation),
             ("Stack contract changed after review blocks before intent and transmission",StackModeChanged),
             ("Server readiness is independent of an old Unknown intent while final submission remains guarded",ReadinessWithPendingIntent),
-            ("Server unmarketable asset still blocks readiness with an exact safe reason",UnmarketableReadiness)
+            ("Server unmarketable asset still blocks readiness with an exact safe reason",UnmarketableReadiness),
+            ("SSIM-derived claims are atomic account-scoped and released only by their owner",AssetOperationClaims),
+            ("Recreated executors share in-flight protection for listing and cancellation",RecreatedExecutorClaims),
+            ("Different assets serialize through the shared store and cancelled queue wait releases its claim",SharedMutationQueue)
         };
         int passed=0,failed=0;foreach(var(name,run)in tests)try{await run();passed++;Console.WriteLine("PASS "+name);}catch(Exception error){failed++;Console.WriteLine("FAIL "+name+": "+error);}return(passed,failed);
     }
@@ -224,8 +227,49 @@ public static class SubmissionTransportTests
         f.Route=p=>p=="/market/"?Json(WalletPage):p.StartsWith("/profiles/")?Json(ClassicStackPage):p.StartsWith("/inventory/")?Json(f.Server.InventoryJson(1).Replace("\"marketable\":1","\"marketable\":0")):null;
         var trace=new Trace();using var diagnostics=DiagnosticHub.Use(trace);SteamException? failure=null;
         try{await f.Workspace!.EnableUserTradingAsync(730,"2","Counter-Strike 2",true,true,default);}catch(SteamException error){failure=error;}
-        Check(failure?.TradingCheck==SteamTradingCheck.SaleableAssets&&!f.Workspace!.Executor.CanExecute&&f.Server.Sends==0&&f.Server.Cancels==0);
+        Check(failure?.TradingCheck==SteamTradingCheck.SaleableAssets&&MarketCrate.App.ViewModels.SteamWorkspaceViewModel.TradingFailureText(failure).Contains("서버 판매 가능 자산과 지원 수량")&&!f.Workspace!.Executor.CanExecute&&f.Server.Sends==0&&f.Server.Cancels==0);
         Check(trace.Events.Any(x=>x.Reason=="ServerSaleableAssets"&&x.Count==0)&&trace.Events.Any(x=>x.Reason=="InventoryUnmarketable"&&x.Count==1));
+    }
+    private static Task AssetOperationClaims()
+    {
+        var guard=new SteamAssetOperationGuard();var first=guard.TryClaimAll("Account",["1","1"]);Check(first is not null);
+        Check(guard.TryClaimAll("account",["2","1"])is null);using(var free=guard.TryClaim("account","2"))Check(free is not null);
+        using(var other=guard.TryClaim("different-account","1"))Check(other is not null);
+        first!.Dispose();using var next=guard.TryClaim("account","1");Check(next is not null);first.Dispose();Check(guard.TryClaim("account","1")is null);
+        return Task.CompletedTask;
+    }
+    private static async Task RecreatedExecutorClaims()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();
+        var workspace=f.Workspace!;var one=workspace.Executor;var batch=new SaleBatchSnapshot(Guid.NewGuid(),workspace.Authentication.SteamId!,DateTimeOffset.UtcNow,[f.Vm.ReviewRows.Single().Snapshot(0)]);
+        await one.ValidateBatchAsync(batch,default);workspace.SetGame(730,"2","Counter-Strike 2");var two=workspace.Executor;var secondBatch=batch with{BatchId=Guid.NewGuid(),Lines=[batch.Lines[0] with{LineId="other-line"}]};await two.ValidateBatchAsync(secondBatch,default);
+        f.Server.ListingsStarted=new(TaskCreationOptions.RunContinuationsAsynchronously);var release=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);f.Server.ListingsRelease=release;
+        var first=one.SubmitAsync(batch.Lines[0],SaleBatchCoordinator.RequestKey(batch,batch.Lines[0]),default);await f.Server.ListingsStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        var second=two.SubmitAsync(secondBatch.Lines[0],SaleBatchCoordinator.RequestKey(secondBatch,secondBatch.Lines[0]),default);var rejectedImmediately=second.IsCompleted;release.TrySetResult();
+        var rejected=await second;await first;
+        Check(rejectedImmediately&&rejected.State==SaleState.Failed&&rejected.Message.Contains("전송하지")&&f.Server.Sends==1&&workspace.Store.Commands().Count==1);
+        f.Server.Publish=true;var listing=(await workspace.Orders.RefreshAsync()).Single();
+        workspace.SetGame(730,"2","Counter-Strike 2");var three=workspace.Executor;
+        f.Server.ListingsStarted=new(TaskCreationOptions.RunContinuationsAsynchronously);release=new(TaskCreationOptions.RunContinuationsAsynchronously);f.Server.ListingsRelease=release;
+        var firstCancel=two.CancelAsync(listing,"first-cancel");await f.Server.ListingsStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        var secondCancel=three.CancelAsync(listing,"second-cancel");rejectedImmediately=secondCancel.IsCompleted;release.TrySetResult();
+        rejected=await secondCancel;await firstCancel;
+        Check(rejectedImmediately&&rejected.State==SaleState.Failed&&rejected.Message.Contains("전송하지")&&f.Server.Cancels==1&&workspace.Store.Commands().Count(x=>x.Kind=="cancel")==1);
+        using var released=workspace.Store.AssetOperations.TryClaim(workspace.Authentication.SteamId!,listing.Asset.AssetId);Check(released is not null);
+    }
+    private static async Task SharedMutationQueue()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.Free=2;f.Server.ManyAssets=2;await f.Login();await f.Prepare(1);f.EnableTrading();var workspace=f.Workspace!;
+        var batch=new SaleBatchSnapshot(Guid.NewGuid(),workspace.Authentication.SteamId!,DateTimeOffset.UtcNow,[f.Vm.ReviewRows.Single().Snapshot(0)]);var one=workspace.Executor;await one.ValidateBatchAsync(batch,default);
+        workspace.SetGame(730,"2","Counter-Strike 2");var two=workspace.Executor;var other=f.Vm.Assets.Single(x=>x.Asset.Key!=batch.Lines[0].Asset.Key).Asset;
+        var next=batch with{BatchId=Guid.NewGuid(),Lines=[batch.Lines[0] with{LineId="second-asset",Asset=other}]};await two.ValidateBatchAsync(next,default);
+        f.Server.ListingsStarted=new(TaskCreationOptions.RunContinuationsAsynchronously);var release=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);f.Server.ListingsRelease=release;
+        var first=one.SubmitAsync(batch.Lines[0],SaleBatchCoordinator.RequestKey(batch,batch.Lines[0]),default);await f.Server.ListingsStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        var second=two.SubmitAsync(next.Lines[0],SaleBatchCoordinator.RequestKey(next,next.Lines[0]),default);var waited=!second.IsCompleted;release.TrySetResult();await first;await second;
+        Check(waited&&f.Server.Sends==2&&workspace.Store.Commands().Count==2);
+        await workspace.Store.Mutations.WaitAsync();using var cancelled=new CancellationTokenSource();var wait=two.SubmitAsync(next.Lines[0],SaleBatchCoordinator.RequestKey(next,next.Lines[0]),cancelled.Token);
+        cancelled.Cancel();var stopped=false;try{await wait;}catch(OperationCanceledException){stopped=true;}finally{workspace.Store.Mutations.Release();}
+        using var freed=workspace.Store.AssetOperations.TryClaim(workspace.Authentication.SteamId!,other.Key.AssetId);Check(stopped&&freed is not null&&f.Server.Sends==2&&workspace.Store.Commands().Count==2);
     }
     private sealed class Trace:IDiagnosticLog{public Guid SessionId{get;}=Guid.NewGuid();public List<DiagnosticRecord> Events{get;}=[];public void Write(DiagnosticRecord value)=>Events.Add(value);}
     private static void Check(bool value){if(!value)throw new Exception("submission transport contract assertion");}

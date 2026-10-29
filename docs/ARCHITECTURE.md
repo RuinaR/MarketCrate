@@ -226,3 +226,8 @@ SteamTradingViewModel.NeedsLiveReviewPreparation은 선택 AppID 중 Policy.Veri
 ## 0.20.9 활성화와 전송 검사
 
 0.20.9: EnableUserTradingAsync의 SaleableAssets는 서버 자산/수량/판매 가능 플래그 및 scope 계약으로만 판단한다. Store.AvailableAll은 활성화에 대한 거절 조건이 아니라 PendingSubmissionAssets 통계에만 사용한다. UI CanTrade와 특정 검토의 CanTradeReview, Executor의 최종 수량/중복 검증을 독립적으로 유지한다. DB schema3/Unknown/최종 승인·가격 재검증은 변경하지 않는다.
+
+
+## 0.20.9 SSIM 실행 중 자산 잠금
+
+SSIM의 자산 claim 알고리즘을 이식한 SteamAssetOperationGuard는 SteamStateStore 소유이며 모든 재생성 Executor가 공유한다. 자산 선점은 공유 mutation queue 대기 전에 수행한다. 동일 자산 충돌은 Failed/미전송이며 intent가 없어 Unknown으로 꾸미지 않는다. 다른 자산은 store.Mutations로 직렬화해 단일 SQLite 연결의 동시 쓰기를 피한다. lease는 취소/예외/성공 경로에서 정리하며 중복 Dispose가 다른 소유자의 잠금을 해제하지 않는다. 영구 의도/Unknown과는 별개다.

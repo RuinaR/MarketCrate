@@ -20,6 +20,7 @@ public sealed class SteamContractServer : HttpMessageHandler
     public bool EmailConfirmation,UnspecifiedConfirmation;
     public bool EmptyCancelBody;public int CancelStatus=200;
     public TaskCompletionSource? InventoryStarted,InventoryRelease;
+    public TaskCompletionSource? ListingsStarted,ListingsRelease;
     public SteamFeeSchedule Schedule=>new(Currency,Currency=="KRW"?100:1,Currency=="KRW"?100:1,new(50000),new(100000));
     public static string HistoryJson(int gap=1)=>JsonSerializer.Serialize(new{success=true,prices=new object[][]{[DateTimeOffset.UtcNow.AddHours(-3).ToString("MMM dd yyyy HH: '+0'",System.Globalization.CultureInfo.InvariantCulture),115,"2"],[DateTimeOffset.UtcNow.AddHours(-3+gap).ToString("MMM dd yyyy HH: '+0'",System.Globalization.CultureInfo.InvariantCulture),115,"1"]}});
     // A fresh handler forwards to the same synthetic state for reconnect tests without reusing disposed HttpClient handlers.
@@ -53,6 +54,7 @@ public sealed class SteamContractServer : HttpMessageHandler
         else if(path=="/market/pricehistory/"){HistoryStarted?.TrySetResult();if(HistoryRelease is not null)await HistoryRelease.Task.WaitAsync(token);json=HistoryOverride??HistoryJson();}
         else if(path=="/market/mylistings/render/")
         {
+            ListingsStarted?.TrySetResult();if(ListingsRelease is {} release){ListingsRelease=null;await release.Task.WaitAsync(token);}
             json=ListingsJson();
             if(RotateSessionOnListings){requiredSession="0123456789abcdef01234567";var rotated=Json(json);rotated.Headers.Add("Set-Cookie","sessionid="+requiredSession+"; Path=/; Secure");return rotated;}
         }

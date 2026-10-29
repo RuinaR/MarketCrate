@@ -77,7 +77,7 @@ public sealed partial class SteamWorkspaceViewModel
             SteamTradingCheck.FeeContract=>"게임별 수수료 계약",
             SteamTradingCheck.WalletConsistency=>"지갑 통화·최소 가격·가격 증분 일치",
             SteamTradingCheck.InventoryRead=>"선택한 게임의 보관함 조회",
-            SteamTradingCheck.SaleableAssets=>"서버 판매 가능 자산과 이전 전송 충돌 여부",
+            SteamTradingCheck.SaleableAssets=>"서버 판매 가능 자산과 지원 수량",
             SteamTradingCheck.PublisherFees=>"아이템별 게임 수수료와 견적의 일치",
             SteamTradingCheck.ListingsRead=>"현재 판매목록 조회",
             SteamTradingCheck.ListingFees=>"기존 판매목록과 수수료 계산의 일치",

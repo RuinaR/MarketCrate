@@ -538,3 +538,11 @@ main/origin `4210269` clean/fetch 일치에서 시작. 인증 네트워크·실�
 
 검토에서 여러 행의 동일 스택을 직접 같은 단가로 맞춘 경우 자산·통화·수수료·시각·호가 증거가 전부 일치할 때만 합산한다. 다른 가격을 자동 대체하지 않는다. 여러 가격이 남아 있으면 전송을 차단한다.
 0.20.9 최종 검증: 기능356/356·비표시WPF69/69·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0. ReadinessWithPendingIntent는400→Unknown→세션 재시작→준비 허용/현재 자산 선택 가능→최종 제출 거부/추가 POST0/원 저널 보존을 검사했다. UnmarketableReadiness는 실제 marketable=false 응답을 준비 단계에서 거부하고 원인 건수를 확인했다. 최초 재현은 관련21건 중1 FAIL→수정 후 전체 PASS. 자동 승인 검토 시간 초과로 최초 전체 검증 명령이 시작되지 않았고, 허용된1회 재시도로 정상 실행했다. 실제 Steam/GUI 실행이나 사용자 데이터 변경은 없었다.
+## 0.20.9 후속 — 실제 SSIM 코드 이식과 실행기 공유
+
+사용자의 '실제 기능하는 프로젝트 코드 활용' 요청으로 SSIM28a503f의 MoneyOps.ts / MarketService.ts와 SteamMarketHelper e186d51의 sellItem/fetchInventory를 실제 소스로 재확인했다. SSIM은 현재 진행 중인 자산 잠금과 영구 거래 저널을 분리하며, MoneyOps 잠금은 작업이 끝나면 해제한다. 이 알고리즘을 C# SteamAssetOperationGuard로 부분 이식했다. Apache-2.0 LICENSE/NOTICE와 Copyright2026 Santer.xyz, 원본 커밋·경로·변경 사실을 보존했다. 브랜딩/비밀키/Node 런타임/자동 승인/네트워크 우회는 도입하지 않았다.
+
+MarketCrate의 SetGame은 Executor를 재생성하므로 인스턴스별 semaphore만으로는 이전/새 Executor의 동시 작업을 보호하지 못했다. 수정 전 실행기로 동시 제출을 재현했을 때 SQLite SQL logic error가 발생했다(추가 중복 POST 성공을 확인했다는 뜻은 아님). 자산 잠금을 저장소 범위로 공유하고 SQLite 쓰기 큐도 공유해 같은 자산의 동시 제출/취소를 미전송 결과로 거절하고, 다른 자산은 직렬 처리한다. 잠금 소유 lease만 해제하며 대기 중 취소도 정리한다. 영속 Unknown은 해제/재전송하지 않고 별도 유지한다.
+
+기존 f3b7594는 활성화 수정 중간 소스이며 그 publish 폴더는 검사만 했고 최신 ZIP/latest로 등록하지 않았다. 최종 SSIM 포함 배포는 후속 소스 커밋과 ZIP 해시 절을 기준으로 한다. 이전 후보·사용자 데이터·진단·롤백본 삭제0.
+SSIM 이식 최종 검증: 기능359/359·비표시WPF69/69·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0. 관련25개 합성 계약도 최종 재확인했다. 원본 MoneyOps 기반 atomic claimAll/계정 구분/중복 키/소유자 중복 Dispose, 재생성 Executor의 동일 자산 제출·취소 동시 진입 거부, 서로 다른 자산 직렬화, queue 대기 취소 후 lease 해제를 확인했다. 동시 충돌은 전송 전 실패로 반환하고 새로운 intent/POST 없이 원 작업만 유지한다. 수정 전 f3b7594 실행기를 사용한 음성 재현은 SQLite 동시 접근 오류로 실패했고 새 실행기는 같은 경로를 통과했다. 실계정/실제 GUI/백그라운드 요청은 실행하지 않았다. Source LICENSE/NOTICE를 보존하고 실제 출하 타입이 있으면 해당 고지 파일 부재를 검사하도록 강화했다.

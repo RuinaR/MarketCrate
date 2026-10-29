@@ -13,6 +13,7 @@ function Inspect([string]$Name) {
     }finally{$pe.Dispose();$stream.Dispose()}
 }
 $app=Inspect 'MarketCrate.App.dll';$core=Inspect 'MarketCrate.Core.dll';$infrastructure=Inspect 'MarketCrate.Infrastructure.dll'
+if('SteamAssetOperationGuard'-in$infrastructure.Types){foreach($notice in @('licenses/SSIM-Apache-2.0-LICENSE.txt','licenses/SSIM-NOTICE.txt')){if(-not(Test-Path -LiteralPath (Join-Path $Directory $notice)-PathType Leaf)){throw 'Adopted SSIM license/NOTICE missing'}}}
 $forbidden=@('DemoDataProvider','MockListingExecutor','BlockedListingExecutor','SqliteDemoStore','FileBatchJournal','MockCancellation','MockListingManagement','MockOrderProjection','MockListing','IDemoJournal','IDemoDataStore','MainView','MainViewModel','ItemViewModel','ManagementRowViewModel','OfflineOwner','DevelopmentReadCheckView','ReadSelfCheckRow','SteamReadSelfCheck','SteamReadCheckPlan','SteamReadCheckResult','BulkRepriceContractServer','UsabilityTests','UsabilityUiTests','ProductAuditUiTests')
 foreach($name in $forbidden){if($name-in@($app.Types+$core.Types+$infrastructure.Types)){throw "Development implementation leaked: $name"}}
 if($core.MockRetry){throw 'Mock-only retry behavior leaked'}

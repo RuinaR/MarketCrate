@@ -88,3 +88,10 @@ SteamMarketHelper e186d51의 sellItem(amount=item.amount)와 SSIM28a503f의 sell
 ID 없는 요청은 재조회한 **동일 asset/app/context·상품·수량·통화·가격·수수료**가 하나만 일치할 때 ObservedAssetState/ObservedListingId를 별도 증거로 남긴다. 현재 서버의 판매 중/승인 대기 관측은 표시하지만 이 요청이 그 등록을 만들었다고 확정하지 않는다. 원 command.ListingId를 후보로 채우거나 Unknown을 재전송/해제하지 않는다. 다른 자산/앱/금액·중복 후보는 관측을 확정하지 않는다. 이전400의 상세 원인과 실제 게시 성공은 여전히 미확정이다.
 
 보관함·장터 표시와 로컬 전송 저널 분리, 단일 최종 승인 전체 배치·계정/통화/수수료·중복 전송 보호·DPAPI·기존 schema3/사용자 자료를 유지한다. 실제 GUI/계정/거래 실행0.75개 판정47/16/0/3/9를 실제 검증 없이 승격하지 않는다.
+## 0.20.9 후속 — 실제 SSIM 코드 이식과 실행기 공유
+
+사용자의 '실제 기능하는 프로젝트 코드 활용' 요청으로 SSIM28a503f의 MoneyOps.ts / MarketService.ts와 SteamMarketHelper e186d51의 sellItem/fetchInventory를 실제 소스로 재확인했다. SSIM은 현재 진행 중인 자산 잠금과 영구 거래 저널을 분리하며, MoneyOps 잠금은 작업이 끝나면 해제한다. 이 알고리즘을 C# SteamAssetOperationGuard로 부분 이식했다. Apache-2.0 LICENSE/NOTICE와 Copyright2026 Santer.xyz, 원본 커밋·경로·변경 사실을 보존했다. 브랜딩/비밀키/Node 런타임/자동 승인/네트워크 우회는 도입하지 않았다.
+
+MarketCrate의 SetGame은 Executor를 재생성하므로 인스턴스별 semaphore만으로는 이전/새 Executor의 동시 작업을 보호하지 못했다. 수정 전 실행기로 동시 제출을 재현했을 때 SQLite SQL logic error가 발생했다(추가 중복 POST 성공을 확인했다는 뜻은 아님). 자산 잠금을 저장소 범위로 공유하고 SQLite 쓰기 큐도 공유해 같은 자산의 동시 제출/취소를 미전송 결과로 거절하고, 다른 자산은 직렬 처리한다. 잠금 소유 lease만 해제하며 대기 중 취소도 정리한다. 영속 Unknown은 해제/재전송하지 않고 별도 유지한다.
+
+기존 f3b7594는 활성화 수정 중간 소스이며 그 publish 폴더는 검사만 했고 최신 ZIP/latest로 등록하지 않았다. 최종 SSIM 포함 배포는 후속 소스 커밋과 ZIP 해시 절을 기준으로 한다. 이전 후보·사용자 데이터·진단·롤백본 삭제0.

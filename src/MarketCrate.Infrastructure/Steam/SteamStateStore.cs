@@ -15,6 +15,8 @@ public sealed partial class SteamStateStore : IBatchJournal, IDisposable
     private readonly FileStream lease;
     private readonly SqliteConnection connection;
     private BatchRecord? batchCache;
+    internal SteamAssetOperationGuard AssetOperations{get;}=new();
+    internal SemaphoreSlim Mutations{get;}=new(1,1);
     public SteamStateStore(string directory)
     {
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.StoreOpen,DiagnosticArea.Storage,"SYS-02");

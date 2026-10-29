@@ -9,7 +9,7 @@ namespace MarketCrate.Infrastructure.Steam;
 public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication auth, SteamStateStore store,
     SteamInventoryProvider inventory, SteamMarketDataProvider prices, SteamOrdersProvider orders, SteamTradingPolicy? policy = null) : IAuthorizedListingExecutor
 {
-    private readonly SemaphoreSlim mutations = new(1, 1);
+    private readonly SemaphoreSlim mutations = store.Mutations;
     private readonly SemaphoreSlim repricing = new(1, 1);
     private readonly Dictionary<string, SaleLineSnapshot> approved = [];
     public Capability Capability => CanExecute ? Capability.Experimental : Capability.IntegrationBlocked;
@@ -139,6 +139,13 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
     public async Task<LineResult> SubmitAsync(SaleLineSnapshot line, string requestKey, CancellationToken cancellationToken)
     {
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.ItemResult,DiagnosticArea.Sales,"F01");
+        if(auth.SteamId is not {} account)throw new SteamException(SteamFailure.Disabled);
+        using var assetOperation=store.AssetOperations.TryClaim(account,line.Asset.Key.AssetId);
+        if(assetOperation is null)
+        {
+            DiagnosticHub.Emit(DiagnosticEvent.ItemResult,DiagnosticArea.Sales,DiagnosticOutcome.Blocked,reason:"ConcurrentAssetOperation",to:SaleState.Failed.ToString(),requirement:"F05");
+            return new(line.LineId,SaleState.Failed,"같은 자산의 다른 작업이 처리 중입니다. 이 요청은 전송하지 않았습니다.");
+        }
         await mutations.WaitAsync(cancellationToken);
         try
         {
@@ -209,6 +216,13 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
     {
         using var diagnosticScope=DiagnosticHub.Scope(item:requestKey);
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.CancelRequested,DiagnosticArea.Management,"B08");
+        if(auth.SteamId is not {} account)throw new SteamException(SteamFailure.Disabled);
+        using var assetOperation=store.AssetOperations.TryClaim(account,reviewed.Asset.AssetId);
+        if(assetOperation is null)
+        {
+            DiagnosticHub.Emit(DiagnosticEvent.CancelResult,DiagnosticArea.Management,DiagnosticOutcome.Blocked,reason:"ConcurrentAssetOperation",to:SaleState.Failed.ToString(),requirement:"B08");
+            return new(reviewed.ListingId,SaleState.Failed,"같은 자산의 다른 작업이 처리 중입니다. 이 취소 요청은 전송하지 않았습니다.");
+        }
         await mutations.WaitAsync(token);
         try
         {
@@ -217,9 +231,9 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
             var previous = store.ReadCommand(requestKey);
             if (previous is not null) return new(reviewed.ListingId, SaleState.Unknown, "기존 취소 의도: 재전송 금지");
             if (store.Commands().Any(x => x.Kind == "cancel" && x.ListingId == reviewed.ListingId)) return new(reviewed.ListingId, SaleState.Unknown, "다른 키의 취소 의도 존재");
+            var original = store.Commands().SingleOrDefault(x => x.Kind == "sell" && x.ListingId == reviewed.ListingId);
             var current = (await orders.RefreshAsync(token)).SingleOrDefault(x => x.ListingId == reviewed.ListingId);
             if (current != reviewed) throw new SteamException(SteamFailure.Restricted);
-            var original = store.Commands().SingleOrDefault(x => x.Kind == "sell" && x.ListingId == reviewed.ListingId);
             var returnKey = original?.Line.Asset.Key ?? reviewed.Asset;
             // Cancel by listing ID needs no price or inventory permission. Missing before-state never proves a return.
             var available = original is not null&&!http.Access.CancellationOnly?

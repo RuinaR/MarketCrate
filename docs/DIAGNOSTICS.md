@@ -288,3 +288,8 @@ EvidenceChecked/AssetStateObserved는 원요청 성공이 아니라 현재 동�
 ## 0.20.9 활성화와 전송 검사
 
 0.20.9: 활성화의 SaleableAssets 단계에서 ServerSaleableAssets(실제 서버 플래그/수량과 지원 계약에 맞는 자산 종류), InventoryUnmarketable, InventoryLocked, StackQuantityUnsupported를 각각 기록한다. 별도의 LocalSubmissionPending은 로컬 전송 보호 때문에 새 전송 확인이 필요한 자산 종류 수이며 이 수가 양수라고 활성화를 실패시키지 않는다. 최종 전송의 PendingSubmission은 그대로 차단 사유다. 값/ID/원문 대신 고정 이유와 건수만 기록한다. 사용자 f5413571 진단은 세부조건이 없어 원인 미확정이며 새 버전으로 구분할 수 있다.
+
+
+## 0.20.9 SSIM 실행 중 자산 잠금
+
+ConcurrentAssetOperation은 실행 중 같은 자산의 다른 작업 때문에 전송 전에 차단된 결과다. ItemResult/CancelResult Outcome=Blocked, State=Failed/미전송으로 표시하고 새로운 intent/HTTP POST가 없어 Unknown으로 처리하지 않는다. 원문·계정/asset key를 로그에 추가하지 않는다. 기존 Unknown의 영속 보호와 이 일시 잠금은 별개다.
