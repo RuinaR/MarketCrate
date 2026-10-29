@@ -28,7 +28,9 @@ public static class SubmissionTransportTests
             ("Classic owned-app stack amount uses one exact full or partial POST",SingleStack),
             ("Unverified new-mode stack and multi-price stack cannot send",StackBoundaries),
             ("ID-less request reports exact server asset membership without claiming attribution",IdlessObservation),
-            ("Stack contract changed after review blocks before intent and transmission",StackModeChanged)
+            ("Stack contract changed after review blocks before intent and transmission",StackModeChanged),
+            ("Server readiness is independent of an old Unknown intent while final submission remains guarded",ReadinessWithPendingIntent),
+            ("Server unmarketable asset still blocks readiness with an exact safe reason",UnmarketableReadiness)
         };
         int passed=0,failed=0;foreach(var(name,run)in tests)try{await run();passed++;Console.WriteLine("PASS "+name);}catch(Exception error){failed++;Console.WriteLine("FAIL "+name+": "+error);}return(passed,failed);
     }
@@ -201,6 +203,29 @@ public static class SubmissionTransportTests
         f.Route=p=>p=="/market/"?Json(WalletPage):p.StartsWith("/profiles/")?Json(newer?OwnerPage(true):ClassicStackPage):null;
         await f.Vm.LoadAsync();f.Vm.Assets.Single().Selected=true;f.Vm.Assets.Single().Quantity=2;await f.Vm.RefreshPricesAsync();f.Vm.BuildReview();await f.Workspace!.EnableUserTradingAsync(730,"2","Counter-Strike 2",true,true,default);f.Vm.TradeAccepted=true;
         Check(f.Vm.CanTradeReview);newer=true;await f.Vm.SubmitAsync();Check(f.Server.Sends==0&&f.Workspace.Store.Commands().Count==0&&f.Vm.Status.Contains("스택"));
+    }
+    private static async Task ReadinessWithPendingIntent()
+    {
+        using var f=new ThirteenthStageTests.Fixture();f.Server.Free=1;await f.Login();
+        f.Route=p=>p=="/market/"?Json(WalletPage):p.StartsWith("/profiles/")?Json(ClassicStackPage):null;
+        await f.Vm.LoadAsync();f.Vm.Assets.Single().Selected=true;await f.Vm.RefreshPricesAsync();f.Vm.BuildReview();await f.Workspace!.EnableUserTradingAsync(730,"2","Counter-Strike 2",true,true,default);f.Vm.TradeAccepted=true;
+        f.Server.SellStatus=400;f.Server.SellBody="{\"success\":false}";await f.Vm.SubmitAsync();var old=f.Workspace.Store.Commands().Single();Check(old.State==SaleState.Unknown&&f.Server.Sends==1);
+        f.Vm.Logout.Execute(null);await f.Login();await f.Vm.LoadAsync();
+        var trace=new Trace();using var diagnostics=DiagnosticHub.Use(trace);
+        await f.Workspace!.EnableUserTradingAsync(730,"2","Counter-Strike 2",true,true,default);f.Vm.TradeAccepted=true;
+        Check(f.Vm.CanTrade&&f.Workspace.PendingSubmissionAssets==1&&f.Vm.Assets.Single().CanSelect&&f.Workspace.Store.ReadCommand(old.RequestKey)!.State==SaleState.Unknown&&f.Workspace.Store.Available(f.Vm.Assets.Single().Asset)==0);
+        f.Vm.SelectAll.Execute(null);await f.Vm.RefreshPricesAsync();f.Vm.BuildReview();Check(f.Vm.ReviewOpen&&!f.Vm.CanTradeReview&&!f.Vm.Submit.CanExecute(null));await f.Vm.SubmitAsync();
+        Check(f.Server.Sends==1&&f.Workspace.Store.Commands().Count==1&&f.Vm.Status.Contains("이전 전송"));
+        Check(trace.Events.Any(x=>x.Reason=="ServerSaleableAssets"&&x.Count==1)&&trace.Events.Any(x=>x.Reason=="LocalSubmissionPending"&&x.Count==1));
+    }
+    private static async Task UnmarketableReadiness()
+    {
+        using var f=new ThirteenthStageTests.Fixture();f.Server.Free=1;await f.Login();
+        f.Route=p=>p=="/market/"?Json(WalletPage):p.StartsWith("/profiles/")?Json(ClassicStackPage):p.StartsWith("/inventory/")?Json(f.Server.InventoryJson(1).Replace("\"marketable\":1","\"marketable\":0")):null;
+        var trace=new Trace();using var diagnostics=DiagnosticHub.Use(trace);SteamException? failure=null;
+        try{await f.Workspace!.EnableUserTradingAsync(730,"2","Counter-Strike 2",true,true,default);}catch(SteamException error){failure=error;}
+        Check(failure?.TradingCheck==SteamTradingCheck.SaleableAssets&&!f.Workspace!.Executor.CanExecute&&f.Server.Sends==0&&f.Server.Cancels==0);
+        Check(trace.Events.Any(x=>x.Reason=="ServerSaleableAssets"&&x.Count==0)&&trace.Events.Any(x=>x.Reason=="InventoryUnmarketable"&&x.Count==1));
     }
     private sealed class Trace:IDiagnosticLog{public Guid SessionId{get;}=Guid.NewGuid();public List<DiagnosticRecord> Events{get;}=[];public void Write(DiagnosticRecord value)=>Events.Add(value);}
     private static void Check(bool value){if(!value)throw new Exception("submission transport contract assertion");}

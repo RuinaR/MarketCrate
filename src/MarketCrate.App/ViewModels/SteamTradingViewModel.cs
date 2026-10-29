@@ -59,7 +59,7 @@ public sealed partial class SteamWorkspaceViewModel
         try
         {
             await workspace!.EnableUserTradingAsync(Game.AppId,Game.ContextId,Game.Name,RiskAccepted&&CredentialsAccepted,TradeAccepted,token);
-            TradingPreparation="비공식 실제 거래 모드 · 이 세션 한정 · Valve 허용/실거래 검증 완료를 뜻하지 않습니다. 각 배치는 최종 검토 후 한 번 승인해야 합니다.";
+            TradingPreparation="비공식 실제 거래 모드 · 이 세션 한정 · Valve 허용/실거래 검증 완료를 뜻하지 않습니다. 각 배치는 최종 검토 후 한 번 승인해야 합니다."+(HasPendingInventoryRequests||workspace.PendingSubmissionAssets>0?" 이전 미확정 요청이 있는 항목은 새 전송 전에 상태 확인이 필요합니다.":"");
         }
         catch(SteamException error)
         {

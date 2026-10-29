@@ -459,3 +459,14 @@ ID 없는 요청은 재조회한 **동일 asset/app/context·상품·수량·통
 소스 **96a5d0e6272bc226388b9647935b7b50fc3bc8e2**. `artifacts/releases/MarketCrate-0.20.8-immediate-stack-96a5d0e-win-x64.zip` **66,520,994바이트 /413파일**, SHA256 **21CFD8578BE1948A76694735E8199B421290F6B7C2834C5D8BBD1F2F0BC8746A**. 모든 ZIP entry SHA/폴더/버전·SourceCommit/x64 CLR/WPF/SQLite/DPAPI·라이선스/실제 전용 PE/BAML/평균·기간 선택 UI/사용자 DB/Auth/로그/PDB/Mock 제외 검사 PASS. 기능354/354·비표시WPF69/69·배포19/19·정리fixture9/9 PASS, 빌드 경고/오류0, 스냅샷 총액 등 관련20계약 추가 확인. BAML 출하 검사도 실제 새 출력에서 PASS했다.
 
 latest=0.20.8 /rollback=보존된0.20.7. 기존 Auth/설정/SQLite/저널/진단/이전 배포 삭제0, 실제 앱/계정/판매·취소 실행0. 단일 가격 스택의 전체/부분 수량 계약은 공개 공식 소스+합성 검증이며 실계정 검증이 아니다. 다른 가격 분할 스택·new-mode 수량·ID 변경/합산 반환·ID 없는 원요청 귀속은 제한을 유지한다. 실제 거래 제재 위험과 과거400 원인 미확정은 남아 있다. 로컬 ZIP이며 GitHub Release 게시를 하지 않았다.
+
+## 0.20.9 — 실제 자산 검사와 로컬 중복 전송 보호 분리
+
+사용자0.20.8 진단 작업90910a45-fe77-4c97-8d7f-981ab3b99c3a(54events/1error)는 PrepareTradingAsync의 Wallet HTTP200·KRW 필드/ClassicInventoryContext VerifiedLegacy·Inventory HTTP200/자산1/description1을 통과한 뒤 SaleableAssets에서 Restricted로 멈췄다. 판매 전송·Steam Guard 요청 증거는 없으며 PricePlan Count0은 부족 수량0이지 계획0건이 아니다. 따라서 이번 로그를 수수료 조회 실패나 판매 요청 실패로 판정하지 않는다.
+
+코드에서는 활성화의 자산 조건에 store.Available을 넣어 과거 Unknown intent까지 차감하고 있었다. 이를 합성 재시작 시나리오로 수정 전21개 관련 계약 중1건 실패로 재현했다. 단, 해당 실제 ZIP에는 marketable/locked/로컬 보호 수량이 분리 기록되지 않아 실제 실패가 이 조건 때문인지, 서버 판매 불가 플래그 때문인지는 단정할 수 없다.
+
+활성화는 서버 수량·marketable·locked·지원된 스택 계약으로 판단하도록 수정했다. 과거 로컬 intent는 활성화를 막지 않고 별도 건수/안내로 제공한다. PendingSubmissionAssets는 메모리의 준비 결과이며 저장/거래 권한의 대체가 아니다. 최종 검토·Executor·SQLite intent의 중복 전송 보호는 그대로 유지한다. 기존 Unknown을 Failed로 변경하거나 해제/재전송하지 않는다. 실제 서버 판매 불가 자산은 계속 활성화 차단하며 건수와 이유를 진단한다.
+
+새 안전 진단은 ServerSaleableAssets, InventoryUnmarketable, InventoryLocked, StackQuantityUnsupported, LocalSubmissionPending이다. 원문·자산ID·계정·쿠키·토큰을 추가하지 않는다. 앱/계정/거래/실제 GUI 실행0, 사용자 Auth·DB·설정·저널·진단·이전 배포 삭제0. 실계정 원인/성공·LIVE_SELL_VERIFIED를 확정하지 않는다.75개 판정47/16/0/3/9 유지.
+0.20.9 최종 검증: 기능356/356·비표시WPF69/69·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0. ReadinessWithPendingIntent는400→Unknown→세션 재시작→준비 허용/현재 자산 선택 가능→최종 제출 거부/추가 POST0/원 저널 보존을 검사했다. UnmarketableReadiness는 실제 marketable=false 응답을 준비 단계에서 거부하고 원인 건수를 확인했다. 최초 재현은 관련21건 중1 FAIL→수정 후 전체 PASS. 자동 승인 검토 시간 초과로 최초 전체 검증 명령이 시작되지 않았고, 허용된1회 재시도로 정상 실행했다. 실제 Steam/GUI 실행이나 사용자 데이터 변경은 없었다.

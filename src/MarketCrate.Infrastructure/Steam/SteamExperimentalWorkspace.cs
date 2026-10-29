@@ -26,6 +26,7 @@ public sealed class SteamExperimentalWorkspace : IDisposable
     public SteamFailure? FeatureFailure(string endpoint)=>http.FeatureFailure(endpoint);
     public SteamWalletObservation? WalletObservation{get;private set;}
     public DateTimeOffset? WalletObservedAt{get;private set;}
+    public int? PendingSubmissionAssets{get;private set;}
     private void ObserveWallet(SteamWalletObservation value){WalletObservation=value;WalletObservedAt=DateTimeOffset.UtcNow;}
     public SteamExperimentalWorkspace(string isolatedDataDirectory, int appId, string contextId, string game,
         SteamTradingPolicy? policy = null, HttpMessageHandler? contractHandler = null, TimeProvider? clock = null,HttpMessageHandler? imageHandler=null)
@@ -65,6 +66,7 @@ public sealed class SteamExperimentalWorkspace : IDisposable
     public async Task EnableUserTradingAsync(int appId,string context,string game,bool unofficialRisk,bool sessionConsent,CancellationToken token)
     {
         Access.RevokeTrading();
+        PendingSubmissionAssets=null;
         using var operation=DiagnosticHub.Operation(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,"F01","TradingReadiness");
         var check=SteamTradingCheck.Consent;
         void Step(SteamTradingCheck value){check=value;DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,DiagnosticOutcome.Started,reason:"TradingCheck",to:check.ToString());}
@@ -82,7 +84,16 @@ public sealed class SteamExperimentalWorkspace : IDisposable
             var assets=await provider.GetAsync(token);
             Step(SteamTradingCheck.SaleableAssets);
             var singleStackContract=schedule.PublisherFallbackAppId==appId;
-            if(!assets.Any(x=>x.Marketable&&!x.Locked&&(!x.Stackable||singleStackContract)&&store.Available(x)>0))throw new SteamException(SteamFailure.Restricted);
+            // Session capability follows server eligibility. Old intents guard submission, not login/readiness.
+            var saleable=assets.Where(x=>x.Marketable&&!x.Locked&&(!x.Stackable||singleStackContract)&&x.Quantity>0).ToArray();
+            DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,endpoint:"Inventory",reason:"ServerSaleableAssets",count:saleable.Length);
+            DiagnosticHub.Emit(DiagnosticEvent.InventoryContract,DiagnosticArea.Data,endpoint:"Inventory",reason:"InventoryUnmarketable",count:assets.Count(x=>!x.Marketable));
+            DiagnosticHub.Emit(DiagnosticEvent.InventoryContract,DiagnosticArea.Data,endpoint:"Inventory",reason:"InventoryLocked",count:assets.Count(x=>x.Locked));
+            DiagnosticHub.Emit(DiagnosticEvent.InventoryContract,DiagnosticArea.Data,endpoint:"Inventory",reason:"StackQuantityUnsupported",count:assets.Count(x=>x.Stackable&&!singleStackContract));
+            if(saleable.Length==0)throw new SteamException(SteamFailure.Restricted);
+            var localAvailable=store.AvailableAll(saleable);
+            PendingSubmissionAssets=saleable.Count(x=>localAvailable[x.Key]<x.Quantity);
+            DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,PendingSubmissionAssets>0?DiagnosticOutcome.Pending:DiagnosticOutcome.Completed,endpoint:"Inventory",reason:"LocalSubmissionPending",count:PendingSubmissionAssets);
             Step(SteamTradingCheck.PublisherFees);
             if(assets.Where(x=>x.Marketable&&!x.Locked).Any(x=>!schedule.PublisherMatches(x.Key.AppId,provider.PublisherFees.TryGetValue(x.Key,out var fee)?fee:null)))throw new SteamException(SteamFailure.Restricted);
             if(schedule.PublisherFallbackAppId==appId&&assets.Any(x=>!provider.PublisherFees.ContainsKey(x.Key)))DiagnosticHub.Emit(DiagnosticEvent.FeeValidated,DiagnosticArea.Pricing,reason:"PublisherFromAppContract");

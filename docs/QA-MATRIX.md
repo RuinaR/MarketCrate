@@ -452,3 +452,13 @@ ID 없는 요청은 재조회한 **동일 asset/app/context·상품·수량·통
 0.20.8 검증: 전체 기능354/354·비표시WPF69/69·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0. SingleStack은 전체/부분 수량1·2 및10개를 같은 단가로 맞춘3개 검토 행의 단일 POST/스냅샷1행·원래 총액115×수량 보존을 검사했다. StackBoundaries는 서로 다른 단가 스택·미검증 new mode 및 직접 Executor 우회를 차단하고, StackModeChanged는 검토 후모드 변경 시 intent/전송0을 확인했다. IdlessObservation은 정확한 자산 관측·다른 앱·중복 후보 거부와 원요청 ID 미할당/재전송0을 검사했다. 평균/기간 UI 제거를 보관함·판매목록 자체 렌더로 직접 확인했다. 새 출하 검사는 옛0.20.7 BAML을 'Retired pricing UI leaked: PricingModes'로 거부하는 음성 검사를 확인했다. 최종 스냅샷 총액 보존과 관련20개 계약도 재확인했다. 처음 추가한 스택2건은 React legacy fixture를 classic으로 잘못 구성해 차단됐으며 테스트를 실제 명시적 classic 소유 페이지로 수정했다. production 보호 조건을 완화해 테스트를 통과시키지 않았다. 실제 앱/계정/판매·스택 반환·공식 UI 금액 대조는 미실행이다.
 
 검토에서 여러 행의 동일 스택을 직접 같은 단가로 맞춘 경우 자산·통화·수수료·시각·호가 증거가 전부 일치할 때만 합산한다. 다른 가격을 자동 대체하지 않는다. 여러 가격이 남아 있으면 전송을 차단한다.
+## 0.20.9 — 실제 자산 검사와 로컬 중복 전송 보호 분리
+
+사용자0.20.8 진단 작업90910a45-fe77-4c97-8d7f-981ab3b99c3a(54events/1error)는 PrepareTradingAsync의 Wallet HTTP200·KRW 필드/ClassicInventoryContext VerifiedLegacy·Inventory HTTP200/자산1/description1을 통과한 뒤 SaleableAssets에서 Restricted로 멈췄다. 판매 전송·Steam Guard 요청 증거는 없으며 PricePlan Count0은 부족 수량0이지 계획0건이 아니다. 따라서 이번 로그를 수수료 조회 실패나 판매 요청 실패로 판정하지 않는다.
+
+코드에서는 활성화의 자산 조건에 store.Available을 넣어 과거 Unknown intent까지 차감하고 있었다. 이를 합성 재시작 시나리오로 수정 전21개 관련 계약 중1건 실패로 재현했다. 단, 해당 실제 ZIP에는 marketable/locked/로컬 보호 수량이 분리 기록되지 않아 실제 실패가 이 조건 때문인지, 서버 판매 불가 플래그 때문인지는 단정할 수 없다.
+
+활성화는 서버 수량·marketable·locked·지원된 스택 계약으로 판단하도록 수정했다. 과거 로컬 intent는 활성화를 막지 않고 별도 건수/안내로 제공한다. PendingSubmissionAssets는 메모리의 준비 결과이며 저장/거래 권한의 대체가 아니다. 최종 검토·Executor·SQLite intent의 중복 전송 보호는 그대로 유지한다. 기존 Unknown을 Failed로 변경하거나 해제/재전송하지 않는다. 실제 서버 판매 불가 자산은 계속 활성화 차단하며 건수와 이유를 진단한다.
+
+새 안전 진단은 ServerSaleableAssets, InventoryUnmarketable, InventoryLocked, StackQuantityUnsupported, LocalSubmissionPending이다. 원문·자산ID·계정·쿠키·토큰을 추가하지 않는다. 앱/계정/거래/실제 GUI 실행0, 사용자 Auth·DB·설정·저널·진단·이전 배포 삭제0. 실계정 원인/성공·LIVE_SELL_VERIFIED를 확정하지 않는다.75개 판정47/16/0/3/9 유지.
+0.20.9 최종 검증: 기능356/356·비표시WPF69/69·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0. ReadinessWithPendingIntent는400→Unknown→세션 재시작→준비 허용/현재 자산 선택 가능→최종 제출 거부/추가 POST0/원 저널 보존을 검사했다. UnmarketableReadiness는 실제 marketable=false 응답을 준비 단계에서 거부하고 원인 건수를 확인했다. 최초 재현은 관련21건 중1 FAIL→수정 후 전체 PASS. 자동 승인 검토 시간 초과로 최초 전체 검증 명령이 시작되지 않았고, 허용된1회 재시도로 정상 실행했다. 실제 Steam/GUI 실행이나 사용자 데이터 변경은 없었다.

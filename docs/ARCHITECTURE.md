@@ -221,3 +221,8 @@ SteamTradingViewModel.NeedsLiveReviewPreparation은 선택 AppID 중 Policy.Veri
 ## 0.20.8 단일 가격과 수량 계약
 
 가격 선택 배열은 즉시거래가능가 하나, Release setter는 폐기 인덱스를0으로 제한한다. 기존 enum·이력 계산·개발 테스트는 호환 목적으로 유지하며 가격 선택기/기간 UI/BAML에는 연결하지 않는다. Policy.SingleRequestStackApps는 인증된 classic 소유 페이지/지갑/앱을 검증한 scope에만 세션 중 부여한다. 해당 스택은 snapshot에 asset별 한 줄만 허용하고 최종 fee context가 classic이 아닌 경우 intent 전 중단한다. global StackAmountsSupported는 켜지 않는다. SteamEvidenceReport의 ObservedAssetState/ObservedListingId는 새 관측 정보이며 command.ListingId를 대체하지 않는다. 기존 evidence JSON에는 nullable기본값, SQLite schema3 유지.
+
+
+## 0.20.9 활성화와 전송 검사
+
+0.20.9: EnableUserTradingAsync의 SaleableAssets는 서버 자산/수량/판매 가능 플래그 및 scope 계약으로만 판단한다. Store.AvailableAll은 활성화에 대한 거절 조건이 아니라 PendingSubmissionAssets 통계에만 사용한다. UI CanTrade와 특정 검토의 CanTradeReview, Executor의 최종 수량/중복 검증을 독립적으로 유지한다. DB schema3/Unknown/최종 승인·가격 재검증은 변경하지 않는다.

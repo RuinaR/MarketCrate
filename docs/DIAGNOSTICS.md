@@ -283,3 +283,8 @@ FeeContext ReadContract/HttpRequest는 기존 OperationId에 FeeContextVanityRed
 ## 0.20.8 단일 가격과 수량 계약
 
 EvidenceChecked/AssetStateObserved는 원요청 성공이 아니라 현재 동일 자산의 서버 상태를 기록한다. 원본/자산ID/등록ID는 로그에 추가하지 않고 to상태만 기록한다. StackContract 오류는 제출 전 mode 변경/미지원 사유를 UI에 표시하고 intent·POST 이전 중단한다. 가격 기준은Immediate만 사용자 선택이며 과거enum/로그 토큰을 삭제하지 않는다.
+
+
+## 0.20.9 활성화와 전송 검사
+
+0.20.9: 활성화의 SaleableAssets 단계에서 ServerSaleableAssets(실제 서버 플래그/수량과 지원 계약에 맞는 자산 종류), InventoryUnmarketable, InventoryLocked, StackQuantityUnsupported를 각각 기록한다. 별도의 LocalSubmissionPending은 로컬 전송 보호 때문에 새 전송 확인이 필요한 자산 종류 수이며 이 수가 양수라고 활성화를 실패시키지 않는다. 최종 전송의 PendingSubmission은 그대로 차단 사유다. 값/ID/원문 대신 고정 이유와 건수만 기록한다. 사용자 f5413571 진단은 세부조건이 없어 원인 미확정이며 새 버전으로 구분할 수 있다.
