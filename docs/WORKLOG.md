@@ -452,3 +452,10 @@ ID 없는 요청은 재조회한 **동일 asset/app/context·상품·수량·통
 0.20.8 검증: 전체 기능354/354·비표시WPF69/69·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0. SingleStack은 전체/부분 수량1·2 및10개를 같은 단가로 맞춘3개 검토 행의 단일 POST/스냅샷1행·원래 총액115×수량 보존을 검사했다. StackBoundaries는 서로 다른 단가 스택·미검증 new mode 및 직접 Executor 우회를 차단하고, StackModeChanged는 검토 후모드 변경 시 intent/전송0을 확인했다. IdlessObservation은 정확한 자산 관측·다른 앱·중복 후보 거부와 원요청 ID 미할당/재전송0을 검사했다. 평균/기간 UI 제거를 보관함·판매목록 자체 렌더로 직접 확인했다. 새 출하 검사는 옛0.20.7 BAML을 'Retired pricing UI leaked: PricingModes'로 거부하는 음성 검사를 확인했다. 최종 스냅샷 총액 보존과 관련20개 계약도 재확인했다. 처음 추가한 스택2건은 React legacy fixture를 classic으로 잘못 구성해 차단됐으며 테스트를 실제 명시적 classic 소유 페이지로 수정했다. production 보호 조건을 완화해 테스트를 통과시키지 않았다. 실제 앱/계정/판매·스택 반환·공식 UI 금액 대조는 미실행이다.
 
 검토에서 여러 행의 동일 스택을 직접 같은 단가로 맞춘 경우 자산·통화·수수료·시각·호가 증거가 전부 일치할 때만 합산한다. 다른 가격을 자동 대체하지 않는다. 여러 가격이 남아 있으면 전송을 차단한다.
+## 0.20.8 배포 확정
+
+### 최신 배포 — 0.20.8
+
+소스 **96a5d0e6272bc226388b9647935b7b50fc3bc8e2**. `artifacts/releases/MarketCrate-0.20.8-immediate-stack-96a5d0e-win-x64.zip` **66,520,994바이트 /413파일**, SHA256 **21CFD8578BE1948A76694735E8199B421290F6B7C2834C5D8BBD1F2F0BC8746A**. 모든 ZIP entry SHA/폴더/버전·SourceCommit/x64 CLR/WPF/SQLite/DPAPI·라이선스/실제 전용 PE/BAML/평균·기간 선택 UI/사용자 DB/Auth/로그/PDB/Mock 제외 검사 PASS. 기능354/354·비표시WPF69/69·배포19/19·정리fixture9/9 PASS, 빌드 경고/오류0, 스냅샷 총액 등 관련20계약 추가 확인. BAML 출하 검사도 실제 새 출력에서 PASS했다.
+
+latest=0.20.8 /rollback=보존된0.20.7. 기존 Auth/설정/SQLite/저널/진단/이전 배포 삭제0, 실제 앱/계정/판매·취소 실행0. 단일 가격 스택의 전체/부분 수량 계약은 공개 공식 소스+합성 검증이며 실계정 검증이 아니다. 다른 가격 분할 스택·new-mode 수량·ID 변경/합산 반환·ID 없는 원요청 귀속은 제한을 유지한다. 실제 거래 제재 위험과 과거400 원인 미확정은 남아 있다. 로컬 ZIP이며 GitHub Release 게시를 하지 않았다.

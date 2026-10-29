@@ -204,3 +204,11 @@ latest=0.20.6 /rollback=보존된0.20.5. 삭제0·사용자 Auth/설정/진단/S
 소스 **139fb933f73a924036d5c8072d4e0d2466d9340d**. `artifacts/releases/MarketCrate-0.20.7-server-sync-139fb93-win-x64.zip` **66,518,925바이트 /413파일**, SHA256 **0E4A336850CCB00F3F069D9C8EECADF21450DAC391970E5CF0B2738CB75212F9**. 전체 ZIP entry SHA·폴더 일치/버전·SourceCommit/x64 CLR/WPF/SQLite/DPAPI/라이선스/실제 전용 PE/BAML·Mock/사용자DB/Auth/로그/PDB 제외 정적 검사 PASS. 기능350/350·비표시WPF68/68·배포19/19·정리fixture9/9 PASS, 빌드 경고/오류0. 마지막 검토 대상 보호 조회를 해시 방식으로 정리한 뒤 관련16계약을 추가 확인했다.
 
 latest=0.20.7 /rollback=보존된0.20.6. 사용자 Auth/SQLite/저널/설정/진단·이전 배포 삭제0. 로컬 ZIP 생성이며 외부 Release 업로드0. 실제 앱/계정/판매·물리 GUI 실행0. TBH는 **보관함 갱신 → 서버1개 표시/선택 → 시세 갱신 → 최종 검토**를 직접 확인하면 된다. 이전 미확정 전송이 있으면 선택/가격 조회는 가능하지만 새 전송 전 근거 확인은 계속 필요하다. 실판매 성공이나 원인 미상400 해결로 판정하지 않는다.
+
+## 0.20.8 배포 확정
+
+### 최신 배포 — 0.20.8
+
+소스 **96a5d0e6272bc226388b9647935b7b50fc3bc8e2**. `artifacts/releases/MarketCrate-0.20.8-immediate-stack-96a5d0e-win-x64.zip` **66,520,994바이트 /413파일**, SHA256 **21CFD8578BE1948A76694735E8199B421290F6B7C2834C5D8BBD1F2F0BC8746A**. 모든 ZIP entry SHA/폴더/버전·SourceCommit/x64 CLR/WPF/SQLite/DPAPI·라이선스/실제 전용 PE/BAML/평균·기간 선택 UI/사용자 DB/Auth/로그/PDB/Mock 제외 검사 PASS. 기능354/354·비표시WPF69/69·배포19/19·정리fixture9/9 PASS, 빌드 경고/오류0, 스냅샷 총액 등 관련20계약 추가 확인. BAML 출하 검사도 실제 새 출력에서 PASS했다.
+
+latest=0.20.8 /rollback=보존된0.20.7. 기존 Auth/설정/SQLite/저널/진단/이전 배포 삭제0, 실제 앱/계정/판매·취소 실행0. 단일 가격 스택의 전체/부분 수량 계약은 공개 공식 소스+합성 검증이며 실계정 검증이 아니다. 다른 가격 분할 스택·new-mode 수량·ID 변경/합산 반환·ID 없는 원요청 귀속은 제한을 유지한다. 실제 거래 제재 위험과 과거400 원인 미확정은 남아 있다. 로컬 ZIP이며 GitHub Release 게시를 하지 않았다.
