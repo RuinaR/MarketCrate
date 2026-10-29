@@ -1,12 +1,18 @@
 # MarketCrate — 현재 상태 (2026-10-29 KST, 0.20.6)
 
+### 최신 배포 — 0.20.6
+
+소스 **2aff72d5c480b132c851367abfcace770d6456d2**. `artifacts/releases/MarketCrate-0.20.6-inventory-reservation-2aff72d-win-x64.zip` **66,517,412바이트 /413파일**, SHA256 **84175BE31A9ADD5E52AD6FAA141C83983A99B114D2F9893FB2B9393AFAE8A247**. 모든 ZIP entry SHA/배포 폴더/버전·SourceCommit·CLR/WPF/SQLite x64·DPAPI·라이선스·실제 전용 PE/BAML·사용자DB/Auth/로그/PDB/Mock 제외 정적 검사 PASS. 기능348/348·비표시WPF68/68·배포19/19·정리fixture9/9 PASS, 빌드 경고/오류0. 실제 앱/계정/거래·물리 GUI는 미검증이다.
+
+latest=0.20.6 /rollback=보존된0.20.5. 삭제0·사용자 Auth/설정/진단/SQLite/저널 초기화0. 새 버전은 실제 TBH 예약의 확정 해제나 실판매 성공을 의미하지 않는다. 사용자는 보관함의 **예약된 항목 확인 → 선택 요청 상태 확인**으로 실제 요청을 대조하고, Unknown이면 재전송하지 말고 그 작업의 진단 ZIP을 확인해야 한다. 원본 진단은 보존하고 Git/배포 ZIP에 포함하지 않았다.
+
 ## 0.20.6 — TBH 보관함 예약 안내와 이전 요청 연결
 
 사용자0.20.5 진단 작업3c40b785-c97e-4880-87bc-91301fdd7c6f는 HTTP200/JSON 자산1·description1·전체1, 이미지 메타데이터/캐시, VerifiedLegacy 수수료 및 판매목록8건을 정상 확인했다. 해당 ZIP에는 판매 전송/오류가 없고 LoadAsync 약4.71초가 기록됐다. 사용자 화면 '보유1/예약1/가용0'로 선택 제한이 확인됐다. 따라서 이번 현상은 빈 보관함/파서 실패로 판정하지 않는다. 어떤 과거 요청 상태가 TBH 예약을 만들었는지는 해당 ZIP만으로 확정할 수 없고, 이전400과 같은 자산인지도 추측하지 않는다.
 
 보관함의 예약 사유/비활성 툴팁과 '예약된 항목 확인'을 추가했다. UI→현재 계정·표시 자산의 미해제 ReservedSells→기존 요청 자동 선택→판매 결과/상태 대조로 연결한다. 이동만으로 HTTP 전송·예약 해제·저널 삭제를 하지 않는다. 최종 취소 반환 증거가 있는 요청은 예약 목록에서 제외하며 기존 수량 계산·DB schema3는 유지한다. 일부만 예약된 스택의 가용분은 선택/수량 상한을 보존한다. 기존 Auth·설정·저널·진단·배포본 보존, 삭제0. 실계정·실제 GUI 실행0,75개 판정47/16/0/3/9 유지.
 
-### 최신 배포 — 0.20.5
+### 이전 배포 — 0.20.5
 
 소스 **18e115fb769eae12b15278d48e67336dfa6e396e**. `artifacts/releases/MarketCrate-0.20.5-flow-audit-18e115f-win-x64.zip` **66,515,643바이트 /413파일**, SHA256 **45F14D1B5CB1D0E73DBD8954D00B6799B02753379D30D77DA02ED849E996C698**. 모든 ZIP entry SHA와 폴더 일치·SourceCommit·x64 CLR/WPF/SQLite·DPAPI·라이선스·실제 전용 PE/BAML·개발/Mock/사용자DB/Auth/로그/PDB 제외 검사 PASS. 기능346/346·WPF67/67·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0. 앱 실행·물리 GUI·설치·실계정·실제 속도는 미검증이다.
 

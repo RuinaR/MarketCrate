@@ -188,3 +188,11 @@ Clean-Artifacts.ps1 기본dry-run은 후보·크기·참조수·보존이유를 
 소스 **18e115fb769eae12b15278d48e67336dfa6e396e**. `artifacts/releases/MarketCrate-0.20.5-flow-audit-18e115f-win-x64.zip` **66,515,643바이트 /413파일**, SHA256 **45F14D1B5CB1D0E73DBD8954D00B6799B02753379D30D77DA02ED849E996C698**. 모든 ZIP entry SHA와 폴더 일치·SourceCommit·x64 CLR/WPF/SQLite·DPAPI·라이선스·실제 전용 PE/BAML·개발/Mock/사용자DB/Auth/로그/PDB 제외 검사 PASS. 기능346/346·WPF67/67·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0. 앱 실행·물리 GUI·설치·실계정·실제 속도는 미검증이다.
 
 latest=0.20.5 /rollback=보존된 직전0.20.4. 사용자 Auth·DB·거래 저널·진단 및 이전 배포 삭제0. 로컬 portable ZIP이며 외부 Release 게시를 하지 않았다. 최종 승인 한 번의 전체 배치·Unknown 예약·수동 승인·서버 계약 보호는 유지한다. 새 요청 전 기존 Unknown을 공식 장터/보관함과 대조하고 재전송하지 않는다.
+
+## 0.20.6 배포 확정
+
+### 최신 배포 — 0.20.6
+
+소스 **2aff72d5c480b132c851367abfcace770d6456d2**. `artifacts/releases/MarketCrate-0.20.6-inventory-reservation-2aff72d-win-x64.zip` **66,517,412바이트 /413파일**, SHA256 **84175BE31A9ADD5E52AD6FAA141C83983A99B114D2F9893FB2B9393AFAE8A247**. 모든 ZIP entry SHA/배포 폴더/버전·SourceCommit·CLR/WPF/SQLite x64·DPAPI·라이선스·실제 전용 PE/BAML·사용자DB/Auth/로그/PDB/Mock 제외 정적 검사 PASS. 기능348/348·비표시WPF68/68·배포19/19·정리fixture9/9 PASS, 빌드 경고/오류0. 실제 앱/계정/거래·물리 GUI는 미검증이다.
+
+latest=0.20.6 /rollback=보존된0.20.5. 삭제0·사용자 Auth/설정/진단/SQLite/저널 초기화0. 새 버전은 실제 TBH 예약의 확정 해제나 실판매 성공을 의미하지 않는다. 사용자는 보관함의 **예약된 항목 확인 → 선택 요청 상태 확인**으로 실제 요청을 대조하고, Unknown이면 재전송하지 말고 그 작업의 진단 ZIP을 확인해야 한다. 원본 진단은 보존하고 Git/배포 ZIP에 포함하지 않았다.
