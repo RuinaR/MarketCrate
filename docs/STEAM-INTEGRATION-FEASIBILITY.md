@@ -1,5 +1,12 @@
 # Steam 연동 가능성 조사 — 2026-10-29 KST (13차)
 
+## 0.19.0 유사 프로젝트 재가격 조사
+
+2026-10-29 [SteamMarketHelper 실제 MIT 소스 e186d51](https://github.com/federicogiorgi/SteamMarketHelper/blob/e186d51efb742ddfb527d2ccb248c64fcee9c976/steam-market-helper.user.js)의 act(relist)를 확인했다. 취소→기다림→보관함 재조회→market_hash_name으로 새 자산을 골라 재판매하며, 코드도 취소 후 ID가 바뀐다고 설명한다. 상품별 조회/큐/진행/순차 관리 구조는 참고하고 기존 MarketCrate Planner/Executor에 연결했다. **같은 이름이면 교환 가능한 자산으로 취급하는 반환 선택은 기존 불변 대상/인과·Unknown 조건과 충돌하여 도입하지 않았다.** 소스 복사/라이브러리 추가/AGPL 도입0, 기존 라이선스 고지 보존.
+
+따라서 외부 기존 등록/변경ID·스택 자동 재가격은 여전히 BLOCKED/PARTIAL이며 실제 서버 근거 없이 완료라고 하지 않는다. [node-steamcommunity 문서](https://github.com/DoctorMcKay/node-steamcommunity/wiki/SteamCommunity)도 Market 지원 앱 목록과 보유 게임 목록이 다름을 구분하는 참고 자료이며, 소유 게임 추출이나 무차별 앱 탐색은 구현하지 않는다. 수수료 실제 계정 모드 검증은 기존 상태를 유지한다. Codex 실계정 요청/판매/취소/Guard0.
+
+
 ## 17차 / 0.18.0 — 수수료 API 호출 조건 수정 (2026-10-29 KST)
 
 **확인된 코드 결함:** 기존 SteamFees.FetchAsync는 모드와 무관하게 ajaxfeestructure를 호출했다. 공식 [marketselldialog.js](https://community.fastly.steamstatic.com/public/javascript/applications/community/marketselldialog.js)의 aN은 `!newFeeRates`이면 wallet_fee_percent와 appContext.market_pubfee_rate(없으면 지갑 publisher 기본값)를 사용하고, true일 때만 해당 API를 GET한다. [main.js](https://community.fastly.steamstatic.com/public/javascript/applications/community/main.js)의 QN/$N은 `data-featuretarget=marketselldialog` 요소의 data-props JSON을 컴포넌트에 전달한다. flag 생략은 **실제 유효한 props 객체 안에서만** 공식 !flag 분기로 해석한다. 단순 변수 검색/HTML 실패 기반 추정은 하지 않는다.

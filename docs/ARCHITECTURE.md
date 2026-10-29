@@ -1,5 +1,14 @@
 # MarketCrate — 아키텍처 (최초 Mock 구현 / 후속 계획)
 
+## 0.19.0 카탈로그·일괄 재등록
+
+SteamListingRepriceViewModel partial은 기존 SalePlanner/SteamFees/MarketData/Executor를 사용한다. 가격을 상품별 한 번 조회하고 같은 상품 잔량을 공유한다. 5분 검토 기한/전체 서버 대조/계정 지갑·수수료 확인 후에만 순차 RepriceAsync를 호출한다. 취소·반환/등록 의도는 기존 SQLite에 선기록하며 원래 명령 상태로 UI 결과를 표시한다. 외부 등록은 근거 없이 취소부터 하지 않는다.
+
+InventoryScope.Pinned는 카탈로그 JSON의 추가 선택/관측 메타데이터다. 이전 데이터는 false로 읽고 옛 기본 추천만 숨김 보존하며 수동/관측 항목은 true로 저장한다. 거래 DB 스키마·Auth 형식 변경/초기화 없음. 개발3추천은 MARKETCRATE_DEMO에서만 생성한다.
+
+BusyIndicator는 자체 ControlTemplate/ProgressBar AutomationPeer이며 활성·표시·축소 상태의 Storyboard 시작/해제를 사용한다. 프레임별 폴링·전역 입력·다른 프로세스 접근이 없다. 새 실제 전용 명령도 기본 거래 OFF/계약 차단을 유지한다.
+
+
 ## 0.18 — 모드 기반 수수료와 제품/개발 구성
 
 정상 경로는 SteamWorkspace.LoadFees/LoadWallet→SteamExperimentalWorkspace→SteamFees.FetchResolvedAsync→FeeContractResolver→(WalletContext 또는 explicit new API)→SteamFeeSchedule→자산 publisher 대조→검토/최종 executor 재검증이다. 세션별 wallet 관측은 별도 메타데이터로 보존하며 견적/권한과 동일시하지 않는다. 미확인 모드에서 예전 공식이나 고정 수수료로 폴백하지 않는다. 재가격에서도 같은 경로를 사용한다.

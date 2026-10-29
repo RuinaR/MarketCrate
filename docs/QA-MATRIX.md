@@ -1,5 +1,18 @@
 # 정상·오류·복구 QA 매트릭스 — 10차 (2026-10-28 KST)
 
+0.19 최종 자동 검증: **기능299/299·비표시 WPF60/60·배포계약19/19 PASS**, 경고·오류0. 안전 정리 fixture8 PASS/0 FAIL/1 NOT VERIFIED(실제 junction 제약). 기존286/56 전 회귀 유지. 신규13기능/4WPF에 재등록 Guard→서버 Listed 읽기 대조(추가 전송0), 타 계정 저널 불변 검사를 포함했다. 재등록 재조회는 현재 계정 최근 최대10건이며 다른 의도는 선택 대조한다. RTB usability-loading/combo-alignment/product-empty/bulk-review-small/200을 직접 검토했다. 물리 입력/팝업/모니터 DPI·장시간 안정성/실계정은 미검증. 최종 로컬 ZIP/해시는 배포 확정 절 참조.
+
+0.19 추가 감사: 재등록 후 상태 재조회가 원 배치만 읽던 경로를 보완하여 현재 계정의 최근 재등록 최대10건을 실제 명령/서버와 대조합니다. Guard→Listed 합성 경로를 확인했으며, 타 계정 배치를 복구해 변경하지 않도록 계정 필터와 저널 불변 회귀를 추가했습니다. 과거 기록은 보존합니다.
+
+## 0.19.0 사용자 결함 회귀
+
+신규 기능13개/WPF4개, 기존286/56을 유지한다. 최종 결과는 배포 확정 절에 기록한다. Default/Catalog: 미확인3추천 제거·753명명·이전 카탈로그 보존·수동 재추가 Pinned 재시작. Notifications: 상태/개수 PropertyChanged. Depth/Shortage:10개 공유 잔량3/4/3,11개 선택에서1부족이면 검토/취소0. Average: 원자료 부재 명시·실행 불가. Batch: 기존 실제 어댑터+합성 HTTP로 저널 있는2항목을 최종1승인/이중 클릭 방지→취소2/새 요청2→Guard2. External: 반환 증거 없는 외부 항목은 취소0·NoCausalEvidence/OperationId·민감정보 미노출. Changed: 호가 변경 시 취소0. Unknown/Return: 첫 취소 응답 유실/ID 변경은 Unknown, 나머지 Ready·재시작 전송0. Busy: 작업명/중단 가능·취소 후 비활성 해제.
+
+WPF: 일반 카탈로그/빈 상태 바인딩, Combo 텍스트·벡터 화살표 가운데/FocusRing, 비동기 Busy 아이콘/접근성 ProgressBar/중단, 판매 중 기준·일괄 검토·수수료·100/125/200% 자체 RTB. 기존100/150%/TabHeader 상태·가상화·SQLite/Auth 회귀 유지. 새 실제 창/마우스/팝업·물리 DPI·Steam 인증/거래는 NOT VERIFIED. RTB는 합성/비표시 컨트롤 검증이지 실제 GUI 성공이 아니다.
+
+사용자 ZIP0c9de…는 지정 경로에 없어 서버 오류 분석 NOT VERIFIED. 스크린샷의 기본 게임/정렬/진행 UX 결함만 확인했다. 정확 평균·외부 자동 재등록·변경ID/스택 반환은 지원 완료로 판정하지 않는다.
+
+
 ### 0.18.0 배포 확정 — 수수료 모드/제품 화면
 
 구현 커밋 **e6ee865861adbfaf46d91ae8a6680b2a0a7c2cb7**, origin/main push 완료. 새 로컬 portable ZIP **artifacts/releases/MarketCrate-0.18.0-fee-mode-e6ee865-win-x64.zip**, **66,478,248바이트 /413파일**. SHA256 **552CF3704C5A0B1A6C176351A314B7F2BE5922E09F8ABD8346C6F36B2556F44B**. 원본 `artifacts/releases/fee-mode-e6ee865-windows-x64`, BuildVersion0.18.0+e6ee865…. CLR/WPF10.0.9·SQLite x64·ProtectedData·기존 MIT 고지 포함, 경고·오류0. 전체 ZIP entry SHA와 소스 폴더 일치, 버전/commit/구성/라이선스·사용자 DB/로그/Auth/PDB 제외 검사 PASS. PE/BAML에서 Mock/자가검증 화면·모델 부재와 실제 resolver/Auth/거래 서비스 존재를 확인했다. 실제 EXE/설치·서명/계정·거래는 Codex 미실행이다.

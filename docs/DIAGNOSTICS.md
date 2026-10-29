@@ -1,5 +1,12 @@
 # 진단 시스템 (10차, 2026-10-28 KST)
 
+## 0.19.0 처리 피드백과 재등록
+
+PrepareListingRepriceAsync→같은 OperationId의 Fees/Orderbook→PricePlan(5000,D05/D08/B10)→BuildManagement→FinalValidation→Reprice(7003)/Cancel→저널/결과를 추적한다. 외부 반환 인과가 없으면5004/Management/Blocked/EvidenceMissing/endpoint RepriceReturn/reason NoCausalEvidence만 기록한다. 실제 URL/이름/계정/자산ID/QR/토큰/원문은 이벤트에 넣지 않는다. 신규 External 검사에서 원인·OperationId와 계정/아이템 이름 미노출을 확인했다.
+
+UI OperationLabel은 사용자 작업명/현재 단계 건수이며 프레임/입력/마우스를 로그로 수집하지 않는다. Busy 아이콘은 자체 WPF RenderTransform만 사용하고 숨김/완료/축소 시 애니메이션을 해제한다. 미전송(Ready)·접수·Guard·Unknown은 원래 저널 결과를 구분한다. 진단 ZIP은 사용자 로컬 내보내기이며 자동 전송하지 않는다. 이번 첨부 ZIP은 없었으므로 실제 오류 원인을 분석했다고 주장하지 않는다.
+
+
 ## 0.18 수수료 모드·독립 지갑 추적
 
 UI LoadFeesAsync/LoadWalletAsync→동일 OperationId→HTTP3000/3001/3005→wallet4205→FeeValidated5002→ReadState4203→UI를 추적한다. FeeContext는 자기 계정의 정확한 inventory HTML GET 목적의 고정 endpoint 식별자이며 URL/계정/HTML/props/쿠키를 기록하지 않는다. mode는 Reason/새 상태에 VerifiedLegacy/VerifiedNew/Unverified/Unsupported/Restricted, 이전 상태에는 ModeMissing/ModeInvalid/ModeAmbiguous/WalletChanged/AppContextMissing/LegacyFormulaConflict/WalletAndAppContext/ExplicitNewMode 등의 고정 화이트리스트 원인만 남긴다.

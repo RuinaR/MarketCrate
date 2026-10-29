@@ -1,5 +1,25 @@
 # 요구사항–구현–검증 추적표 (17차, 2026-10-29 KST)
 
+0.19 추가 감사: 재등록 후 상태 재조회가 원 배치만 읽던 경로를 보완하여 현재 계정의 최근 재등록 최대10건을 실제 명령/서버와 대조합니다. Guard→Listed 합성 경로를 확인했으며, 타 계정 배치를 복구해 변경하지 않도록 계정 필터와 저널 불변 회귀를 추가했습니다. 과거 기록은 보존합니다.
+
+## 0.19.0 실사용 경로 재대조 — 전체 완료 아님
+
+최초75개 ID/원본 판정 기준·47/15/0/4/9 집계는 보존한다. COMPLETE는 표에서 한정한 로컬/합성 범위이며 실계정 제품 전체 완료가 아니다. 사용자 지적대로 정확 평균·외부 반환·스택/실제 수수료/실거래 및 물리 GUI에는 미완성이 있다.
+
+| ID | 이번 실제 코드 경로/발견·판정 |
+|---|---|
+| C02/C13 | SteamCatalogViewModel.Reset/Restore/Observe/SaveCatalog→Pinned/숨김 보존→Games/SQLite. 미확인3게임을 소유 게임처럼 보이게 하던 기본 구성·상태 알림 누락 수정. 전체 계정 게임 자동 발견 아님 |
+| G03/G04/G08 | Controls.xaml Combo SelectionContent/Path/FocusRing + BusyIndicator.ProgressBar peer. 가운데 정렬/기존 포커스·상태 회귀. 물리 입력·Popup 미검증이므로 PARTIAL 유지 |
+| G05/G06 | Run.OperationLabel→BusyIndicator/작업명/단계 건수/CancelOperation, 로딩·빈 응답·오류 분리. 보이는 동안만 애니메이션·명시적 축소 보존. 새 WPF4개로 검증, 전체 오류 UX가 완성됐다는 뜻 아님 |
+| B05/D01 | 실제 체결 원자료 없으므로 정확 평균 기준 재등록은 BLOCKED. 중앙값을 평균으로 이름 변경하지 않음 |
+| B10/D05/D08/E06/E09 | 판매 중→PrepareListingRepriceAsync→상품별 Price/Fees→SalePlanner 공유 잔량→NewPriceText/Proposal→BuildManagement→ConfirmManagement1회→ValidateRepriceBatchAsync→RepriceAsync/저널/결과. 기한/전체 사전검증·수수료·가격 변경/이중 클릭 보호. 개별 수량1/소유 저널·반환 근거 한정, B10 PARTIAL |
+| B09/C09 | 외부 등록/스택·변경 자산ID 인과 증거 없음. 취소 전 외부 재등록 차단, 변경ID는 Unknown 보존. 안전한 반환 자동화 미완성 |
+| F03/F05/F06 | RepriceIntent.ReplacementKey의 실제 명령 상태로 Guard/접수/불명 표시. 전송 전 중단은 Ready, 전송 불명은 Unknown, 나머지 미전송/이전 결과 보존. 로그 이유 NoCausalEvidence와 OperationId 연결 |
+| G11/F01/F11 | 새 명령→실제 어댑터→SQLite→결과 연결은 구현·합성 확인. 실제 거래는 미실행·매 실행 OFF. 이를 LIVE/RELEASE_READY로 판정하지 않음 |
+
+검증: UsabilityTests(Default/Catalog/Notifications/Depth/Shortage/Average/Batch/External/Changed/Unknown/Return/Busy/OtherAccount), UsabilityUiTests4개. 첨부 ZIP이 없어 사용자가 겪은 서버 오류는 추가 증거 필요하며 수정 완료로 기재하지 않는다.
+
+
 ## 17차 / 0.18.0 —75개 ID·판정 유지
 
 **47 COMPLETE /15 PARTIAL /0 MISSING /4 BLOCKED /9 UNVERIFIED**, 승격0. D09/D10/E/F/B09–B10: SteamWorkspace.LoadFees→Workspace.FeesAsync→FeeContractResolver→SteamFeeSchedule→FeeFor→BuildReview→SaleBatchCoordinator→Executor.ValidateBatch/재가격→SQLite/결과. FeeModeTests16개와WPF 비교1개를 추가했다. 현재 공식 조건을 확인한 코드/합성 검증과 해당 계정의 실제 수수료 검증은 분리한다.

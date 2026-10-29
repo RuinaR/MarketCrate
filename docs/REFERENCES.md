@@ -1,5 +1,10 @@
 # MarketCrate — 외부 자료·레퍼런스
 
+## 0.19.0 실사용 UX·재가격 참고
+
+2026-10-29 KST SteamMarketHelper e186d51 MIT의 실제 act(relist)/상품 키/재조회·진행 코드를 재확인했다. 이름으로 반환 자산을 선택하는 정책은 미채택, 이유는 STEAM-INTEGRATION-FEASIBILITY에 기록했다. [node-steamcommunity Wiki](https://github.com/DoctorMcKay/node-steamcommunity/wiki/SteamCommunity)의 Market 앱/Steam 커뮤니티753 범위 설명도 확인했다. 등록된 아이템이 있다는 사실과 게임을 구매/소유했다는 사실은 다르다. 직접 코드 복사0, 기존 Steam 세션 MIT 이식/고지 유지.
+
+
 ## 17차 재확인 (2026-10-29 KST)
 
 공식 공개 marketselldialog.js/main.js/economy_common.js/economy_v2.js의 실제 code/현재 hash·분기·채택 사유는 STEAM-INTEGRATION-FEASIBILITY 17차 절에 기록했다. wallet 기반 false 분기와 new API true 분기, data-featuretarget/data-props 전달, 금액 floor/increment/역산·앱 publisher 우선순위를 대조했다. Valve 소스는 재배포하지 않았으며 독립 구현/합성 fixture만 작성했다.

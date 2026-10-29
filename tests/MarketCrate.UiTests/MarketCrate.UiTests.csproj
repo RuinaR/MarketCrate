@@ -8,6 +8,7 @@
     <ProjectReference Include="../../src/MarketCrate.App/MarketCrate.App.csproj" AdditionalProperties="MarketCrateProduction=false" />
     <Compile Include="../MarketCrate.Tests/SeventhStageFixtures.cs" Link="SeventhStageFixtures.cs" />
     <Compile Include="../MarketCrate.Tests/SteamContractServer.cs" Link="SteamContractServer.cs" />
+    <Compile Include="../MarketCrate.Tests/BulkRepriceContractServer.cs" Link="BulkRepriceContractServer.cs" />
   </ItemGroup>
   <PropertyGroup>
     <MarketCrateProduction>false</MarketCrateProduction>

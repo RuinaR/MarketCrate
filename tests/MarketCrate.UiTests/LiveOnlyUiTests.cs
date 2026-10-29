@@ -13,7 +13,7 @@ internal static class LiveOnlyUiTests
             var folder=Path.Combine(Directory.GetCurrentDirectory(),"runtime","live-shell-"+Guid.NewGuid().ToString("N"));try
             {
                 using var vm=new ProductionShellViewModel(folder);var view=new ProductionShellView{DataContext=vm};render(view,1100,780,1,"live-only-shell-small.png");
-                Check(!vm.Steam.Connected&&vm.Steam.Assets.Count==0&&vm.Steam.Listings.Count==0,"fabricated data or automatic connection");
+                Check(!vm.ReducedMotion&&!vm.Steam.Connected&&vm.Steam.Assets.Count==0&&vm.Steam.Listings.Count==0,"fabricated data or automatic connection");
                 Check(Find<TabItem>(view).All(x=>!x.Header?.ToString()?.Contains("Mock")??true),"Mock UI reachable");
                 vm.ShowDiagnostics.Execute(null);Check(vm.Page==1,"diagnostic command disconnected");render(view,1380,900,1.5,"live-only-diagnostics.png");
                 Check(Find<DiagnosticsView>(view).Any(x=>ReferenceEquals(x.DataContext,vm.Diagnostics)),"diagnostic view disconnected");
@@ -25,7 +25,8 @@ internal static class LiveOnlyUiTests
             var folder=Path.Combine(Directory.GetCurrentDirectory(),"runtime","live-settings-"+Guid.NewGuid().ToString("N"));try
             {
                 using(var vm=new ProductionShellViewModel(folder)){vm.ReducedMotion=false;}
-                using(var vm=new ProductionShellViewModel(folder))Check(!vm.ReducedMotion&&vm.Steam.Assets.Count==0,"settings or empty live state mismatch");
+                using(var vm=new ProductionShellViewModel(folder)){Check(!vm.ReducedMotion&&vm.Steam.Assets.Count==0,"settings or empty live state mismatch");vm.ReducedMotion=true;}
+                using(var vm=new ProductionShellViewModel(folder))Check(vm.ReducedMotion,"explicit reduced-motion preference lost");
                 Check(Directory.GetFiles(folder).All(x=>Path.GetFileName(x).StartsWith("preferences.sqlite3",StringComparison.Ordinal)),"unexpected live/demo journal touched");
             }finally{Directory.Delete(folder,true);}
         });

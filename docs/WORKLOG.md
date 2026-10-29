@@ -1,5 +1,22 @@
 7차 Release 검사 수정: SQLite 파일명 제외 정규식이 정상 의존성 Microsoft.Data.Sqlite.dll까지 거부했다. DB/sidecar 확장자 끝으로 한정해 수정하고 DLL 허용·sqlite/sqlite3-wal/db-shm/.env/session.json/private.key 차단 7개 파일명 회귀를 확인했다. 실제 비밀파일·DB는 생성하지 않았다. 최초 publish는 이 정적 검사에서 FAIL이며 실행파일은 실행하지 않았다.
 
+0.19 최종 자동 검증: **기능299/299·비표시 WPF60/60·배포계약19/19 PASS**, 경고·오류0. 안전 정리 fixture8 PASS/0 FAIL/1 NOT VERIFIED(실제 junction 제약). 기존286/56 전 회귀 유지. 신규13기능/4WPF에 재등록 Guard→서버 Listed 읽기 대조(추가 전송0), 타 계정 저널 불변 검사를 포함했다. 재등록 재조회는 현재 계정 최근 최대10건이며 다른 의도는 선택 대조한다. RTB usability-loading/combo-alignment/product-empty/bulk-review-small/200을 직접 검토했다. 물리 입력/팝업/모니터 DPI·장시간 안정성/실계정은 미검증. 최종 로컬 ZIP/해시는 배포 확정 절 참조.
+
+0.19 추가 감사: 재등록 후 상태 재조회가 원 배치만 읽던 경로를 보완하여 현재 계정의 최근 재등록 최대10건을 실제 명령/서버와 대조합니다. Guard→Listed 합성 경로를 확인했으며, 타 계정 배치를 복구해 변경하지 않도록 계정 필터와 저널 불변 회귀를 추가했습니다. 과거 기록은 보존합니다.
+
+## 2026-10-29 —0.19.0 실사용 결함 후속
+
+main8fc445d clean·origin/main0/0 기준. 첨부 화면은 보았으나 지정 ZIP0c9de…는 FileNotFound여서 열지 못했다. 타 진단 폴더/프로세스/창/인증 저장소를 탐색하지 않았다. 사용자 답변으로 미보유 게임은 기본3추천임을 확인하고 수정했다.
+
+발견/수정: 일반 카탈로그의 하드코딩3추천(개발 회귀에만 보존), App753 임시명, SteamGameScope.Update의 StateText/MarketableItems 알림 누락, Combo 선택 텍스트 상단 정렬·문자 화살표, Busy 중 이전 상태 문구만 표시, 조회 중 빈 목록을 연결 필요로 오인시키는 안내, 판매 중 가격 기준별 일괄 계획 미연결, 재가격 전체 사전검증 누락, 재가격 Guard를 Submitted로 뭉뚱그리는 UI, 일부 중단 후 남은 미전송 결과 누락을 보완했다. 승인 중 가격 편집을 잠갔다.
+
+기존 SalePlanner/SteamFees/SteamListingExecutor/SQLite/AsyncCommand를 재사용했다. 신규 일괄 계획은 상품 단위 공유 호가를 배분하고 전송 전 전체 검토·스냅샷 가격/5분 만료/서버/수수료/계정을 대조한다. 외부 등록은 반환 근거가 없어 사전에 차단하며 같은 이름을 임의로 고르지 않는다. 사용자 입력 단가 검토도 유지한다. Catalog Pinned는 JSON 부가 필드로 이전 자료를 읽으며 SQLite 스키마/거래 저널/DPAPI 포맷 변경·초기화0이다. 숨긴 추천도 저장하며 직접 추가한 기본 게임의 재시작 보존을 검사했다.
+
+SteamMarketHelper e186d51 MIT 실제 act(relist) 소스를 확인했다. 상품별 조회/큐/진행/취소 후 재조회 구조는 참고했지만, 새 자산 ID를 market_hash_name으로 선택해 재판매하는 부분은 기존 인과/Unknown 보호와 충돌하여 미채택했다. 소스 직접 복사/새 라이브러리0. 평균 자료·외부 반환의 미완성을 숨기지 않고 UI/Current/Trace에 기록했다.
+
+신규 UsabilityTests13개/BulkRepriceContractServer, WPF4개. 정상 복수 재등록→Guard/3·4·3/호가 부족/외부 선차단/시세 변경/응답 유실·재시작/ID 변경/Busy 취소·노출/저장 카탈로그·바인딩을 검증한다. 중간 WPF1실패는 독립 ComboBox 루트의 암시적 스타일 미적용 테스트 구성으로, 대상 커스텀 스타일을 명시해 실제 템플릿 정렬을 검사했다. 실계정/물리 입력/Popup/모니터DPI/장기 부하·메모리 인증은 미실행이다.
+
+
 ### 0.18.0 배포 확정 — 수수료 모드/제품 화면
 
 구현 커밋 **e6ee865861adbfaf46d91ae8a6680b2a0a7c2cb7**, origin/main push 완료. 새 로컬 portable ZIP **artifacts/releases/MarketCrate-0.18.0-fee-mode-e6ee865-win-x64.zip**, **66,478,248바이트 /413파일**. SHA256 **552CF3704C5A0B1A6C176351A314B7F2BE5922E09F8ABD8346C6F36B2556F44B**. 원본 `artifacts/releases/fee-mode-e6ee865-windows-x64`, BuildVersion0.18.0+e6ee865…. CLR/WPF10.0.9·SQLite x64·ProtectedData·기존 MIT 고지 포함, 경고·오류0. 전체 ZIP entry SHA와 소스 폴더 일치, 버전/commit/구성/라이선스·사용자 DB/로그/Auth/PDB 제외 검사 PASS. PE/BAML에서 Mock/자가검증 화면·모델 부재와 실제 resolver/Auth/거래 서비스 존재를 확인했다. 실제 EXE/설치·서명/계정·거래는 Codex 미실행이다.

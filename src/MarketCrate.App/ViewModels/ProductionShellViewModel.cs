@@ -19,7 +19,7 @@ public sealed class ProductionShellViewModel:Observable,IDisposable
         try
         {
             Steam=new(authDirectory:authDirectory);Diagnostics=new(log,saveMode:value=>preferences.Save("diagnostic-mode",value));
-            reducedMotion=preferences.Read("reduced-motion",true);if(preferences.Read("diagnostic-mode"))Diagnostics.DiagnosticMode=true;
+            reducedMotion=preferences.Read("reduced-motion",false);if(preferences.Read("diagnostic-mode"))Diagnostics.DiagnosticMode=true;
             ShowDiagnostics=new(()=>{Diagnostics.OperationFilter=Steam.LastOperationId?.ToString()??"";Diagnostics.Refresh.Execute(null);Page=1;});
         }
         catch{preferences.Dispose();throw;}

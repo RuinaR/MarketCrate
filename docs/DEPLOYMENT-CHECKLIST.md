@@ -1,5 +1,12 @@
 # Windows 배포 준비 — 3차 구현
 
+## 0.19.0 후속 배포 조건
+
+실제 전용 self-contained x64·BusyIndicator/실제 재가격 서비스 포함과 Mock/자가검증/BulkRepriceContractServer/Usability 테스트 타입 제외를 PE/BAML로 확인한다. 추가 Pinned JSON은 기존 카탈로그를 읽고 저장 정보를 보존하며 DB/Auth 초기화하지 않는다. 운영 자료·0.18/0.17 ZIP/진단은 삭제하지 않는다.
+
+사용자 최소 확인: 기본3게임 비노출→Steam 커뮤니티 이름/조회 후 상태·수량 갱신→작업 아이콘/문구/중단→판매목록 선택/즉시거래가능가 일괄 가격 검토→평균가 자료 부족/외부 반환 실행 불가 안내→로그 내보내기. 실제 거래는 이번 검증 범위가 아니다. 새 ZIP의 실행·물리 입력·DPI·실서버 수수료/재등록은 미검증으로 유지한다. 새 배포 경로/해시/전체 테스트는 확정 기록 참조.
+
+
 ### 0.18.0 배포 확정 — 수수료 모드/제품 화면
 
 구현 커밋 **e6ee865861adbfaf46d91ae8a6680b2a0a7c2cb7**, origin/main push 완료. 새 로컬 portable ZIP **artifacts/releases/MarketCrate-0.18.0-fee-mode-e6ee865-win-x64.zip**, **66,478,248바이트 /413파일**. SHA256 **552CF3704C5A0B1A6C176351A314B7F2BE5922E09F8ABD8346C6F36B2556F44B**. 원본 `artifacts/releases/fee-mode-e6ee865-windows-x64`, BuildVersion0.18.0+e6ee865…. CLR/WPF10.0.9·SQLite x64·ProtectedData·기존 MIT 고지 포함, 경고·오류0. 전체 ZIP entry SHA와 소스 폴더 일치, 버전/commit/구성/라이선스·사용자 DB/로그/Auth/PDB 제외 검사 PASS. PE/BAML에서 Mock/자가검증 화면·모델 부재와 실제 resolver/Auth/거래 서비스 존재를 확인했다. 실제 EXE/설치·서명/계정·거래는 Codex 미실행이다.

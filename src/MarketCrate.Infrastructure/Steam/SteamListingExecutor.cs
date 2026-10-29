@@ -16,6 +16,34 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
     private readonly SteamTradingPolicy executionPolicy = policy ?? SteamTradingPolicy.Blocked;
     public bool CanExecute => auth.Connected && http.Halted is null && http.Access.Trading && executionPolicy.Enabled && !string.IsNullOrWhiteSpace(executionPolicy.EvidenceReference) && (!executionPolicy.UserInitiated||http.Access.TradingAccount==auth.SteamId);
     public bool CanReconcile => auth.Connected && http.Halted is null;
+    // Validate the entire management review before the first cancellation. Not an atomic server transaction.
+    public async Task ValidateRepriceBatchAsync(IReadOnlyList<(SteamListing Listing,long BuyerPrice,string Book)> review,CancellationToken token)
+    {
+        if(!CanExecute||review.Count==0||review.Select(x=>x.Listing.ListingId).Distinct().Count()!=review.Count)throw new SteamException(SteamFailure.Disabled);
+        var account=auth.SteamId;
+        if(review.Any(x=>x.Listing.State!=SaleState.Listed||x.Listing.Quantity!=1||executionPolicy.UserInitiated&&!executionPolicy.VerifiedApps.Contains(x.Listing.Asset.AppId)))throw new SteamException(SteamFailure.Restricted);
+        // External listings lack the original inventory identity/return evidence in our journal.
+        // Do not cancel them as part of a reprice that cannot safely complete.
+        var originals=store.Commands().Where(x=>x.Kind=="sell"&&x.Account==account&&x.ListingId is not null&&!x.Line.Asset.Stackable).Select(x=>x.ListingId).ToHashSet(StringComparer.Ordinal);
+        if(review.Any(x=>!originals.Contains(x.Listing.ListingId)))throw new SteamException(SteamFailure.Unsupported){Endpoint="RepriceReturn"};
+        var current=(await orders.RefreshAsync(token)).ToDictionary(x=>x.ListingId);
+        var schedules=new Dictionary<int,SteamFeeSchedule>();var books=new Dictionary<(int,string),PriceSnapshot>();
+        var wallet=executionPolicy.UserInitiated?await SteamFees.FetchTradingWalletAsync(http,account!,token):null;
+        foreach(var app in review.Select(x=>x.Listing.Asset.AppId).Distinct())
+        {var schedule=await SteamFees.FetchResolvedAsync(http,auth,app,token);if(wallet is not null&&(schedule.Currency!=wallet.Currency||schedule.MinimumWire!=wallet.MinimumWire||schedule.IncrementWire!=wallet.IncrementWire))throw new SteamException(SteamFailure.Restricted);schedules.Add(app,schedule);}
+        foreach(var row in review)
+        {
+            token.ThrowIfCancellationRequested();
+            if(!current.TryGetValue(row.Listing.ListingId,out var actual)||actual!=row.Listing)throw new SteamException(SteamFailure.StaleReview);
+            var schedule=schedules[row.Listing.Asset.AppId];if(schedule.Currency!=row.Listing.Currency||schedule.FromSeller(row.Listing.SellerReceives).Fees!=row.Listing.Fees)throw new SteamException(SteamFailure.Restricted);
+            _=schedule.FromBuyer(row.BuyerPrice);
+            var key=(row.Listing.Asset.AppId,row.Listing.HashName);
+            if(!books.TryGetValue(key,out var price)){var a=new InventoryAsset(row.Listing.Asset,"Steam",row.Listing.HashName,row.Listing.HashName,1,false,true,false);price=await prices.RefreshAsync(a,token);books.Add(key,price);}
+            if(price.Currency!=schedule.Currency||price.Bids.IsEmpty||OrderbookFingerprint.Of(price)!=row.Book||row.BuyerPrice<price.Bids[0].BuyerPays/2||(decimal)row.BuyerPrice>(decimal)price.Bids[0].BuyerPays*2)throw new SteamException(SteamFailure.StaleReview);
+        }
+        if(!CanExecute||auth.SteamId!=account)throw new SteamException(SteamFailure.Authentication);
+        DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Management,requirement:"B10",count:review.Count,reason:"Fresh");
+    }
     public async Task ValidateBatchAsync(SaleBatchSnapshot snapshot, CancellationToken token)
     {
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,"E09");
@@ -273,6 +301,9 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         if (!CanExecute) throw new SteamException(SteamFailure.Disabled);
         var intent = store.Reprice(key);
         var resumed=intent is not null;
+        if(executionPolicy.UserInitiated&&store.ReadCommand(intent?.CancellationKey??key+":cancel")is null&&
+            !store.Commands().Any(x=>x.Kind=="sell"&&x.Account==auth.SteamId&&x.ListingId==listing.ListingId&&!x.Line.Asset.Stackable&&x.Line.Quantity==1))
+            throw new SteamException(SteamFailure.Unsupported){Endpoint="RepriceReturn"};
         if (intent is null)
         {
             if(executionPolicy.UserInitiated&&reviewedOrderbook is null)throw new SteamException(SteamFailure.StaleReview);

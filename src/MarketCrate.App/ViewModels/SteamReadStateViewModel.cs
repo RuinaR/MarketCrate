@@ -20,6 +20,8 @@ public sealed class SteamReadStatus(string name,string endpoint):Observable
 }
 public sealed partial class SteamWorkspaceViewModel
 {
+    public string InventoryEmptyTitle=>InventoryRead.State==SteamReadState.Loading?"보관함을 불러오는 중입니다":!Connected?"Steam 계정을 연결하세요":InventoryRead.State==SteamReadState.Empty?"서버에서 빈 보관함을 확인했습니다":InventoryRead.State is SteamReadState.Failed or SteamReadState.Unsupported or SteamReadState.AccessBlocked?"보관함을 표시할 수 없습니다":"표시할 아이템이 없습니다";
+    public string InventoryEmptyHint=>InventoryRead.State==SteamReadState.Loading?"조회 중입니다. 아래 작업 상태에서 진행 여부를 확인하거나 중단할 수 있습니다.":!Connected?"계정 및 설정에서 로그인한 뒤 보관함을 직접 갱신하세요.":InventoryRead.State==SteamReadState.Empty?"선택한 보관함의 명시적 빈 응답입니다. 다른 보관함이나 게임/context를 확인하세요.":InventoryRead.State is SteamReadState.Failed or SteamReadState.Unsupported or SteamReadState.AccessBlocked?"조회 상태와 문제 해결을 확인하세요. 오류 응답을 빈 보관함으로 바꾸지 않습니다.":"보관함을 갱신하거나 검색·판매 가능 필터를 확인하세요.";
     public SteamReadStatus InventoryRead{get;}=new("보관함","Inventory");
     public SteamReadStatus ListingsRead{get;}=new("판매 중","Listings");
     public SteamReadStatus WalletRead{get;}=new("지갑 통화","Wallet");
