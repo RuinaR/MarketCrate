@@ -1,8 +1,14 @@
 # MarketCrate — 현재 상태 (2026-10-29 KST, 0.20.2)
 
+### 최신 배포 — 0.20.2
+
+소스 **6c311ec0dde402b96e6ce9d09bbab30d3834ce45**. **artifacts/releases/MarketCrate-0.20.2-classic-fees-6c311ec-win-x64.zip**, **66,508,533바이트/413파일**, SHA256 **C88086A0D1B247187B96952E0B9237457CE0D3B4123103BE453F7F757397B25C**. 전체 ZIP entry SHA/폴더/SourceCommit·CLR/WPF10.0.9·SQLite x64·ProtectedData·라이선스·실제 전용 PE/BAML·개발/인증/사용자 DB/로그 제외 PASS. 기능329/329·비표시WPF66/66·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0. 앱/설치/물리입력·실계정 수수료/거래는 미검증이다.
+
+latest 등록, 직전0.20.1/0.20.0과 롤백0.17 및 모든 사용자 자료 보존. 사용자 최소 확인은 새 폴더 배포본의 저장 로그인 복원→지갑·수수료 한 번 조회다. 성공 여부가 확인되기 전 실수수료 해결/실판매 준비 완료로 판정하지 않는다. 바이너리는 로컬 생성으로 GitHub Release에 업로드하지 않았다.
+
 ## 0.20.2 — classic 판매창 수수료 경로 지원
 
-검증: 기능329/329·비표시WPF66/66·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0. 실제 앱 실행/설치/물리입력/실서버 수수료는 NOT VERIFIED. 배포 확정 정보는 소스 커밋 후 추가한다.
+검증: 기능329/329·비표시WPF66/66·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0. 실제 앱 실행/설치/물리입력/실서버 수수료는 NOT VERIFIED. 배포 확정 정보는 위 최신 배포 절을 따른다.
 
 실제0.20.1 진단(사용자 작업f67d8e55-5171-4c25-8c53-01a2524fecb8)은 KRW 지갑200/구형 필드5개→ModeMissing→소유 보관함302 vanity 이동→200→다시 ModeMissing이다. 소유/계정 검증 실패나 CAPTCHA·수수료 API 응답 오류가 아니다. 기존 수정으로302 이동 통과가 실제 관측됐다. 페이지의 실제 React 플래그 값은 로그에 없어 최종 원인은 아직 미확정이다.
 
@@ -10,7 +16,7 @@
 
 REAL_FEE_VERIFIED/LIVE_SELL_VERIFIED/RELEASE_READY는 미부여, 최초75개 판정47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED 유지. 새 계정 조회·인증·거래·호스트 GUI/타 프로세스 접근은 실행하지 않았고 기존 Auth/DB/저널/설정/진단·배포본을 보존한다. 아래0.20.1 정보는 이전 배포 기록이다.
 
-### 최신 배포 — 0.20.1 (2026-10-29 KST)
+### 이전 배포 — 0.20.1 (2026-10-29 KST)
 
 소스 **7dfe8282ce44fff8d3ce1c9768310b342428764c**. Windows x64 self-contained 실제 Steam 전용 ZIP: **artifacts/releases/MarketCrate-0.20.1-fee-context-7dfe828-win-x64.zip** (66,507,519바이트 /413파일), SHA256 **014EA96DF1AE13D55F7292220A1291DCD549FD9619BB96EAB8AF693757F4FCB1**. 모든 ZIP entry와 원본 폴더 SHA/파일 수·SourceCommit 검증 PASS. CLR/WPF10.0.9·SQLite x64·ProtectedData·라이선스·인증/사용자DB/로그/디버그/Mock/테스트 UI 출하 제외 검사 PASS. 기능324/324·비표시WPF66/66·배포계약19/19 PASS, 빌드 경고/오류0. 실제 앱 실행·설치·물리 입력·실계정 수수료/거래는 미검증이다.
 

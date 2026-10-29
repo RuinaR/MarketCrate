@@ -373,3 +373,5 @@ main/origin6c40500 clean/fetch 일치에서 시작. 0.13 사용자부분관측 �
 ## 0.20.2 classic 수수료 분기 보완 (2026-10-29 KST)
 
 0.20.2 진단: 사용자0.20.1 작업 f67d8e55-5171-4c25-8c53-01a2524fecb8는 Wallet200/KRW/legacy5개→ModeMissing→FeeContext302/VanityRedirect→200→ModeMissing였다. 소유/계정 검증은 통과, 수수료 API/등록/취소 전송은 없었다. 기존 React props 전용 파서가 공식 classic UI 분기를 지원하지 않는 결함을 확인했다. 사용자 페이지의 g_bReactSellDialog 값은 기존 로그에 없어 이번 실계정 원인으로 확정하지 않는다. 회귀를 먼저 추가해 정상 classic/지갑 불일치 분류/충돌 모드3건 FAIL을 재현한 뒤 수정했다. 명시적 유일한 false·소유·계정·일치 지갑·앱 설정을 요구하고 현재 economy_common 계산을 재사용한다. 토큰/댓글/문자열 위장과 모드 충돌은 거절. 기존 Auth/DB/저널·배포본·진단 자료 보존, 실제 Steam/GUI/타 프로세스 작업0.
+
+0.20.2 최종: 기능329/329·비표시WPF66/66·배포계약19/19·정리fixture9/9 PASS, 경고/오류0. source6c311ec, ZIP MarketCrate-0.20.2-classic-fees-6c311ec-win-x64.zip, 66,508,533바이트/413파일, SHA256 C88086A0D1B247187B96952E0B9237457CE0D3B4123103BE453F7F757397B25C. 전체 entry SHA/메타데이터·실제전용·런타임/SQLite·라이선스·비밀/DB/로그 제외 검증 PASS. latest 등록, 이전 배포본/사용자자료 보존, 실제 실행/실서버 수수료는 미검증.
