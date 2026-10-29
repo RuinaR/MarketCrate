@@ -1,4 +1,8 @@
-# Windows 배포 준비 —0.20.3
+# Windows 배포 준비 —0.20.4
+
+## 최신 0.20.4
+
+소스2680afb187b61baac1cd69e1efc1df06769e5dc9, artifacts/releases/MarketCrate-0.20.4-sell-response-2680afb-win-x64.zip, 66,514,084바이트/413파일, SHA256 AD88BC994CF68EF732D65571D74317F2A7195405AF7783B23273D2BF7ECAF1B2. 전체 ZIP entry SHA/폴더·메타데이터·SourceCommit·CLR/WPF10.0.9/SQLite x64/ProtectedData·라이선스·실제전용 PE/BAML·개발/Mock/사용자DB/Auth/로그/PDB 제외 검사 PASS. 기능341/WPF66/배포19/정리fixture9 PASS, 경고/오류0. 실제 앱/설치·실계정/신규 속도는 NOT VERIFIED. latest 등록, 직전0.20.3 롤백 보존, 운영자료/이전 산출물 삭제0. 아래0.20.3은 이전 배포 기록이다.
 
 ## 최신 0.20.3 출하
 

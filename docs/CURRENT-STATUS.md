@@ -1,5 +1,11 @@
 # MarketCrate — 현재 상태 (2026-10-29 KST, 0.20.4)
 
+### 최신 배포 — 0.20.4
+
+최종 소스 **2680afb187b61baac1cd69e1efc1df06769e5dc9**(본수정3f4b74e + 캐시 실패 복구2680afb). **artifacts/releases/MarketCrate-0.20.4-sell-response-2680afb-win-x64.zip**, **66,514,084바이트/413파일**, SHA256 **AD88BC994CF68EF732D65571D74317F2A7195405AF7783B23273D2BF7ECAF1B2**. 전체 entry SHA/폴더/SourceCommit·CLR/WPF10.0.9·SQLite x64·ProtectedData·라이선스·실제 전용 PE/BAML·사용자DB/Auth/로그/PDB·Mock/개발 UI 제외 검사 PASS. 기능341/341·비표시WPF66/66·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0.
+
+latest=0.20.4/rollback=직전0.20.3 등록, 모든 사용자 자료와 이전 산출물 삭제0. 실제 앱 실행/설치/실계정 판매/새 버전 속도는 미검증이다. 실거래·이미지 기본 선택 ON은 유지하며 서버 계약 미검증을 강제로 성공 처리하지 않는다. 기존 Unknown은 예약을 보존하므로 재등록하지 말고 공식 장터/보관함과 서버 대조를 먼저 확인한다. 새 요청도 실패하면 해당 실패 작업의 정제 진단을 확인하고 자동/반복 재전송하지 않는다. ZIP은 로컬 생성이고 외부 Release 업로드는 하지 않았다.
+
 ## 0.20.4 — 판매 HTTP400·승인 대기 구분·속도
 
 사용자0.20.3 실제 SubmitAsync(작업3724aadb-b310-4535-8d0a-653f732ff32c)는 사전검증 후 sellitem HTTP400을 받았고 Unknown을 영속 저장했다. Steam Guard 필요/접수/게시 성공 응답은 확인되지 않았다. 기존 오류 본문이 없어400의 구체 원인은 미확정이다. 따라서 기존 Unknown 예약을 해제하거나 재전송하지 않았다.
