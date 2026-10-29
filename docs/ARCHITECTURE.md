@@ -211,3 +211,8 @@ SteamFeeSchedule.PublisherFallbackAppId는 최신 인증 세션의 ClassicInvent
 ## 0.20.5 검토 준비·승인 채널
 
 SteamTradingViewModel.NeedsLiveReviewPreparation은 선택 AppID 중 Policy.VerifiedApps에 없는 scope가 있으면 기존 CanTrade와 무관하게 준비를 요구한다. SteamContract.Sell은 SteamSellResponse(State,ListingId,Approval)를 반환하며 SteamCommandRecord.Approval에 채널을 영속 저장한다. 기존 JSON의 필드 부재는 None이며 DB schema3 변경 없음. 알려진 채널의 후속 덮어쓰기는 거부한다. 응답 플래그는 게시 증거가 아니고 ID 없는 후보도 자동 Listed가 아니다. Cancel의 HTTP200 빈 본문은 ACK로만 허용하며 반환 판정은 기존 Reconcile 증거가 담당한다. 전체 경로 비교: OPEN-SOURCE-FLOW-AUDIT.md.
+
+
+## 0.20.7 서버 상태 동기화
+
+0.20.7: SteamAssetRow.Available은 서버 보관함 snapshot 수량이다. PendingSubmissionQuantity는 별도 로컬 중복 전송 보호 정보이며 CanSelect를 바꾸지 않는다. RefreshRequests는 서버 수량을 덮지 않고 보호 정보만 갱신한다. CanTradeReview/Executor 최종 검증은 보호 중인 수량의 새 전송을 차단한다. SetListings→Executor.ObserveListings는 완전한 새 읽기의 알려진 listing ID/필드 일치만 저널과 결과로 동기화한다. 이력 부재를 실패·반환으로 추정하지 않으며 DB schema3를 유지한다.

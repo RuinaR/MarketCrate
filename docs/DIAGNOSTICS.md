@@ -274,3 +274,7 @@ FeeContext ReadContract/HttpRequest는 기존 OperationId에 FeeContextVanityRed
 ## 0.20.6 예약 진단
 
 갱신 완료의 기존 OperationId 아래 InventoryContract/C10에서 InventoryReservedRows(예약된 자산 종류 수), InventorySelectableRows(선택 가능한 자산 종류 수)를 고정 이유로 기록한다. 이전 요청 열기는 EvidenceChecked/InventoryReservationOpened와 연결하며 현재 계정·자산을 내부 비교할 뿐 ID/상품명/원문은 로그에 넣지 않는다. 예약 수량과 자산/description 총계는 서로 다른 지표다. 사용자99b85195 진단은 조회1건 성공만 증명하며 예약의 상세 원인까지 기록돼 있지 않았다. 앞으로 보관함의 '예약된 항목 확인'→선택 요청 상태 확인 후 해당 작업을 내보내면 서버 대조 근거를 추적할 수 있다. 진단 ZIP에는 사용자 DB/인증/원문을 추가하지 않는다.
+
+## 0.20.7 서버 상태 동기화
+
+0.20.7: InventoryLocalPendingRows는 Steam 예약 수가 아니라 로컬 전송 확인이 필요한 자산 종류 수다. InventorySelectableRows는 서버 snapshot 기준으로 독립 기록한다. 판매목록 갱신의 서버 ID/상품/금액/수량 일치 시 EvidenceChecked/ServerInventorySync에 이전·새 상태를 남긴다. PendingSubmission은 새 전송 차단 이유이며 보관함 선택 실패가 아니다. 원문·계정·쿠키·QR은 기록하지 않는다. 기존 이유 토큰은 과거 로그 해석을 위해 보존한다.

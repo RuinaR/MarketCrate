@@ -275,3 +275,8 @@ PARTIAL=일부 경로/기능 부족, MISSING=실행 코드 없음, BLOCKED=필�
 ## 0.20.5 전체 경로 재확인
 
 기존75개 ID와47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED 유지. 이번 AdditionalGame/ApprovalChannels/EmailJournal/PendingWithoutId/EmptyCancellation 및 자체 UI 회귀로 다중 게임 준비 누락·승인 채널 혼동·빈 취소 ACK 처리 결함을 수정했다. 전체 UI→서비스→어댑터→저널→결과 경로와 미지원 차이는 OPEN-SOURCE-FLOW-AUDIT.md에 매핑했다. 합성346/WPF67 통과만으로 실계정·수수료·실게시 항목을 승격하지 않는다.
+
+
+## 0.20.7 서버 상태 동기화
+
+0.20.7: 최초75개 ID/판정47 COMPLETE·16 PARTIAL·0 MISSING·3 BLOCKED·9 UNVERIFIED를 유지한다. C09/C10/C13·F05/F09의 서버 수량/로컬 전송 이력 분리와 알려진 서버 등록 상태 동기화를 보완했다. 기존 UI 로컬 차감 기대2건을 서버 수량과 별도 중복 전송 보호 검사로 갱신하고 기능350/WPF68/배포19/정리9 통과. 두 프로젝트의 모든 기능과 동등하거나 실서버/실판매 검증이 완료됐다고 판정하지 않는다.

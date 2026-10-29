@@ -44,3 +44,35 @@ SSIM의 identity_secret 자동 승인, Chromium fingerprint/UA 모사·proxy, he
 - EmptyCancellation: HTTP200 빈 본문 접수→별도 반환 증거 확인, HTTP400 빈 본문은 Unknown. 개별 반환 테스트는 비스택 자산이며 스택 보호를 완화하지 않았다.
 - ProductAuditUiTests: 승인 채널·불명 결과와 빈 요청 선택 UI의 비표시 STA 렌더. 물리 입력/모니터 DPI/실제 팝업은 미검증.
 - 전체 기능346/346·비표시WPF67/67·배포 계약19/19·정리 fixture9/9 PASS. Release 검사는 배포 확정 기록 참조. 최초75개 판정47 COMPLETE /16 PARTIAL /0 MISSING /3 BLOCKED /9 UNVERIFIED 유지. 실계정 성공/REAL_FEE_VERIFIED/LIVE_SELL_VERIFIED/RELEASE_READY로 승격하지 않는다.
+
+## 0.20.7 — SteamMarketHelper·SSIM 기능 기준 전체 재대조
+
+확인일2026-10-29 KST. 기준은 기존에 고정한 SteamMarketHelper e186d51(MIT)와 SSIM28a503f(Apache-2.0)이다. 이번 추가 확인 파일은 SSIM `src/core/SessionManager.ts`, `src/core/InventoryService.ts`, `src/trading/AccountTrader.ts`, `src/trading/MarketService.ts`, `src/trading/commitAmbiguity.ts`, `src/pricing/MarketPricing.ts`, `test/marketListingsTruncated.test.ts`, `test/marketOrdersPartial.test.ts`다. 원본을 읽고 계약/상태 의미를 비교했으며 코드를 복사하거나 런타임/패키지를 추가하지 않았다. 아래가 최신 기준이며 위0.20.5의 로컬 예약 표시 설명은0.20.7에서 대체됐다.
+
+| 제품 경로 | 두 프로젝트에서 확인한 동작 | MarketCrate 작업·남은 한계 |
+|---|---|---|
+| 인증·세션 | helper는 현재 브라우저 세션, SSIM은 SessionManager 토큰/웹 쿠키 | 자체 QR→Community·DPAPI 동의 저장/복원 유지. 브라우저 쿠키/maFile/password 가져오기는 채택하지 않음. 이전 사용자 복원 성공과 새 버전 미검증 구분 |
+| 게임 범위 | helper는 현재 app/context, SSIM 판매는730/440 한정 | 관측 카탈로그·수동 AppID/context·TBH 지원. 미관측 게임 소유를 만들지 않음. SSIM의2게임 범위를 모든 게임 계약으로 일반화하지 않음 |
+| 보관함 | helper fetchInventory는 assets/descriptions를 합치고 서버 amount 사용 | **로컬 과거 요청을 보관함 수량에서 차감하던 결함 수정.** Steam 응답 수량·marketable로 선택/수량/가격 검토. 전송 이력은 별도 상태 |
+| 거래/판매 플래그 | SSIM은 게임별 unsellable 분류 | tradable과 marketable 독립 유지. 거래 제한만으로 장터 판매 가능 아이템을 임의 제외하지 않음 |
+| 페이징·불완전 조회 | SSIM 테스트는3000상한/다음 페이지429를 partial로 표시 | 보관함/목록 전체 계약 검증 및 실패 시 이전 목록 보존. 현재 목록의 부분 행 신규 표시 기능은 제한이며 전체/빈 성공으로 속이지 않음 |
+| 이미지 | helper descriptions metadata | 검증 CDN·쿠키 없는 요청·상한 캐시·중복 다운로드 억제·취소·가상화 유지 |
+| 검색·선택·수량 | helper 선택 대상과 서버 amount | 게임 전환/보기 전환 선택 보존. TBH 서버1개/과거 미확정1건이어도 선택·시세 조회 가능. 새 전송 안전 조건은 별도 |
+| 시세·통화 | helper orderbook, SSIM 지갑 통화 우선 | 현재 계정 지갑·KRW/USD/wire를 검증. 미지원 통화·미확인 wallet 추정 금지. SSIM의 EUR fallback/proxy 가격조회 경로 미채택 |
+| 가격 전략 | SSIM lowestAsk/custom, helper buy depth | 즉시거래가능가는 실제 잔량 공동 소비·가격별 분할. 직접 가격 편집/최종 합계 연결. 평균 원자료 없음은 명시적으로 이용 불가 |
+| 수수료 | SSIM feesForNet은 게임별0.05/0.10·통화 minimum, helper wallet/app | 공식 모드·실제 지갑·앱 rate를 쓰는 기존 resolver 유지. 해당 상수를 KRW/모든 게임에 복사하지 않음. 실계정 금액 대조 미완료 |
+| 검토·일괄 등록 | helper sellItem, SSIM mass-sell 순차 작업/진행 | 전체 선택·불변 snapshot·단일 최종 승인·intent 선기록·직렬 POST·개별 결과 유지. 새 게임 scope 누락 수정은0.20.5 근거 유지 |
+| 요청 계약 | helper sellitem6필드·seller receives, SSIM 자체 sessionid | 동일 필드·단위·현재 자체 CSRF/Referer. 실제 HTTP400 원인은 여전히 미확정, 합성 통과를 실판매로 판정하지 않음 |
+| 승인 | helper 수동 안내, SSIM identity_secret 자동 mobileconf | 공식 앱/이메일 수동 승인·접수/대기/게시 분리. 자동 승인·비밀키 수집은 채택하지 않음 |
+| 서버 동기화 | SSIM getListedAssets/미확인 bucket/후속 reconciliation | **정상 판매목록 갱신에서 기존 listing ID·상품·가격·수량이 일치하면 저널/결과를 동기화.** ID 없는 가격 일치나 목록 부재는 확정 근거로 사용하지 않음 |
+| 실패·불명 | SSIM commitAmbiguity는 명확한 거절과 응답 유실 구분, 애매하면 유지 | UI의 선택/시세 기능은 열고 전송 시점의 중복 보호만 유지. 과거 본문 없는400을 뒤늦게 확정 실패로 바꾸지 않음. 새 요청 기록을 자동 재전송하지 않음 |
+| 취소 | helper 빈200 ACK·SSIM cancelMarketListing | 빈200 ACK 지원과 후속 서버 상태 확인 유지. 취소 접수를 반환 완료로 표시하지 않음 |
+| 재가격 | helper 반복 재등록, SSIM 취소/관리 | 현재호가 분배→전체 검토→확정 취소→반환 근거→새 등록. 외부 등록은 새 자산 검토 경로. 평균 기준은 원자료 부족으로 비활성. 상주 자동 재가격은 미채택 |
+| 스택 | helper amount, SSIM 제한 게임 계약 | 보관함 전체 수량은 그대로 표시. 부분 판매/취소 반환의 실서버 계약 미확인 범위는 전송 차단. 단순 수량 증가를 반환 인과로 추측하지 않음 |
+| 재시작·저장 | SSIM MoneyOpJournal/ambiguous commit gate | SQLite intent·Unknown·중복 키·계정 분리·기존 스키마 보존. 이전 최종 승인을 재실행하지 않음 |
+| UI·진단 | helper 진행 상태, SSIM 상태/부분 결과/오류 | 서버 수량과 로컬 미확정 이력을 분리, 선택 가능 여부와 전송 가능 여부 안내 분리. 거래 권한 활성인데도 무조건 '차단'으로 표시하던 판매목록 안내 수정. OperationId→HTTP/저널/결과 연결 유지 |
+
+SSIM의 매수주문 생성·trade offers·다계정 봇 운용은 최초75개 MarketCrate 요구사항에 없는 별도 범위이며 이번에 추가하지 않았다. fingerprint/proxy/IP분산·자동 Guard·백그라운드 반복 매도는 금지 조건과 충돌하므로 복제하지 않는다. 공개 구현이 Valve 허가나 계정 안전 보장은 아니다.
+
+0.20.7 검증: 기능350/350·비표시WPF68/68·배포19/19·정리fixture9/9 PASS. 로컬 차감 UI를 기대하던 기존2건은 서버 수량/별도 전송 보호 계약으로 갱신했고 스택 반환·중복 전송 검사는 유지했다. 이전 Unknown은 보존하되 선택을 막는 Steam 예약처럼 표시하지 않는다. 알려진 ID 게시 동기화·ID/금액 상충 시 미확정 보존을 검사했다.75개 판정47/16/0/3/9 유지. 두 프로젝트와 기능 패리티 전체 완료나 LIVE 검증 완료를 선언하지 않는다.
+최신성 확인: GitHub commits?per_page=1 재확인 결과 SSIM28a503f(2026-08-28 UTC), SteamMarketHelper e186d51(2026-09-06 UTC)이 현재 default branch 최신 커밋이었다. 최종 검토의 로컬 보호 확인은 검토 대상별 해시 조회로 수행해 다른 화면의 선택이 새 대상 검토를 막지 않게 했으며 관련16개 계약을 다시 통과했다.

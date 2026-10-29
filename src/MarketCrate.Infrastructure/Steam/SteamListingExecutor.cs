@@ -17,6 +17,23 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
     public bool CanCancel => auth.Connected && http.Halted is null && http.Access.Trading && executionPolicy.Enabled && !string.IsNullOrWhiteSpace(executionPolicy.EvidenceReference) && (!executionPolicy.UserInitiated||http.Access.TradingAccount==auth.SteamId);
     public bool CanExecute => CanCancel&&!http.Access.CancellationOnly&&!executionPolicy.CancellationOnly;
     public bool CanReconcile => auth.Connected && http.Halted is null;
+    // Called only with a completed, freshly parsed authenticated listing read. No candidate attribution by price alone.
+    public IReadOnlyList<LineResult> ObserveListings(IReadOnlyList<SteamListing> listings)
+    {
+        if(!CanReconcile)return [];
+        var byId=listings.ToDictionary(x=>x.ListingId);var results=new List<LineResult>();
+        foreach(var command in store.ReservedSells().Where(x=>x.Account==auth.SteamId&&x.ListingId is not null))
+        {
+            if(!byId.TryGetValue(command.ListingId!,out var actual))continue; // Absence is not proof of failure/return.
+            var line=command.Line;
+            if(actual.Asset.AppId!=line.Asset.Key.AppId||actual.Asset.ContextId!=line.Asset.Key.ContextId||actual.HashName!=line.Asset.MarketHashName||actual.Quantity!=line.Quantity||actual.Currency!=line.Currency||actual.SellerReceives!=line.UnitQuote.SellerReceives||actual.Fees!=line.UnitQuote.Fees)continue;
+            if(command.State==SaleState.Listed&&actual.State!=SaleState.Listed)continue;
+            if(command.State!=actual.State)store.SaveCommand(command with{State=actual.State});
+            results.Add(new(line.LineId,actual.State,actual.State==SaleState.AwaitingSteamGuard?SteamContract.ApprovalHint(command.Approval):"현재 Steam 판매목록의 등록 ID·상품·가격·수량 일치"));
+            DiagnosticHub.Emit(DiagnosticEvent.EvidenceChecked,DiagnosticArea.Management,DiagnosticOutcome.Reconciled,from:command.State.ToString(),to:actual.State.ToString(),reason:"ServerInventorySync",requirement:"F09");
+        }
+        return results;
+    }
     // Validate the entire management review before the first cancellation. Not an atomic server transaction.
     public async Task ValidateRepriceBatchAsync(IReadOnlyList<(SteamListing Listing,long BuyerPrice,string Book)> review,CancellationToken token)
     {
@@ -70,7 +87,10 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
             schedules.Add(app,schedule);
         }
         foreach (var group in snapshot.Lines.GroupBy(x => x.Asset.Key))
-            if (!current.TryGetValue(group.Key, out var found) || group.Sum(x => x.Quantity) > store.Available(found)) throw new SteamException(SteamFailure.Restricted);
+        {
+            if (!current.TryGetValue(group.Key, out var found))throw new SteamException(SteamFailure.Restricted);
+            if(group.Sum(x => x.Quantity)>store.Available(found))throw new SteamException(SteamFailure.Restricted){Endpoint="PendingSubmission"};
+        }
         var validatedPrices=new Dictionary<(int,string,long),PriceSnapshot>();
         foreach (var line in snapshot.Lines)
         {
@@ -130,7 +150,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
             if (!CanExecute || !approved.TryGetValue(requestKey, out var approval) || approval != line || DateTimeOffset.UtcNow - line.MarketTime > TimeSpan.FromMinutes(5))
                 throw new SteamException(SteamFailure.Disabled);
             if (line.Quantity > store.Available(line.Asset))
-                throw new SteamException(SteamFailure.Restricted);
+                throw new SteamException(SteamFailure.Restricted){Endpoint="PendingSubmission"};
             var before = await orders.RefreshAsync(cancellationToken);
             var intent = new SteamCommandRecord(requestKey, auth.SteamId!, line, "sell", SaleState.Submitting, SentAt: DateTimeOffset.UtcNow, BeforeListingIds: before.Select(x => x.ListingId).ToArray());
             store.SaveCommand(intent); // Flush local intent before network; server does not accept our idempotency key.

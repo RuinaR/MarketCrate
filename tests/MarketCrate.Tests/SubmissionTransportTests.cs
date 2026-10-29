@@ -21,8 +21,10 @@ public static class SubmissionTransportTests
             ("Email approval persists without claiming phone approval and old journals remain compatible",EmailJournal),
             ("Missing server ID cannot turn a pending mobile request into a coincidental listing",PendingWithoutId),
             ("Empty HTTP200 cancel is an acknowledgement while empty HTTP400 stays Unknown",EmptyCancellation),
-            ("Owned item reserved by HTTP400 stays blocked across refresh and restart with a reachable request",ReservedInventory),
-            ("Partial reservation retains only the unreserved selectable quantity",PartialReservation)
+            ("Server inventory stays selectable after an ambiguous POST while new transmission is guarded",ReservedInventory),
+            ("Stack server quantity is not rewritten by historical local intents",PartialReservation),
+            ("Normal listing refresh synchronizes a known accepted request without a new POST",KnownListingSync),
+            ("Changed listing fields and ID-less candidates never clear an ambiguous transmission",ConflictingListingSync)
         };
         int passed=0,failed=0;foreach(var(name,run)in tests)try{await run();passed++;Console.WriteLine("PASS "+name);}catch(Exception error){failed++;Console.WriteLine("FAIL "+name+": "+error);}return(passed,failed);
     }
@@ -120,11 +122,12 @@ public static class SubmissionTransportTests
         f.Server.SellStatus=400;f.Server.SellBody="{\"success\":false}";await f.Vm.SubmitAsync();
         var original=f.Workspace!.Store.Commands().Single(x=>x.Kind=="sell");Check(original.State==SaleState.Unknown);
         f.Vm.Logout.Execute(null);await f.Login();await f.Vm.LoadAsync();
-        var row=f.Vm.Assets.Single();Check(row.Owned==1&&row.Available==0&&!row.CanSelect&&row.SelectionHint.Contains("이전")&&f.Vm.HasInventoryReservations&&f.Vm.InventoryReservationSummary.Contains("이전 판매 요청"));
-        f.Vm.SelectAll.Execute(null);Check(!row.Selected&&f.Vm.OpenInventoryReservations.CanExecute(null));
-        var sends=f.Server.Sends;f.Vm.OpenInventoryReservations.Execute(null);
+        var row=f.Vm.Assets.Single();Check(row.Owned==1&&row.Available==1&&row.CanSelect&&row.PendingSubmissionQuantity==1&&row.SelectionHint.Contains("이전")&&f.Vm.HasPendingInventoryRequests&&f.Vm.InventorySyncSummary.Contains("이전 요청"));
+        f.Vm.SelectAll.Execute(null);Check(row.Selected&&f.Vm.OpenPendingInventoryRequests.CanExecute(null));
+        await f.Vm.RefreshPricesAsync();f.Vm.BuildReview();Check(f.Vm.ReviewOpen&&!f.Vm.Submit.CanExecute(null));await f.Vm.SubmitAsync();Check(f.Server.Sends==1&&f.Vm.Status.Contains("이전 전송"));f.Vm.CloseReview.Execute(null);
+        var sends=f.Server.Sends;f.Vm.OpenPendingInventoryRequests.Execute(null);
         Check(f.Vm.WorkPage==3&&f.Vm.SelectedRequest==original.RequestKey&&f.Vm.Results.Any(x=>x.State==SaleState.Unknown)&&f.Server.Sends==sends&&f.Workspace.Store.Available(row.Asset)==0);
-        Check(trace.Events.Any(x=>x.Reason=="InventoryReservedRows"&&x.Count==1)&&trace.Events.Any(x=>x.Reason=="InventorySelectableRows"&&x.Count==0)&&trace.Events.Any(x=>x.Reason=="InventoryReservationOpened"&&x.Count==1));
+        Check(trace.Events.Any(x=>x.Reason=="InventoryLocalPendingRows"&&x.Count==1)&&trace.Events.Any(x=>x.Reason=="InventorySelectableRows"&&x.Count==1)&&trace.Events.Any(x=>x.Reason=="InventoryReservationOpened"&&x.Count==1));
         Check(!JsonSerializer.Serialize(trace.Events).Contains(original.RequestKey));
         await f.Vm.RefreshSelectedRequestAsync();Check(f.Server.Sends==1&&f.Workspace.Store.Available(row.Asset)==0&&f.Workspace.Store.ReadCommand(original.RequestKey)!.State==SaleState.Unknown);
     }
@@ -132,7 +135,20 @@ public static class SubmissionTransportTests
     {
         using var f=new FifthStageTests.Fixture();f.Server.Free=2;await f.Login();await f.Prepare(1);f.EnableTrading();f.Server.SellStatus=400;f.Server.SellBody="{\"success\":false}";await f.Vm.SubmitAsync();
         f.Vm.Logout.Execute(null);await f.Login();await f.Vm.LoadAsync();var row=f.Vm.Assets.Single();
-        Check(row.Owned==2&&row.Available==1&&row.Maximum==1&&row.CanSelect&&f.Vm.HasInventoryReservations);row.Quantity=2;row.Selected=true;Check(row.Quantity==1&&row.Selected&&f.Server.Sends==1);
+        Check(row.Owned==2&&row.Available==2&&row.Maximum==2&&row.PendingSubmissionQuantity==1&&row.CanSelect&&f.Vm.HasPendingInventoryRequests);row.Quantity=2;row.Selected=true;Check(row.Quantity==2&&row.Selected&&f.Server.Sends==1);
+    }
+    private static async Task KnownListingSync()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();await f.Vm.SubmitAsync();var key=f.Workspace!.Store.Commands().Single().RequestKey;
+        f.Server.Publish=true;await f.Vm.LoadListingsAsync();Check(f.Vm.Status.Contains("세션 활성"));Check(f.Workspace.Store.ReadCommand(key)!.State==SaleState.Listed&&f.Vm.Results.Any(x=>x.State==SaleState.Listed)&&f.Server.Sends==1);
+        await f.Vm.LoadAsync();Check(f.Vm.Assets.Count==0&&f.Server.Sends==1);
+    }
+    private static async Task ConflictingListingSync()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();await f.Vm.SubmitAsync();var command=f.Workspace!.Store.Commands().Single();
+        f.Server.Publish=true;var listing=(await f.Workspace.Orders.RefreshAsync()).Single();
+        Check(f.Workspace.Executor.ObserveListings([listing with{SellerReceives=listing.SellerReceives+1}]).Count==0&&f.Workspace.Store.ReadCommand(command.RequestKey)!.State==SaleState.AwaitingSteamGuard);
+        Check(f.Workspace.Executor.ObserveListings([]).Count==0&&f.Workspace.Store.ReadCommand(command.RequestKey)!.State==SaleState.AwaitingSteamGuard&&f.Server.Sends==1);
     }
     private sealed class Trace:IDiagnosticLog{public Guid SessionId{get;}=Guid.NewGuid();public List<DiagnosticRecord> Events{get;}=[];public void Write(DiagnosticRecord value)=>Events.Add(value);}
     private static void Check(bool value){if(!value)throw new Exception("submission transport contract assertion");}

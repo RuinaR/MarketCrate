@@ -373,3 +373,7 @@ FeeContext는 현재 계정 /profiles/.../inventory/ 요청의 동일 Steam cano
 ## 0.20.5 전체 경로 대조
 
 OPEN-SOURCE-FLOW-AUDIT.md에서 pinned node-steam-session/community·SteamMarketHelper·SSIM과 공식 JS의 전체 사용자 흐름을 비교했다. 이번 수정은 여러 게임 준비 검증, HTTP200 빈 취소 ACK, 모바일/이메일 승인 채널의 영속 표시다. SSIM의 identity_secret 자동 mobileconf 승인은 도입하지 않으며 공식 앱/이메일에서 사용자가 확인한 뒤 서버 대조한다. 과거400·listing ID 부재·스택 반환의 인과 근거 부족은 해결된 것으로 간주하지 않는다. 실계정 실행0, REAL_FEE_VERIFIED/LIVE_SELL_VERIFIED/RELEASE_READY 미부여. 합성346/WPF67/배포19/정리9 PASS는 실제 판매 성공 증거가 아니다.
+
+## 0.20.7 서버 상태 동기화
+
+0.20.7: helper는 서버 inventory amount를 표시하며 SSIM은 장터 재조회와 불명 commit 보호를 별도로 관리한다. MarketCrate도 서버 수량을 로컬 이력으로 차감하던 UI를 수정하고 알려진 listing ID의 새 읽기 결과를 동기화했다. 예전400의 상세 원인·ID 없는 요청의 인과·실제 스택 반환·수수료 실금액·실판매는 미검증이다. 합성350/WPF68 통과와 실제 계약/Valve 허가는 별개다.

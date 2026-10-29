@@ -55,7 +55,7 @@ public sealed partial class SteamWorkspaceViewModel
     {
         RequireConnection();var rows=await workspace!.Orders.RefreshAsync(token);token.ThrowIfCancellationRequested();
         SetListings(rows);RefreshRequests();RecordCheck("Listings",rows.Length);
-        Status="판매목록 조회 완료 · 보관함/지갑 조회와 별도 · 실제 취소/재가격은 정책 차단 유지";
+        Status=CanTrade?"판매목록 조회 완료 · 실제 거래 세션 활성 · 이번 조회에서는 거래 요청을 보내지 않았습니다.":CanCancel?"판매목록 조회 완료 · 취소 전용 세션 · 새 판매등록은 별도 검토가 필요합니다.":"판매목록 조회 완료 · 판매·취소 전송은 별도 조건 확인과 최종 검토가 필요합니다.";
     });
     public Task LoadFeesAsync()=>Run(async token=>
     {

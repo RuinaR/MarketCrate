@@ -422,3 +422,11 @@ latest=0.20.5 /rollback=보존된 직전0.20.4. 사용자 Auth·DB·거래 저�
 소스 **2aff72d5c480b132c851367abfcace770d6456d2**. `artifacts/releases/MarketCrate-0.20.6-inventory-reservation-2aff72d-win-x64.zip` **66,517,412바이트 /413파일**, SHA256 **84175BE31A9ADD5E52AD6FAA141C83983A99B114D2F9893FB2B9393AFAE8A247**. 모든 ZIP entry SHA/배포 폴더/버전·SourceCommit·CLR/WPF/SQLite x64·DPAPI·라이선스·실제 전용 PE/BAML·사용자DB/Auth/로그/PDB/Mock 제외 정적 검사 PASS. 기능348/348·비표시WPF68/68·배포19/19·정리fixture9/9 PASS, 빌드 경고/오류0. 실제 앱/계정/거래·물리 GUI는 미검증이다.
 
 latest=0.20.6 /rollback=보존된0.20.5. 삭제0·사용자 Auth/설정/진단/SQLite/저널 초기화0. 새 버전은 실제 TBH 예약의 확정 해제나 실판매 성공을 의미하지 않는다. 사용자는 보관함의 **예약된 항목 확인 → 선택 요청 상태 확인**으로 실제 요청을 대조하고, Unknown이면 재전송하지 말고 그 작업의 진단 ZIP을 확인해야 한다. 원본 진단은 보존하고 Git/배포 ZIP에 포함하지 않았다.
+
+## 0.20.7 — Steam 수량과 로컬 전송 이력 분리
+
+사용자가 지적한 대로 Steam에는 MarketCrate의 '예약' 기능이 없다.0.20.6은 과거 로컬 판매 요청을 실제 보관함 수량에서 차감해 TBH1개를 가용0/선택 불가로 표시했고 안내만 추가해 근본 UX 문제를 남겼다. SteamMarketHelper fetchInventory와 SSIM InventoryService/MarketService·불명 처리 코드를 다시 대조해 이를 수정했다.
+
+이제 Steam이 반환한 수량/판매 가능 플래그로 표시·선택·수량·가격 검토한다. 과거 미확정 전송은 별도 경고로 표시하고 중복 전송 보호는 최종 전송 시에만 유지한다. 정상 판매목록 갱신에서 알려진 등록 ID·상품·금액·수량이 일치하면 저장 상태와 UI 결과를 동기화한다. ID 없는 우연한 일치·목록 부재·단순 스택 증가로 Unknown/반환을 확정하지 않는다. 전송 후 보관함은 오래됨으로 표시해 다음 명시적 갱신 전 값을 최신처럼 표시하지 않는다. 판매목록 안내도 현재 거래/취소 권한과 일치시켰다.
+
+두 프로젝트 기준 전체 기능·UI 호출 경로의 채택/제외/미완성 표는 OPEN-SOURCE-FLOW-AUDIT.md 최신 절에 있다. 실제 코드 수정/합성 검증을 실계정 성공으로 확대하지 않는다. 기능350/350·WPF68/68·배포19/19·정리fixture9/9 PASS. 초기 회귀2건은 기존 로컬 차감 표시를 기대한 것이어서 서버 수량과 독립 전송 보호를 모두 검사하도록 갱신했다. 기존 사용자 Auth/설정/진단/SQLite/저널·Unknown 삭제0, 실제 GUI/Steam 계정 실행0.75개 판정47/16/0/3/9 유지.

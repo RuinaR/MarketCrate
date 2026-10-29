@@ -57,15 +57,15 @@ internal static class ProductAuditUiTests
             var option=new SteamRelistOption("synthetic-only","합성 취소 작업 1건");vm.PendingRelists.Add(option);vm.SelectedRelist=option;render(view,1100,780,1.25,"fee21-plan-picker.png");Check(section.Visibility==Visibility.Visible,"real pending plan picker hidden");vm.PendingRelists.Clear();render(view,1100,780,1,"fee21-plan-cleared.png");Check(section.Visibility==Visibility.Collapsed,"empty picker residue");
             var tbh=new SteamGameScope(3678970,"2","TBH: Task Bar Hero");vm.Games.Add(tbh);vm.Game=tbh;vm.WorkPage=1;render(view,1100,780,1.25,"fee21-tbh.png");Check(Find<TextBlock>(view).Any(x=>x.Text=="TBH: Task Bar Hero")&&tbh.State==InventoryScopeState.NotQueried,"TBH placeholder claimed ownership or not visible");
         });
-        test("TBH 조회 성공과 이전 요청 예약 안내·선택 제한 렌더",()=>
+        test("TBH 서버 보관함 수량·선택과 로컬 전송 확인 상태 분리",()=>
         {
             using var vm=new SteamWorkspaceViewModel();var scope=new SteamGameScope(3678970,"2","TBH: Task Bar Hero");vm.Games.Add(scope);vm.Game=scope;vm.WorkPage=1;vm.GridMode=false;
-            var row=new SteamAssetRow(new(new(3678970,"2","9001"),scope.Name,"합성 TBH 아이템","Synthetic TBH",1,false,true,true),0,()=>{});vm.Assets.Add(row);vm.VisibleAssets.Add(row);scope.Update(InventoryScopeState.Loaded,1,null);
+            var row=new SteamAssetRow(new(new(3678970,"2","9001"),scope.Name,"합성 TBH 아이템","Synthetic TBH",1,false,true,true),1,()=>{});row.UpdateSubmissionHold(1);vm.Assets.Add(row);vm.VisibleAssets.Add(row);scope.Update(InventoryScopeState.Loaded,1,null);
             var view=new SteamWorkspaceView{DataContext=vm};render(view,1280,850,1.25,"reservation26-tbh-list.png");
-            Check(!row.CanSelect&&Find<CheckBox>(view).Single(x=>Equals(x.Content,row.Name)).IsEnabled==false,"reserved item selectable");
-            Check(Find<Button>(view).Any(x=>ReferenceEquals(x.Command,vm.OpenInventoryReservations)&&x.Visibility==Visibility.Visible&&x.ActualWidth>0)&&Find<TextBlock>(view).Any(x=>x.Text==vm.InventoryReservationSummary&&x.Visibility==Visibility.Visible&&x.ActualWidth>0),"reservation action or explanation missing");
-            vm.GridMode=true;render(view,1280,850,1,"reservation26-tbh-card.png");Check(Find<CheckBox>(view).Single(x=>Equals(x.Content,row.Name)).IsEnabled==false,"card bypasses reservation");
-            row.UpdateAvailable(1);vm.ClearSelection.Execute(null);render(view,1280,850,1,"reservation26-tbh-available.png");Check(((StackPanel)Find<Button>(view).Single(x=>ReferenceEquals(x.Command,vm.OpenInventoryReservations)).Parent).Visibility==Visibility.Collapsed,"cleared reservation notice remains");Check(row.CanSelect&&Find<CheckBox>(view).Single(x=>Equals(x.Content,row.Name)).IsEnabled,"fresh availability not reflected in card");
+            Check(row.CanSelect&&Find<CheckBox>(view).Single(x=>Equals(x.Content,row.Name)).IsEnabled,"server item was disabled by local intent");
+            Check(Find<Button>(view).Any(x=>ReferenceEquals(x.Command,vm.OpenPendingInventoryRequests)&&x.Visibility==Visibility.Visible&&x.ActualWidth>0)&&Find<TextBlock>(view).Any(x=>x.Text==vm.InventorySyncSummary&&x.Visibility==Visibility.Visible&&x.ActualWidth>0),"reservation action or explanation missing");
+            vm.GridMode=true;render(view,1280,850,1,"reservation26-tbh-card.png");Check(Find<CheckBox>(view).Single(x=>Equals(x.Content,row.Name)).IsEnabled,"local intent disabled server-owned card");
+            row.UpdateSubmissionHold(0);vm.ClearSelection.Execute(null);render(view,1280,850,1,"reservation26-tbh-available.png");Check(((StackPanel)Find<Button>(view).Single(x=>ReferenceEquals(x.Command,vm.OpenPendingInventoryRequests)).Parent).Visibility==Visibility.Collapsed,"cleared reservation notice remains");Check(row.CanSelect&&Find<CheckBox>(view).Single(x=>Equals(x.Content,row.Name)).IsEnabled,"fresh availability not reflected in card");
         });
         test("모바일·이메일 승인 대기와 불명 상태 분리 렌더",()=>
         {
