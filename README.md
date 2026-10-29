@@ -2,6 +2,8 @@
 
 Windows용 Steam 보관함·장터 관리 도구입니다. 공식 Steam 제품이 아니며 비공식 연동에는 계정 제재 위험이 있습니다.
 
+로컬 최신 배포: `artifacts/releases/MarketCrate-0.18.0-fee-mode-e6ee865-win-x64.zip` · SHA256 `552CF3704C5A0B1A6C176351A314B7F2BE5922E09F8ABD8346C6F36B2556F44B`. 바이너리의 소스 커밋은 `e6ee865`이며 GitHub Release 게시와는 별개입니다.
+
 ## 설치와 로그인
 
 1. `artifacts/releases.json`의 **Latest**에 표시된0.18.0 Windows x64 portable ZIP 전체를 새 폴더에 압축 해제합니다. 별도 .NET 설치 없이 실행하도록 런타임을 포함하며 Windows10/11 x64가 대상입니다.
