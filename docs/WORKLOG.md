@@ -367,3 +367,5 @@ main/origin6c40500 clean/fetch 일치에서 시작. 0.13 사용자부분관측 �
 ## 0.20.1 후속 보완 (2026-10-29 KST)
 
 0.20.1: 첨부 ZIP에서 Wallet200/WalletLegacyComplete→ModeMissing→FeeContext302/OtherRedirect 확인. Location 미기록으로 실제 원인 미확정. 동일 Steam 소유 보관함 canonical 이동 한 번과 vanity 소유/계정 확인 구현. 다른 계정/외부/보안/추가 이동과 모드 누락 차단 유지. 빈 재등록 계획 선택창 숨김, 수수료 실패 안내 연결, TBH App3678970/context2(후자는 미검증 후보) 한 번 추가/사용자 제거 유지. 기능324/324·비표시WPF66/66·배포계약19/19 PASS, 경고/오류0. 빈 판매/TBH RTB 직접 열람. 실제 GUI/Steam 계정 실행0, 타 프로세스 접근0, 사용자 Auth/DB/저널/진단/이전배포 삭제0.
+
+0.20.1 배포 확정: source7dfe828, ZIP MarketCrate-0.20.1-fee-context-7dfe828-win-x64.zip (66,507,519바이트/413파일), SHA256 014EA96DF1AE13D55F7292220A1291DCD549FD9619BB96EAB8AF693757F4FCB1. 전체 entry SHA·실제 전용 PE/BAML·CLR/WPF/SQLite/ProtectedData·라이선스·비밀/사용자 자료 출하 제외 PASS. 앱 실행0, 기존0.20/롤백0.17 보존. 로컬 산출물만 생성.

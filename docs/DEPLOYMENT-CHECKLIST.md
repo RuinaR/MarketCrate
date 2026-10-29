@@ -1,4 +1,8 @@
-# Windows 배포 준비 —0.20.0
+# Windows 배포 준비 —0.20.1
+
+## 최신 0.20.1 배포 검사
+
+소스7dfe8282ce44fff8d3ce1c9768310b342428764c, artifacts/releases/MarketCrate-0.20.1-fee-context-7dfe828-win-x64.zip, 66,507,519바이트/413파일. SHA256 014EA96DF1AE13D55F7292220A1291DCD549FD9619BB96EAB8AF693757F4FCB1. 전체 entry SHA와 폴더/메타데이터/SourceCommit 일치, CLR/WPF10.0.9·SQLite x64·ProtectedData·라이선스, PE/BAML 실제 전용·Mock/자가검증/테스트 타입 제외, 사용자 DB/Auth/로그/PDB 제외 검사 PASS. 실제 실행·설치·실계정은 NOT VERIFIED. latest 등록, 롤백0.17 및 직전0.20/기존 자료 삭제0.
 
 ### 0.20.0 배포 확정
 

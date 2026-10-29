@@ -1,4 +1,10 @@
-# MarketCrate — 현재 상태 (2026-10-29 KST, 0.20.0)
+# MarketCrate — 현재 상태 (2026-10-29 KST, 0.20.1)
+
+### 최신 배포 — 0.20.1 (2026-10-29 KST)
+
+소스 **7dfe8282ce44fff8d3ce1c9768310b342428764c**. Windows x64 self-contained 실제 Steam 전용 ZIP: **artifacts/releases/MarketCrate-0.20.1-fee-context-7dfe828-win-x64.zip** (66,507,519바이트 /413파일), SHA256 **014EA96DF1AE13D55F7292220A1291DCD549FD9619BB96EAB8AF693757F4FCB1**. 모든 ZIP entry와 원본 폴더 SHA/파일 수·SourceCommit 검증 PASS. CLR/WPF10.0.9·SQLite x64·ProtectedData·라이선스·인증/사용자DB/로그/디버그/Mock/테스트 UI 출하 제외 검사 PASS. 기능324/324·비표시WPF66/66·배포계약19/19 PASS, 빌드 경고/오류0. 실제 앱 실행·설치·물리 입력·실계정 수수료/거래는 미검증이다.
+
+latest는 ignored artifacts/releases.json에 등록했다. 사용자 관측 롤백0.17.0과 직전0.20.0을 포함한 기존 배포본·모든 사용자 자료는 보존했다. ZIP은 로컬 산출물이며 GitHub Release로 업로드하지 않았다. 최소 확인: 새 폴더에 압축 해제→로그인 복원→TBH 선택/보관함 한 번 갱신→수수료 한 번 갱신. 실제302 목적지가 기존 로그에 없으므로 실패가 남으면 반복하지 말고 해당 작업 진단 ZIP을 내보낸다.
 
 ## 0.20.1 — 수수료 조회 이동·빈 선택창·TBH 보완 (2026-10-29 KST)
 
