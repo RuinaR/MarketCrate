@@ -1,4 +1,10 @@
-# Windows 배포 준비 —0.20.2
+# Windows 배포 준비 —0.20.3
+
+## 최신 0.20.3 출하
+
+소스4d158896c90be55a5129d263bcd7a22229fbfb9f, artifacts/releases/MarketCrate-0.20.3-live-default-4d15889-win-x64.zip, 66,511,118바이트/413파일, SHA256 23E0C2C5E3F413F5ED0292FEC3C59CECCB6CDF9858D7E67EBF4ACE9C4D8673A5. 전체 entry SHA·폴더·SourceCommit·CLR/WPF10.0.9/SQLite x64/ProtectedData·라이선스·실제전용 PE/BAML·Mock/테스트 UI/사용자DB/Auth/로그/PDB 제외 검사 PASS. 기능333/WPF66/배포계약19/정리fixture9 PASS, 빌드 경고/오류0. 실거래·이미지 기본 선택 ON은 검증된 전송 권한 저장이 아니며 최종 승인 전 전송0. 실제 앱/설치/물리입력·실계정 계약/거래는 NOT VERIFIED.
+
+기존 인덱스의0.17 ZIP이 현재 경로에 없어 첫 등록은 중단, 실제 존재하는0.20.2 ZIP을 롤백으로 지정해 전체 해시 검증 후 등록했다. 누락 원인 추정/외부 파일 조사/이전자료 삭제는 하지 않았다. 아래0.20.2는 이전 배포 기록이다.
 
 ## 0.20.2 최신 배포 확정
 

@@ -405,3 +405,5 @@ ignored 증거 runtime/stage14-final-verify.txt, runtime/stage14-ui-final.txt, r
 ## 0.20.3 실제 소스 대조·기본 모드 보완 (2026-10-29 KST)
 
 최종0.20.3 추가 회귀: 앱 계약이 확인된 classic 수수료 + 선택적 아이템 필드 없음→검토→활성화→동일 실제 어댑터 합성 전송→모바일 승인 대기. 수정 전 FeeFor Unsupported FAIL, 수정 후 PASS. 다른 앱/수수료 상충/무근거 schedule은 거절하고 기존 React 필드 누락 보호 회귀도 유지한다. 기본 모드 ON은 검증 전 CanTrade=false, 최종 검토 사전검증/명시적 OFF·취소 전용 미승격/최종 승인 전 판매0을 검증한다. 실서버 성공으로 판정하지 않는다.
+
+최종0.20.3: 기능333/333·비표시WPF66/66·배포계약19/19·정리fixture9/9 PASS, 경고/오류0. 전체 ZIP entry SHA/파일 수/메타데이터·실제전용·런타임/SQLite/라이선스·비밀/사용자자료 출하 제외 PASS. 새 기본 체크/안내 RTB 직접 검토. 실제 Steam 계정/판매·물리입력·모니터DPI는 NOT VERIFIED. 사용자 제출 ZIP에는 활성화 실패 기록이 없어 활성화 성공/실패 원인을 확정하지 않았다.
