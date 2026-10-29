@@ -1,5 +1,14 @@
 # MarketCrate — 아키텍처 (최초 Mock 구현 / 후속 계획)
 
+## 0.20 제품 경로 보완
+
+UI→SteamWorkspaceViewModel→기존 서비스 구조 유지. UI 화면 캐시와 retainedSelections를 분리해 view eviction이 선택 배치 대상을 누락하지 않도록 했다. BatchUiProgress는 Coordinator가 이어지는 호출 UI 문맥에서 변경된 결과 행만 갱신하며 늦은 다른 계정/로그아웃 결과를 버린다. NavigationIndex는 기존 WorkPage 인덱스와 새 표시 순서를 분리한다. 카드 보기는 기존 VirtualizingTilePanel을 실제 보관함에 연결한다.
+
+SteamStateStore.StageRelistApproval은 검토 스냅샷/계정/상품별 수량/취소 접수만 메모리에서 준비한다. 실제 Coordinator 사전검증 후 최초 SaveAsync가 새 batch와 relist.SubmissionBatch를 동일 트랜잭션으로 기록한다. 실패는 두 기록 모두 rollback이며 SQLite schema3/기존 데이터 형식·DPAPI 저장 형식은 유지한다. 0.19에서 이미 제출 시도로 묶인 과거 계획을 추측으로 해제하지 않는다.
+
+SteamAccess.CancellationOnly+SteamTradingPolicy.CancellationOnly를 공유 가드로 사용한다. CanCancel은 인증·명시적 동의·계정 결속·서버 제한을, CanExecute는 그 조건과 판매 허용을 추가 확인한다. 취소 전용 활성화는 최신 자기 판매목록만 읽으며 실제 POST는 별도 전체 검토 승인 후다. 외부 등록/취소 전용은 AvailableBefore=-1로 반환 미확인을 보존하며 취소를 위해 수수료/보관함을 강제 조회하지 않는다. 새 판매는 기존 전체 가격·자산·수수료 계약 검증을 계속 요구한다.
+
+
 ## 0.19.0 추가 — 외부 등록의 새 자산 재판매
 
 SteamMarketHelper의 취소→보관함 재조회→같은 상품의 새 자산 ID 선택 방식을 실제 서비스에 연결했다. 전체 취소 승인 후 서버 접수·목록 부재를 확인하고, 실제 보관함·가용 수량·수수료·공유 호가로 새 대상을 제안한다. 원래 아이템의 반환 확정은 아니며 다른 기존 보유분일 수 있음을 표시한다. 새 실제 자산 ID·수량·가격을 전체 검토해 판매등록 한 번 승인하면 기존 Coordinator가 배치 처리한다. 항목별 추가 판매 클릭은 없다. SQLite 취소 계획/새 배치 연결을 보존하고 불명 취소·원래 예약은 추측으로 해제하지 않는다. 최근 미제출 계획은 사용자 요청 시 재조회하며 자동 거래하지 않는다. 개별 수량1, 최대100등록/10상품만 지원한다.

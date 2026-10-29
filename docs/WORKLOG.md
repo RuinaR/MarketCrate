@@ -1,5 +1,23 @@
 7차 Release 검사 수정: SQLite 파일명 제외 정규식이 정상 의존성 Microsoft.Data.Sqlite.dll까지 거부했다. DB/sidecar 확장자 끝으로 한정해 수정하고 DLL 허용·sqlite/sqlite3-wal/db-shm/.env/session.json/private.key 차단 7개 파일명 회귀를 확인했다. 실제 비밀파일·DB는 생성하지 않았다. 최초 publish는 이 정적 검사에서 FAIL이며 실행파일은 실행하지 않았다.
 
+### 0.20 최종 자동 검증
+
+**기능314/314·비표시WPF65/65·배포계약19/19·안전 정리 fixture9/9 PASS**, Debug/Release 경고·오류0. 기준0.19의305/61과 전 회귀를 유지했다. 신규9기능/4WPF에는 실시간 진행, 취소 대조·취소 전용, 원자 저장 오류 주입, 이전 계획 선택, 로그아웃 늦은 결과, 캐시 선택 보존, 계정 보관 보호와50개 Command Binding 검사가 포함된다. 배포 PE/BAML에서 실제 서비스·진행/작업 선택 타입 존재와 Mock/자가검증/테스트 타입 부재를 검사한다. 자체 RTB의 새 내비게이션·카드/목록·compact 검토·진단 복귀를 직접 열람했다. 개발 구성의 자가검증 탭은 Release에서 제외되며 렌더와 실제 출하 검사를 구분한다.
+
+제한 실행에서 개발 전용 JSON 저널 파일 교체1건은 FAIL이었다. 동일 바이너리 정상 권한312/312 이후, 마지막 선택·보관 가드를 포함한 최종314/314 정상 권한 검사를 확인했다. 실제 GUI/물리 입력/Popup/모니터DPI·장시간 리소스·실서버 수수료/거래는 미검증이다. 실제 창/로그인·인증/조회·판매·취소·Guard 실행0, 타 프로세스/호스트 입력·화면/설정 접근0, 운영 데이터·이전 배포본 삭제0이다. ZIP/SourceCommit/해시는 배포 확정 절에 추가한다.
+
+
+## 2026-10-29 —0.20 전체 요구사항 및 제품 경로 감사
+
+main23589e7 clean에서 시작. 75개 추적표와 실제 ViewModel/Provider/Executor/SQLite/ControlTemplate·테스트를 대조했다. A06의 '메모리 전용' 등 과거 표 설명을 DPAPI 저장과 사용자0.17 관측 범위로 수정했다. COMPLETE 선결론 없이 B08만 BLOCKED→PARTIAL, 나머지는 기존 근거/제한을 유지한다.
+
+발견·수정: 화면 캐시 제거가 선택 대상도 지움→선택 참조 별도 보존/전략 변경 시 함께 초기화/게임별 해제; Progress 미주입→동일 UI 문맥에서 결과별 갱신/로그아웃 후 늦은 결과 폐기; 계획 선소비→배치 최초 기록과 원자 연결; 최신 계획 고정→작업 선택/유지; 취소 상태 확인 미연결→선택 요청별 실제 대조; 취소가 견적·보관함에 종속→명시적 취소 전용 세션; 계정 결속 보관 가드; read latch의 재시도 안내 오류. 실제 전용 카드 보기도 연결했다.
+
+SteamHelper/CSlytics 공개 PNG 화면을 직접 열람했다. 선택 요약·검색/목록·가격 검토/일괄 승인 배치를 참고했으며 이미지·AGPL 소스는 제품에 복사하지 않았다. SSIM28a503f의 MarketService MassSellJob(단계·queued/done/failed/deferred)을 비교해 기존 IProgress 경로를 활용했다. 자동 Guard·병렬/맹목 재시도는 채택하지 않았다.
+
+중간 검증에서 테스트용 FileBatchJournal의 파일 교체 권한 오류1건이 제한 실행에서 발생했다. 동일 바이너리를 정상 권한으로 실행하자312/312 PASS였다. 해당 JSON 저널은 Release 컴파일 제외이며 원인을 임의 Steam/SQLite 결함으로 단정하지 않았다. 초기 추가 회귀의 SQLite 외부 테스트 연결 Pooling 기본값 때문에 정리가 실패한 것은 Pooling=False로 수정했고, 계획 선택 테스트는 기존 선택 보존을 검증하도록 바로잡았다. WPF 내비게이션 테스트는 새 표시 순서와 기존 논리 WorkPage 매핑을 구분했다. 물리 GUI/실계정은 실행하지 않는다.
+
+
 ### 0.19.0 배포 확정 — 사용자 결함·새 자산 재등록
 
 구현 소스 **cb2c32685cef5c6acb9c3d5faf87f39acd48d65c**, Windows x64 self-contained LiveOnly portable **artifacts/releases/MarketCrate-0.19.0-relist-cb2c326-win-x64.zip**, **66,495,539바이트 /413파일**. SHA256 **42D92ECDDF23BE4789150B52C1585A802C71BBBD31E9AED8155E3A1AE86528D6**. 원본 `artifacts/releases/relist-cb2c326-windows-x64`, BuildVersion0.19.0+cb2c326…. 전체 ZIP entry SHA/폴더 파일 수/SourceCommit·CLR/WPF10.0.9·SQLite x64·ProtectedData·라이선스 일치, 사용자 DB/Auth/로그/PDB 제외·실제 UI/SteamRelistPlan 존재·Mock/자가검증 모델/BAML 부재 검사 PASS. 앱/설치/서명·실제 계정/거래/물리 입력은 Codex 미실행이다.

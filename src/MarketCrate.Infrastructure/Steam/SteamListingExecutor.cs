@@ -14,7 +14,8 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
     private readonly Dictionary<string, SaleLineSnapshot> approved = [];
     public Capability Capability => CanExecute ? Capability.Experimental : Capability.IntegrationBlocked;
     private readonly SteamTradingPolicy executionPolicy = policy ?? SteamTradingPolicy.Blocked;
-    public bool CanExecute => auth.Connected && http.Halted is null && http.Access.Trading && executionPolicy.Enabled && !string.IsNullOrWhiteSpace(executionPolicy.EvidenceReference) && (!executionPolicy.UserInitiated||http.Access.TradingAccount==auth.SteamId);
+    public bool CanCancel => auth.Connected && http.Halted is null && http.Access.Trading && executionPolicy.Enabled && !string.IsNullOrWhiteSpace(executionPolicy.EvidenceReference) && (!executionPolicy.UserInitiated||http.Access.TradingAccount==auth.SteamId);
+    public bool CanExecute => CanCancel&&!http.Access.CancellationOnly&&!executionPolicy.CancellationOnly;
     public bool CanReconcile => auth.Connected && http.Halted is null;
     // Validate the entire management review before the first cancellation. Not an atomic server transaction.
     public async Task ValidateRepriceBatchAsync(IReadOnlyList<(SteamListing Listing,long BuyerPrice,string Book)> review,CancellationToken token)
@@ -189,7 +190,8 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         await mutations.WaitAsync(token);
         try
         {
-            if (!CanExecute) throw new SteamException(SteamFailure.Disabled);
+            if (!CanCancel) throw new SteamException(SteamFailure.Disabled);
+            if(reviewed.State!=SaleState.Listed)throw new SteamException(SteamFailure.Unsupported);
             var previous = store.ReadCommand(requestKey);
             if (previous is not null) return new(reviewed.ListingId, SaleState.Unknown, "기존 취소 의도: 재전송 금지");
             if (store.Commands().Any(x => x.Kind == "cancel" && x.ListingId == reviewed.ListingId)) return new(reviewed.ListingId, SaleState.Unknown, "다른 키의 취소 의도 존재");
@@ -197,7 +199,9 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
             if (current != reviewed) throw new SteamException(SteamFailure.Restricted);
             var original = store.Commands().SingleOrDefault(x => x.Kind == "sell" && x.ListingId == reviewed.ListingId);
             var returnKey = original?.Line.Asset.Key ?? reviewed.Asset;
-            var available = (await new SteamInventoryProvider(http,auth,returnKey.AppId,returnKey.ContextId,original?.Line.Asset.Game??"Steam").GetAsync(token)).SingleOrDefault(x => x.Key == returnKey)?.Quantity ?? 0;
+            // Cancel by listing ID needs no price or inventory permission. Missing before-state never proves a return.
+            var available = original is not null&&!http.Access.CancellationOnly?
+                (await new SteamInventoryProvider(http,auth,returnKey.AppId,returnKey.ContextId,original.Line.Asset.Game).GetAsync(token)).SingleOrDefault(x => x.Key == returnKey)?.Quantity??0:-1;
             var asset = new InventoryAsset(returnKey, "Steam", reviewed.HashName, reviewed.HashName, reviewed.Quantity, original?.Line.Asset.Stackable ?? reviewed.Quantity > 1, true, false);
             var line = new SaleLineSnapshot(reviewed.ListingId, asset, reviewed.Quantity, reviewed.Currency, new(reviewed.SellerReceives + reviewed.Fees, reviewed.SellerReceives, reviewed.Fees, 0), DateTimeOffset.UtcNow);
             var intent = new SteamCommandRecord(requestKey, auth.SteamId!, line, "cancel", SaleState.Submitting, reviewed.ListingId, DateTimeOffset.UtcNow, AvailableBefore: available);
@@ -217,7 +221,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
     }
     public async Task<IReadOnlyList<LineResult>> CancelBatchAsync(IReadOnlyList<SteamListing> reviewed, string batchKey, CancellationToken token = default)
     {
-        if (!CanExecute||reviewed.Count==0||reviewed.Select(x => x.ListingId).Distinct().Count() != reviewed.Count) throw new SteamException(SteamFailure.Restricted);
+        if (!CanCancel||reviewed.Count==0||reviewed.Any(x=>x.State!=SaleState.Listed)||reviewed.Select(x => x.ListingId).Distinct().Count() != reviewed.Count) throw new SteamException(SteamFailure.Restricted);
         var frozen=reviewed.ToImmutableArray();var current=(await orders.RefreshAsync(token)).ToDictionary(x=>x.ListingId);
         if(frozen.Any(x=>!current.TryGetValue(x.ListingId,out var now)||now!=x))throw new SteamException(SteamFailure.StaleReview);
         var results = new List<LineResult>();

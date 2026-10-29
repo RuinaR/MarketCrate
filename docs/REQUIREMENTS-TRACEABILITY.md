@@ -1,5 +1,14 @@
 # 요구사항–구현–검증 추적표 (17차, 2026-10-29 KST)
 
+## 0.20 전체75개 코드·UI 재대조
+
+현재 판정47/16/0/3/9, 기존75개 ID 유지. B08만 BLOCKED→PARTIAL: 명시적 취소 전용 활성화→자기 계정 전체 판매목록 확인→선택 전체 검토→실제 취소/SQLite intent→선택 요청 상태 재조회까지 연결했다. 수수료·보관함에 불필요하게 종속되지 않으며 새 등록/재가격은 차단한다. 실계정 취소 성공 COMPLETE가 아니다.
+
+C12/C13/G11은 과거 개발 테스트만으로 제품 경로가 충분하다고 볼 수 없었다. 실제 Release 보관함에 카드 전환이 없었고, 캐시가8게임을 넘으면 선택 대상이 전체 배치에서 사라졌다. 카드/목록 가상화와 retainedSelections를 제품 VM/템플릿에 연결해 수정했다. F03의 실시간 결과 미연결, B09 취소 대조 UI 누락, B10 최신 계획 강제·사전검증 실패 선소비, F10/F04 다른 계정 보관·로그아웃 늦은 진행 결과를 수정했다. 제품3뷰의 Command Binding50개/ICommand 객체를 반사 검사하고 실제 어댑터/저장소 합성 경로와 연결했다. 외부 페이지/폴더 열기는 자동 실행하지 않았다.
+
+전 행의 기존 담당 소스·서비스 경로·실패 검증을 재검토했고, A01/A02/A04/B01/B03에는 사용자 부분 관측을, A06/AUTH에는 실제 DPAPI 저장을 반영했다. 정확 평균·전체 계정 자동 발견·실거래 확정 실패 재시도·스택/반환·실서버 수수료/Guard/실판매·물리 GUI 검증의 한계는 남는다. COMPLETE는 기존 로컬 계약 범위이며 제품 전 기능 지원을 뜻하지 않는다. 최종 자동/배포 증거는 QA-MATRIX와 CURRENT-STATUS에 기록한다.
+
+
 0.19 추가 B10/F01/F03/F09: 외부 등록 취소→scope별 실제 보관함 재조회→새 개별 자산/새 가격 전체 검토→최종1승인 배치를 SteamAssistedRelistViewModel/SteamRelistPlan/기존 Executor·Coordinator에 연결했다. 취소 계획은 전송 전 SQLite에 영속 저장하고, 기존 Unknown/예약을 이름만으로 해제하지 않는다. UsabilityTests 신규6개/UsabilityUiTests1개로 변경ID·재시작·단일 승인·불명 중단·수량 부족·시세 변경·민감정보 보호를 검증한다. 실제 수수료/계정 거래·스택 인과 반환은 미검증이므로 기존75개 ID와 판정47/15/0/4/9는 유지한다.
 
 0.19 추가 감사: 재등록 후 상태 재조회가 원 배치만 읽던 경로를 보완하여 현재 계정의 최근 재등록 최대10건을 실제 명령/서버와 대조합니다. Guard→Listed 합성 경로를 확인했으며, 타 계정 배치를 복구해 변경하지 않도록 계정 필터와 저널 불변 회귀를 추가했습니다. 과거 기록은 보존합니다.
@@ -107,9 +116,9 @@ SessionPersistenceTests20/UiTests3이 QR·저장·재시작·거절·손상·계
 
 사용자의 최초 A–G 요구를 **75개 추적 단위**로 정규화했다. 이름/가격/수량 등 한 행의 표시 계약은 함께 관리하고, 누락 이미지/평균가는 별도 ID로 분리했다. 6차 진단 요구 LOG-* / SYS-*는 아래 별도 관리하며 최초 요구사항 수에 섞지 않는다.
 
-**COMPLETE 47**, **PARTIAL 15**, **MISSING 0**, **BLOCKED 4**, **UNVERIFIED 9**. 총 **75**.
+**COMPLETE 47**, **PARTIAL 16**, **MISSING 0**, **BLOCKED 3**, **UNVERIFIED 9**. 총 **75** (0.20 현재).
 
-COMPLETE는 그 행에 명시한 **로컬 순수 계산·상태 머신·UI 바인딩·합성 계약 범위의 완료**다. 실계정 기능 전체 지원 판정이 아니다. 모든 행의 **실계정 검증은 N**. 실서버 인증 응답을 수집/재생하지 않았으므로 **실제 Steam 응답 기반 계약 검증도 모두 N**이며, 표의 S는 기존 공개 소스 형식을 참고한 **합성 HttpMessageHandler 계약**만 뜻한다. Mock PASS를 live PASS로 승격하지 않는다.
+COMPLETE는 그 행에 명시한 **로컬 순수 계산·상태 머신·UI 바인딩·합성 계약 범위의 완료**다. 실계정 기능 전체 지원 판정이 아니다. Codex의 실계정 실행 검증은 N이다. 사용자가 직접 관측한0.17 QR/복원·목록8건·빈CS2·KRW 지갑은 U0.17로 구분하며 새 버전/전체 읽기·수수료·거래로 확대하지 않는다. 원본 인증 응답을 수집/재생하지 않았고, 표의 S는 공개 소스 형식을 참고한 **합성 HttpMessageHandler 계약**만 뜻한다. Mock PASS를 live PASS로 승격하지 않는다.
 
 PARTIAL=일부 경로/기능 부족, MISSING=실행 코드 없음, BLOCKED=필수 외부 허용/자료 미확보, UNVERIFIED=코드는 있지만 live 계약 근거 부족. 최신 동작은 이 표와 CURRENT-STATUS를 기준으로 하고 예전 WORKLOG의 '완료' 표현을 확대 해석하지 않는다.
 
@@ -119,7 +128,7 @@ PARTIAL=일부 경로/기능 부족, MISSING=실행 코드 없음, BLOCKED=필�
 
 | 경로 | UI → VM → 서비스/어댑터 → 저장소 → 상태 반영 |
 |---|---|
-| AUTH | `src/MarketCrate.App/SteamWorkspaceView.xaml` QR 탭 → `ViewModels/SteamWorkspaceViewModel.cs` BeginAsync/CheckAsync/LogoutNow → `src/MarketCrate.Infrastructure/Steam/SteamQrAuthentication.cs` → `SteamAccess.cs` SteamHttp, 자체 CookieContainer(메모리) → LoginState/QrMatrix/Status 바인딩. 인증 토큰 저장소 없음 |
+| AUTH | `src/MarketCrate.App/SteamWorkspaceView.xaml` QR 탭 → `ViewModels/SteamWorkspaceViewModel.cs` BeginAsync/CheckAsync/LogoutNow → `src/MarketCrate.Infrastructure/Steam/SteamQrAuthentication.cs` → `SteamAccess.cs` SteamHttp, 자체 CookieContainer(메모리) → LoginState/QrMatrix/Status 바인딩. 사용자 동의 시 SteamAuthStore의 자체 Refresh Token DPAPI 저장/복원만 사용 |
 | INV | Steam 보관함 → VM.LoadAsync/Game/Filter → `SteamExperimentalWorkspace.cs` SetGame → `SteamProviders.cs` SteamInventoryProvider.GetAsync → `SteamContract.cs` Inventory → `SteamStateStore.cs` AvailableAll(예약만) → Assets/VisibleAssets/SteamAssetRow. UI 선택은 세션 내 Dictionary, 실보관함 응답은 DB에 저장 안 함 |
 | LIST | Steam 판매 탭 → VM.LoadAsync/RecoverAsync → `SteamProviders.cs` SteamOrdersProvider.RefreshAsync → SteamHttp/SteamContract.Listings → 메모리 cache/VM.SetListings → Listings/VisibleListings. 공개 목록 관측을 거래 저널로 대체하지 않음 |
 | PRICE | 선택 시세 갱신 → VM.RefreshPricesAsync → `SteamProviders.cs` SteamMarketDataProvider.RefreshAsync/GetMedianHistoryAsync → 메모리 cache → `src/MarketCrate.Core/SalePlanner.cs` Build/`Pricing.cs`/`Money.cs` → SteamReviewRow. 실제 평균가용 Trades는 없음 |
@@ -139,24 +148,24 @@ PARTIAL=일부 경로/기능 부족, MISSING=실행 코드 없음, BLOCKED=필�
 
 구현 Y=실행 경로 존재, P=부분 코드, N=누락. M=Mock/순수·내부 UI PASS, S=소스 형식 기반 합성 계약 PASS, —=해당 실연동 계약 검증 없음. 실패 칸의 P는 해당 연결 테스트 범위만 의미하며 모든 현실의 실패를 보장하지 않는다.
 
-| ID | 최초 요구/기대 동작 | 담당 소스·클래스/메서드 | UI 진입점 | 호출 경로 | 구현 | Mock | 합성 계약 / 실제응답 / 실계정 | 실패·예외 및 테스트 | 판정 | 미완성·위험·판정 근거 | 6차 판정 |
+| ID | 최초 요구/기대 동작 | 담당 소스·클래스/메서드 | UI 진입점 | 호출 경로 | 구현 | 개발 Mock 이력 | 합성 계약 / 실제응답 / 실계정 | 실패·예외 및 테스트 | 판정 | 미완성·위험·판정 근거 | 6차 판정 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| A01 | Steam 계정 로그인 | `SteamQrAuthentication.BeginCoreAsync/CheckCoreAsync` | Steam > QR 연결 | AUTH | Y | M | S / N / N | P (범위 한정); S6.BatchTrace | **UNVERIFIED** | 실계정 QR·세션 생성 미실행 | UNVERIFIED |
-| A02 | 공식 앱 QR 인증 흐름 | `SteamQrAuthentication.ValidateChallenge; QrCodeView` | Steam > QR 연결 | AUTH | Y | M | S / N / N | P (범위 한정); F5.QR expiration; U5.QR | **UNVERIFIED** | 공식 도메인을 사용하지만 비공식 인증 클라이언트이며 공식 브라우저 로그인 대체 미구현 | UNVERIFIED |
+| A01 | Steam 계정 로그인 | `SteamQrAuthentication.BeginCoreAsync/CheckCoreAsync` | Steam > QR 연결 | AUTH | Y | M | S / U0.17 / U0.17 | P (범위 한정); S6.BatchTrace | **UNVERIFIED** | 사용자0.17 QR/Community 세션·재시작 복원 성공 관측. 신규0.20/회전·장기 만료 미검증 | UNVERIFIED |
+| A02 | 공식 앱 QR 인증 흐름 | `SteamQrAuthentication.ValidateChallenge; QrCodeView` | Steam > QR 연결 | AUTH | Y | M | S / U0.17 / U0.17 | P (범위 한정); F5.QR expiration; U5.QR | **UNVERIFIED** | 공식 도메인을 사용하지만 비공식 인증 클라이언트이며 공식 브라우저 로그인 대체 미구현 | UNVERIFIED |
 | A03 | 성공·실패·취소·인증/세션 만료 구분 | `SteamWorkspaceViewModel.Error/LoginState; SteamHttp.SendAsync` | Steam > QR/상태 | AUTH | Y | M | S / N / N | P (범위 한정); F5.QR expiration; S6.HttpFailure | **COMPLETE** | 상태 분기 구현/합성 검증 범위. 실제 Steam 인증 성공을 뜻하지 않음 | COMPLETE |
-| A04 | 로그인 후 실제 계정 데이터 표시 | `SteamWorkspaceViewModel.LoadAsync; SteamExperimentalWorkspace` | Steam > 실제 보관함/판매 | INV/LIST | Y | M | S / N / N | P (범위 한정); F5.Full synthetic QR; S6.BatchTrace | **UNVERIFIED** | 실계정 응답·페이지 전체성 미확인. 합성 테스트 배너와 제품 배너 분리 | UNVERIFIED |
+| A04 | 로그인 후 실제 계정 데이터 표시 | `SteamWorkspaceViewModel.LoadAsync; SteamExperimentalWorkspace` | Steam > 실제 보관함/판매 | INV/LIST | Y | M | S / U0.17일부 / U0.17일부 | P (범위 한정); F5.Full synthetic QR; S6.BatchTrace | **UNVERIFIED** | 사용자 목록8건/빈CS2/KRW wallet 관측. 모든 데이터/페이지·신규0.20 미검증, Release 실제 전용 | UNVERIFIED |
 | A05 | 로그아웃·동의 철회·늦은 응답 폐기 | `SteamWorkspaceViewModel.LogoutNow/Run; SteamQrAuthentication.Dispose` | Steam > 취소/로그아웃 | AUTH | Y | M | S / N / N | P (범위 한정); F5.Logout during load; S6.Selection | **COMPLETE** | 로컬 세션 정리 범위 PASS; 서버의 원격 토큰 폐기 API 미제공 | COMPLETE |
-| A06 | 인증 비밀 보호 | `SteamAccess; SteamQrAuthentication; DiagnosticRecordSafety.Clean` | Steam > 위험 안내 | AUTH/LOG | P | M | S / N / N | P (범위 한정); S6.Privacy; S6.BatchTrace | **PARTIAL** | 토큰/쿠키 메모리 전용. 런타임 문자열의 완전한 메모리 소거/외부 보안 감사는 미검증 | PARTIAL |
-| B01 | 현재 판매 전체 조회·페이지 완전성 | `SteamOrdersProvider.RefreshAsync; SteamContract.Listings` | Steam > 실제 판매 > 갱신 | LIST | Y | M | S / N / N | P (범위 한정); F4.listings pagination; F5.Full synthetic QR | **UNVERIFIED** | 최대 10,000 active 제한. 전체성이 불명확하면 실패하며 실제 응답은 미확인 | UNVERIFIED |
+| A06 | 인증 비밀 보호 | `SteamAuthStore; SteamWebRefreshToken; SteamQrAuthentication; DiagnosticHub.Sanitize` | Steam > 위험 안내 | AUTH/LOG | P | M | S / N / N | P (범위 한정); S6.Privacy; S6.BatchTrace | **PARTIAL** | 동의 시 자체 Refresh Token만 DPAPI CurrentUser/ACL/원자 저장. 사용자0.17 복원 관측. 완전한 메모리 소거·외부 보안 감사 미검증 | PARTIAL |
+| B01 | 현재 판매 전체 조회·페이지 완전성 | `SteamOrdersProvider.RefreshAsync; SteamContract.Listings` | Steam > 실제 판매 > 갱신 | LIST | Y | M | S / U0.17첫페이지 / U0.17 | P (범위 한정); F4.listings pagination; F5.Full synthetic QR | **UNVERIFIED** | 최대 10,000 active 제한. 전체성이 불명확하면 실패. 사용자 첫8건/활성total8 관측, 신규/변동 페이지 계약 미검증 | UNVERIFIED |
 | B02 | 게임별 판매 구분/필터 | `SteamWorkspaceViewModel.Filter/VisibleListings` | Steam > 보관함 게임 선택 > 판매 | LIST | Y | M | S / N / N | P (범위 한정); S6.Selection; U6.Steam filters | **COMPLETE** | 서버에서 받은 목록의 appid 필터. 계정 게임 자동 발견과 별개 | COMPLETE |
-| B03 | 판매 이름·가격·수량·상태 표시 | `SteamListingRow.Description; SteamContract.Listings` | Steam > 실제 판매 | LIST | Y | M | S / N / N | P (범위 한정); F5.Full synthetic QR; U5.KRW review | **UNVERIFIED** | 표시 바인딩과 합성 계약 구현. 실서버 필드 형식 미확인 | UNVERIFIED |
+| B03 | 판매 이름·가격·수량·상태 표시 | `SteamListingRow.Description; SteamContract.Listings` | Steam > 실제 판매 | LIST | Y | M | S / U일부 / U일부 | P (범위 한정); F5.Full synthetic QR; U5.KRW review | **UNVERIFIED** | 표시 바인딩과 합성 계약 구현. 사용자 실제8행/이미지 관측. 모든 상태·수량/신규버전 미검증 | UNVERIFIED |
 | B04 | 실제 아이템 이미지 표시 | `SteamContract.Image/Inventory/Listings; SteamImageCache; ItemThumbnail; SteamWorkspaceViewModel` | 보관함/판매 목록 | INV/LIST | Y | M | S / N / N | P (합성/내부 경로); S7.Metadata/ImageSecurity/ImageDedup/ImageCancel/ImageFaults/ImageMemory; U7.thumbnail/recycling/inventory/listings/review | **COMPLETE** | 확인한 단일 Steam CDN, 인증 분리, 제한된 바이트/픽셀/LRU/대기열, 구독 취소/늦은 응답 방어, 실제 PNG 디코딩/재활용 합성 PASS. 실제 Steam CDN 이미지와 실계정 메타데이터는 미검증. | MISSING |
 | B05 | 판매 항목의 최근 평균 거래가 표시 | `SteamWorkspaceViewModel.ListingMetrics (SteamCatalogViewModel.cs); SteamListingRow.Metric; SteamMarketDataProvider.RefreshEstimateAsync` | Steam > 결과/이력 | PRICE | P | M | S / N / N | P (합성/내부 경로); U7.listing metrics command; S7.Indicators | **PARTIAL** | 선택 판매목록의 기간 중앙값 기반 대체 추정치를 조회/표시한다(최대10상품). 정확한 최근 평균 원자료는 여전히 없어 평균 지원은 미완성. | BLOCKED |
 | B06 | 판매 개별 선택/해제 | `SteamListingRow.Selected` | Steam > 실제 판매 체크박스 | LIST | Y | M | — / N / N | P (범위 한정); F3.management selection; U3.management | **COMPLETE** | 로컬 선택 동작 범위 | COMPLETE |
 | B07 | 판매 전체 선택/해제 | `SteamWorkspaceViewModel.SelectAllListings/ClearListings` | Steam > 실제 판매 | LIST | Y | M | S / N / N | P (범위 한정); U6.Steam filters; S6.Selection | **COMPLETE** | 현재 게임/검색 결과 전체 선택, 해제는 보유한 모든 로컬 목록 선택 해제 | COMPLETE |
-| B08 | 선택 등록 취소 | `SteamWorkspaceViewModel.ManageAsync; SteamListingExecutor.CancelAsync` | 판매 > 선택 취소 검토 > 전체 관리 요청 | CANCEL | P | M | S / N / N | P (범위 한정); F5.Cancel unknown; S6.UnknownCancel | **BLOCKED** | 실제 취소 코드 존재, 기본 정책 차단. Mock 취소는 별도로 동작 | BLOCKED |
-| B09 | 취소 결과·실제 반환 확인 | `SteamListingExecutor.ReconcileCancellationAsync; SteamStateStore.SaveReturn` | Steam > 재가격 대조/재개 | CANCEL | P | M | S / N / N | P (범위 한정); F5.Confirmed cancellation; S6.UnknownCancel | **PARTIAL** | 직접 연결된 비스택 단일 동일 ID 반환만 proof. 스택/외부 등록/ID 변경 인과관계 미지원 | PARTIAL |
-| B10 | 확정 취소 후 새 가격 재등록/새 승인 | `SteamListingExecutor.RepriceAsync/ReviseRepriceAsync; SteamStateStore.SupersedeReprice` | 판매 가격 변경 / 결과 > 새 가격 검토 | REPRICE | P | M | S / N / N | P (범위 한정); S6.RepriceRevision; S6.StaleCancel | **PARTIAL** | 새 승인·원자적 supersede·반환 proof 재사용 구현. 실거래 차단/실계정 미검증 | PARTIAL |
+| B08 | 선택 등록 취소 | `SteamTradingViewModel.PrepareCancellationAsync; SteamExperimentalWorkspace.EnableUserCancellationAsync; SteamWorkspaceViewModel.ManageAsync; SteamListingExecutor.CancelBatchAsync/CancelAsync` | 게임·판매 설정 > 취소 전용 활성화 > 판매 중 > 선택 전체 취소 승인 | CANCEL | P | 개발 회귀 | S / N / N | UsabilityTests.CancellationOnly/CancellationReset/CancelUiPath; 합성 취소·권한 분리 | **PARTIAL** | 기본 OFF·계정 결속·목록 최신 대조·선영속 의도. 수수료/보관함 조회 없이 취소 전용 가능하며 새 등록/재가격 차단. 실서버 취소/반환은 미검증 | BLOCKED |
+| B09 | 취소 결과·실제 반환 확인 | `SteamRequestReconciliation.RefreshSelectedRequestAsync; SteamListingExecutor.ReconcileCancellationAsync; SteamStateStore.SaveReturn` | 판매 결과 > 요청 상태 확인 | CANCEL | P | M | S / N / N | P (범위 한정); F5.Confirmed cancellation; S6.UnknownCancel | **PARTIAL** | 직접 연결된 비스택 단일 동일 ID 반환만 proof. 스택/외부 등록/ID 변경 인과관계 미지원 | PARTIAL |
+| B10 | 확정 취소 후 새 가격 재등록/새 승인 | `SteamAssistedRelistViewModel; SteamRelistPlan; SteamListingExecutor.RepriceAsync/ReviseRepriceAsync; SteamStateStore.SaveAsync` | 판매 가격 변경 / 결과 > 새 가격 검토 | REPRICE | P | M | S / N / N | P (범위 한정); S6.RepriceRevision; S6.StaleCancel | **PARTIAL** | 외부 취소→새 실제 자산/새 가격→단일 승인 배치 및 원등록 반환 proof 경로. 계획/배치 원자 저장·이전 계획 선택·사전검증 실패 복구. 스택/실계정 미검증 | PARTIAL |
 | B11 | 취소·처리·승인대기·실패·완료·불명 구분/재시도 | `MockListingManagement.RetryFailed; SteamWorkspaceViewModel.Results` | Mock 판매/결과; Steam 결과 | CANCEL/REPRICE | P | M | S / N / N | P (범위 한정); F3.retry management; S6.UnknownCancel | **PARTIAL** | Mock 확정 실패 재시도만 제공. 실험 취소는 Reconciled/Unknown으로 표현하며 live 확정 실패 재시도 정책 미완성 | PARTIAL |
 | C01 | 계정 게임별 보관함 조회/페이징 | `SteamInventoryProvider.GetAsync; SteamContract.Inventory` | Steam > 게임 선택 > 실제 데이터 갱신 | INV | Y | M | S / N / N | P (범위 한정); F4.inventory pagination; S6.Selection | **UNVERIFIED** | 개별 appid/context 조회 구현. 실제 계정 전체 게임 목록은 미확인 | UNVERIFIED |
 | C02 | 게임 목록/보관함 표시 | `InventoryScope; SteamWorkspaceViewModel.AddScope/RemoveScope/ObserveCatalog/RestoreCatalog (SteamCatalogViewModel.cs); SteamStateStore.ReadCatalog/SaveCatalog` | Steam > 보관함 게임 선택 | INV | Y | M | S / N / N | P (합성/내부 경로); S7.Catalog/CatalogStates/CatalogInvalid/JournalCompatibility; U7.catalog bindings | **COMPLETE** | 계정별 app/context 수동 관리와 판매목록 관측, SQLite 복원, 상태/판매 가능 종류 수/대표 이미지. 전체 계정 자동 발견 아님; 이름 미확인 App은 임시 이름. 게임 로고 대신 보관함 대표 이미지를 명시. | PARTIAL |
@@ -183,11 +192,11 @@ PARTIAL=일부 경로/기능 부족, MISSING=실행 코드 없음, BLOCKED=필�
 | D10 | Steam/게임별 최소 수수료/반올림/서버 대조 | `SteamFees; SteamFeeSchedule; SteamListingExecutor.SubmitAsync` | 검토 수수료/지갑 설정 | PRICE/SUBMIT | Y | M | S / N / N | P (범위 한정); F5.server floor; S6.FeeMismatch | **UNVERIFIED** | 정확한 live KRW fee structure·단위·게임별 계약 근거 부족 시 등록 차단 | UNVERIFIED |
 | D11 | 정수 금액·최소 단위·수령액/결제액 분리 | `Money; FeeQuote; SteamFeeSchedule` | 검토 단가/Steam·게임 수수료/실수령 | PRICE | Y | M | S / N / N | P (범위 한정); F5.integer wire/overflow; 초기 반올림 | **COMPLETE** | 순수 정수 계약 범위. live 수수료 정확성은 D10 별도 | COMPLETE |
 | D12 | 예상 체결/실제 체결 비보장 | `SteamWorkspaceViewModel.Status; SteamReviewRow.PriceBasis` | 보관함 호가/검토 안내 | PRICE | Y | M | — / N / N | —; U5.KRW review; 코드/렌더 감사 | **COMPLETE** | 호가 매칭/즉시 체결을 보장하지 않음 | COMPLETE |
-| E01 | 전체 판매 대상 검토 진입 | `MainViewModel.BuildReview; SteamWorkspaceViewModel.BuildReview` | 최종 가격 검토 | FINAL | Y | M | S / N / N | P (범위 한정); F5.Full synthetic QR; U5.KRW review | **COMPLETE** | Mock/실험 영역 분리 | COMPLETE |
+| E01 | 전체 판매 대상 검토 진입 | `SteamWorkspaceViewModel.BuildReview` | 최종 가격 검토 | FINAL | Y | M | S / N / N | P (범위 한정); F5.Full synthetic QR; U5.KRW review | **COMPLETE** | Release 실제 전용 검토, 개발 합성 fixture 분리 | COMPLETE |
 | E02 | 항목별 선택 수량 표시 | `SteamReviewRow.Identity/Quantity` | 검토 행 | FINAL | Y | M | S / N / N | P (범위 한정); F5.split; U5.review | **COMPLETE** | 최종 snapshot 수량으로 고정 | COMPLETE |
 | E03 | 실제 등록 예정 단가 표시 | `SteamReviewRow.PriceText/Snapshot` | 검토 가격 입력 | FINAL | Y | M | — / N / N | P (범위 한정); S6.PriceAndSettings; U5.price edit | **COMPLETE** | 구매자 단가와 서버 전송 판매자 단가 구분 | COMPLETE |
 | E04 | 같은 상품의 가격 단계별 분할 표시 | `SalePlanner.Build; SteamReviewRow` | 검토 분할 행 | FINAL | Y | M | S / N / N | P (범위 한정); F5.3/4/3; U5.review | **COMPLETE** | 분할 가격/수량은 배치에서도 유지 | COMPLETE |
-| E05 | 개별 가격 직접 수정/합계 즉시 반영 | `SteamReviewRow.PriceText; MainViewModel.ReviewTotals` | 검토 가격 TextBox | FINAL | Y | M | S / N / N | P (범위 한정); F3.review edit strategy; F5.Review editable; S6.PriceAndSettings | **COMPLETE** | Mock 기준 전환/검토 재생성 시 수동값 초기화; Steam은 현재 검토 내 유지 | COMPLETE |
+| E05 | 개별 가격 직접 수정/합계 즉시 반영 | `SteamReviewRow.PriceText; SteamWorkspaceViewModel.Totals` | 검토 가격 TextBox | FINAL | Y | M | S / N / N | P (범위 한정); F3.review edit strategy; F5.Review editable; S6.PriceAndSettings | **COMPLETE** | Mock 기준 전환/검토 재생성 시 수동값 초기화; Steam은 현재 검토 내 유지 | COMPLETE |
 | E06 | 수수료/실수령 구분 표시 | `SteamReviewRow.Amounts; SteamWorkspaceViewModel.Totals` | 검토 Steam/게임 수수료/실수령 | FINAL | Y | M | S / N / N | P (범위 한정); F5.Review editable totals; U5.review | **COMPLETE** | 표시와 산술 범위. 서버 수수료 정확성은 D10 | COMPLETE |
 | E07 | 전체 구매자 총액/수수료/실수령 | `SteamWorkspaceViewModel.Totals` | 검토 상단 합계 | FINAL | Y | M | S / N / N | P (범위 한정); F3.review totals; F5.Review editable | **COMPLETE** | 유효하지 않은 단가가 있으면 확정 합계를 생성하지 않음 | COMPLETE |
 | E08 | 이상 가격/급변 경고 및 차단 | `SteamReviewRow.PriceOutlier/PriceWarning; SteamListingExecutor.ValidateBatchAsync` | 검토 경고/최종 재검증 | FINAL | Y | M | S / N / N | P (범위 한정); S6.PriceAndSettings; F4.price movement | **COMPLETE** | 조회 최상위 호가 50~200% 안전 범위. 승인 금액을 자동 변경하지 않음 | COMPLETE |
@@ -215,7 +224,7 @@ PARTIAL=일부 경로/기능 부족, MISSING=실행 코드 없음, BLOCKED=필�
 | G08 | 키보드 탐색/접근성/툴팁 | `Controls.xaml; MainView.InputError/ReviewChanged; AutomationProperties` | 전체 컨트롤/모달 | UI | P | M | — / N / N | P (범위 한정); U2.stepper/automation names; U6.binding errors | **PARTIAL** | 실제 키보드·스크린리더·열린 툴팁/Popup은 미검증 | PARTIAL |
 | G09 | 창 크기/100·125·150·200% DPI 배치 | `MainView.xaml; SteamWorkspaceView.xaml; DiagnosticsView.xaml` | 전체 레이아웃 | UI | P | M | — / N / N | P (범위 한정); U2/U5/U6.render matrices | **PARTIAL** | RenderTargetBitmap의 픽셀 배율만 확인, 실제 모니터 DPI/창 활성화 금지로 미검증 | PARTIAL |
 | G10 | SteamHelper/CSlytics UX 참고/비복제 | `docs/REFERENCES.md; UI-DESIGN-SPEC.md` | 검토/상태/결과 | UI | Y | M | — / N / N | —; 기존 출처 조사/라이선스 및 이번 렌더 감사 | **COMPLETE** | 비교 제품 코드/자산 새 편입 없음 | COMPLETE |
-| G11 | UI→VM→실제 처리 경로 연결 | `MainView.xaml; SteamWorkspaceView.xaml; DiagnosticsView.xaml; Observable.Commands` | 모든 주요 버튼 | ALL | P | M | — / N / N | P (범위 한정); U5/U6.command bindings; S6.DiagnosticUi | **PARTIAL** | 정확한 평균·전체 자동 발견·live 재시도 미완성. 이미지/수동 카탈로그/추정 지표는 7차에 연결.  비활성 거래 버튼은 정책 차단이며 가짜 성공 아님 | PARTIAL |
+| G11 | UI→VM→실제 처리 경로 연결 | `ProductionShellView.xaml; SteamWorkspaceView.xaml; DiagnosticsView.xaml; Observable.Commands` | 모든 주요 버튼 | ALL | P | M | — / N / N | P (범위 한정); U5/U6.command bindings; S6.DiagnosticUi | **PARTIAL** | ProductAuditUiTests가 제품3뷰의 모든 Command Binding/공개 ICommand 객체를 대조. 정확한 평균·전체 자동 발견·live 재시도 미완성. 이미지/수동 카탈로그/추정 지표는 7차에 연결.  비활성 거래 버튼은 정책 차단이며 가짜 성공 아님 | PARTIAL |
 
 ## 6차 진단 요구 추적 (최초 75개 집계와 별도)
 

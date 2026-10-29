@@ -1,5 +1,15 @@
 # MarketCrate — 외부 자료·레퍼런스
 
+## 0.20 직접 확인한 공개 화면·구현 (2026-10-29 KST)
+
+- [SteamHelper](https://steamhelper.app/)의 [보관함 공개 PNG](https://steamhelper.app/images/landing/profile-inventory.png): 게임 전환/표시 완전성/아이템 목록을 직접 열람. 검색과 선택·가격 요약의 역할 구분을 참고했다. 제품 이미지/브랜드는 도입하지 않는다.
+- [CSlytics 판매 가이드](https://cslytics.com/guides/sell-multiple-items-steam-market)의 [선택 화면](https://cslytics.com/images/guides/steam-market/select-items.png)·[가격 검토 화면](https://cslytics.com/images/guides/steam-market/price-every-row.png): 우측 선택 요약, 행별 가격과 총합/일괄 승인 위치를 직접 열람했다. 독립 WPF Grid/기존 토큰으로 구성하며 PNG는 비교용 ignored runtime에만 저장했다. AGPL 코드를 복사하지 않았다.
+- [SSIM MarketService.ts,28a503f](https://github.com/Santerxyz/SSIM/blob/28a503fa79869f3233814d0deaa906a8b3f66621/src/trading/MarketService.ts)(Apache-2.0): 실제 MassSellJob/phase·진행 건수·취소 함수 확인. 기존 C# Coordinator의 IProgress를 연결했다. 자동 승인/다계정/병렬·반복 재시도 정책 미채택, 소스 직접 도입0.
+- [node-steamcommunity users.js,fa8d897](https://github.com/DoctorMcKay/node-steamcommunity/blob/fa8d89759077152b0c38175f154e03d0eacd2d1e/components/users.js)(MIT)의 getUserInventoryContents와 기존 공식 economy_v2.js를 비교했다. more_items/last_assetid 및 total/로드 슬롯 차이를 확인했다. 실제 계정/서버 검증 근거로 확대하지 않는다.
+
+공개 이미지의 web 파서 요청은 실패했으나 정확한 공개 PNG URL을 무인증 HTTP로 읽어 자체 이미지 뷰어로 확인했다. 사용자 브라우저/창/화면을 조작·캡처하지 않았다. PNG/외부 소스는 배포 ZIP/Git에 포함하지 않는다. 이번 신규 직접 코드 복사/의존성/런타임 도입0이며 기존 MIT steam-session/QR 고지는 유지한다.
+
+
 ## 0.19.0 실사용 UX·재가격 참고
 
 추가 실제 코드 비교(2026-10-29): [SSIM MarketService.ts, 28a503f](https://github.com/Santerxyz/SSIM/blob/28a503fa79869f3233814d0deaa906a8b3f66621/src/trading/MarketService.ts)(Apache-2.0)의 계정별 취소 큐/항목 결과·세션 정리, [CSlytics market.ts, a5c094b](https://github.com/Xpar65/cslytics-desktop/blob/a5c094bc44d12dc0bc99e84e6643fe8a2cc113a8/packages/adapters-steam/src/market.ts)(AGPL-3.0)의 접수/명확한 거절/불명 결과 분리, [node-steamcommunity market.js, fa8d897](https://github.com/DoctorMcKay/node-steamcommunity/blob/fa8d89759077152b0c38175f154e03d0eacd2d1e/components/market.js)(MIT)를 열람했다. 마지막 파일은 주로 gems/booster/market 앱 기능이며 범용 판매·반환 인과 계약의 근거로 사용하지 않았다. SSIM의 자동 승인/다계정·재시도 정책은 채택하지 않았고 AGPL 코드는 복사하지 않았다. 이번 변경은 기존 C# 서비스에 독립 구현했으며 새 외부 소스 도입은 없다.

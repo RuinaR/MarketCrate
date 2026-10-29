@@ -22,7 +22,7 @@ internal static class FifthStageUiTests
         test("KRW 실제 어댑터 합성 UI 검토/단가 편집/정책 차단",()=>
         {
             using var f=new Fixture();f.Login();f.Vm.LoadAsync().GetAwaiter().GetResult();f.Vm.Assets[0].Selected=true;f.Vm.Assets[0].Quantity=10;f.Vm.RefreshPricesAsync().GetAwaiter().GetResult();
-            ((TabControl)f.View.FindName("SteamPages")).SelectedIndex=1;render(f.View,1100,700,1,"stage5-inventory.png");f.Vm.BuildReview();render(f.View,1100,700,1,"stage5-review.png");Check(f.Vm.ReviewRows.Count==3);
+            f.Vm.WorkPage=1;render(f.View,1100,700,1,"stage5-inventory.png");f.Vm.BuildReview();render(f.View,1100,700,1,"stage5-review.png");Check(f.Vm.ReviewRows.Count==3);
             var editor=Find<TextBox>(f.View).First(x=>x.GetBindingExpression(TextBox.TextProperty)?.ParentBinding.Path.Path=="PriceText");editor.Text="116";editor.GetBindingExpression(TextBox.TextProperty)!.UpdateSource();Check(f.Vm.ReviewRows[0].Quote.SellerReceives==101);
             editor.Text="invalid";editor.GetBindingExpression(TextBox.TextProperty)!.UpdateSource();Check(!f.Vm.ReviewRows[0].Valid&&!f.Vm.Submit.CanExecute(null));render(f.View,1100,700,1.5,"stage5-invalid-price.png");
             f.Vm.CloseReview.Execute(null);f.Vm.TradeAccepted=true;Check(!f.Vm.EnableTrading.CanExecute(null));Check(f.Server.Sends==0);

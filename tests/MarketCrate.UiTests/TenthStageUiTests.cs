@@ -38,7 +38,7 @@ internal static class TenthStageUiTests
                 Check(!Find<TextBlock>(view).Any(x=>x.Text.Contains("마지막 파싱 관측")||x.Text.Contains("진단 작업 ID:")));
                 vm.BuildReview();render(view,1100,800,1.25,"stage10-review-terms.png");
                 Check(Find<TextBlock>(view).Any(x=>x.Text==PriceDisplay.ImmediateExplanation)&&vm.ReviewRows.All(x=>x.PriceBasis.Contains(PriceDisplay.Immediate)));
-                vm.CloseReview.Execute(null);((TabControl)view.FindName("SteamPages")).SelectedIndex=2;render(view,1100,700,1,"stage10-listings-independent.png");
+                vm.CloseReview.Execute(null);vm.WorkPage=2;render(view,1100,700,1,"stage10-listings-independent.png");
                 Check(Find<Button>(view).Any(x=>ReferenceEquals(x.Command,vm.LoadListings))&&Application.Current.Windows.Count==0&&PresentationSource.FromVisual(view)is null);
             }
             Directory.Delete(folder,true);

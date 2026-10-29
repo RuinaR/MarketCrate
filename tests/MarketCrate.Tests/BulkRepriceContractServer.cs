@@ -9,7 +9,10 @@ public sealed class BulkRepriceContractServer:IDisposable
     private readonly SteamContractServer common=new();private readonly List<Row> rows=[];
     public HashSet<string> Available{get;}=["101","102"];
     public int Sells,Cancels,TopQuantity=3;public bool CancelTimeout,ChangedReturn;
+    public List<string> RequestPaths{get;}=[];
     public TaskCompletionSource? BookStarted,BookRelease;
+    public TaskCompletionSource? SellStarted,SaleRelease;
+    public int PauseSaleNumber=1;
     public SteamContractServer.TestClock Clock=>common.Clock;
     public SteamFeeSchedule Schedule=>common.Schedule;
     public void External(int count){for(int i=0;i<count;i++)rows.Add(new((8000+i).ToString(),(3000+i).ToString(),100,SaleState.Listed));}
@@ -20,7 +23,7 @@ public sealed class BulkRepriceContractServer:IDisposable
         private readonly HttpMessageInvoker fallback=new(owner.common.Connection());
         protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,CancellationToken token)
         {
-            var path=request.RequestUri!.AbsolutePath;string body;
+            var path=request.RequestUri!.AbsolutePath;owner.RequestPaths.Add(path);string body;
             if(path=="/market/mylistings/render/")body=owner.Listings();
             else if(path.StartsWith("/inventory/"))body=JsonSerializer.Serialize(new{success=1,total_inventory_count=owner.Available.Count,assets=owner.Available.Select(id=>new{appid=730,contextid="2",assetid=id,classid="1",instanceid="0",amount="1"}),descriptions=new[]{new{appid=730,classid="1",instanceid="0",name="Synthetic stack",market_hash_name="Synthetic stack",marketable=1,tradable=1,market_fee="0.1"}}});
             else if(path=="/market/orderbook")
@@ -30,6 +33,7 @@ public sealed class BulkRepriceContractServer:IDisposable
                 var form=(await request.Content!.ReadAsStringAsync(token)).Split('&').Select(x=>x.Split('=',2)).ToDictionary(x=>x[0],x=>Uri.UnescapeDataString(x[1]));
                 if(form["amount"]!="1"||!owner.Available.Remove(form["assetid"]))throw new InvalidOperationException("Synthetic duplicate/invalid sale");
                 var id=(900+ ++owner.Sells).ToString();owner.rows.Add(new(id,form["assetid"],Money.FromWire(long.Parse(form["price"]),"KRW").Minor,SaleState.AwaitingSteamGuard));
+                if(owner.Sells==owner.PauseSaleNumber){owner.SellStarted?.TrySetResult();if(owner.SaleRelease is not null)await owner.SaleRelease.Task.WaitAsync(token);}
                 body=JsonSerializer.Serialize(new{success=true,needs_mobile_confirmation=true,listingid=id});
             }
             else if(path.StartsWith("/market/removelisting/"))

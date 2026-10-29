@@ -3,6 +3,8 @@ using MarketCrate.Core;
 using MarketCrate.Infrastructure.Steam;
 namespace MarketCrate.App.ViewModels;
 
+public sealed record SteamRelistOption(string Key,string Label);
+
 public sealed partial class SteamWorkspaceViewModel
 {
     private SteamRelistPlan? relistReview;
@@ -10,10 +12,20 @@ public sealed partial class SteamWorkspaceViewModel
     public string ReviewContextText{get=>reviewContextText;private set=>Set(ref reviewContextText,value);}
     public AsyncCommand CancelForNewReview{get;private set;}=null!;
     public AsyncCommand ReviewCancelledTargets{get;private set;}=null!;
+    public RangeObservableCollection<SteamRelistOption> PendingRelists{get;}=[];
+    private SteamRelistOption? selectedRelist;
+    public SteamRelistOption? SelectedRelist{get=>selectedRelist;set{if(Set(ref selectedRelist,value))ReviewCancelledTargets?.Refresh();}}
+    private void RefreshPendingRelists()
+    {
+        if(workspace is null||!Connected){PendingRelists.Clear();SelectedRelist=null;return;}
+        var previous=SelectedRelist?.Key;var commands=workspace.Store.Commands().Where(x=>x.Account==workspace.Authentication.SteamId).ToDictionary(x=>x.RequestKey);
+        PendingRelists.ReplaceAll(workspace.Store.RelistPlans(workspace.Authentication.SteamId!).Where(x=>x.SubmissionBatch is null).OrderByDescending(x=>x.CreatedAt).Select(x=>new SteamRelistOption(x.Key,$"{x.CreatedAt:MM-dd HH:mm} UTC · {x.Listings.Length}건 · 취소 접수 {x.Listings.Count(l=>commands.GetValueOrDefault(x.Key+":"+l.ListingId)?.Accepted==true)}/{x.Listings.Length}")));
+        SelectedRelist=PendingRelists.FirstOrDefault(x=>x.Key==previous)??PendingRelists.FirstOrDefault();
+    }
     private void InitializeAssistedRelist()
     {
         CancelForNewReview=new(CancelForNewReviewAsync,Error,()=>!Busy&&CanRead&&CanTrade&&ManagementOpen&&managementReprice&&management.Length>0&&management.All(x=>x.Listing.Quantity==1));
-        ReviewCancelledTargets=new(ReviewCancelledTargetsAsync,Error,()=>!Busy&&CanRead&&!AnyReview);
+        ReviewCancelledTargets=new(ReviewCancelledTargetsAsync,Error,()=>!Busy&&CanRead&&!AnyReview&&SelectedRelist is not null);
     }
     // Explicit cancellation approval. Never execute a sale from the previous listing approval.
     public Task CancelForNewReviewAsync()=>Run(async token=>
@@ -31,7 +43,8 @@ public sealed partial class SteamWorkspaceViewModel
     public Task ReviewCancelledTargetsAsync()=>Run(async token=>
     {
         RequireConnection();if(AnyReview)throw new SteamException(SteamFailure.Disabled);var account=workspace!.Authentication.SteamId!;
-        var plan=workspace.Store.RelistPlans(account).Where(x=>x.SubmissionBatch is null).OrderByDescending(x=>x.CreatedAt).FirstOrDefault();
+        var plans=workspace.Store.RelistPlans(account).Where(x=>x.SubmissionBatch is null).OrderByDescending(x=>x.CreatedAt).ToArray();
+        var plan=SelectedRelist is {} choice?plans.FirstOrDefault(x=>x.Key==choice.Key):plans.FirstOrDefault();
         if(plan is null){ListingPriceStatus="새 대상 검토를 기다리는 취소 계획이 없습니다.";return;}
         var current=await workspace.Orders.RefreshAsync(token);
         if(plan.Listings.Any(x=>current.Any(now=>now.ListingId==x.ListingId)||workspace.Store.ReadCommand(plan.Key+":"+x.ListingId) is not {Accepted:true,Kind:"cancel"} command||command.Account!=account))

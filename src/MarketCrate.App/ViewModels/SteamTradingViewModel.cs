@@ -5,7 +5,7 @@ public sealed partial class SteamWorkspaceViewModel
 {
     private string tradingConfirmation="";
     private string tradingPreparation="기본 OFF · 선택 게임의 읽기 계약·계정·수수료를 확인한 뒤 이 실행 세션에서만 활성화할 수 있습니다.";
-    public string TradingConfirmation {get=>tradingConfirmation;set{Set(ref tradingConfirmation,value);PrepareTrading?.Refresh();}}
+    public string TradingConfirmation {get=>tradingConfirmation;set{Set(ref tradingConfirmation,value);PrepareTrading?.Refresh();PrepareCancellation?.Refresh();}}
     public string TradingPreparation {get=>tradingPreparation;private set=>Set(ref tradingPreparation,value);}
     private string CaptureRepriceBook(SteamListing listing)
     {
@@ -15,7 +15,20 @@ public sealed partial class SteamWorkspaceViewModel
         return MarketCrate.Core.OrderbookFingerprint.Of(price);
     }
     public AsyncCommand PrepareTrading {get;private set;}=null!;
-    private void InitializeTrading()=>PrepareTrading=new(PrepareTradingAsync,Error,()=>!syntheticConnection&&!Busy&&!AnyReview&&CanRead&&TradeAccepted&&TradingConfirmation=="실제 거래");
+    public AsyncCommand PrepareCancellation{get;private set;}=null!;
+    private void InitializeTrading()
+    {
+        PrepareTrading=new(PrepareTradingAsync,Error,()=>!syntheticConnection&&!Busy&&!AnyReview&&CanRead&&TradeAccepted&&TradingConfirmation=="실제 거래");
+        PrepareCancellation=new(PrepareCancellationAsync,Error,()=>!syntheticConnection&&!Busy&&!AnyReview&&CanRead&&TradeAccepted&&TradingConfirmation=="실제 취소");
+    }
+    public Task PrepareCancellationAsync()=>Run(async token=>
+    {
+        RequireConnection();if(syntheticConnection||!TradeAccepted||TradingConfirmation!="실제 취소")throw new SteamException(SteamFailure.Disabled);
+        TradingConfirmation="";
+        try{await workspace!.EnableUserCancellationAsync(RiskAccepted&&CredentialsAccepted,TradeAccepted,token);TradingPreparation="취소 전용 활성 · 이 실행 세션 한정 · 새 판매등록·재가격은 비활성입니다. 선택 취소는 별도 전체 검토에서 승인하세요.";}
+        catch{TradingPreparation="취소 전용을 활성화하지 않았습니다. 인증된 판매목록·서버 제한을 확인하세요. 자동 재시도하지 않습니다.";throw;}
+        finally{Changed();}
+    });
     public Task PrepareTradingAsync()=>Run(async token=>
     {
         RequireConnection();

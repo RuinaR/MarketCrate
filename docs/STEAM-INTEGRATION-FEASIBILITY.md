@@ -1,5 +1,14 @@
 # Steam 연동 가능성 조사 — 2026-10-29 KST (13차)
 
+## 0.20 공개 구현과 제품 경로 재검토
+
+SSIM28a503f MarketService.ts의 실제 MassSellJob 단계/건수·deferred/failed 분리와 취소 경로를 재확인했다. SteamHelper/CSlytics 공개 화면도 직접 열람해 목록·선택 요약·가격 검토·전체 승인 구조를 반영했다. 소스 직접 복사/새 런타임·라이브러리 도입0, AGPL 코드 도입0, 기존 MIT 고지는 유지한다.
+
+node-steamcommunity fa8d897 components/users.js의 getUserInventoryContents는 more_items/last_assetid 재귀와 전체 count 전달을 사용한다. 공식 economy_v2.js는 total_inventory_count와 로드된 슬롯 수가 다를 수 있음을 설명하고, marketable 필터 등을 고려해 실제 표시 페이지 수를 보정한다. 따라서 total 숫자만으로 빈 응답·완전성을 임의 확정하거나 모든 경우 강제 동등성을 새로 요구하지 않았다. 기존 명시적 빈 응답/커서·중복/설명 매칭·페이지 제한을 유지한다.
+
+취소는 removelisting의 listing ID/세션 경로를 재사용하며 취소에 불필요한 fee/전체 inventory 의존을 취소 전용 모드에서 제거했다. 반환 근거가 없으면 AvailableBefore=-1·Unknown을 보존한다. 실제 서버의 읽기·수수료·스택·취소 반환·등록 성공은 이번에도 미검증이며, 다른 프로젝트 동작을 Valve 허가의 근거로 사용하지 않는다.
+
+
 ## 0.19.0 추가 — 외부 등록의 새 자산 재판매
 
 SteamMarketHelper의 취소→보관함 재조회→같은 상품의 새 자산 ID 선택 방식을 실제 서비스에 연결했다. 전체 취소 승인 후 서버 접수·목록 부재를 확인하고, 실제 보관함·가용 수량·수수료·공유 호가로 새 대상을 제안한다. 원래 아이템의 반환 확정은 아니며 다른 기존 보유분일 수 있음을 표시한다. 새 실제 자산 ID·수량·가격을 전체 검토해 판매등록 한 번 승인하면 기존 Coordinator가 배치 처리한다. 항목별 추가 판매 클릭은 없다. SQLite 취소 계획/새 배치 연결을 보존하고 불명 취소·원래 예약은 추측으로 해제하지 않는다. 최근 미제출 계획은 사용자 요청 시 재조회하며 자동 거래하지 않는다. 개별 수량1, 최대100등록/10상품만 지원한다.

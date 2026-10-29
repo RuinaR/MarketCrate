@@ -48,6 +48,19 @@ public sealed class SteamExperimentalWorkspace : IDisposable
         Executor = new(http, Authentication, store, Inventory, Prices, Orders, Policy); Batches = new(Executor, store);
     }
     // Explicit UI action, read-only preflight. No secret import, trade POST or persisted activation.
+    public async Task EnableUserCancellationAsync(bool unofficialRisk,bool sessionConsent,CancellationToken token)
+    {
+        Access.RevokeTrading();verifiedApps.Clear();
+        if(!unofficialRisk||!sessionConsent||!Authentication.Connected||Failure is not null)throw new SteamException(SteamFailure.Disabled);
+        var account=Authentication.SteamId!;var listings=await Orders.RefreshAsync(token);
+        token.ThrowIfCancellationRequested();
+        if(!Authentication.Connected||Authentication.SteamId!=account||Failure is not null)throw new SteamException(SteamFailure.Authentication);
+        if(!listings.Any(x=>x.State==SaleState.Listed))throw new SteamException(SteamFailure.Restricted);
+        Policy=new(true,"User-selected unofficial cancellation-only session; NOT Valve permission",UserInitiated:true){CancellationOnly=true};
+        Access.Acknowledge(true,true,true,true);Access.RestrictToCancellation();Access.BindTradingAccount(account);
+        SetGame(Inventory.AppId,Inventory.ContextId,Inventory.GameName);
+        DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Management,requirement:"B08",reason:"CancellationEnabled",count:listings.Length);
+    }
     public async Task EnableUserTradingAsync(int appId,string context,string game,bool unofficialRisk,bool sessionConsent,CancellationToken token)
     {
         Access.RevokeTrading();

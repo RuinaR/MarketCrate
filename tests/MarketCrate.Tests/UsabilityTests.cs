@@ -24,8 +24,17 @@ public static class UsabilityTests
             ("Accepted cancellation alone never submits newly found assets",NoAutomaticSale),
             ("Unknown external cancellation blocks new asset review without retransmission",ExternalUnknown),
             ("Insufficient returned or owned quantity cannot create a partial relist review",NewShortage),
-            ("Changed new-target book consumes no sales and cannot replay prior approval",NewBookChanged),
-            ("Relist journal snapshot cannot change account or source listings",PlanImmutable)};
+            ("Changed new-target book sends no sale and requires a fresh approval",NewBookChanged),
+            ("Relist journal snapshot cannot change account or source listings",PlanImmutable),
+            ("Real adapter progress is visible before batch completes without late callbacks",Progress),
+            ("Selected cancellation command reaches actual server reconciliation without resend",CancelUiPath),
+            ("Older pending relist plan remains selectable independently of newest plan",OlderPlan),
+            ("Relist batch association and initial journal commit atomically on write failure",AtomicRelist),
+            ("Cancellation-only activation needs no wallet fees or inventory and cannot sell",CancellationOnly),
+            ("Cancellation-only capability resets on logout and cannot upgrade cached executor",CancellationReset),
+            ("Logout during submission rejects late progress and preserves durable Unknown",ProgressLogout),
+            ("Evicting eight-game view cache never omits selected assets from batch targets",SelectionEviction),
+            ("Archive command cannot move a different account active journal",ArchiveOwnership)};
         int passed=0,failed=0;foreach(var(name,run)in tests)try{await run();passed++;Console.WriteLine("PASS "+name);}catch(Exception e){failed++;Console.WriteLine("FAIL "+name+": "+e);}return(passed,failed);
     }
     private static Task Default(){using var vm=new SteamWorkspaceViewModel();Check(vm.Games.Count==1&&vm.Game.AppId==753&&vm.Game.ContextId=="6"&&vm.Game.Name=="Steam 커뮤니티");return Task.CompletedTask;}
@@ -56,11 +65,51 @@ public static class UsabilityTests
     private static async Task NoAutomaticSale(){var log=new Trace();using var trace=DiagnosticHub.Use(log);using var f=new Fixture();await PrepareNewTargets(f);await f.Vm.ReviewCancelledTargetsAsync();Check(f.Vm.ReviewRows.Count==2&&f.Server.Sells==0&&f.Workspace!.Store.Commands().Where(x=>x.Kind=="cancel").All(x=>x.State==SaleState.Submitted));Check(log.Events.Any(x=>x.Reason=="NewAssetReview"&&x.Context.OperationId==f.Vm.LastOperationId)&&log.Events.Any(x=>x.Reason=="Prepared"&&x.JournalState=="Committed"));var json=System.Text.Json.JsonSerializer.Serialize(log.Events);Check(!json.Contains("76561198000000001")&&!json.Contains("Synthetic stack"));f.Vm.CloseReview.Execute(null);Check(!f.Vm.ReviewOpen&&f.Server.Sells==0);}
     private static async Task ExternalUnknown(){using var f=new Fixture();await f.Login();f.Server.External(2);f.Server.CancelTimeout=true;await f.Load();await f.Vm.PrepareListingRepriceAsync();f.Arm();await f.Vm.CancelForNewReviewAsync();await f.Vm.ReviewCancelledTargetsAsync();Check(f.Server.Cancels==1&&f.Server.Sells==0&&!f.Vm.ReviewOpen&&f.Vm.ListingPriceStatus.Contains("불명")&&f.Workspace!.Store.Commands().Single(x=>x.Kind=="cancel") is {Accepted:false,State:SaleState.Unknown});}
     private static async Task NewShortage(){using var f=new Fixture();await PrepareNewTargets(f);f.Server.Available.Clear();await f.Vm.ReviewCancelledTargetsAsync();Check(!f.Vm.ReviewOpen&&f.Vm.ListingPriceStatus.Contains("부족")&&f.Server.Sells==0);}
-    private static async Task NewBookChanged(){using var f=new Fixture();await PrepareNewTargets(f);await f.Vm.ReviewCancelledTargetsAsync();f.Server.TopQuantity=1;await f.Vm.SubmitAsync();Check(f.Server.Sells==0&&!f.Vm.ReviewOpen);await f.Vm.SubmitAsync();Check(f.Server.Sells==0&&f.Workspace!.Store.RelistPlans(f.Workspace.Authentication.SteamId!).Single().SubmissionBatch is not null);}
+    private static async Task NewBookChanged(){using var f=new Fixture();await PrepareNewTargets(f);await f.Vm.ReviewCancelledTargetsAsync();f.Server.TopQuantity=1;await f.Vm.SubmitAsync();Check(f.Server.Sells==0&&!f.Vm.ReviewOpen);await f.Vm.SubmitAsync();Check(f.Server.Sells==0&&f.Workspace!.Store.RelistPlans(f.Workspace.Authentication.SteamId!).Single().SubmissionBatch is null);await f.Vm.ReviewCancelledTargetsAsync();Check(f.Vm.ReviewOpen&&f.Server.Sells==0);await f.Vm.SubmitAsync();Check(f.Server.Sells==2);}
+    private static async Task Progress(){using var f=new Fixture();await PrepareNewTargets(f);await f.Vm.ReviewCancelledTargetsAsync();f.Server.PauseSaleNumber=2;f.Server.SellStarted=new(TaskCreationOptions.RunContinuationsAsynchronously);f.Server.SaleRelease=new(TaskCreationOptions.RunContinuationsAsynchronously);var submitting=f.Vm.SubmitAsync();await f.Server.SellStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));Check(f.Vm.Busy&&!f.Vm.ReviewOpen&&f.Vm.WorkPage==3&&f.Vm.Results.Count==2&&f.Vm.Results[0].State==SaleState.AwaitingSteamGuard&&f.Vm.Results[1].State==SaleState.Submitting&&f.Vm.BatchProgressText.Contains("모바일 대기 1"));f.Server.SaleRelease.SetResult();await submitting;Check(f.Vm.Results.All(x=>x.State==SaleState.AwaitingSteamGuard)&&f.Server.Sells==2);}
+    private static async Task CancelUiPath(){using var f=new Fixture();await f.Owned();await f.Load();f.Vm.ReviewCancel.Execute(null);await f.Confirm();f.Vm.SelectedRequest=f.Workspace!.Store.Commands().First(x=>x.Kind=="cancel").RequestKey;Check(f.Vm.RefreshSelectedRequest.CanExecute(null));await f.Vm.RefreshSelectedRequestAsync();Check(f.Server.Sells==2&&f.Server.Cancels==2&&f.Vm.Results.Any(x=>x.State==SaleState.Reconciled)&&f.Vm.Status.Contains("새 판매 요청은 보내지"));}
+    private static async Task OlderPlan(){using var f=new Fixture();await PrepareNewTargets(f);var first=f.Workspace!.Store.RelistPlans(f.Workspace.Authentication.SteamId!).Single();f.Workspace.Store.SaveRelistPlan(first with{Key=Guid.NewGuid().ToString("N"),CreatedAt=first.CreatedAt.AddSeconds(1)});await f.Vm.LoadListingsAsync();Check(f.Vm.PendingRelists.Count==2&&f.Vm.SelectedRelist?.Key==first.Key);f.Vm.SelectedRelist=f.Vm.PendingRelists.Single(x=>x.Key==first.Key);await f.Vm.ReviewCancelledTargetsAsync();Check(f.Vm.ReviewOpen&&f.Server.Cancels==2&&f.Server.Sells==0);}
+    private static async Task AtomicRelist()
+    {
+        using var f=new Fixture();await PrepareNewTargets(f);await f.Vm.ReviewCancelledTargetsAsync();var plan=f.Workspace!.Store.RelistPlans(f.Workspace.Authentication.SteamId!).Single();
+        var snapshot=new SaleBatchSnapshot(Guid.NewGuid(),plan.Account,DateTimeOffset.UtcNow,f.Vm.ReviewRows.Select((x,i)=>x.Snapshot(i)).ToImmutableArray());var record=new BatchRecord(1,snapshot,snapshot.Lines.Select(x=>new LineResult(x.LineId,SaleState.Ready,"synthetic pending")).ToImmutableArray());
+        f.Workspace.Store.StageRelistApproval(plan.Key,snapshot);using var db=new Microsoft.Data.Sqlite.SqliteConnection("Data Source="+Path.Combine(f.Root,"steam-state.sqlite")+";Pooling=False");db.Open();using var command=db.CreateCommand();command.CommandText="CREATE TRIGGER synthetic_relist_failure BEFORE INSERT ON state WHEN NEW.kind='relist' BEGIN SELECT RAISE(ABORT,'synthetic write failure'); END";command.ExecuteNonQuery();
+        try{await f.Workspace.Store.SaveAsync(record,default);throw new Exception("failed write accepted");}catch(Microsoft.Data.Sqlite.SqliteException){}
+        Check(await f.Workspace.Store.LoadAsync(default)is null&&f.Workspace.Store.RelistPlans(plan.Account).Single().SubmissionBatch is null&&f.Server.Sells==0);
+        command.CommandText="DROP TRIGGER synthetic_relist_failure";command.ExecuteNonQuery();await f.Workspace.Store.SaveAsync(record,default);Check((await f.Workspace.Store.LoadAsync(default))?.Snapshot.BatchId==snapshot.BatchId&&f.Workspace.Store.RelistPlans(plan.Account).Single().SubmissionBatch==snapshot.BatchId&&f.Server.Sells==0);
+    }
+    private static async Task CancellationOnly()
+    {
+        using var f=new Fixture(false);await f.Login();f.Server.External(1);await f.Vm.LoadListingsAsync();f.Vm.Game=f.Vm.Games.Single(x=>x.AppId==730);f.Vm.SelectAllListings.Execute(null);
+        f.Arm();var old=f.Workspace!.Executor;Check(old.CanExecute);f.Server.RequestPaths.Clear();f.Vm.TradingConfirmation="실제 취소";await f.Vm.PrepareCancellationAsync();
+        Check(f.Vm.CanCancel&&!f.Vm.CanTrade&&!old.CanExecute&&f.Workspace.Policy.CancellationOnly&&f.Workspace.Access.CancellationOnly);f.Vm.ReviewCancel.Execute(null);Check(f.Vm.ConfirmManagement.CanExecute(null));await f.Confirm();
+        Check(f.Server.Cancels==1&&f.Server.Sells==0&&!f.Server.RequestPaths.Any(x=>x=="/market/"||x.Contains("feestructure")||x.StartsWith("/inventory/"))&&f.Workspace.Store.Commands().Single(x=>x.Kind=="cancel").AvailableBefore==-1);
+    }
+    private static async Task CancellationReset()
+    {
+        using var f=new Fixture(false);await f.Login();f.Server.External(1);await f.Vm.LoadListingsAsync();f.Vm.TradeAccepted=true;f.Vm.TradingConfirmation="실제 취소";await f.Vm.PrepareCancellationAsync();Check(f.Vm.CanCancel);f.Vm.Logout.Execute(null);await f.Login();Check(!f.Vm.CanCancel&&!f.Vm.CanTrade&&!f.Workspace!.Access.Trading&&f.Server.Cancels==0&&f.Server.Sells==0);
+    }
+    private static async Task ProgressLogout()
+    {
+        using var f=new Fixture();await PrepareNewTargets(f);await f.Vm.ReviewCancelledTargetsAsync();f.Server.SellStarted=new(TaskCreationOptions.RunContinuationsAsynchronously);f.Server.SaleRelease=new(TaskCreationOptions.RunContinuationsAsynchronously);var task=f.Vm.SubmitAsync();await f.Server.SellStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));var operation=f.Vm.LastOperationId;await f.Vm.LoadListingsAsync();Check(operation==f.Vm.LastOperationId);f.Vm.Logout.Execute(null);await task;Check(!f.Vm.Connected&&f.Vm.Results.Count==0);await f.Login();Check(f.Server.Sells==1&&f.Workspace!.Store.Commands().Any(x=>x.Kind=="sell"&&x.State==SaleState.Unknown)&&!f.Vm.CanTrade);
+    }
+    private static Task SelectionEviction()
+    {
+        using var vm=new SteamWorkspaceViewModel();var original=vm.Game;var row=new SteamAssetRow(new(new(original.AppId,original.ContextId,"10001"),original.Name,"Synthetic selected","Synthetic selected",3,true,true,false),3,()=>{}){Selected=true,Quantity=2};vm.Assets.Add(row);
+        for(var i=0;i<10;i++){var scope=new SteamGameScope(1000+i,"2","Synthetic scope "+i);vm.Games.Add(scope);vm.Game=scope;vm.Assets.Add(new(new(new(scope.AppId,"2","20001"),scope.Name,"Unselected","Unselected",1,false,true,false),1,()=>{}));}
+        Check(vm.SelectionSummary.Contains("1종")&&vm.SelectionSummary.Contains("2개"));vm.Game=original;Check(vm.Assets.Count==0&&vm.SelectionSummary.Contains("2개"));vm.ClearSelection.Execute(null);Check(vm.SelectionSummary.Contains("0종"));return Task.CompletedTask;
+    }
+    private static async Task ArchiveOwnership()
+    {
+        using var f=new Fixture();await f.Login();var asset=(await f.Workspace!.Inventory.GetAsync(default)).First();var line=new SaleLineSnapshot("other",asset,1,"KRW",f.Server.Schedule.FromBuyer(115),DateTimeOffset.UtcNow);var snapshot=new SaleBatchSnapshot(Guid.NewGuid(),"76561198000000002",DateTimeOffset.UtcNow,[line]);await f.Workspace.Store.SaveAsync(new(1,snapshot,[new(line.LineId,SaleState.Ready,"unsent")]),default);
+        try{f.Workspace.Store.ArchiveCompleted(f.Workspace.Authentication.SteamId);throw new Exception("other account journal archived");}catch(SteamException error){Check(error.Code==SteamFailure.Restricted);}
+        Check((await f.Workspace.Store.LoadAsync(default))?.Snapshot.BatchId==snapshot.BatchId&&f.Server.Sells==0&&f.Server.Cancels==0);
+    }
     private static async Task PlanImmutable(){using var f=new Fixture();await PrepareNewTargets(f);var plan=f.Workspace!.Store.RelistPlans(f.Workspace.Authentication.SteamId!).Single();try{f.Workspace.Store.SaveRelistPlan(plan with{Account="76561198000000002"});throw new Exception("mutated plan accepted");}catch(InvalidDataException){}Check(f.Workspace.Store.RelistPlans(plan.Account).Single().SubmissionBatch is null);}
     private sealed class Fixture:IDisposable
     {
         private readonly string folder=Path.Combine(Directory.GetCurrentDirectory(),"runtime","usability-"+Guid.NewGuid().ToString("N"));
+        public string Root=>folder;
         public BulkRepriceContractServer Server{get;}=new();public SteamExperimentalWorkspace? Workspace;public SteamWorkspaceViewModel Vm{get;}
         public Fixture(bool synthetic=true){Vm=new(scope=>Workspace=new(folder,scope.AppId,scope.ContextId,scope.Name,new(true,"synthetic fixture only"),Server.Connection(),Server.Clock),synthetic){RiskAccepted=true,CredentialsAccepted=true};}
         public async Task Login(){await Vm.BeginAsync();Server.Clock.Advance();await Vm.CheckAsync();Check(Vm.Connected);}

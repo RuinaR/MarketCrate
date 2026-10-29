@@ -13,10 +13,10 @@ function Inspect([string]$Name) {
     }finally{$pe.Dispose();$stream.Dispose()}
 }
 $app=Inspect 'MarketCrate.App.dll';$core=Inspect 'MarketCrate.Core.dll';$infrastructure=Inspect 'MarketCrate.Infrastructure.dll'
-$forbidden=@('DemoDataProvider','MockListingExecutor','BlockedListingExecutor','SqliteDemoStore','FileBatchJournal','MockCancellation','MockListingManagement','MockOrderProjection','MockListing','IDemoJournal','IDemoDataStore','MainView','MainViewModel','ItemViewModel','ManagementRowViewModel','OfflineOwner','DevelopmentReadCheckView','ReadSelfCheckRow','SteamReadSelfCheck','SteamReadCheckPlan','SteamReadCheckResult','BulkRepriceContractServer','UsabilityTests','UsabilityUiTests')
+$forbidden=@('DemoDataProvider','MockListingExecutor','BlockedListingExecutor','SqliteDemoStore','FileBatchJournal','MockCancellation','MockListingManagement','MockOrderProjection','MockListing','IDemoJournal','IDemoDataStore','MainView','MainViewModel','ItemViewModel','ManagementRowViewModel','OfflineOwner','DevelopmentReadCheckView','ReadSelfCheckRow','SteamReadSelfCheck','SteamReadCheckPlan','SteamReadCheckResult','BulkRepriceContractServer','UsabilityTests','UsabilityUiTests','ProductAuditUiTests')
 foreach($name in $forbidden){if($name-in@($app.Types+$core.Types+$infrastructure.Types)){throw "Development implementation leaked: $name"}}
 if($core.MockRetry){throw 'Mock-only retry behavior leaked'}
-foreach($name in @('ProductionShellView','ProductionShellViewModel','SteamWorkspaceViewModel','DiagnosticsViewModel','BusyIndicator')){if($name-notin$app.Types){throw "Production UI missing: $name"}}
+foreach($name in @('ProductionShellView','ProductionShellViewModel','SteamWorkspaceViewModel','DiagnosticsViewModel','BusyIndicator','SteamRequestOption','SteamRelistOption','BatchUiProgress')){if($name-notin$app.Types){throw "Production UI missing: $name"}}
 if('developmentreadcheckview.baml'-in$app.Resources-or'mainview.baml'-in$app.Resources-or'productionshellview.baml'-notin$app.Resources){throw 'Production/development WPF resource mismatch'}
 if('SteamRelistPlan'-notin$infrastructure.Types-or'FeeContractResolver'-notin$infrastructure.Types-or'SteamAuthStore'-notin$infrastructure.Types-or'SteamListingExecutor'-notin$infrastructure.Types-or'UserPreferencesStore'-notin$infrastructure.Types){throw 'Actual services missing'}
 Write-Output 'PASS production metadata: no Demo/Mock implementations, offline owner, legacy/self-check UI/BAML or Mock retry; actual Steam shell/services retained. Binaries NOT executed.'

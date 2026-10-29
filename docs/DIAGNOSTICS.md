@@ -1,5 +1,12 @@
 # 진단 시스템 (10차, 2026-10-28 KST)
 
+## 0.20 연결 보완
+
+UI Run은 Busy 중 거절된 호출로 진행 중 OperationId를 덮어쓰지 않는다. 실제 Coordinator의 durable Submitting/개별 결과를 BatchUiProgress로 표시하며 로그아웃·계정 불일치의 늦은 진행 결과는 폐기한다. RefreshSelectedRequestAsync→EvidenceChecked(RecoverOnly)로 취소/등록 서버 대조를 명시적으로 연결한다. 취소 전용 활성화는 FinalValidation/CancellationEnabled이며 계정/상품/쿠키를 이유 문자열로 넣지 않는다.
+
+재등록은 Prepared/Committed→새 자산 검토→첫 배치 기록과 같은 트랜잭션의 SubmissionStarted/Committed로 이어진다. SQLite trigger 오류 주입에서 한쪽만 저장되지 않음을 검사한다. OperationId/BatchId/항목 키는 기존 구조를 사용한다. JSONL은 저널의 대체가 아니며 새로운 개인정보/원본 HTTP/인증정보를 수집하지 않는다. 사용자 화면은 요청 키 대신 작업 종류·품목·상태·시각을 보여 주고 내부 키는 선택 값/진단에 보존한다.
+
+
 ## 0.19.0 추가 — 외부 등록의 새 자산 재판매
 
 SteamMarketHelper의 취소→보관함 재조회→같은 상품의 새 자산 ID 선택 방식을 실제 서비스에 연결했다. 전체 취소 승인 후 서버 접수·목록 부재를 확인하고, 실제 보관함·가용 수량·수수료·공유 호가로 새 대상을 제안한다. 원래 아이템의 반환 확정은 아니며 다른 기존 보유분일 수 있음을 표시한다. 새 실제 자산 ID·수량·가격을 전체 검토해 판매등록 한 번 승인하면 기존 Coordinator가 배치 처리한다. 항목별 추가 판매 클릭은 없다. SQLite 취소 계획/새 배치 연결을 보존하고 불명 취소·원래 예약은 추측으로 해제하지 않는다. 최근 미제출 계획은 사용자 요청 시 재조회하며 자동 거래하지 않는다. 개별 수량1, 최대100등록/10상품만 지원한다.

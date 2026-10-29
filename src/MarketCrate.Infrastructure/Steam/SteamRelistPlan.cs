@@ -9,10 +9,24 @@ public sealed record SteamRelistPlan(string Key,string Account,DateTimeOffset Cr
 
 public sealed partial class SteamStateStore
 {
+    private (string Key,SaleBatchSnapshot Snapshot)? relistApproval;
+    // Memory-only until the coordinator's first durable batch write. A rejected preflight consumes no plan.
+    public void StageRelistApproval(string key,SaleBatchSnapshot snapshot)
+    {
+        var plan=Read<SteamRelistPlan>("relist",key)??throw new InvalidDataException("RelistPlanMissing");
+        ValidateRelistPlan(plan);BatchValidation.Validate(snapshot,DateTimeOffset.UtcNow);
+        var expected=plan.Listings.GroupBy(x=>(x.Asset.AppId,x.Asset.ContextId,x.HashName)).ToDictionary(x=>x.Key,x=>x.Sum(r=>r.Quantity));
+        var actual=snapshot.Lines.GroupBy(x=>(x.Asset.Key.AppId,x.Asset.Key.ContextId,x.Asset.MarketHashName)).ToDictionary(x=>x.Key,x=>x.Sum(r=>r.Quantity));
+        if(plan.SubmissionBatch is not null||plan.Account!=snapshot.AccountReference||expected.Count!=actual.Count||expected.Any(x=>!actual.TryGetValue(x.Key,out var count)||count!=x.Value)||snapshot.Lines.Any(x=>x.Asset.Stackable||x.Quantity!=1))throw new InvalidDataException("RelistApprovalMismatch");
+        if(plan.Listings.Any(x=>ReadCommand(plan.Key+":"+x.ListingId) is not {Kind:"cancel",Accepted:true} command||command.Account!=plan.Account))throw new InvalidDataException("RelistCancellationUnconfirmed");
+        relistApproval=(key,snapshot);
+    }
+    public void ClearRelistApproval(Guid batchId){if(relistApproval?.Snapshot.BatchId==batchId)relistApproval=null;}
     public void SaveRelistPlan(SteamRelistPlan plan)
     {
         ValidateRelistPlan(plan);
         var previous=Read<SteamRelistPlan>("relist",plan.Key);
+        if(plan.SubmissionBatch is not null&&previous?.SubmissionBatch!=plan.SubmissionBatch)throw new InvalidDataException("RelistBindingRequiresBatchJournal");
         if(previous is not null&&(previous.Account!=plan.Account||previous.CreatedAt!=plan.CreatedAt||!previous.Listings.SequenceEqual(plan.Listings)||
            previous.SubmissionBatch is not null&&previous.SubmissionBatch!=plan.SubmissionBatch))throw new InvalidDataException("RelistPlanImmutable");
         Save("relist",plan.Key,plan);

@@ -12,14 +12,16 @@ public sealed class SteamAccess
     public bool ResearchRiskAccepted { get; private set; }
     public bool AuthenticatedReads { get; private set; }
     public bool Trading { get; private set; }
+    public bool CancellationOnly{get;private set;}
+    internal void RestrictToCancellation()=>CancellationOnly=true;
     internal string? TradingAccount { get; private set; }
     internal void BindTradingAccount(string account) => TradingAccount = account;
-    internal void RevokeTrading() { Trading=false; TradingAccount=null; }
+    internal void RevokeTrading() { Trading=false; TradingAccount=null; CancellationOnly=false; }
     public void Acknowledge(bool unofficialAutomationRisk, bool credentialRisk, bool reads, bool trading)
     {
         if (!unofficialAutomationRisk || !credentialRisk) throw new InvalidOperationException("SteamRiskAcknowledgementRequired");
         ResearchRiskAccepted = true; AuthenticatedReads = reads; Trading = reads && trading;
-        if(!Trading)TradingAccount=null;
+        if(!Trading){TradingAccount=null;CancellationOnly=false;}
     }
     public void Revoke() { ResearchRiskAccepted = AuthenticatedReads = false; RevokeTrading(); }
     public override string ToString() => "SteamAccess (session-only)";
@@ -29,6 +31,7 @@ public enum SteamFailure { Disabled, Authentication, Forbidden, RateLimited, Cha
 public sealed record SteamTradingPolicy(bool Enabled, string EvidenceReference, bool StackAmountsSupported = false,bool MedianPriceContractSupported = false, bool UserInitiated = false)
 {
     public System.Collections.Immutable.ImmutableArray<int> VerifiedApps {get;init;}=[];
+    public bool CancellationOnly{get;init;}
     public static SteamTradingPolicy Blocked { get; } = new(false, "Valve permission not established");
 #if MARKETCRATE_DEMO
     internal static SteamTradingPolicy ContractTest { get; } = new(true, "synthetic contract only", true);
