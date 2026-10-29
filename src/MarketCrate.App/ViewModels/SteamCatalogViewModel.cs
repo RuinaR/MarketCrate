@@ -20,7 +20,7 @@ public sealed partial class SteamWorkspaceViewModel
     private readonly List<InventoryScope> hiddenSuggestions=[];
     private readonly bool catalogTestDefaults=false;
     private static bool OldSuggestion(InventoryScope x)=>x.ContextId=="2"&&(x.AppId==730&&x.Name=="Counter-Strike 2"||x.AppId==570&&x.Name=="Dota 2"||x.AppId==440&&x.Name=="Team Fortress 2");
-    private static string CatalogName(int appId,string fallback)=>appId switch{753=>"Steam 커뮤니티",730=>"Counter-Strike 2",570=>"Dota 2",440=>"Team Fortress 2",_=>fallback};
+    private static string CatalogName(int appId,string fallback)=>appId switch{753=>"Steam 커뮤니티",730=>"Counter-Strike 2",570=>"Dota 2",440=>"Team Fortress 2",3678970=>"TBH: Task Bar Hero",_=>fallback};
     public string CatalogNotice=>"보관함/판매목록에서 확인되거나 직접 추가한 경로입니다. 게임 구매·보유 여부를 뜻하지 않습니다."+(hiddenSuggestions.Count>0?$" 이전 미확인 추천 {hiddenSuggestions.Count}개는 숨겼으며 저장 자료는 보존했습니다. 필요하면 직접 추가하세요.":"");
     private string appInput="",contextInput="",nameInput="";
     public string AppInput{get=>appInput;set=>Set(ref appInput,value);}
@@ -64,6 +64,11 @@ public sealed partial class SteamWorkspaceViewModel
     private void SaveCatalog()=>workspace!.Store.SaveCatalog(workspace.Authentication.SteamId!,Games.Select(x=>new InventoryScope(x.AppId,x.ContextId,x.Name){Pinned=true}).Concat(hiddenSuggestions).DistinctBy(x=>(x.AppId,x.ContextId)).ToArray());
     private void RestoreCatalog()
     {
+        if(!catalogTestDefaults)
+        {
+            try{workspace!.Store.AddRequestedTbhOnce(workspace.Authentication.SteamId!,Games.Select(x=>new InventoryScope(x.AppId,x.ContextId,x.Name){Pinned=true}).ToArray());}
+            catch(Exception error)when(error is System.IO.IOException or Microsoft.Data.Sqlite.SqliteException){DiagnosticHub.Emit(DiagnosticEvent.GameCatalog,DiagnosticArea.Storage,DiagnosticOutcome.Failed,LogLevel.Warning,DiagnosticError.Storage,exception:error,requirement:"C02");}
+        }
         var scopes=workspace!.Store.ReadCatalog(workspace.Authentication.SteamId!);
         if(scopes.Count>0){Games.Clear();hiddenSuggestions.Clear();foreach(var scope in scopes){if(!catalogTestDefaults&&!scope.Pinned&&OldSuggestion(scope)){hiddenSuggestions.Add(scope);continue;}Games.Add(new(scope.AppId,scope.ContextId,CatalogName(scope.AppId,scope.Name)));}if(Games.Count==0)Games.Add(new(753,"6","Steam 커뮤니티"));game=Games[0];Raise(nameof(Game));Raise(nameof(CatalogNotice));}
         DiagnosticHub.Emit(DiagnosticEvent.GameCatalog,DiagnosticArea.Data,count:Games.Count,requirement:"C02",reason:"Loaded");

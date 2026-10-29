@@ -49,6 +49,13 @@ internal static class ProductAuditUiTests
             using var vm=new SteamWorkspaceViewModel();vm.WorkPage=1;var rows=Enumerable.Range(1,10000).Select(i=>new SteamAssetRow(new(new(753,"6",i.ToString()),"Steam 커뮤니티","Synthetic item "+i,"Synthetic item",3,true,true,false),3,()=>{})).ToArray();rows[0].Selected=true;rows[0].Quantity=2;vm.Assets.ReplaceAll(rows);vm.VisibleAssets.ReplaceAll(rows);vm.GridMode=true;
             var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,800,1.25,"audit20-inventory-cards.png");var panel=Find<VirtualizingTilePanel>(view).Single();Check(panel.RealizedCount is >0 and <64,"real inventory tile virtualization lost");panel.SetVerticalOffset(panel.ExtentHeight);render(view,1380,900,2,"audit20-inventory-cards-end.png");Check(panel.RealizedCount<64,"end realization unbounded");vm.GridMode=false;render(view,1100,800,1,"audit20-inventory-list.png");Check(rows[0].Selected&&rows[0].Quantity==2,"view switch changed selection");
         });
+        test("보존 작업이 없으면 빈 선택 상자를 숨기고 TBH 표시를 명확히 함",()=>
+        {
+            using var vm=new SteamWorkspaceViewModel();vm.WorkPage=2;var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,780,1,"fee21-empty-listings.png");
+            var combo=Find<ComboBox>(view).Single(x=>ReferenceEquals(x.ItemsSource,vm.PendingRelists));var section=(Grid)combo.Parent;Check(!vm.HasPendingRelists&&section.Visibility==Visibility.Collapsed,"empty plan picker visible");
+            var option=new SteamRelistOption("synthetic-only","합성 취소 작업 1건");vm.PendingRelists.Add(option);vm.SelectedRelist=option;render(view,1100,780,1.25,"fee21-plan-picker.png");Check(section.Visibility==Visibility.Visible,"real pending plan picker hidden");vm.PendingRelists.Clear();render(view,1100,780,1,"fee21-plan-cleared.png");Check(section.Visibility==Visibility.Collapsed,"empty picker residue");
+            var tbh=new SteamGameScope(3678970,"2","TBH: Task Bar Hero");vm.Games.Add(tbh);vm.Game=tbh;vm.WorkPage=1;render(view,1100,780,1.25,"fee21-tbh.png");Check(Find<TextBlock>(view).Any(x=>x.Text=="TBH: Task Bar Hero")&&tbh.State==InventoryScopeState.NotQueried,"TBH placeholder claimed ownership or not visible");
+        });
     }
     private static IEnumerable<T> Find<T>(DependencyObject root)where T:DependencyObject{for(var i=0;i<VisualTreeHelper.GetChildrenCount(root);i++){var child=VisualTreeHelper.GetChild(root,i);if(child is T value)yield return value;foreach(var nested in Find<T>(child))yield return nested;}}
     private static void Check(bool value,string reason){if(!value)throw new Exception(reason);}

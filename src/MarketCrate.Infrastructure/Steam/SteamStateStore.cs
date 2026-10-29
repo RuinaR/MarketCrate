@@ -63,6 +63,16 @@ public sealed partial class SteamStateStore : IBatchJournal, IDisposable
         if(account.Length!=17||account.Any(c=>!char.IsAsciiDigit(c))||scopes.Count>100||scopes.Select(x=>(x.AppId,x.ContextId)).Distinct().Count()!=scopes.Count)throw new ArgumentException("CatalogInvalid");foreach(var scope in scopes)scope.Validate();
         Save("catalog",account,scopes);DiagnosticHub.Emit(DiagnosticEvent.GameCatalog,DiagnosticArea.Storage,count:scopes.Count,journal:"Committed",requirement:"C02");
     }
+    public void AddRequestedTbhOnce(string account,IReadOnlyList<InventoryScope> defaults)
+    {
+        var scopes=ReadCatalog(account).ToList();var marker=account+":tbh-v1";
+        if(Read<bool>("catalog-request",marker))return;
+        if(scopes.Count==0)scopes.AddRange(defaults);
+        if(!scopes.Any(x=>x.AppId==3678970&&x.ContextId=="2"))scopes.Add(new(3678970,"2","TBH: Task Bar Hero"){Pinned=true});
+        if(scopes.Count>100)return;foreach(var scope in scopes)scope.Validate();
+        using var transaction=StorageDiagnostics.Begin(connection);Upsert("catalog",account,scopes,transaction);Upsert("catalog-request",marker,true,transaction);StorageDiagnostics.Commit(transaction);
+        DiagnosticHub.Emit(DiagnosticEvent.GameCatalog,DiagnosticArea.Storage,count:scopes.Count,journal:"Committed",reason:"UserRequested",requirement:"C02");
+    }
     public SteamCommandRecord? ReadCommand(string requestKey)
     {
         var record = Read<SteamCommandRecord>("command", requestKey);

@@ -388,3 +388,8 @@ ignored 증거 runtime/stage14-final-verify.txt, runtime/stage14-ui-final.txt, r
 11차 최종 회귀: **기능177/177 PASS · 비표시 WPF39/39 PASS · 배포 파일 계약14/14 PASS · FAIL0 · Debug 경고0/오류0**. 기존172/33/14 전부 유지. `scripts/Verify.ps1`, ignored `runtime/stage11-verify.txt` 근거. 실제 서버/물리입력/Popup/설치·서명 미실행.
 
 사용자 최소 재확인: (1) 새 ZIP 버전·커밋 확인 후 Steam 탭에서 명시적 QR 시작으로 QR 표시 여부만 확인(실거래 금지), 실패하면 표시된 단계와 검토한 진단ZIP 확인. QR 원문은 공유하지 않는다. (2) 진단 탭/최근 오류 체크를 클릭한 뒤 포인터를 밖으로 이동: 선택 밑줄·체크 표시만 유지되는지 확인. (3) Tab/Shift+Tab의 점선 포커스, 빠른 탭 전환, 비활성→활성, 드롭다운 열기·닫기를 직접 확인. Codex는 이 작업을 실행하지 않았다.
+
+
+## 0.20.1 후속 보완 (2026-10-29 KST)
+
+기능324/324·비표시WPF66/66·배포계약19/19 PASS, 경고/오류0. FeeModeTests 신규8개: 소유 vanity/canonical 한 번 이동, 소유 표시 누락/거짓/중복·타 계정·외부·임의 쿼리·로그인/보안·두 번째 이동 거절, 403/429 중단/추가 전송0, ModeMissing에서 구형 추측 없음, 인증/독립 조회 보존. UsabilityTests: TBH 카탈로그 추가→제거→재로그인 미재추가, 자동 보관함 요청0. ProductAuditUiTests: 빈 계획 Collapsed→계획 존재 Visible→제거 Collapsed, TBH 미조회 표시. 자체 이미지 직접 검토. 실제 수수료 해결/TBH context2/물리입력·Popup·모니터DPI NOT VERIFIED. 최초75개 판정47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED 유지.

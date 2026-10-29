@@ -8,6 +8,7 @@ public sealed partial class SteamHttp
     private async Task<HttpResponseMessage> SendWalletHeadersAsync(HttpRequestMessage request,CancellationToken token,bool wallet)
     {
         var response=await client.SendAsync(request,HttpCompletionOption.ResponseHeadersRead,token);
+        if(wallet&&request.Method==HttpMethod.Get&&IsFeeContext(request.RequestUri!))return await SendFeeContextHeadersAsync(request,response,token);
         if(!wallet||request.Method!=HttpMethod.Get||request.RequestUri!.AbsolutePath!="/market/")return response;
         var current=request.RequestUri!;var canonical=false;Uri? eligibilityReturn=null;var returned=false;var hop=0;
         try

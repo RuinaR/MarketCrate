@@ -25,7 +25,11 @@ public sealed partial class SteamWorkspaceViewModel
         if(groups.Length>10){ListingPriceStatus="한 번에 최대10상품의 시세만 조회합니다. 선택 범위를 줄이세요.";return;}
         var schedules=new Dictionary<int,SteamFeeSchedule>();var books=new Dictionary<(int,string),PriceSnapshot>();
         foreach(var app in rows.Select(x=>x.Listing.Asset.AppId).Distinct())
-        {OperationLabel="재등록 수수료 확인 중";schedules[app]=await workspace!.FeesAsync(app,token);token.ThrowIfCancellationRequested();}
+        {
+            OperationLabel="재등록 수수료 확인 중";FeesRead.Update(SteamReadState.Loading);
+            try{schedules[app]=await workspace!.FeesAsync(app,token);token.ThrowIfCancellationRequested();FeesRead.Update(SteamReadState.Ready);}
+            catch(Exception error){ReadFailed(FeesRead,error);ListingPriceStatus="판매 수수료 확인 실패 · 계정 연결의 조회 상태와 문제 해결을 확인하세요. 취소·등록 요청은 보내지 않았습니다.";throw;}
+        }
         foreach(var group in groups)
         {
             OperationLabel=$"재등록 호가 조회 {books.Count+1}/{groups.Length}";

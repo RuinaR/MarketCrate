@@ -247,3 +247,8 @@ ZIP은 `Logs/exports/marketcrate-diagnostics-<review-id>.zip`. 임시 파일을 
 ```
 
 위는 필드 설명용 부분 예시이며 실제 JSON에는 UTC/버전/Session 등 스키마 필드도 포함된다. 예외 없는 테스트 통과가 아니라 예상 상태/전송 횟수/저널/연결 ID/진단 이벤트/민감 문자열 부재를 함께 검증했다. 상세 결과와 한계는 QA-MATRIX / REQUIREMENTS-TRACEABILITY 참고.
+
+
+## 0.20.1 후속 보완 (2026-10-29 KST)
+
+FeeContext ReadContract/HttpRequest는 기존 OperationId에 FeeContextVanityRedirect, FeeContextCanonicalRedirect, FeeContextOtherProfile, FeeContextOtherRedirect와 이동 횟수를 연결한다. URL/vanity/계정 ID/HTML/쿠키는 저장하지 않는다. vanity 소유 표시 누락·거짓·중복은 OwnerPageMissing, 현재 인증 계정 일치도 별도 확인. 403/429는 기존 전역 중단 유지. 첨부0.20.0 작업87ff3254-3ccf-4185-a35b-2f427b0d0cad는 Wallet200→ModeMissing→FeeContext302/OtherRedirect이며 Location은 없어 원인 미확정. 수수료 API 실패/CAPTCHA 증거로 분류하지 않는다. 실패 시 수수료 조회 상태와 판매가격 검토 안내에 반영한다.

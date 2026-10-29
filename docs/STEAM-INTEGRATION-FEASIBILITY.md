@@ -352,3 +352,8 @@ CSlytics 사이트가 연결한 실제 저장소 [Xpar65/cslytics-desktop](https
 ## 12차 로그인·조회 상태 정정
 
 기존 코드가 일반 read schema failure를 계정 인증 실패로 보여주던 문제를 수정했다. 이는 실서버 계약이 검증됐다는 의미가 아니다. 인증 결과/finalize/Community transfer 후 메모리 세션 존재와 HTTP 안전 latch를 분리하고,401은 인증 만료,403/429/CAPTCHA는 요청 중단으로 유지한다. 단순 GET 통신·파싱 실패 후에는 사용자 시작의 독립 읽기만 가능하다. 실제 QR/보관함/fee/지갑/스택·취소/판매/Guard를 이번에 실행하지 않았고 READ_ONLY_READY/LIVE_READY를 부여하지 않는다. IntegrationBlocked·비공식 자동화 제재 위험은 그대로다.
+
+
+## 0.20.1 후속 보완 (2026-10-29 KST)
+
+FeeContext는 현재 계정 /profiles/.../inventory/ 요청의 동일 Steam canonical/vanity 이동을 한 번만 허용한다. vanity 페이지 g_bViewingOwnProfile=true와 g_steamID 현재 계정 일치 필요. 공개 HTML에서 변수 존재는 확인했으나 실제 인증 소유 페이지의 이동 목적지·fee props는 미검증. 구형 지갑 필드만으로 모드를 정하거나 신형 API 실패를 구형 성공으로 대체하지 않는다. 첨부 진단은 Wallet200→ModeMissing→FeeContext302/OtherRedirect, 목적지 미수집으로 원인 미확정. REAL_FEE_VERIFIED/LIVE_SELL_VERIFIED/RELEASE_READY 미부여. TBH 공식 App3678970, context2는 변경 가능한 조회 후보이며 게임 수수료/스택 계약 증거가 아니다. 비공식 자동화 제재 위험 유지.

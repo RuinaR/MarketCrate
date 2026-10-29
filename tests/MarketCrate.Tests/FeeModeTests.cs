@@ -28,7 +28,15 @@ public static class FeeModeTests
             ("Session identity mismatch rejects sell-context evidence without requesting fee API",Owner),
             ("Current fee resolution diagnostic has operation ID and no source payload",Diagnostics),
             ("Three independent official price cases compare all four amounts without enabling trading",Comparison),
-            ("Wallet KRW observation and direct refresh survive fee HTML failure without retrying API",WalletIndependent)
+            ("Wallet KRW observation and direct refresh survive fee HTML failure without retrying API",WalletIndependent),
+            ("Owner vanity canonical fee-context redirect resolves without API or private URL logs",Vanity),
+            ("Same-account profile slash canonicalization preserves fee contract",Canonical),
+            ("Vanity context requires unique server own-profile marker",VanityOwner),
+            ("Fee-context redirect target whitelist rejects unrelated profiles and sensitive routes",RedirectKinds),
+            ("Fee-context redirects are bounded to exactly one hop",RedirectLimit),
+            ("Canonical context respects 403 and 429 without retry",RedirectRestricted),
+            ("Observed Market success and unsupported profile 302 remain independent of authentication",ObservedRedirect),
+            ("Canonical success without fee mode still cannot guess legacy",RedirectMissing)
         };
         int passed=0,failed=0;foreach(var(name,run)in tests)try{await run();passed++;Console.WriteLine("PASS "+name);}catch(Exception e){failed++;Console.WriteLine("FAIL "+name+": "+e);}return(passed,failed);
     }
@@ -47,6 +55,23 @@ public static class FeeModeTests
     private static async Task WalletIndependent(){using var f=new ThirteenthStageTests.Fixture();await f.Login();f.Route=p=>p=="/market/"?Response(Page(flag:"true")):p.Contains("ajaxfee")?Response("<div id='market_home'>private</div>"):null;await f.Vm.LoadFeesAsync();Check(f.Vm.Connected&&f.Vm.CurrencyText.Contains("KRW")&&f.Vm.LoadWallet.CanExecute(null)&&!f.Vm.LoadFees.CanExecute(null));await f.Vm.LoadWalletAsync();Check(f.Vm.WalletRead.State==MarketCrate.App.ViewModels.SteamReadState.Ready&&f.Vm.FeesRead.State!=MarketCrate.App.ViewModels.SteamReadState.Ready&&f.Reads.Count(x=>x.Path.Contains("ajaxfee"))==1&&!f.Vm.CanTrade);}
     private sealed class Capture:IDiagnosticLog{public Guid SessionId{get;}=Guid.NewGuid();public List<DiagnosticRecord> Events{get;}=[];public void Write(DiagnosticRecord value)=>Events.Add(value);}
     private static HttpResponseMessage Response(string body)=>new(HttpStatusCode.OK){Content=new StringContent(body)};
+    private const string OwnerPath="/id/synthetic-private-alias/inventory/";
+    private static string WalletOnly=>"<script>g_bLoggedIn=true;g_rgWalletInfo="+Wallet+";</script>";
+    private static HttpResponseMessage Redirect(string target){var response=new HttpResponseMessage(HttpStatusCode.Found);response.Headers.Location=new Uri(target,UriKind.RelativeOrAbsolute);return response;}
+    private static async Task Vanity()
+    {
+        var log=new Capture();using var use=DiagnosticHub.Use(log);using var op=DiagnosticHub.Operation(DiagnosticEvent.FeeValidated,DiagnosticArea.Pricing,"D10");using var f=new ThirteenthStageTests.Fixture();await f.Login();
+        f.Route=p=>p=="/market/"?Response(WalletOnly):p.StartsWith("/profiles/")?Redirect(OwnerPath):p==OwnerPath?Response("<script>var g_bViewingOwnProfile = true;</script>"+Page()):null;
+        var schedule=await f.Workspace!.FeesAsync(730);Check(schedule.Currency=="KRW"&&f.Reads.Count(x=>x.Path==OwnerPath)==1&&!f.Reads.Any(x=>x.Path.Contains("ajaxfee"))&&f.Server.Sends==0&&f.Server.Cancels==0);
+        Check(log.Events.Any(x=>x.Reason=="FeeContextVanityRedirect"&&x.Context.OperationId!=Guid.Empty));var text=JsonSerializer.Serialize(log.Events);Check(!text.Contains("synthetic-private-alias")&&!text.Contains("76561198000000001")&&!text.Contains("wallet_fee_percent"));
+    }
+    private static async Task Canonical(){using var f=new ThirteenthStageTests.Fixture();await f.Login();f.Route=p=>p=="/market/"?Response(WalletOnly):p.EndsWith("/inventory/")?Redirect("/profiles/76561198000000001/inventory"):p.EndsWith("/inventory")?Response(Page()):null;Check((await f.Workspace!.FeesAsync(730)).Currency=="KRW"&&f.Reads.Count==3);}
+    private static async Task VanityOwner(){foreach(var marker in new[]{"","<script>g_bViewingOwnProfile=false;</script>","<script>g_bViewingOwnProfile=true;g_bViewingOwnProfile=false;</script>"}){using var f=new ThirteenthStageTests.Fixture();await f.Login();f.Route=p=>p=="/market/"?Response(WalletOnly):p.StartsWith("/profiles/")?Redirect(OwnerPath):p==OwnerPath?Response(marker+Page()):null;Check((await Fail(()=>f.Workspace!.FeesAsync(730))).Code==SteamFailure.Authorization&&f.Workspace!.FeatureFailure("FeeContext")==SteamFailure.Authorization&&!f.Reads.Any(x=>x.Path.Contains("ajaxfee")));}}
+    private static Task RedirectKinds()=>Sync(()=>{var source=new Uri("https://steamcommunity.com/profiles/76561198000000001/inventory/");foreach(var target in new[]{"http://steamcommunity.com/id/x/inventory/","https://evil.invalid/id/x/inventory/","https://steamcommunity.com/profiles/76561198000000002/inventory/","https://steamcommunity.com/id/x/inventory/?token=private","https://steamcommunity.com/login/","https://steamcommunity.com/captcha/","https://steamcommunity.com/id/x/inventory/#private"})Check(SteamHttp.FeeContextRedirectKind(source,new(target)) is not("FeeContextVanityRedirect" or "FeeContextCanonicalRedirect"));});
+    private static async Task RedirectLimit(){using var f=new ThirteenthStageTests.Fixture();await f.Login();f.Route=p=>p=="/market/"?Response(WalletOnly):p.StartsWith("/profiles/")?Redirect(OwnerPath):p==OwnerPath?Redirect("/id/another/inventory/"):null;Check((await Fail(()=>f.Workspace!.FeesAsync(730))).Code==SteamFailure.Unsupported&&f.Reads.Count==3&&!f.Reads.Any(x=>x.Path.Contains("another")));}
+    private static async Task RedirectRestricted(){foreach(var status in new[]{HttpStatusCode.Forbidden,HttpStatusCode.TooManyRequests}){using var f=new ThirteenthStageTests.Fixture();await f.Login();f.Route=p=>p=="/market/"?Response(WalletOnly):p.StartsWith("/profiles/")?Redirect(OwnerPath):p==OwnerPath?new(status){Content=new StringContent("restricted")}:null;await Fail(()=>f.Workspace!.FeesAsync(730));var count=f.Reads.Count;await Fail(()=>f.Workspace!.FeesAsync(730));Check(f.Reads.Count==count&&f.Workspace!.Failure==(status==HttpStatusCode.Forbidden?SteamFailure.Forbidden:SteamFailure.RateLimited));}}
+    private static async Task ObservedRedirect(){using var f=new ThirteenthStageTests.Fixture();await f.Login();f.Route=p=>p=="/market/"?Response(WalletOnly):p.StartsWith("/profiles/")?Redirect("/market/"):null;Check((await Fail(()=>f.Workspace!.FeesAsync(730))).Code==SteamFailure.Unsupported&&f.Reads.Count==2&&f.Vm.Connected&&f.Server.Sends==0);await f.Workspace!.Orders.RefreshAsync();Check(f.Vm.Connected);}
+    private static async Task RedirectMissing(){using var f=new ThirteenthStageTests.Fixture();await f.Login();f.Route=p=>p=="/market/"?Response(WalletOnly):p.StartsWith("/profiles/")?Redirect(OwnerPath):p==OwnerPath?Response("<script>g_bViewingOwnProfile=true;g_steamID='76561198000000001';</script>"):null;Check((await Fail(()=>f.Workspace!.FeesAsync(730))).Code==SteamFailure.Unsupported&&!f.Reads.Any(x=>x.Path.Contains("ajaxfee")));}
     private static async Task<SteamException> Fail(Func<Task> action){try{await action();}catch(SteamException error){return error;}throw new Exception("expected safe failure");}
     private static Task Sync(Action action){action();return Task.CompletedTask;}
     private static void Check(bool value){if(!value)throw new Exception("fee contract assertion");}

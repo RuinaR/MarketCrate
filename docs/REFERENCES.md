@@ -139,3 +139,8 @@ SteamMarketHelper e186d51 MIT의 실제 userscript fallback/base/통화 round, n
 - [공식 OAuth](https://partner.steamgames.com/doc/webapi_overview/oauth)·[API keys](https://partner.steamgames.com/doc/webapi_overview/auth): Client ID/제한된 서비스·서버 publisher key 조건 참조. 타 앱 ID/API key/클라이언트 세션을 빌려오는 방식 미채택.
 - [공개 QR proto](https://github.com/SteamDatabase/Protobufs/blob/master/steam/steammessages_auth.steamclient.proto)·[node-steam-session AuthenticationClient](https://github.com/DoctorMcKay/node-steam-session/blob/master/src/AuthenticationClient.ts): 기존Begin/Poll/회전 필드 재확인. 기존 독립 encoder 유지, 외부 소스/패키지 도입0. 비공식 코드의 존재를 Valve 허가로 간주하지 않음.
 - [Subscriber Agreement §4](https://store.steampowered.com/subscriber_agreement/): 자동화·제재 위험 재확인. 사용자 실행 읽기도 안전/허용 보증으로 해석하지 않음.
+
+
+## 0.20.1 후속 보완 (2026-10-29 KST)
+
+[TBH 공식 스토어](https://store.steampowered.com/app/3678970/): 게임명/App3678970 확인, 이름/ID만 채택. context2·게임 수수료·스택 근거로 미사용. [Steam 공개 보관함](https://steamcommunity.com/id/robinwalker/inventory/): 비인증 HTML에서 g_bViewingOwnProfile 등 변수 존재 확인, 값/본문 미저장. 실제 사용자 소유 페이지 계약으로 확대하지 않음. 기존 공식 economy_v2.js의 g_bReactSellDialog 분기는 참고하되 실패 시 구형 자동 fallback 근거로 미사용. 외부 코드/자산 신규 복사·종속성 도입 없음, 기존 라이선스 고지 유지.

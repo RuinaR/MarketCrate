@@ -262,3 +262,8 @@ PARTIAL=일부 경로/기능 부족, MISSING=실행 코드 없음, BLOCKED=필�
 - MISSING(0). S7는 `tests/MarketCrate.Tests/SeventhStageTests.cs`, U7는 `tests/MarketCrate.UiTests/SeventhStageUiTests.cs`. 현재 실제 서버 응답/실계정 검증은 모든 항목 N이다.
 
 저장한 관리 의도/반환 대조는 대상 app/context를 선택·갱신한 환경에서 수행해야 한다. 전체 계정 자동 발견/공식 게임 로고 자동 조회 대신 수동 이름·관측 App 이름/대표 이미지이며, 실사용 다른 context 관리 UX는 아직 G11/B10 PARTIAL 범위다.
+
+
+## 0.20.1 후속 보완 (2026-10-29 KST)
+
+0.20.1 보완: C02/C03 게임 카탈로그에 사용자 요청 TBH App3678970 추가(context2 미검증 후보), 사용자가 제거하면 재추가하지 않음. B/G 판매 화면 빈 재등록 계획 선택창 숨김, D09/D10 수수료 조회 canonical 이동 제한/소유 증거 확인·실패 상태 보완. 합성 기능324/WPF66/배포19 PASS. 실제 서버 수수료·TBH 보관함·거래/물리 GUI 근거는 늘지 않았으므로 기존75개 ID와 판정47/16/0/3/9 유지.

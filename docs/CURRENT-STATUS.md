@@ -1,5 +1,15 @@
 # MarketCrate — 현재 상태 (2026-10-29 KST, 0.20.0)
 
+## 0.20.1 — 수수료 조회 이동·빈 선택창·TBH 보완 (2026-10-29 KST)
+
+첨부 진단 ZIP은 원위치에서 필요한 정제 필드만 읽었다. 사용자 작업 87ff3254-3ccf-4185-a35b-2f427b0d0cad에서 Wallet HTTP200/WalletLegacyComplete, ModeMissing, FeeContext HTTP302/OtherRedirect/Unsupported를 확인했다. 이 작업은 수수료 API JSON 실패나 CAPTCHA 증거가 아니다. 기존 로그에 Location 목적지는 없어 실제 이동 원인은 미확정이다.
+
+소유 보관함의 동일 Steam 도메인 정규화 이동을 최대 한 번만 지원한다. vanity 경로는 서버의 g_bViewingOwnProfile=true와 현재 인증 계정 일치까지 확인해야 한다. 다른 계정·외부 호스트·임의 쿼리·로그인/보안 경로·추가 이동은 차단한다. 모드/게임 수수료 증거 부족은 계속 차단하며 구형 수수료로 추측하지 않는다. 실패는 수수료 조회 상태와 판매 중 가격 검토 안내에 반영한다.
+
+재등록 대기 계획이 없을 때 빈 드롭다운 전체 영역을 숨긴다. 실제 계획이 생기면 표시하고 사라지면 다시 숨긴다. TBH: Task Bar Hero(AppID3678970)를 계정 카탈로그에 한 번 추가한다. context2는 설정 가능한 조회 후보이며 실계정 지원은 미검증이다. 직접 제거한 게임을 다음 로그인에 되살리지 않고 다른 게임/context와 사용자 자료를 보존한다. 게임 내부 보유품/파일을 읽지 않는다.
+
+검증: 기능324/324, 비표시WPF66/66, 배포계약19/19 PASS, 빌드 경고/오류0. 빈 선택창 제거와 TBH 자체 렌더 이미지를 직접 검토했다. 실제 계정 수수료 해결·TBH 보관함/context·물리 GUI는 미검증이며 최초75개 판정(47/16/0/3/9)은 유지한다. 새 배포 정보는 아래에 확정한다. 과거0.20.0 기록은 이전 배포 근거로 보존한다.
+
 ### 0.20.0 배포 확정
 
 구현 소스 **13a339108d082f04fac81fb98ab193e27d7e9108**(제품 감사3b3f925 + 대량 알림 보완13a3391), Windows x64 self-contained LiveOnly **artifacts/releases/MarketCrate-0.20.0-product-audit-13a3391-win-x64.zip**, **66,504,701바이트 /413파일**. SHA256 **461D4FD228A9D0EE5025F74C0B0B4AF6F2870A67BF07D0966CBD8B229679CC4E**. 원본 `artifacts/releases/product-audit-13a3391-windows-x64`, BuildVersion0.20.0+13a3391…. 전체 ZIP entry SHA/폴더 파일 수/SourceCommit·CLR/WPF10.0.9·SQLite x64·ProtectedData·라이선스 검사 PASS. 사용자 DB/Auth/로그/PDB·Mock/자가검증·테스트 모델은 출하 제외이며 실제 진행/작업 선택 타입은 존재한다. 앱/설치/물리 입력·실계정·서명은 실행·검증하지 않았다.

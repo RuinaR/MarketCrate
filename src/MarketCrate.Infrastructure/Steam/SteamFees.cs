@@ -86,6 +86,8 @@ public static class SteamFees
         {
             using var profile=new HttpRequestMessage(HttpMethod.Get,$"https://steamcommunity.com/profiles/{account}/inventory/");
             html=await http.SendAsync(profile,token,true);
+            if(SteamHttp.FeeContextUsesVanity(profile)&&!SteamHttp.ViewingOwnInventory(html))
+            {DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Pricing,DiagnosticOutcome.Blocked,LogLevel.Warning,DiagnosticError.Authorization,endpoint:"FeeContext",reason:"OwnerPageMissing");http.BlockFeature("FeeContext");throw new SteamException(SteamFailure.Authorization){Endpoint="FeeContext"};}
             var identity=Regex.Match(html,@"\bg_steamID\s*=\s*['"" ]?([0-9]{17})['""]?\s*;",RegexOptions.CultureInvariant,TimeSpan.FromMilliseconds(100));
             if(!identity.Success||identity.Groups[1].Value!=account){http.BlockFeature("FeeContext");DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Pricing,DiagnosticOutcome.Blocked,LogLevel.Warning,DiagnosticError.Authorization,endpoint:"FeeContext",reason:"AccountMismatch");throw new SteamException(SteamFailure.Authorization){Endpoint="FeeContext"};}
             evidence=FeeContractResolver.Observe(html,appId,wallet);

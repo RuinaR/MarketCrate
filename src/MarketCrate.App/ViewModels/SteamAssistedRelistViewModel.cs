@@ -13,6 +13,7 @@ public sealed partial class SteamWorkspaceViewModel
     public AsyncCommand CancelForNewReview{get;private set;}=null!;
     public AsyncCommand ReviewCancelledTargets{get;private set;}=null!;
     public RangeObservableCollection<SteamRelistOption> PendingRelists{get;}=[];
+    public bool HasPendingRelists=>PendingRelists.Count>0;
     private SteamRelistOption? selectedRelist;
     public SteamRelistOption? SelectedRelist{get=>selectedRelist;set{if(Set(ref selectedRelist,value))ReviewCancelledTargets?.Refresh();}}
     private void RefreshPendingRelists()
@@ -24,6 +25,7 @@ public sealed partial class SteamWorkspaceViewModel
     }
     private void InitializeAssistedRelist()
     {
+        PendingRelists.CollectionChanged+=(_,_)=>Raise(nameof(HasPendingRelists));
         CancelForNewReview=new(CancelForNewReviewAsync,Error,()=>!Busy&&CanRead&&CanTrade&&ManagementOpen&&managementReprice&&management.Length>0&&management.All(x=>x.Listing.Quantity==1));
         ReviewCancelledTargets=new(ReviewCancelledTargetsAsync,Error,()=>!Busy&&CanRead&&!AnyReview&&SelectedRelist is not null);
     }

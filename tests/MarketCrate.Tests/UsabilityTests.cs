@@ -35,7 +35,8 @@ public static class UsabilityTests
             ("Logout during submission rejects late progress and preserves durable Unknown",ProgressLogout),
             ("Evicting eight-game view cache never omits selected assets from batch targets",SelectionEviction),
             ("Archive command cannot move a different account active journal",ArchiveOwnership),
-            ("Ten thousand selected item prices publish bounded summary updates per product",PriceNotifications)};
+            ("Ten thousand selected item prices publish bounded summary updates per product",PriceNotifications),
+            ("User-requested TBH scope added once and explicit removal preserved after restart",Tbh)};
         int passed=0,failed=0;foreach(var(name,run)in tests)try{await run();passed++;Console.WriteLine("PASS "+name);}catch(Exception e){failed++;Console.WriteLine("FAIL "+name+": "+e);}return(passed,failed);
     }
     private static Task Default(){using var vm=new SteamWorkspaceViewModel();Check(vm.Games.Count==1&&vm.Game.AppId==753&&vm.Game.ContextId=="6"&&vm.Game.Name=="Steam 커뮤니티");return Task.CompletedTask;}
@@ -110,6 +111,7 @@ public static class UsabilityTests
     {
         using var f=new Fixture();await f.Login();f.Server.Available.Clear();foreach(var index in Enumerable.Range(1,10000))f.Server.Available.Add((100000+index).ToString());await f.Vm.LoadAsync();f.Vm.SelectAll.Execute(null);var notifications=0;f.Vm.PropertyChanged+=(_,e)=>{if(e.PropertyName==nameof(f.Vm.SelectionSummary))notifications++;};await f.Vm.RefreshPricesAsync();Check(f.Vm.Assets.Count==10000&&f.Vm.Assets.All(x=>x.Price is not null)&&notifications is >0 and <10&&f.Server.Sells==0&&f.Server.Cancels==0);
     }
+    private static async Task Tbh(){using var f=new Fixture(false);await f.Login();var scope=f.Vm.Games.Single(x=>x.AppId==3678970);Check(scope.ContextId=="2"&&scope.Name=="TBH: Task Bar Hero"&&scope.State==InventoryScopeState.NotQueried&&!f.Server.RequestPaths.Any(x=>x.Contains("3678970")));f.Vm.Game=scope;f.Vm.RemoveScope.Execute(null);f.Vm.Logout.Execute(null);await f.Login();Check(!f.Vm.Games.Any(x=>x.AppId==3678970)&&f.Server.Sells==0&&f.Server.Cancels==0);}
     private static async Task PlanImmutable(){using var f=new Fixture();await PrepareNewTargets(f);var plan=f.Workspace!.Store.RelistPlans(f.Workspace.Authentication.SteamId!).Single();try{f.Workspace.Store.SaveRelistPlan(plan with{Account="76561198000000002"});throw new Exception("mutated plan accepted");}catch(InvalidDataException){}Check(f.Workspace.Store.RelistPlans(plan.Account).Single().SubmissionBatch is null);}
     private sealed class Fixture:IDisposable
     {

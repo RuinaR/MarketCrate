@@ -9,7 +9,7 @@ public sealed class SteamReadStatus(string name,string endpoint):Observable
 {
     public string Name{get;}=name;public string Endpoint{get;}=endpoint;
     public SteamReadState State{get;private set;}public SteamFailure? Failure{get;private set;}public Guid? OperationId{get;private set;}public DateTimeOffset? At{get;private set;}
-    public string Summary=>State switch{SteamReadState.Loading=>"조회 중 · 기존 자료 보존",SteamReadState.Ready=>"조회 완료",SteamReadState.Empty=>"자료 없음",SteamReadState.Unsupported=>"경로 미지원 · 게임/context 확인",SteamReadState.Failed=>Failure==SteamFailure.ContractChanged?"응답 형식 확인 필요 · 수동 재시도 가능":"통신 실패 · 수동 재시도 가능",SteamReadState.AccessBlocked=>Failure==SteamFailure.ContractChanged?"응답 계약 불일치 · 재요청 중단":Failure==SteamFailure.Authorization?"이 조회의 읽기 권한 확인 필요 · 재요청 중단":"요청 제한 · 재요청 중단",SteamReadState.Cancelled=>"중단됨 · 기존 자료 보존",SteamReadState.Stale=>"다시 조회 필요",_=>"아직 조회하지 않음"};
+    public string Summary=>State switch{SteamReadState.Loading=>"조회 중 · 기존 자료 보존",SteamReadState.Ready=>"조회 완료",SteamReadState.Empty=>"자료 없음",SteamReadState.Unsupported=>Endpoint=="Inventory"?"보관함 경로 미지원 · 게임/context 확인":"조회 경로/서버 계약 미지원 · 문제 해결 확인",SteamReadState.Failed=>Failure==SteamFailure.ContractChanged?"응답 형식 확인 필요 · 수동 재시도 가능":"통신 실패 · 수동 재시도 가능",SteamReadState.AccessBlocked=>Failure==SteamFailure.ContractChanged?"응답 계약 불일치 · 재요청 중단":Failure==SteamFailure.Authorization?"이 조회의 읽기 권한 확인 필요 · 재요청 중단":"요청 제한 · 재요청 중단",SteamReadState.Cancelled=>"중단됨 · 기존 자료 보존",SteamReadState.Stale=>"다시 조회 필요",_=>"아직 조회하지 않음"};
     public void Update(SteamReadState value,SteamFailure? failure=null)
     {
         var old=State;State=value;Failure=failure;OperationId=DiagnosticHub.Context?.OperationId;At=DateTimeOffset.UtcNow;

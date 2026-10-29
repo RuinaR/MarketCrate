@@ -207,3 +207,8 @@ WPF 검사는 MainView/UserControl을 직접 Measure/Arrange하고 RenderTargetB
 0.12.0 로컬 배포본: `artifacts/MarketCrate-0.12.0-stage12-49a3ffa-win-x64.zip` (78.30MiB,412파일). 구현 커밋49a3ffa. 기능187/187·비표시 WPF42/42·배포계약14/14 PASS, 실제 현재 GUI/Steam 인증·조회는 미검증입니다. Release 빌드/파일 검사는 실계정·설치·서명 검증을 뜻하지 않습니다.
 
 </details>
+
+
+## 0.20.1 후속 보완 (2026-10-29 KST)
+
+수수료 조회의 제한된 소유 보관함 이동 처리, 빈 재등록 선택창 제거, TBH: Task Bar Hero 카탈로그 추가를 포함합니다. TBH context2와 새 버전 실제 수수료 성공은 사용자 확인이 필요합니다. 최신 ZIP/해시는 [현재 상태](docs/CURRENT-STATUS.md)의 최신 배포 절을 확인하세요. 이전 배포본과 사용자 자료는 보존합니다.

@@ -362,3 +362,8 @@ main/origin6c40500 clean/fetch 일치에서 시작. 0.13 사용자부분관측 �
 사용자 최소 재확인: (1) 새 ZIP 버전·커밋 확인 후 Steam 탭에서 명시적 QR 시작으로 QR 표시 여부만 확인(실거래 금지), 실패하면 표시된 단계와 검토한 진단ZIP 확인. QR 원문은 공유하지 않는다. (2) 진단 탭/최근 오류 체크를 클릭한 뒤 포인터를 밖으로 이동: 선택 밑줄·체크 표시만 유지되는지 확인. (3) Tab/Shift+Tab의 점선 포커스, 빠른 탭 전환, 비활성→활성, 드롭다운 열기·닫기를 직접 확인. Codex는 이 작업을 실행하지 않았다.
 
 11차 배포: 구현 커밋 `0705dc2874b64b521e86dd92b3847c1a1b63219c` origin/main push 완료. **0.11.0** self-contained Windows x64 Release 빌드·정적 검사 PASS, 출력 경고/오류0. CLR/WPF10.0.9, x64 apphost/SQLite 네이티브 DLL/라이선스 고지 포함, DB·로그·인증·PDB·개발파일 제외. `artifacts/MarketCrate-0.11.0-stage11-0705dc2-win-x64.zip` **78.29MiB/412파일**, ZIP 전 항목과 원본 SHA256 일치. SHA256 `C3A5AEC49ACB4B8FEA93D4496E49E4D7AB92F2FB7F409F5EA22F1E43A60AEE28`. distribution.json 및 ProductVersion=0.11.0+0705dc2…의 SourceCommit 확인. 실제 EXE/설치/서명/실서버 QR 발급은 미실행. 이전 배포본·사용자별 저장소를 덮어쓰거나 초기화하지 않았다.
+
+
+## 0.20.1 후속 보완 (2026-10-29 KST)
+
+0.20.1: 첨부 ZIP에서 Wallet200/WalletLegacyComplete→ModeMissing→FeeContext302/OtherRedirect 확인. Location 미기록으로 실제 원인 미확정. 동일 Steam 소유 보관함 canonical 이동 한 번과 vanity 소유/계정 확인 구현. 다른 계정/외부/보안/추가 이동과 모드 누락 차단 유지. 빈 재등록 계획 선택창 숨김, 수수료 실패 안내 연결, TBH App3678970/context2(후자는 미검증 후보) 한 번 추가/사용자 제거 유지. 기능324/324·비표시WPF66/66·배포계약19/19 PASS, 경고/오류0. 빈 판매/TBH RTB 직접 열람. 실제 GUI/Steam 계정 실행0, 타 프로세스 접근0, 사용자 Auth/DB/저널/진단/이전배포 삭제0.
