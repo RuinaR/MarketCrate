@@ -437,3 +437,18 @@ latest=0.20.6 /rollback=보존된0.20.5. 삭제0·사용자 Auth/설정/진단/S
 소스 **139fb933f73a924036d5c8072d4e0d2466d9340d**. `artifacts/releases/MarketCrate-0.20.7-server-sync-139fb93-win-x64.zip` **66,518,925바이트 /413파일**, SHA256 **0E4A336850CCB00F3F069D9C8EECADF21450DAC391970E5CF0B2738CB75212F9**. 전체 ZIP entry SHA·폴더 일치/버전·SourceCommit/x64 CLR/WPF/SQLite/DPAPI/라이선스/실제 전용 PE/BAML·Mock/사용자DB/Auth/로그/PDB 제외 정적 검사 PASS. 기능350/350·비표시WPF68/68·배포19/19·정리fixture9/9 PASS, 빌드 경고/오류0. 마지막 검토 대상 보호 조회를 해시 방식으로 정리한 뒤 관련16계약을 추가 확인했다.
 
 latest=0.20.7 /rollback=보존된0.20.6. 사용자 Auth/SQLite/저널/설정/진단·이전 배포 삭제0. 로컬 ZIP 생성이며 외부 Release 업로드0. 실제 앱/계정/판매·물리 GUI 실행0. TBH는 **보관함 갱신 → 서버1개 표시/선택 → 시세 갱신 → 최종 검토**를 직접 확인하면 된다. 이전 미확정 전송이 있으면 선택/가격 조회는 가능하지만 새 전송 전 근거 확인은 계속 필요하다. 실판매 성공이나 원인 미상400 해결로 판정하지 않는다.
+
+## 0.20.8 — 즉시거래가능가 단일 옵션·수량 계약·ID 없는 관측
+
+사용자 요청으로 보관함/판매 중 재등록의 평균·중앙값 가격 선택기와 기간/이력 버튼을 제거하고 **즉시거래가능가만** 제공한다. 단일 옵션을 불필요한 드롭다운 대신 고정 레이블로 표시하며 최종 검토의 직접 가격 수정은 유지한다. Release의 과거 가격 인덱스는0으로 정규화한다. 기존 enum/저장 계약·개발 회귀용 계산/이력 테스트는 보존하지만 일반 UI에서 선택할 수 없다. 최초75개 ID도 삭제하지 않으며 평균 관련 최초 요구는 이번 사용자 요청으로 제품 범위에서 철회됐음을 기록한다.
+
+SteamMarketHelper e186d51의 sellItem(amount=item.amount)와 SSIM28a503f의 sellOnMarket(amount=1)/getListedAssets를 실제 소스로 대조했다. SSIM은 스택 판매의 근거가 아니며, 자동 Guard·비밀키·proxy/fingerprint는 도입하지 않았다. 공식 economy_v2.js를 인증 없이 다시 받아2026-10-29 SHA256 A3BBDF0A135524102CD055FD89D37EB3FD672FAE20BFBA0ABC700648DCB52512와 SellItemDialog의 amount=m_nConfirmedQuantity / price=m_nConfirmedPrice를 확인했다. 코드를 복사하거나 새 런타임/패키지를 추가하지 않고 현재 C# 어댑터에 해당 요청 계약을 적용했다.
+
+인증된 소유 classic 페이지·동일 지갑·앱 수수료 계약으로 검증한 AppID에만 SingleRequestStackApps를 부여한다. 해당 앱의 스택은 **단일 가격·단일 요청**으로 서버 보유 수량 이하의 전체/부분 수량을 전송할 수 있다. 실제 계정 동작은 미검증이다. 여러 가격으로 쪼갠 동일 스택의 연속 전송, 미확인 React/new 수량 계약, 취소 후 ID 변경/합산 반환은 계속 차단한다. 최종 제출 직전 classic 계약이 바뀌면 intent/전송 전 중단한다. 기존 StackAmountsSupported 개발 플래그를 전체 실계정에서 켜지 않는다.
+
+ID 없는 요청은 재조회한 **동일 asset/app/context·상품·수량·통화·가격·수수료**가 하나만 일치할 때 ObservedAssetState/ObservedListingId를 별도 증거로 남긴다. 현재 서버의 판매 중/승인 대기 관측은 표시하지만 이 요청이 그 등록을 만들었다고 확정하지 않는다. 원 command.ListingId를 후보로 채우거나 Unknown을 재전송/해제하지 않는다. 다른 자산/앱/금액·중복 후보는 관측을 확정하지 않는다. 이전400의 상세 원인과 실제 게시 성공은 여전히 미확정이다.
+
+보관함·장터 표시와 로컬 전송 저널 분리, 단일 최종 승인 전체 배치·계정/통화/수수료·중복 전송 보호·DPAPI·기존 schema3/사용자 자료를 유지한다. 실제 GUI/계정/거래 실행0.75개 판정47/16/0/3/9를 실제 검증 없이 승격하지 않는다.
+0.20.8 검증: 전체 기능354/354·비표시WPF69/69·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0. SingleStack은 전체/부분 수량1·2 및10개를 같은 단가로 맞춘3개 검토 행의 단일 POST/스냅샷1행·원래 총액115×수량 보존을 검사했다. StackBoundaries는 서로 다른 단가 스택·미검증 new mode 및 직접 Executor 우회를 차단하고, StackModeChanged는 검토 후모드 변경 시 intent/전송0을 확인했다. IdlessObservation은 정확한 자산 관측·다른 앱·중복 후보 거부와 원요청 ID 미할당/재전송0을 검사했다. 평균/기간 UI 제거를 보관함·판매목록 자체 렌더로 직접 확인했다. 새 출하 검사는 옛0.20.7 BAML을 'Retired pricing UI leaked: PricingModes'로 거부하는 음성 검사를 확인했다. 최종 스냅샷 총액 보존과 관련20개 계약도 재확인했다. 처음 추가한 스택2건은 React legacy fixture를 classic으로 잘못 구성해 차단됐으며 테스트를 실제 명시적 classic 소유 페이지로 수정했다. production 보호 조건을 완화해 테스트를 통과시키지 않았다. 실제 앱/계정/판매·스택 반환·공식 UI 금액 대조는 미실행이다.
+
+검토에서 여러 행의 동일 스택을 직접 같은 단가로 맞춘 경우 자산·통화·수수료·시각·호가 증거가 전부 일치할 때만 합산한다. 다른 가격을 자동 대체하지 않는다. 여러 가격이 남아 있으면 전송을 차단한다.

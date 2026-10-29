@@ -31,6 +31,8 @@ public enum SteamFailure { Disabled, Authentication, Forbidden, RateLimited, Cha
 public sealed record SteamTradingPolicy(bool Enabled, string EvidenceReference, bool StackAmountsSupported = false,bool MedianPriceContractSupported = false, bool UserInitiated = false)
 {
     public System.Collections.Immutable.ImmutableArray<int> VerifiedApps {get;init;}=[];
+    // Official classic SellItemDialog / SteamMarketHelper amount contract, not repeated split-asset writes.
+    public System.Collections.Immutable.ImmutableArray<int> SingleRequestStackApps {get;init;}=[];
     public bool CancellationOnly{get;init;}
     public static SteamTradingPolicy Blocked { get; } = new(false, "Valve permission not established");
 #if MARKETCRATE_DEMO

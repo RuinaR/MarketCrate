@@ -278,3 +278,8 @@ FeeContext ReadContract/HttpRequest는 기존 OperationId에 FeeContextVanityRed
 ## 0.20.7 서버 상태 동기화
 
 0.20.7: InventoryLocalPendingRows는 Steam 예약 수가 아니라 로컬 전송 확인이 필요한 자산 종류 수다. InventorySelectableRows는 서버 snapshot 기준으로 독립 기록한다. 판매목록 갱신의 서버 ID/상품/금액/수량 일치 시 EvidenceChecked/ServerInventorySync에 이전·새 상태를 남긴다. PendingSubmission은 새 전송 차단 이유이며 보관함 선택 실패가 아니다. 원문·계정·쿠키·QR은 기록하지 않는다. 기존 이유 토큰은 과거 로그 해석을 위해 보존한다.
+
+
+## 0.20.8 단일 가격과 수량 계약
+
+EvidenceChecked/AssetStateObserved는 원요청 성공이 아니라 현재 동일 자산의 서버 상태를 기록한다. 원본/자산ID/등록ID는 로그에 추가하지 않고 to상태만 기록한다. StackContract 오류는 제출 전 mode 변경/미지원 사유를 UI에 표시하고 intent·POST 이전 중단한다. 가격 기준은Immediate만 사용자 선택이며 과거enum/로그 토큰을 삭제하지 않는다.

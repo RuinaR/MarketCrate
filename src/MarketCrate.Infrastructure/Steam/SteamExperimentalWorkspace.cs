@@ -21,6 +21,7 @@ public sealed class SteamExperimentalWorkspace : IDisposable
     public SteamTradingPolicy Policy { get; private set; }
     private readonly bool synthetic;
     private readonly HashSet<int> verifiedApps=[];
+    private readonly HashSet<int> singleRequestStackApps=[];
     public SteamFailure? Failure => http.Halted;
     public SteamFailure? FeatureFailure(string endpoint)=>http.FeatureFailure(endpoint);
     public SteamWalletObservation? WalletObservation{get;private set;}
@@ -80,7 +81,8 @@ public sealed class SteamExperimentalWorkspace : IDisposable
             var provider=new SteamInventoryProvider(http,Authentication,appId,context,game);
             var assets=await provider.GetAsync(token);
             Step(SteamTradingCheck.SaleableAssets);
-            if(!assets.Any(x=>x.Marketable&&!x.Locked&&!x.Stackable&&store.Available(x)>0))throw new SteamException(SteamFailure.Restricted);
+            var singleStackContract=schedule.PublisherFallbackAppId==appId;
+            if(!assets.Any(x=>x.Marketable&&!x.Locked&&(!x.Stackable||singleStackContract)&&store.Available(x)>0))throw new SteamException(SteamFailure.Restricted);
             Step(SteamTradingCheck.PublisherFees);
             if(assets.Where(x=>x.Marketable&&!x.Locked).Any(x=>!schedule.PublisherMatches(x.Key.AppId,provider.PublisherFees.TryGetValue(x.Key,out var fee)?fee:null)))throw new SteamException(SteamFailure.Restricted);
             if(schedule.PublisherFallbackAppId==appId&&assets.Any(x=>!provider.PublisherFees.ContainsKey(x.Key)))DiagnosticHub.Emit(DiagnosticEvent.FeeValidated,DiagnosticArea.Pricing,reason:"PublisherFromAppContract");
@@ -95,7 +97,8 @@ public sealed class SteamExperimentalWorkspace : IDisposable
             Step(SteamTradingCheck.SessionCheck);
             if(!Authentication.Connected||Authentication.SteamId!=account||Failure is not null)throw new SteamException(SteamFailure.Authentication);
             verifiedApps.Add(appId);
-            Policy=new(true,"User-selected unofficial session; NOT Valve permission",UserInitiated:true){VerifiedApps=[..verifiedApps]};
+            if(singleStackContract)singleRequestStackApps.Add(appId);else singleRequestStackApps.Remove(appId);
+            Policy=new(true,"User-selected unofficial session; NOT Valve permission",UserInitiated:true){VerifiedApps=[..verifiedApps],SingleRequestStackApps=[..singleRequestStackApps]};
             Access.Acknowledge(true,true,true,true);Access.BindTradingAccount(account);
             SetGame(appId,context,game);
             DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,DiagnosticOutcome.Completed,reason:"TradingEnabled",count:samples.Length,currency:schedule.Currency);

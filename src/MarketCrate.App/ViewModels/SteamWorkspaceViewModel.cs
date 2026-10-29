@@ -46,11 +46,21 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     public string RevisedPrice {get=>revisedPrice;set=>Set(ref revisedPrice,value);}
     public Command ReviewStoredReprice {get;}
     private int pricingMode,windowIndex,priceRevision;
-    public string[] PricingModes{get;}=[PriceDisplay.Immediate,PriceDisplay.UnavailableAverage,PriceDisplay.MedianEstimate];
+    public string[] PricingModes{get;}=[PriceDisplay.Immediate];
     public string[] PriceWindows{get;}=["24시간","7일","30일"];
     public int WindowIndex{get=>windowIndex;set{if(value is >=0 and <=2&&Set(ref windowIndex,value))ResetPriceReview();}}
     private TimeSpan IndicatorWindow=>TimeSpan.FromDays(WindowIndex switch{1=>7,2=>30,_=>1});
-    public int PricingMode{get=>pricingMode;set{if(value is >=0 and <=2&&Set(ref pricingMode,value))ResetPriceReview();}}
+        public int PricingMode
+    {
+        get=>pricingMode;
+        set
+        {
+#if MARKETCRATE_LIVE_ONLY
+            value=0; // Retired stored/automation values never reactivate average/history pricing in production.
+#endif
+            if(value is >=0 and <=2&&Set(ref pricingMode,value))ResetPriceReview();
+        }
+    }
     private void ResetPriceReview(){priceRevision++;DiagnosticHub.Emit(DiagnosticEvent.PriceIndicator,DiagnosticArea.UI,requirement:"D02",count:WindowIndex,reason:PricingMode==2?"MedianEstimate":PricingMode==1?"ExactAverage":"Immediate");ReviewOpen=false;ReviewRows.Clear();foreach(var row in AllSteamRows())row.ClearPrice();Status="가격 기준/기간 변경 · 수동 가격 초기화 · 선택 시세 갱신 후 다시 검토하세요.";Changed();}
     public Guid? LastOperationId{get;private set;}
     public Guid? LastFailedOperationId{get;private set;}
@@ -153,7 +163,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     public bool TradeAccepted { get => tradeAccepted; set { Set(ref tradeAccepted,value); if(!value&&workspace is not null){operation?.Cancel();workspace.Access.Acknowledge(RiskAccepted,CredentialsAccepted,true,false);} Changed(); } }
     public bool CanCancel=>RiskAccepted&&CredentialsAccepted&&TradeAccepted&&workspace?.Executor.CanCancel==true;
     public bool CanTrade => RiskAccepted&&CredentialsAccepted&&TradeAccepted&&workspace?.Executor.CanExecute == true;
-    public bool CanTradeReview=>CanTrade&&(PricingMode!=2||workspace?.Policy.MedianPriceContractSupported==true)&&!PendingSubmissionConflict;
+    public bool CanTradeReview=>CanTrade&&(PricingMode!=2||workspace?.Policy.MedianPriceContractSupported==true)&&!PendingSubmissionConflict&&StackReviewSupported;
     public string PricingContractText=>PricingMode==2?"이력 중앙값의 결제액/통화/기간 계약도 별도 확인 필요 · 기본 실제 제출 차단 · 추정은 정확한 거래 평균이 아닙니다.":"호가 기반 추정도 체결 보장 없음 · 실제 등록은 별도 허용/검증 전 차단";
     public bool Connected => workspace?.Authentication.Connected == true;
     public bool ReviewOpen { get => reviewOpen; private set { Set(ref reviewOpen,value); Changed(); } }
@@ -256,7 +266,15 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     {
         if(PendingSubmissionConflict){Status="이전 전송 결과를 확인하기 전에는 새 판매 요청을 보낼 수 없습니다. 이전 요청 확인에서 서버 상태를 동기화하세요.";DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,DiagnosticOutcome.Blocked,reason:"PendingSubmission",requirement:"F05");return;}
         RequireConnection();if(!CanTradeReview || !ReviewOpen || ReviewRows.Count==0 || ReviewRows.Any(x=>!x.Valid))throw new SteamException(SteamFailure.Disabled);
-        var batch=new SaleBatchSnapshot(Guid.NewGuid(),workspace!.Authentication.SteamId!,DateTimeOffset.UtcNow,ReviewRows.Select((x,i)=>x.Snapshot(i)).ToImmutableArray());
+        var lines=ReviewRows.Select((x,i)=>x.Snapshot(i)).ToImmutableArray();
+        if(workspace!.Policy.StackAmountsSupported!=true)
+            lines=lines.GroupBy(x=>x.Asset.Key).SelectMany(group=>
+            {
+                var first=group.First();
+                return first.Asset.Stackable&&workspace.Policy.SingleRequestStackApps.Contains(first.Asset.Key.AppId)&&group.All(x=>x.Asset==first.Asset&&x.Currency==first.Currency&&x.UnitQuote==first.UnitQuote&&x.MarketTime==first.MarketTime&&x.OrderbookDigest==first.OrderbookDigest&&x.Evidence==first.Evidence)
+                    ? new[]{first with{Quantity=checked(group.Sum(x=>x.Quantity))}}:group.ToArray();
+            }).ToImmutableArray();
+        var batch=new SaleBatchSnapshot(Guid.NewGuid(),workspace.Authentication.SteamId!,DateTimeOffset.UtcNow,lines);
         if(relistReview is {} relist)
         {
             if(relist.Account!=workspace.Authentication.SteamId||workspace.Store.RelistPlans(relist.Account).Single(x=>x.Key==relist.Key).SubmissionBatch is not null)throw new SteamException(SteamFailure.Restricted);
@@ -281,7 +299,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         var command=workspace.Store.ReadCommand(SelectedRequest)!;
         EvidenceText=$"요청 시각 {command.SentAt:O} · 대상 {command.Line.Asset.Key.AppId}/{command.Line.Asset.Key.ContextId}/{command.Line.Asset.Key.AssetId} · {command.Line.Quantity}개 · 실수령 단가 {new Money(command.Line.UnitQuote.SellerReceives,command.Line.Currency)}\n"+
             $"요청 전 목록 ID {(command.BeforeListingIds is null?"기록 없음":string.Join(',',command.BeforeListingIds.Take(10)))}\n판정 {report.Verdict} · {report.CheckedAt:O}\n"+string.Join("\n",report.Candidates.Select(x=>$"등록ID {x.ListingId} · {x.Reason} · {x.Quantity}개 · 실수령 {new Money(x.SellerReceives,command.Line.Currency)} · 시각 {x.CreatedAt:O}"))+
-            "\n감사 이력: "+string.Join(" → ",workspace.Store.AuditTrail(SelectedRequest).Select(x=>$"{x.At:HH:mm:ss} {x.Action}/{x.State}"))+"\n후보 일치는 인과관계 증명이 아닙니다. 자동 확정·재전송하지 않습니다.";
+            "\n현재 동일 자산의 Steam 상태: "+(report.ObservedAssetState is {} observed?SteamListingExecutor.ObservedLabel(observed)+" (이전 요청 귀속은 미확인)":"확인 증거 없음")+"\n감사 이력: "+string.Join(" → ",workspace.Store.AuditTrail(SelectedRequest).Select(x=>$"{x.At:HH:mm:ss} {x.Action}/{x.State}"))+"\n후보 일치는 인과관계 증명이 아닙니다. 자동 확정·재전송하지 않습니다.";
     });
     private Task HistoryAsync()=>Run(async token=>{RequireConnection();var row=SelectedSteamRows().First();var points=await workspace!.Prices.GetMedianHistoryAsync(row.Asset,token);token.ThrowIfCancellationRequested();HistoryText=$"Steam pricehistory · 수집 {DateTimeOffset.UtcNow:O} · {points.Length}개 시간 구간의 중앙값/거래량 · 정확한 거래 원자료/VWAP/전체 체결 중앙값 아님\n"+string.Join("\n",points.TakeLast(6).Select(x=>$"{x.At:MM-dd HH:mm} UTC · median {x.MedianMajor} · volume {x.Volume}"));});
     private void TryManagement(bool reprice){try{BuildManagement(reprice);}catch(Exception error){DiagnosticHub.Emit(DiagnosticEvent.UiFailure,DiagnosticArea.Management,DiagnosticOutcome.Failed,LogLevel.Warning,DiagnosticError.Validation,exception:error);Status="관리 검토 오류: 통화/가격/수수료를 확인하세요.";Changed();}}
@@ -382,6 +400,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
             LoginState=error is SteamException e?e.Code switch{SteamFailure.Disabled=>LoginState,SteamFailure.Denied=>SteamLoginState.Denied,SteamFailure.Transport=>SteamLoginState.NetworkFailure,SteamFailure.Forbidden or SteamFailure.RateLimited or SteamFailure.Challenge=>SteamLoginState.AccessBlocked,_=>SteamLoginState.ContractFailure}:SteamLoginState.ContractFailure;
         }
         if(!authenticating&&error is SteamException{TradingCheck:not null} tradingError){Status=TradingFailureText(tradingError);Changed();return;}
+        if(!authenticating&&error is SteamException{Endpoint:"StackContract"}){Status="스택 수량 전송 계약이 검토 후 변경됐거나 확인되지 않았습니다. 판매 요청은 보내지 않았습니다. 새로 조회하고 검토하세요.";Changed();return;}
         if(!authenticating&&error is SteamException{Endpoint:"PendingSubmission"}){Status="서버 보관함은 선택·가격 검토할 수 있지만 이전 전송 결과가 미확정입니다. 이전 요청 확인에서 동기화하세요. 자동 재전송은 하지 않습니다.";Changed();return;}
         if(!authenticating&&error is SteamException{Endpoint:"RepriceReturn"}){Status="일괄 재등록을 시작하지 않았습니다. 외부에서 등록된 항목은 원래 자산의 반환 인과 증거가 없어 자동 재등록을 지원하지 않습니다. 선택 취소는 별도 검토할 수 있습니다.";Changed();return;}
         if(!authenticating&&error is SteamException{Code:SteamFailure.StaleReview}){ReviewOpen=ManagementOpen=false;ReviewRows.Clear();managementBooks.Clear();Status="승인한 가격·수량·호가 자료가 변경되었거나 오래되었습니다. 갱신 후 새 최종 검토가 필요합니다. 자동으로 낮은 가격을 제출하지 않았습니다.";Changed();return;}
@@ -446,7 +465,7 @@ public sealed class SteamReviewRow:Observable
 public sealed class SteamListingRow(SteamListing listing,Action changed):Observable
 {
     public ItemImageReference? Image{get;init;}public Guid? ImageOperation{get;init;}
-    private string metric="최근 정확한 평균 이용 불가 · 대체 지표 미조회";public string Metric{get=>metric;set=>Set(ref metric,value);}
+    private string metric="즉시거래가능가 미조회";public string Metric{get=>metric;set=>Set(ref metric,value);}
     public SteamListing Listing{get;}=listing;public string PriceSummary=>$"{Listing.Quantity}개 · {SteamStatusText.Label(Listing.State)} · 구매자 {new Money(Listing.SellerReceives+Listing.Fees,Listing.Currency)}";public string Description=>$"{Listing.HashName} · {PriceSummary}";
     private SteamFeeSchedule? proposalFees;
     private string newPriceText=SteamReviewRow.FormatPrice(listing.SellerReceives+listing.Fees,listing.Currency);

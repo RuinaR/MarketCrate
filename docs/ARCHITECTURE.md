@@ -216,3 +216,8 @@ SteamTradingViewModel.NeedsLiveReviewPreparation은 선택 AppID 중 Policy.Veri
 ## 0.20.7 서버 상태 동기화
 
 0.20.7: SteamAssetRow.Available은 서버 보관함 snapshot 수량이다. PendingSubmissionQuantity는 별도 로컬 중복 전송 보호 정보이며 CanSelect를 바꾸지 않는다. RefreshRequests는 서버 수량을 덮지 않고 보호 정보만 갱신한다. CanTradeReview/Executor 최종 검증은 보호 중인 수량의 새 전송을 차단한다. SetListings→Executor.ObserveListings는 완전한 새 읽기의 알려진 listing ID/필드 일치만 저널과 결과로 동기화한다. 이력 부재를 실패·반환으로 추정하지 않으며 DB schema3를 유지한다.
+
+
+## 0.20.8 단일 가격과 수량 계약
+
+가격 선택 배열은 즉시거래가능가 하나, Release setter는 폐기 인덱스를0으로 제한한다. 기존 enum·이력 계산·개발 테스트는 호환 목적으로 유지하며 가격 선택기/기간 UI/BAML에는 연결하지 않는다. Policy.SingleRequestStackApps는 인증된 classic 소유 페이지/지갑/앱을 검증한 scope에만 세션 중 부여한다. 해당 스택은 snapshot에 asset별 한 줄만 허용하고 최종 fee context가 classic이 아닌 경우 intent 전 중단한다. global StackAmountsSupported는 켜지 않는다. SteamEvidenceReport의 ObservedAssetState/ObservedListingId는 새 관측 정보이며 command.ListingId를 대체하지 않는다. 기존 evidence JSON에는 nullable기본값, SQLite schema3 유지.

@@ -69,7 +69,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         if (!CanExecute || snapshot.AccountReference != auth.SteamId) throw new SteamException(SteamFailure.Disabled);
         if(snapshot.Lines.Any(x=>x.Evidence is not null)&&!executionPolicy.MedianPriceContractSupported)throw new SteamException(SteamFailure.Restricted);
         BatchValidation.Validate(snapshot, DateTimeOffset.UtcNow);
-        if (snapshot.Lines.Any(x => x.Asset.Stackable && !executionPolicy.StackAmountsSupported) ||
+        if (snapshot.Lines.GroupBy(x=>x.Asset.Key).Any(group=>group.First().Asset.Stackable&&!executionPolicy.StackAmountsSupported&&(!executionPolicy.SingleRequestStackApps.Contains(group.Key.AppId)||group.Count()!=1)) ||
             executionPolicy.UserInitiated&&snapshot.Lines.Any(x=>x.OrderbookDigest is null||!executionPolicy.VerifiedApps.Contains(x.Asset.Key.AppId)))
             throw new SteamException(SteamFailure.Restricted);
         var current=new Dictionary<AssetKey,InventoryAsset>();var publisherFees=new Dictionary<AssetKey,int>();
@@ -86,6 +86,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
             if(executionPolicy.UserInitiated&&schedules.Values.FirstOrDefault() is {} previous&&(schedule.Currency!=previous.Currency||schedule.MinimumWire!=previous.MinimumWire||schedule.IncrementWire!=previous.IncrementWire))throw new SteamException(SteamFailure.Restricted);
             schedules.Add(app,schedule);
         }
+        if(snapshot.Lines.Any(x=>x.Asset.Stackable&&!executionPolicy.StackAmountsSupported&&schedules[x.Asset.Key.AppId].PublisherFallbackAppId!=x.Asset.Key.AppId))throw new SteamException(SteamFailure.Unsupported){Endpoint="StackContract"};
         foreach (var group in snapshot.Lines.GroupBy(x => x.Asset.Key))
         {
             if (!current.TryGetValue(group.Key, out var found))throw new SteamException(SteamFailure.Restricted);
@@ -194,7 +195,8 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         if (command.ListingId is null)
         {
             var report = await InspectAsync(requestKey, cancellationToken);
-            return new(line.LineId, command.State == SaleState.AwaitingSteamGuard ? command.State : SaleState.Unknown, $"{(command.State==SaleState.AwaitingSteamGuard?SteamContract.ApprovalHint(command.Approval):"결과 불명")} · 서버 등록 ID 없음 · 대조 {report.Verdict}: 자동 게시 확정/재전송 금지");
+            var observed=report.ObservedAssetState is {} actual?$"현재 Steam 동일 자산 상태: {ObservedLabel(actual)}. 원요청 귀속은 미확인. ":"현재 동일 자산 게시 증거 없음. ";
+            return new(line.LineId, command.State == SaleState.AwaitingSteamGuard ? command.State : SaleState.Unknown, $"{observed}{(command.State==SaleState.AwaitingSteamGuard?SteamContract.ApprovalHint(command.Approval):"결과 불명")} · 서버 등록 ID 없음 · 대조 {report.Verdict}: 자동 게시 확정/재전송 금지");
         }
         var listing = (await orders.RefreshAsync(cancellationToken)).SingleOrDefault(x => x.ListingId == command.ListingId);
         if (listing is null || listing.HashName != line.Asset.MarketHashName || listing.Asset.AppId != line.Asset.Key.AppId || listing.Asset.ContextId != line.Asset.Key.ContextId || listing.Quantity != line.Quantity ||
@@ -289,8 +291,11 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         }).ToArray();
         var matches = candidates.Count(x => x.Reason == SteamEvidenceReason.CandidateOnly);
         var verdict = candidates.Any(x => x.Reason == SteamEvidenceReason.ServerIdAndFields) ? SteamEvidenceReason.ServerIdAndFields : matches > 1 ? SteamEvidenceReason.MultipleCandidates : matches == 1 ? SteamEvidenceReason.CandidateOnly : SteamEvidenceReason.NoCandidate;
-        var report = new SteamEvidenceReport(requestKey, DateTimeOffset.UtcNow, verdict, candidates); store.SaveEvidence(report); DiagnosticHub.Emit(DiagnosticEvent.EvidenceChecked,DiagnosticArea.Management,verdict==SteamEvidenceReason.ServerIdAndFields?DiagnosticOutcome.Reconciled:DiagnosticOutcome.Unknown,reason:verdict.ToString(),count:candidates.Length,requirement:"F06");return report;
+        var observed=rows.Where(x=>x.Asset==line.Asset.Key&&x.HashName==line.Asset.MarketHashName&&x.Quantity==line.Quantity&&x.Currency==line.Currency&&x.SellerReceives==line.UnitQuote.SellerReceives&&x.Fees==line.UnitQuote.Fees).ToArray();
+        var report = new SteamEvidenceReport(requestKey, DateTimeOffset.UtcNow, verdict, candidates){ObservedAssetState=observed.Length==1?observed[0].State:null,ObservedListingId=observed.Length==1?observed[0].ListingId:null}; store.SaveEvidence(report); DiagnosticHub.Emit(DiagnosticEvent.EvidenceChecked,DiagnosticArea.Management,verdict==SteamEvidenceReason.ServerIdAndFields?DiagnosticOutcome.Reconciled:DiagnosticOutcome.Unknown,reason:verdict.ToString(),count:candidates.Length,requirement:"F06");
+        if(report.ObservedAssetState is {} state)DiagnosticHub.Emit(DiagnosticEvent.EvidenceChecked,DiagnosticArea.Management,DiagnosticOutcome.Completed,to:state.ToString(),reason:"AssetStateObserved",requirement:"F09");return report;
     }
+    public static string ObservedLabel(SaleState state)=>state switch{SaleState.Listed=>"판매 중",SaleState.AwaitingSteamGuard=>"Steam 승인 대기",SaleState.Submitted=>"서버 보류",_=>"상태 미확인"};
     public async Task<SteamRepriceIntent> RepriceAsync(SteamListing listing, long buyer, string key, CancellationToken token = default,string? reviewedOrderbook=null)
     {
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.Reprice,DiagnosticArea.Management,"B10");

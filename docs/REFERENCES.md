@@ -169,3 +169,8 @@ node-steam-session 3ac0f34(MIT), node-steamcommunity fa8d897(MIT), SteamMarketHe
 ## 0.20.7 서버 상태 동기화
 
 2026-10-29 KST,0.20.7: SteamMarketHelper e186d51(MIT)의 fetchInventory/amount·sellItem/removeListing, SSIM28a503f(Apache-2.0)의 SessionManager/InventoryService/AccountTrader/MarketService/MarketPricing/commitAmbiguity 및 marketListingsTruncated·marketOrdersPartial 테스트를 실제 소스로 재확인했다. 공개 소스 전체 기능 대조·추가 파일·채택/제외 이유는 OPEN-SOURCE-FLOW-AUDIT.md 최신 절을 참조한다. 외부 코드 복사·의존성 추가0이며 기존 MIT 인증 이식 고지는 유지한다. SSIM의 상수 수수료·proxy·identity_secret 자동 승인·다계정 운용은 채택하지 않았다.
+
+
+## 0.20.8 단일 가격과 수량 계약
+
+2026-10-29 KST: SteamMarketHelper e186d51(MIT) sellItem의 amount=item.amount, SSIM28a503f(Apache-2.0) sellOnMarket의 amount=1과 getListedAssets를 실제 소스로 재대조. SSIM이 스택 전체를 지원한다고 일반화하지 않는다. 공식 economy_v2.js를 새로 받아 SHA256 A3BBDF0A135524102CD055FD89D37EB3FD672FAE20BFBA0ABC700648DCB52512, m_nConfirmedQuantity/Price 필드 계약을 확인했다. GitHub 커넥터와 공개 JS 다운로드로 확인했으며 web 도구 직접 열기는 실패했다. 직접 코드 복사/새 의존성0, 기존 저작권/MIT고지 보존. 계약·상태 의미를 C# 어댑터에 적용했으며 코드 전체 도입/Valve 허가/실계정 성공을 주장하지 않는다.

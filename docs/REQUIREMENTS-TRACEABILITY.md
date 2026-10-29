@@ -180,8 +180,8 @@ PARTIAL=일부 경로/기능 부족, MISSING=실행 코드 없음, BLOCKED=필�
 | C11 | 검색·정렬·필터 | `SteamWorkspaceViewModel.Filter/Search/Descending` | Steam 보관함 검색/이름 역순 | INV | Y | M | S / N / N | P (범위 한정); S6.Selection; U6.Steam filters | **COMPLETE** | 이번에 실험 화면에도 연결. 검색 내용은 로그에 기록하지 않음 | COMPLETE |
 | C12 | 대량 보관함 성능/가상화 | `VirtualizingTilePanel; RangeObservableCollection; SteamWorkspaceView.xaml` | 보관함 목록/카드 | INV/UI | Y | M | S / N / N | P (범위 한정); F5.10000 adapter rows; U3.10000 repeated scroll | **COMPLETE** | 10,000 합성 항목/분리 렌더 범위, 장기 실사용 성능 인증 아님 | COMPLETE |
 | C13 | 갱신·게임 전환·화면 이동 선택 보존 | `SteamWorkspaceViewModel.RememberSelection/LoadAsync/SetListings` | 보관함/판매 화면 전환 | INV/LIST | Y | M | S / N / N | P (범위 한정); S6.Selection | **COMPLETE** | 실행 세션 내 자산 키별 선택/수량 복원. 새 계정/로그아웃 시 제거, 가격은 다시 조회 | COMPLETE |
-| D01 | 실제 거래 이력 기반 평균 | `SteamMarketDataProvider; Pricing.WeightedAverage` | Mock 가격 기준 / Steam 안내 | PRICE | P | M | S / N / N | P (범위 한정); 초기 가중 평균; F4.history median | **BLOCKED** | 실험 어댑터 Trades는 빈 배열. 정확한 거래 원자료 미확보 | BLOCKED |
-| D02 | 기간·표본·가중 방식 명시 | `PriceIndicators.MedianEstimate; PriceEvidence; SteamMarketDataProvider.RefreshEstimateAsync; SteamWorkspaceViewModel.PricingMode/WindowIndex` | Mock 24시간 VWAP / Steam 중간가격 안내 | PRICE | Y | M | S / N / N | P (합성/내부 경로); S7.Indicators/EstimateFlow/UnavailableAverage/ChangedHistory/StricterContracts; U7.estimate-review | **COMPLETE** | 24h/7d/30d 기간·수집시각·구간 수·서버 거래량·하위 가중 중앙값 방식/원자료 한계 표시. 정확한 평균은 자료 없으면 선택해도 검토 불가. 실제 거래 VWAP 지원 완료 아님. | PARTIAL |
+| D01 | 실제 거래 이력 기반 평균 | `SteamMarketDataProvider; Pricing.WeightedAverage` | Mock 가격 기준 / Steam 안내 | PRICE | P | M | S / N / N | P (범위 한정); 초기 가중 평균; F4.history median | **BLOCKED** | 0.20.8 사용자 요청으로 평균 옵션 철회. 과거 개발 Trades는 빈 배열/원자료 미확보 | BLOCKED |
+| D02 | 기간·표본·가중 방식 명시 | `PriceIndicators.MedianEstimate; PriceEvidence; SteamMarketDataProvider.RefreshEstimateAsync; SteamWorkspaceViewModel.PricingMode/WindowIndex` | 개발 회귀 전용 · 0.20.8 제품 UI 철회 | PRICE | Y | M | S / N / N | P (합성/내부 경로); S7.Indicators/EstimateFlow/UnavailableAverage/ChangedHistory/StricterContracts; U7.estimate-review | **COMPLETE** | 24h/7d/30d 기간·수집시각·구간 수·서버 거래량·하위 가중 중앙값 방식/원자료 한계 표시. 정확한 평균은 자료 없으면 선택해도 검토 불가. 실제 거래 VWAP 지원 완료 아님. | PARTIAL |
 | D03 | VWAP·중앙값 혼동 금지 | `SteamMarketDataProvider.RefreshAsync/GetMedianHistoryAsync` | Steam 보관함/결과 안내 | PRICE | Y | M | S / N / N | P (범위 한정); F4.history median; U5.review | **COMPLETE** | 중간가격 이력을 별도 이름으로 표시, VWAP로 사용 안 함 | COMPLETE |
 | D04 | 거래 자료 부족 안내 | `SalePlanner.Build/Unpriced; SteamReviewRow.Insufficient` | 검토 부족 수량 / 평균가 미제공 안내 | PRICE | Y | M | — / N / N | P (범위 한정); 초기 빈 주문/평균; F3.unpriced review | **COMPLETE** | 부족 값을 생성하지 않음 | COMPLETE |
 | D05 | 매수 가격 단계별 수량 배분 | `Pricing.Allocate; SalePlanner.Build` | 검토 분할 행 | PRICE | Y | M | S / N / N | P (범위 한정); 초기 호가 3/4/3; F5.KRW split | **COMPLETE** | 높은 구매자 가격 우선의 추정 계산 | COMPLETE |
@@ -280,3 +280,8 @@ PARTIAL=일부 경로/기능 부족, MISSING=실행 코드 없음, BLOCKED=필�
 ## 0.20.7 서버 상태 동기화
 
 0.20.7: 최초75개 ID/판정47 COMPLETE·16 PARTIAL·0 MISSING·3 BLOCKED·9 UNVERIFIED를 유지한다. C09/C10/C13·F05/F09의 서버 수량/로컬 전송 이력 분리와 알려진 서버 등록 상태 동기화를 보완했다. 기존 UI 로컬 차감 기대2건을 서버 수량과 별도 중복 전송 보호 검사로 갱신하고 기능350/WPF68/배포19/정리9 통과. 두 프로젝트의 모든 기능과 동등하거나 실서버/실판매 검증이 완료됐다고 판정하지 않는다.
+
+
+## 0.20.8 단일 가격과 수량 계약
+
+사용자의 평균가 옵션 제거 요청으로 D01/D02의 평균·기간 선택 제품 UI를 철회했다. 최초75개 ID와 이전 범위 판정47/16/0/3/9는 이력 추적을 위해 유지하지만 철회 항목을 현재 제품에서 이용 가능하다고 해석하지 않는다. 이력·중앙값 개발 테스트/enum은 과거저널 호환을 위해 남긴다. C09/C10의 단일 가격 classic 스택 수량 계약과 F09의 ID 없는 자산 관측을 보완했지만 실계정 입증 없이 승격하지 않는다.

@@ -24,7 +24,11 @@ public static class SubmissionTransportTests
             ("Server inventory stays selectable after an ambiguous POST while new transmission is guarded",ReservedInventory),
             ("Stack server quantity is not rewritten by historical local intents",PartialReservation),
             ("Normal listing refresh synchronizes a known accepted request without a new POST",KnownListingSync),
-            ("Changed listing fields and ID-less candidates never clear an ambiguous transmission",ConflictingListingSync)
+            ("Changed listing fields and ID-less candidates never clear an ambiguous transmission",ConflictingListingSync),
+            ("Classic owned-app stack amount uses one exact full or partial POST",SingleStack),
+            ("Unverified new-mode stack and multi-price stack cannot send",StackBoundaries),
+            ("ID-less request reports exact server asset membership without claiming attribution",IdlessObservation),
+            ("Stack contract changed after review blocks before intent and transmission",StackModeChanged)
         };
         int passed=0,failed=0;foreach(var(name,run)in tests)try{await run();passed++;Console.WriteLine("PASS "+name);}catch(Exception error){failed++;Console.WriteLine("FAIL "+name+": "+error);}return(passed,failed);
     }
@@ -149,6 +153,54 @@ public static class SubmissionTransportTests
         f.Server.Publish=true;var listing=(await f.Workspace.Orders.RefreshAsync()).Single();
         Check(f.Workspace.Executor.ObserveListings([listing with{SellerReceives=listing.SellerReceives+1}]).Count==0&&f.Workspace.Store.ReadCommand(command.RequestKey)!.State==SaleState.AwaitingSteamGuard);
         Check(f.Workspace.Executor.ObserveListings([]).Count==0&&f.Workspace.Store.ReadCommand(command.RequestKey)!.State==SaleState.AwaitingSteamGuard&&f.Server.Sends==1);
+    }
+    private static string ClassicStackPage=>WalletPage+"<script>g_bViewingOwnProfile=true;g_bReactSellDialog=false;</script>";
+    private static async Task SingleStack()
+    {
+        foreach(var quantity in new[]{1,2,10})
+        {
+            using var f=new ThirteenthStageTests.Fixture();var owned=Math.Max(2,quantity);f.Server.Free=owned;await f.Login();f.Route=p=>p=="/market/"?Json(WalletPage):p.StartsWith("/profiles/")?Json(ClassicStackPage):null;
+            await f.Vm.LoadAsync();f.Vm.Assets.Single().Selected=true;f.Vm.Assets.Single().Quantity=quantity;await f.Vm.RefreshPricesAsync();f.Vm.BuildReview();
+            await f.Workspace!.EnableUserTradingAsync(730,"2","Counter-Strike 2",true,true,default);f.Vm.TradeAccepted=true;
+            if(quantity==10){Check(f.Vm.ReviewRows.Count==3&&!f.Vm.CanTradeReview);foreach(var row in f.Vm.ReviewRows)row.PriceText="115";}
+            Check(f.Workspace.Policy.SingleRequestStackApps.Contains(730)&&!f.Workspace.Policy.StackAmountsSupported&&f.Vm.CanTradeReview);
+            await f.Vm.SubmitAsync();Check(f.Server.Sends==1&&f.Server.Rows.Single().Quantity==quantity&&f.Server.Free==owned-quantity&&f.Vm.Results.Single().State==SaleState.AwaitingSteamGuard);
+            var batch=await f.Workspace.Store.LoadAsync(default);Check(batch!.Snapshot.Lines.Length==1&&batch.Snapshot.Lines[0].Quantity==quantity&&batch.Snapshot.Gross==115L*quantity);
+        }
+    }
+    private static async Task StackBoundaries()
+    {
+        foreach(var classic in new[]{false,true})
+        {
+            using var f=new ThirteenthStageTests.Fixture();f.Server.Free=classic?10:2;await f.Login();f.Route=p=>p=="/market/"?Json(WalletPage):p.StartsWith("/profiles/")?Json(classic?ClassicStackPage:OwnerPage(true)):null;
+            await f.Vm.LoadAsync();f.Vm.Assets.Single().Selected=true;f.Vm.Assets.Single().Quantity=f.Server.Free;await f.Vm.RefreshPricesAsync();f.Vm.BuildReview();
+            try{await f.Workspace!.EnableUserTradingAsync(730,"2","Counter-Strike 2",true,true,default);}catch(SteamException)when(!classic){}
+            f.Vm.TradeAccepted=true;Check(!f.Vm.CanTradeReview&&f.Server.Sends==0);
+            if(classic)
+            {
+                Check(f.Vm.SubmissionAvailability.Contains("단일 가격")&&f.Vm.ReviewRows.Count==3);
+                var batch=new SaleBatchSnapshot(Guid.NewGuid(),f.Workspace!.Authentication.SteamId!,DateTimeOffset.UtcNow,[..f.Vm.ReviewRows.Select((row,index)=>row.Snapshot(index))]);
+                var blocked=false;try{await f.Workspace.Executor.ValidateBatchAsync(batch,default);}catch(SteamException){blocked=true;}
+                Check(blocked&&f.Workspace.Store.Commands().Count==0&&f.Server.Sends==0);
+            }
+        }
+    }
+    private static async Task IdlessObservation()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();f.Server.MissingId=true;await f.Vm.SubmitAsync();var command=f.Workspace!.Store.Commands().Single();
+        f.Server.Publish=true;var report=await f.Workspace.Executor.InspectAsync(command.RequestKey);
+        Check(report.ObservedAssetState==SaleState.Listed&&report.ObservedListingId is not null&&report.Verdict==SteamEvidenceReason.CandidateOnly&&f.Workspace.Store.ReadCommand(command.RequestKey)!.ListingId is null);
+        var result=await f.Workspace.Executor.ReconcileAsync(command.Line,command.RequestKey,default);Check(result.State==SaleState.AwaitingSteamGuard&&result.Message.Contains("현재 Steam 동일 자산 상태: 판매 중")&&f.Server.Sends==1);
+        f.Server.Rows.Add(("9002",command.Line.Quantity,command.Line.UnitQuote.SellerReceives));report=await f.Workspace.Executor.InspectAsync(command.RequestKey);
+        Check(report.ObservedAssetState is null&&report.ObservedListingId is null&&report.Verdict==SteamEvidenceReason.MultipleCandidates);f.Server.Rows.RemoveAt(f.Server.Rows.Count-1);
+        f.Server.ListingAppId=440;report=await f.Workspace.Executor.InspectAsync(command.RequestKey);Check(report.ObservedAssetState is null&&report.ObservedListingId is null);
+    }
+    private static async Task StackModeChanged()
+    {
+        using var f=new ThirteenthStageTests.Fixture();f.Server.Free=2;await f.Login();var newer=false;
+        f.Route=p=>p=="/market/"?Json(WalletPage):p.StartsWith("/profiles/")?Json(newer?OwnerPage(true):ClassicStackPage):null;
+        await f.Vm.LoadAsync();f.Vm.Assets.Single().Selected=true;f.Vm.Assets.Single().Quantity=2;await f.Vm.RefreshPricesAsync();f.Vm.BuildReview();await f.Workspace!.EnableUserTradingAsync(730,"2","Counter-Strike 2",true,true,default);f.Vm.TradeAccepted=true;
+        Check(f.Vm.CanTradeReview);newer=true;await f.Vm.SubmitAsync();Check(f.Server.Sends==0&&f.Workspace.Store.Commands().Count==0&&f.Vm.Status.Contains("스택"));
     }
     private sealed class Trace:IDiagnosticLog{public Guid SessionId{get;}=Guid.NewGuid();public List<DiagnosticRecord> Events{get;}=[];public void Write(DiagnosticRecord value)=>Events.Add(value);}
     private static void Check(bool value){if(!value)throw new Exception("submission transport contract assertion");}

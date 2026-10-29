@@ -10,8 +10,12 @@ public sealed partial class SteamWorkspaceViewModel
     private string managementEligibility="";
     public string ManagementEligibility{get=>managementEligibility;private set=>Set(ref managementEligibility,value);}
     private string listingPriceStatus="판매 중 항목을 선택하고 재등록 가격을 계산하세요. 계산만으로 취소하지 않습니다.";
-    public string[] ListingPricingModes{get;}=[PriceDisplay.Immediate,PriceDisplay.UnavailableAverage];
-    public int ListingPricingMode{get=>listingPricingMode;set{if(value is >=0 and <=1&&Set(ref listingPricingMode,value)){listingPlanRevision++;if(managementReprice)ManagementOpen=false;ListingPriceStatus=value==1?"정확한 평균거래가의 실제 체결 원자료가 없어 평균 기준 자동 재등록은 사용할 수 없습니다. 중앙값을 평균으로 대체하지 않습니다.":"가격 기준 변경 · 다시 계산하고 전체 검토하세요.";PrepareListingReprice?.Refresh();}}}
+    public string[] ListingPricingModes{get;}=[PriceDisplay.Immediate];
+    public int ListingPricingMode{get=>listingPricingMode;set{
+#if MARKETCRATE_LIVE_ONLY
+        value=0;
+#endif
+        if(value is >=0 and <=1&&Set(ref listingPricingMode,value)){listingPlanRevision++;if(managementReprice)ManagementOpen=false;ListingPriceStatus=value==1?"정확한 평균거래가의 실제 체결 원자료가 없어 평균 기준 자동 재등록은 사용할 수 없습니다. 중앙값을 평균으로 대체하지 않습니다.":"가격 기준 변경 · 다시 계산하고 전체 검토하세요.";PrepareListingReprice?.Refresh();}}}
     public string ListingPriceStatus{get=>listingPriceStatus;private set=>Set(ref listingPriceStatus,value);}
     public AsyncCommand PrepareListingReprice{get;private set;}=null!;
     private void InitializeListingReprice()=>PrepareListingReprice=new(PrepareListingRepriceAsync,Error,()=>CanRead&&!Busy&&!AnyReview&&ListingPricingMode==0&&Listings.Any(x=>x.Selected));

@@ -377,3 +377,8 @@ OPEN-SOURCE-FLOW-AUDIT.md에서 pinned node-steam-session/community·SteamMarket
 ## 0.20.7 서버 상태 동기화
 
 0.20.7: helper는 서버 inventory amount를 표시하며 SSIM은 장터 재조회와 불명 commit 보호를 별도로 관리한다. MarketCrate도 서버 수량을 로컬 이력으로 차감하던 UI를 수정하고 알려진 listing ID의 새 읽기 결과를 동기화했다. 예전400의 상세 원인·ID 없는 요청의 인과·실제 스택 반환·수수료 실금액·실판매는 미검증이다. 합성350/WPF68 통과와 실제 계약/Valve 허가는 별개다.
+
+
+## 0.20.8 단일 가격과 수량 계약
+
+현재 공개 공식 classic SellItemDialog는 보유량 입력/확정 수량을 amount로 전송하며 helper도 server amount를 사용한다. 이를 검증한 앱의 한 가격/한 요청 스택 계약으로 구현했다. 실제 계정 부분/전체 스택·게시·반환은 미검증이고 여러 가격·new-mode 수량은 차단한다. SSIM은 amount1이라 이 범위의 검증 근거가 아니다. ID 없는 현재 서버 자산 관측은 기존 요청의 인과 증거가 아니며, 과거400/스택 반환/실판매 성공을 해결된 것으로 판정하지 않는다.
