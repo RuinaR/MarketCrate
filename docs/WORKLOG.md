@@ -1,5 +1,8 @@
 7차 Release 검사 수정: SQLite 파일명 제외 정규식이 정상 의존성 Microsoft.Data.Sqlite.dll까지 거부했다. DB/sidecar 확장자 끝으로 한정해 수정하고 DLL 허용·sqlite/sqlite3-wal/db-shm/.env/session.json/private.key 차단 7개 파일명 회귀를 확인했다. 실제 비밀파일·DB는 생성하지 않았다. 최초 publish는 이 정적 검사에서 FAIL이며 실행파일은 실행하지 않았다.
 
+0.20 최종 배포: source13a339108d082f04fac81fb98ab193e27d7e9108, artifacts/releases/MarketCrate-0.20.0-product-audit-13a3391-win-x64.zip(66,504,701바이트/413파일), SHA256 461D4FD228A9D0EE5025F74C0B0B4AF6F2870A67BF07D0966CBD8B229679CC4E. 전체 entry 해시/metadata/민감·개발파일 제외 PASS, 기능315/WPF65/배포19/정리fixture9 PASS. 실제 실행/서명/Steam 계정·거래/물리GUI는 미검증. 이전 배포/운영자료 보존, 상세CURRENT-STATUS 배포 확정 절 참조.
+
+
 0.20 마지막 대량 갱신 보완: 동일 상품10,000개에 SetPrice를 적용할 때 각 행의 Changed가 전체 선택 요약을 다시 계산하던 경로를 기존 Bulk로 묶었다. PriceNotifications 합성 회귀는10,000개 가격 전부 반영·요약 알림10회 미만·거래 전송0을 확인한다. 이는 실행 시간/CPU 개선 비율을 측정한 벤치마크는 아니다. 최종 기준315개 기능/65개 비표시WPF이며 아래 중간312·314 기록과 구분한다.
 
 ### 0.20 최종 자동 검증

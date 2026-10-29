@@ -1,5 +1,14 @@
 # MarketCrate — 현재 상태 (2026-10-29 KST, 0.20.0)
 
+### 0.20.0 배포 확정
+
+구현 소스 **13a339108d082f04fac81fb98ab193e27d7e9108**(제품 감사3b3f925 + 대량 알림 보완13a3391), Windows x64 self-contained LiveOnly **artifacts/releases/MarketCrate-0.20.0-product-audit-13a3391-win-x64.zip**, **66,504,701바이트 /413파일**. SHA256 **461D4FD228A9D0EE5025F74C0B0B4AF6F2870A67BF07D0966CBD8B229679CC4E**. 원본 `artifacts/releases/product-audit-13a3391-windows-x64`, BuildVersion0.20.0+13a3391…. 전체 ZIP entry SHA/폴더 파일 수/SourceCommit·CLR/WPF10.0.9·SQLite x64·ProtectedData·라이선스 검사 PASS. 사용자 DB/Auth/로그/PDB·Mock/자가검증·테스트 모델은 출하 제외이며 실제 진행/작업 선택 타입은 존재한다. 앱/설치/물리 입력·실계정·서명은 실행·검증하지 않았다.
+
+최종 **기능315/315·비표시WPF65/65·배포계약19/19·정리 fixture9/9 PASS**, Debug/Release 경고·오류0. 최초75개47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED. 실수수료/스택/실판매·물리GUI의 부족한 근거를 COMPLETE로 바꾸지 않았다. 실제 Steam 로그인·조회·판매·취소/Guard 실행0·호스트 GUI/타 프로세스 접근0이다.
+
+latest/rollback은 ignored artifacts/releases.json에 기록했다. 롤백0.17.0(session-1700bfd ZIP/SHA A025E48C5D2FEBBA1C19D99F6F3B1F0DD3A947DBD77F67850910D9FD3363E1CC)과 직전0.19.0·0.18.0 및 모든 운영 자료를 보존했다. 바이너리는 로컬 생성이며 GitHub Release로 업로드하지 않았다. 사용자 최소 확인은 로그인 복원→보관함/판매목록 갱신→카드·목록/게임 전환 선택 유지→가격 검토, 취소 필요 시 '실제 취소' 전용 활성화→전체 취소 검토→선택 요청 상태 확인이다. 실제 계정 실행은 사용자가 위험과 최신 서버 계약을 확인한 후 직접 수행한다.
+
+
 0.20 마지막 대량 갱신 보완: 동일 상품10,000개에 SetPrice를 적용할 때 각 행의 Changed가 전체 선택 요약을 다시 계산하던 경로를 기존 Bulk로 묶었다. PriceNotifications 합성 회귀는10,000개 가격 전부 반영·요약 알림10회 미만·거래 전송0을 확인한다. 이는 실행 시간/CPU 개선 비율을 측정한 벤치마크는 아니다. 최종 기준315개 기능/65개 비표시WPF이며 아래 중간312·314 기록과 구분한다.
 
 ### 0.20 최종 자동 검증

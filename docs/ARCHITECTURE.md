@@ -1,4 +1,4 @@
-# MarketCrate — 아키텍처 (최초 Mock 구현 / 후속 계획)
+# MarketCrate — 아키텍처 (0.20.0)
 
 ## 0.20 제품 경로 보완
 
