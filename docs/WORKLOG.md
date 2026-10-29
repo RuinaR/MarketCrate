@@ -1,5 +1,16 @@
 7차 Release 검사 수정: SQLite 파일명 제외 정규식이 정상 의존성 Microsoft.Data.Sqlite.dll까지 거부했다. DB/sidecar 확장자 끝으로 한정해 수정하고 DLL 허용·sqlite/sqlite3-wal/db-shm/.env/session.json/private.key 차단 7개 파일명 회귀를 확인했다. 실제 비밀파일·DB는 생성하지 않았다. 최초 publish는 이 정적 검사에서 FAIL이며 실행파일은 실행하지 않았다.
 
+### 0.19.0 배포 확정 — 사용자 결함·새 자산 재등록
+
+구현 소스 **cb2c32685cef5c6acb9c3d5faf87f39acd48d65c**, Windows x64 self-contained LiveOnly portable **artifacts/releases/MarketCrate-0.19.0-relist-cb2c326-win-x64.zip**, **66,495,539바이트 /413파일**. SHA256 **42D92ECDDF23BE4789150B52C1585A802C71BBBD31E9AED8155E3A1AE86528D6**. 원본 `artifacts/releases/relist-cb2c326-windows-x64`, BuildVersion0.19.0+cb2c326…. 전체 ZIP entry SHA/폴더 파일 수/SourceCommit·CLR/WPF10.0.9·SQLite x64·ProtectedData·라이선스 일치, 사용자 DB/Auth/로그/PDB 제외·실제 UI/SteamRelistPlan 존재·Mock/자가검증 모델/BAML 부재 검사 PASS. 앱/설치/서명·실제 계정/거래/물리 입력은 Codex 미실행이다.
+
+최종 자동 **기능305/305·비표시WPF61/61·배포계약19/19 PASS**, Debug/Release 경고·오류0. 안전 정리 fixture8 PASS/0 FAIL/1 NOT VERIFIED(실제 junction 환경제약)를 유지했다. 새 재등록 경로6기능/1WPF를 포함해 기존 전 회귀를 유지하며 OperationId/저널·Unknown/새 승인 전 판매0·민감정보 미노출을 검사했다. detached RTB의 loading/combo/product-empty/whole-management/새 자산 ID 검토125%·200%를 직접 열람했다. 최초75개 판정 **47 COMPLETE/15 PARTIAL/0 MISSING/4 BLOCKED/9 UNVERIFIED** 유지, 실거래 전체 완료/REAL_FEE_VERIFIED/LIVE_SELL_VERIFIED/RELEASE_READY를 부여하지 않았다.
+
+최신본/롤백은 ignored artifacts/releases.json에 기록했다. 롤백은 사용자 로그인 복원이 관측된0.17.0(session-1700bfd ZIP/SHA A025E48C5D2FEBBA1C19D99F6F3B1F0DD3A947DBD77F67850910D9FD3363E1CC)이며, 직전0.18.0 및 나머지 이전본도 모두 보존했다. 사용자 Auth/설정/SQLite/의도·예약/진단 증거 삭제0. 바이너리는 로컬 생성이며 GitHub Release 업로드가 아니다.
+
+사용자 최소 확인: 새 폴더에서 직접 실행→저장 로그인 복원→미확인3기본 게임 없음/Steam 커뮤니티 이름·드롭다운 정렬·작업 중 아이콘/문구 확인→지갑/수수료 수동 갱신→판매목록 선택/즉시거래가능가 일괄 검토. 실제 취소/새 등록은 세션 동의와 현재 서버 계약을 통과한 사용자가 직접 실행한다. 취소 후 새 대상 재검토 시 기존 보유분일 수 있는 실제 자산 ID·새 가격·수량을 다시 확인해야 하며, 취소 불명·수수료/통화·자산/호가 불일치는 전송하지 않는다. 지정 경로에 없었던 진단 ZIP은 다시 첨부해야 실제 오류를 분석할 수 있다.
+
+
 ## 0.19.0 추가 — 외부 등록의 새 자산 재판매
 
 SteamMarketHelper의 취소→보관함 재조회→같은 상품의 새 자산 ID 선택 방식을 실제 서비스에 연결했다. 전체 취소 승인 후 서버 접수·목록 부재를 확인하고, 실제 보관함·가용 수량·수수료·공유 호가로 새 대상을 제안한다. 원래 아이템의 반환 확정은 아니며 다른 기존 보유분일 수 있음을 표시한다. 새 실제 자산 ID·수량·가격을 전체 검토해 판매등록 한 번 승인하면 기존 Coordinator가 배치 처리한다. 항목별 추가 판매 클릭은 없다. SQLite 취소 계획/새 배치 연결을 보존하고 불명 취소·원래 예약은 추측으로 해제하지 않는다. 최근 미제출 계획은 사용자 요청 시 재조회하며 자동 거래하지 않는다. 개별 수량1, 최대100등록/10상품만 지원한다.
