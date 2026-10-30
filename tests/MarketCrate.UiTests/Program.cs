@@ -22,7 +22,7 @@ internal static class Program
     private static int passed, failed;
     private static readonly string Folder = Path.Combine(Directory.GetCurrentDirectory(), "runtime", "ui-tests");
     [STAThread]
-    private static int Main()
+    private static int Main(string[] args)
     {
         // This entry point never constructs Window/HwndSource, opens Popup, activates focus, or injects OS input.
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
@@ -33,6 +33,7 @@ internal static class Program
         {
             app.Resources.MergedDictionaries.Add(new() { Source = new Uri("/MarketCrate.App;component/Themes/Tokens/Colors.xaml", UriKind.Relative) });
             app.Resources.MergedDictionaries.Add(new() { Source = new Uri("/MarketCrate.App;component/Themes/Controls/Controls.xaml", UriKind.Relative) });
+            if(args.Contains("--input-paths")){UserInputUiTests.Run(Test,Render);Console.WriteLine($"INPUT UI RESULT {passed} PASS / {failed} FAIL");return failed==0?0:1;}
             using var journal = new SqliteDemoStore(Path.Combine(Folder, Guid.NewGuid().ToString("N")));
             using var vm = new MainViewModel(new(), journal);
             vm.InitializeAsync().GetAwaiter().GetResult();
@@ -134,6 +135,7 @@ internal static class Program
             SessionPersistenceUiTests.Run((name,test)=>Test(name,test),Render);
             ThirteenthStageUiTests.Run((name,test)=>Test(name,test),Render);
             TwelfthStageUiTests.Run((name,test)=>Test(name,test),Render);
+            UserInputUiTests.Run(Test,Render);
             EleventhStageUiTests.Run((name,test)=>Test(name,test),Render);
             Test("바인딩 오류 없음 (의도적 invalid 가격 변환 제외)", () =>
             {

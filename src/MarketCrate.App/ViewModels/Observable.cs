@@ -29,7 +29,8 @@ public sealed class AsyncCommand(Func<Task> action, Action<Exception> onError, F
     private bool running;
     public event EventHandler? CanExecuteChanged;
     public bool CanExecute(object? parameter) => !running && (canExecute?.Invoke() ?? true);
-    public async void Execute(object? parameter)
+    public async void Execute(object? parameter) => await ExecuteAsync(parameter);
+    public async Task ExecuteAsync(object? parameter = null)
     {
         if (!CanExecute(parameter)) return;
         using var scope=DiagnosticHub.Operation(DiagnosticEvent.UiCommand,DiagnosticArea.UI,"G08");

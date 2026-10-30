@@ -39,11 +39,12 @@ public sealed partial class SteamWorkspaceViewModel
     public string AuthenticationText=>LoginState switch{SteamLoginState.Connected when Connected=>"Steam 인증 완료",SteamLoginState.AwaitingMobile=>"QR 승인 대기",SteamLoginState.RequestingQr=>"QR 요청 중",SteamLoginState.Restoring=>"저장 로그인 복원 중",SteamLoginState.Expired=>"세션 만료 · 다시 로그인하세요",SteamLoginState.Denied=>"인증 거절됨",SteamLoginState.AccessBlocked=>"인증 요청 제한",SteamLoginState.NetworkFailure=>"인증 통신 실패",SteamLoginState.ContractFailure=>"인증 응답 확인 필요",SteamLoginState.Cancelled=>"인증 취소됨",_=>"연결 안 됨"};
     public string ConnectionSummary=>RequestsBlocked&&Connected?"Steam 인증 완료 · 요청은 안전을 위해 중단됨":!Connected?AuthenticationText:FeatureContractMismatch?"Steam 인증 완료 · 일부 응답 계약 확인 필요":FeatureRestricted?"Steam 인증 완료 · 일부 조회 권한 확인 필요":Busy?"Steam 인증 완료 · 데이터 조회 중":ReadStatuses.Any(x=>x.State is SteamReadState.Failed or SteamReadState.Unsupported or SteamReadState.AccessBlocked)?"Steam 인증 완료 · 일부 조회 실패":"Steam 인증 완료 · 읽기 연결";
     public string RequestAccessText=>workspace?.Failure switch{SteamFailure.Forbidden=>"서버 접근 제한(403) · 요청을 중단했습니다. 제한을 우회하지 않습니다.",SteamFailure.RateLimited=>"서버 호출 제한(429) · 요청을 중단했습니다. 자동 재시도하지 않습니다.",SteamFailure.ContractChanged=>"응답 계약 불일치 · 추가 요청을 중단했습니다. 인증 만료나 CAPTCHA로 단정하지 않습니다.",SteamFailure.Authentication or SteamFailure.Expired=>"세션 만료 · 계정 연결에서 직접 다시 로그인하세요.",{}=>"안전 차단 · 진단에서 원인을 확인하세요. 재전송하지 않습니다.",_=>FeatureContractMismatch?"일부 조회의 응답 형식이 예상 계약과 다릅니다. 해당 요청은 다시 전송하지 않으며 다른 독립 조회는 사용할 수 있습니다.":FeatureRestricted?"일부 조회의 권한 확인이 필요합니다. 제한된 요청은 차단하고 다른 독립 조회만 사용할 수 있습니다.":Connected?"조회 실패는 인증과 별개입니다. 실패한 조회만 직접 다시 시도할 수 있습니다.":"계정 연결에서 QR 인증을 직접 시작하세요."};
-    public string SelectionSummary=>$"선택 {SelectedSteamRows().Length}종 · {SelectedSteamRows().Sum(x=>(long)x.Quantity)}개";
+    public string SelectionSummary=>HasQuantityInputErrors?$"선택 {SelectedSteamRows().Length}종 · 수량 입력 확인 필요":$"선택 {SelectedSteamRows().Length}종 · {SelectedSteamRows().Sum(x=>(long)x.Quantity)}개";
     public string SelectionEstimate
     {
         get
         {
+            if(HasQuantityInputErrors)return "판매 수량을 확인하세요. 보유 수량 범위의 양의 정수를 입력해야 가격 검토를 진행할 수 있습니다.";
             if(fees is null)return "판매가격을 계산할 수 없습니다. 현재 계정의 수수료 계약을 확인하지 못했습니다. 지갑·수수료를 갱신하세요.";
             var rows=SelectedSteamRows();if(rows.Length==0)return "판매할 항목을 선택하세요.";
             if(rows.Any(x=>x.Price is null))return "선택 시세를 갱신한 뒤 최종 검토하세요.";

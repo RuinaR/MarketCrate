@@ -38,7 +38,26 @@ public sealed partial class SteamWorkspaceViewModel
             if(Games.Count>=100||Games.Any(x=>x.AppId==scope.AppId&&x.ContextId==scope.ContextId))throw new ArgumentException("CatalogDuplicate");
             var next=new SteamGameScope(scope.AppId,scope.ContextId,scope.Name);Games.Add(next);try{SaveCatalog();}catch{Games.Remove(next);throw;}hiddenSuggestions.RemoveAll(x=>x.AppId==scope.AppId&&x.ContextId==scope.ContextId);Raise(nameof(CatalogNotice));Game=next;Status="게임/context 추가 완료 · 직접 갱신할 때만 조회합니다.";
         }catch(Exception error){Error(error);}},()=>CanRead&&!Busy&&!AnyReview);
-        RemoveScope=new(()=>{try{var old=Game;var index=Games.IndexOf(old);Games.Remove(old);try{SaveCatalog();}catch{Games.Insert(index,old);throw;}Game=Games[0];Status="게임/context 목록에서 제거 · 거래 저널/예약은 보존합니다.";}catch(Exception error){Error(error);}},()=>CanRead&&!Busy&&!AnyReview&&Games.Count>1);
+        RemoveScope=new(RemoveScopeNow,()=>CanRead&&!Busy&&!AnyReview&&Games.Count>1);
+    }
+    private void RemoveScopeNow()
+    {
+        try
+        {
+            var old=Game;var index=Games.IndexOf(old);Games.Remove(old);
+            try{SaveCatalog();}catch{Games.Insert(index,old);throw;}
+            Bulk(()=>
+            {
+                foreach(var row in AllSteamRows().Where(x=>x.Asset.Key.AppId==old.AppId&&x.Asset.Key.ContextId==old.ContextId))row.Selected=false;
+                foreach(var row in Listings.Where(x=>x.Listing.Asset.AppId==old.AppId&&x.Listing.Asset.ContextId==old.ContextId))row.Selected=false;
+                foreach(var key in retainedSelections.Keys.Where(x=>x.AppId==old.AppId&&x.ContextId==old.ContextId).ToArray())retainedSelections.Remove(key);
+                foreach(var key in selections.Keys.Where(x=>x.AppId==old.AppId&&x.ContextId==old.ContextId).ToArray())selections.Remove(key);
+                Assets.Clear();Game=Games[0];inventoryViews.Remove(old.Key);
+            });
+            Status="게임/context 목록에서 제거 · 해당 보관함의 판매 선택 해제 · 거래 저널은 보존합니다.";
+            DiagnosticHub.Emit(DiagnosticEvent.UiSelection,DiagnosticArea.UI,requirement:"C13",reason:"ScopeRemoved");
+        }
+        catch(Exception error){Error(error);}
     }
     private Task ListingMetricsAsync()=>Run(async token=>
     {

@@ -25,11 +25,25 @@ public sealed class NumericStepper : Control
         {
             if (IsReadOnly) throw new ElementNotEnabledException();
             if (!double.IsFinite(value) || value < 1 || value > owner.Maximum || value != Math.Truncate(value)) throw new ArgumentOutOfRangeException(nameof(value));
-            owner.SetCurrentValue(ValueProperty, (int)value);
+            owner.SetUserValue((int)value);
         }
     }
-    public static readonly DependencyProperty ValueProperty = DependencyProperty.Register(nameof(Value), typeof(int), typeof(NumericStepper), new FrameworkPropertyMetadata(1, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, null, Coerce));
-    public static readonly DependencyProperty MaximumProperty = DependencyProperty.Register(nameof(Maximum), typeof(int), typeof(NumericStepper), new PropertyMetadata(1, (d, e) => d.CoerceValue(ValueProperty)), value => (int)value >= 1);
+    private bool editingText;
+    public static readonly DependencyProperty ValueProperty = DependencyProperty.Register(nameof(Value), typeof(int), typeof(NumericStepper), new FrameworkPropertyMetadata(1, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, (d,e)=>((NumericStepper)d).SyncText(), Coerce));
+    public static readonly DependencyProperty MaximumProperty = DependencyProperty.Register(nameof(Maximum), typeof(int), typeof(NumericStepper), new PropertyMetadata(1, (d, e) => {d.CoerceValue(ValueProperty);((NumericStepper)d).ValidateText();}), value => (int)value >= 1);
+    public static readonly DependencyProperty InputTextProperty = DependencyProperty.Register(nameof(InputText),typeof(string),typeof(NumericStepper),new FrameworkPropertyMetadata("1",FrameworkPropertyMetadataOptions.BindsTwoWayByDefault,(d,e)=>((NumericStepper)d).ValidateText()));
+    private static readonly DependencyPropertyKey IsInputValidPropertyKey=DependencyProperty.RegisterReadOnly(nameof(IsInputValid),typeof(bool),typeof(NumericStepper),new PropertyMetadata(true));
+    public static readonly DependencyProperty IsInputValidProperty=IsInputValidPropertyKey.DependencyProperty;
+    public string InputText {get=>(string)GetValue(InputTextProperty);set=>SetValue(InputTextProperty,value);}
+    public bool IsInputValid=>(bool)GetValue(IsInputValidProperty);
+    private void SyncText(){if(!editingText&&!System.Windows.Data.BindingOperations.IsDataBound(this,InputTextProperty))SetCurrentValue(InputTextProperty,Value.ToString(System.Globalization.CultureInfo.InvariantCulture));}
+    private void ValidateText()
+    {
+        var valid=int.TryParse(InputText,System.Globalization.NumberStyles.None,System.Globalization.CultureInfo.InvariantCulture,out var value)&&value>=1&&value<=Maximum;
+        SetValue(IsInputValidPropertyKey,valid);
+        if(!valid)return;
+        editingText=true;try{SetCurrentValue(ValueProperty,value);}finally{editingText=false;}
+    }
     public int Value { get => (int)GetValue(ValueProperty); set => SetValue(ValueProperty, value); }
     public int Maximum { get => (int)GetValue(MaximumProperty); set => SetValue(MaximumProperty, value); }
     private static object Coerce(DependencyObject d, object value) => Math.Clamp((int)value, 1, Math.Max(1, ((NumericStepper)d).Maximum));
@@ -42,7 +56,8 @@ public sealed class NumericStepper : Control
         if (downPart != null) downPart.Click += Down;
         if (upPart != null) upPart.Click += Up;
     }
-    private void Step(int delta) => SetCurrentValue(ValueProperty, (int)Math.Clamp((long)Value + delta, 1, Maximum));
+    private void SetUserValue(int value){SetCurrentValue(ValueProperty,value);SetCurrentValue(InputTextProperty,Value.ToString(System.Globalization.CultureInfo.InvariantCulture));}
+    private void Step(int delta) {if(IsEnabled)SetUserValue((int)Math.Clamp((long)Value + delta, 1, Maximum));}
     private void Down(object sender, RoutedEventArgs e) => Step(-1);
     private void Up(object sender, RoutedEventArgs e) => Step(1);
     protected override void OnKeyDown(KeyEventArgs e)

@@ -218,3 +218,7 @@ Orders의 canonical Presence는 새 등록 전 검사·기존 등록 ID 재사�
 번들 Core/WPF10.0.14와 Microsoft.Data.Sqlite/ProtectedData10.0.14·SQLitePCLRaw2.1.14(native3.54.0)를 사용한다. 호스트 SDK/런타임 설치·설정 변경0. 구 provider 생성→신 provider 읽기/쓰기→구 provider 재읽기 합성 DB 호환 PASS. NuGet advisory는 명시적 공개 source/프로젝트 coverage를 검사하며 빈 source를 PASS로 판정하지 않는다. 패키지 감사와 런타임 보안 최소 버전 검사는 별개다.
 
 최초75개47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED를 유지한다. 새 실제 GUI·실계정·판매/취소/Guard0. 이전 사용자 관측을 새 릴리즈 실증으로 확대하지 않는다. Auth/Preferences/거래 저널/진단/롤백 삭제0. 실제 전용 출하와 단일 최종 승인 전체 배치, DPAPI, 정제 JSONL/ZIP, Unknown 비재전송, 타 프로세스 비간섭을 유지한다.
+
+## 0.20.14 검토 입력 계약
+
+선택 행에 잘못된 수량 문자열이 있으면 마지막 정상 정수로 검토를 대신 열지 않는다. 단가×수량과 전체 총액의 정수 범위도 검토·제출에서 검증한다. 명시적으로 게임을 제거하면 그 scope의 선택을 해제하고 영속 저널은 보존한다. 사용자 ICommand 경로로 단일 승인 분할 전송·중복 승인·두 번째 요청 실패 시 Guard/Unknown/Ready 보존·재접속 비재전송을 검증했다. 실제 스택/통화/수수료 계약 보호와 공식 앱 사용자 수동 확인은 그대로이며 실계정 성공 증거는 아니다.

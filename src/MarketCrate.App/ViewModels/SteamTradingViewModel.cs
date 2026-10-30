@@ -28,6 +28,7 @@ public sealed partial class SteamWorkspaceViewModel
     public Task OpenTradingReviewAsync()=>Run(async token=>
     {
         RequireConnection();
+        if(HasQuantityInputErrors)throw new SteamException(SteamFailure.Restricted);
         if(NeedsLiveReviewPreparation)
         {
             var scopes=SelectedSteamRows().Select(x=>x.Asset).DistinctBy(x=>(x.Key.AppId,x.Key.ContextId)).ToArray();

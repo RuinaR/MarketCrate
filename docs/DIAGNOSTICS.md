@@ -309,3 +309,7 @@ RequestNotSent는 현재 Executor가 판매 제출을 시도하지 않았다는 
 ## 0.20.13 진단/복구 신뢰도
 
 배치 ID가 같아도 계정/가격 snapshot이 다르면 전송 전 불변성 위반으로 종료한다. 취소 후 새 대상은 현재 보관함과 active/pending membership을 재검증하며 새 승인 전 POST하지 않는다. UI pending 수량·취소 원 sell 조회는 현재 계정으로 한정하고 다른 계정의 저널은 삭제하지 않는다. 진단 로그를 거래 확정의 권위로 사용하지 않으며 Unknown 원요청 ID/과거 감사 기록은 유지한다. 기존 민감정보 정제/디스크 실패/연결 ID/ZIP 사용자 검토 회귀는 최종 전체 검사에 포함했다. runtime의 보안/호환/회귀 보고서는 합성 테스트 증거이며 배포 ZIP/운영 진단에 포함하지 않는다.
+
+## 0.20.14 사용자 입력·명령 검증
+
+수량 입력의 유효↔오류 전이만 UiSelection(9004), C07, InputRejected/Committed 및 Validation으로 기록한다. 원문 숫자/입력 문자열·계정/자산 식별자·키 입력 내용은 저장하지 않는다. 키마다 반복 로그를 남기지 않는다. 명시적 scope 제거는 ScopeRemoved 전이이며 저널 삭제가 아니다. AsyncCommand Execute/ExecuteAsync가 동일 UI 작업 scope와 예외 경로를 사용한다. 새 사용자 시나리오 UJ02는 동일 OperationId의 HTTP/JournalWrite/항목 Committed3건 연결과 토큰·쿠키·계정 원문 부재를 검사한다. 기존 정제·회전·ZIP 검토/내보내기·SQLite 권위·Unknown 비재전송 보호는 유지한다.

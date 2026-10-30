@@ -509,3 +509,11 @@ UnsentAuthorization/UnsentQueueCancellation은 수정 전2FAIL→미전송Failed
 ### 0.20.13 후보 최종 검사
 
 기능375/375·자체WPF71/71·배포20/20 PASS. 추가 라이선스3개로 합성 정리 fixture가25/27파일이 되었는데 기대22/24가 남아 발생한 검사기 실패를 수정했다. 내용/해시/경계 검증을 유지한 최종 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가), advisory 검사기6/6 PASS. 공개 source/5개 프로젝트 NuGet audit PASS, 번들10.0.14에서 기능375/375 PASS. build 경고/오류0. 실제 앱/설치/실계정/물리 GUI 미실행. 200% 새 대상 검토 자체 RTB 이미지의 행/가격/버튼/경고 가독성을 직접 확인했으며 물리 DPI 검증이 아니다.
+
+## 0.20.14 사용자 실행·입력 경로 최종 QA
+
+[USER-JOURNEY-QA](USER-JOURNEY-QA.md)의 UJ01–UJ14 및 UIJ01–UIJ04를 추가했다. 수량12종, 가격13종, 보관함 응답10종, 판매 응답9종+부분 실패, 카탈로그7종, 검색5종을 동등 분할/경계값으로 검증했다. 전체 조합/무한 조작 순서를 완전 탐색했다는 의미가 아니다. 같은 배치 승인 재클릭, 응답 대기 중 중단/로그아웃, 늦은 응답, Unknown 재접속, 명시적 게임 제거와 정상 전환을 구분한다.
+
+최종 runtime/journey-final-regression.txt: 기능389/389·비표시WPF75/75·배포20/20·advisory 검사기6/6 PASS. 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 경고/오류0. 자체125% 입력 오류/200% 검토 및 진행 결과 PNG 직접 검토. 실제 창/입력/Popup·모니터DPI·실계정 인증·거래/휴대폰은 NOT VERIFIED. Release는 합성/자가검증 UI를 포함하지 않는다. 이전 회귀/사용자 관측과 새 실환경 검증을 혼동하지 않는다.
+
+0.20.14 동일 후보를 번들 Core/WPF10.0.14 테스트 콘솔로도 순차 실행해 기능389/389·비표시WPF75/75 PASS를 확인했다. 실제 창/물리 입력/실계정 실행은0이다.

@@ -1,5 +1,10 @@
-# MarketCrate — 현재 상태 (2026-10-31 KST, 0.20.13)
-## 최신 배포 — 0.20.13
+# MarketCrate — 현재 상태 (2026-10-31 KST, 0.20.14)
+## 0.20.14 — 사용자 실행·입력 경로
+
+UI에 연결된 ICommand의 활성 조건과 실행을 기준으로 최초 실행부터 로그인·조회·수량/가격·단일 승인 배치·Guard/게시 대조·취소·재접속을 검증했다. 수량 LostFocus 지연/잘못된 입력의 이전 수량 사용·재활용 오류 소실, 제거된 게임의 숨은 선택, 금액/합계 overflow 표시 결함을 수정했다. [사용자 경로 QA](USER-JOURNEY-QA.md)에14개 명령 시나리오·수량12종/가격13종/HTTP·판매응답·카탈로그 입력 행렬과4개 실제 템플릿 검사를 연결했다.
+
+최종 기능389/389·비표시WPF75/75·배포20/20·advisory 검사기6/6 PASS. 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가), build 경고/오류0.125% 수량 오류와200% 최종 검토 자체 RTB 이미지를 직접 검토했다. 실제 창/물리 입력/Popup/모니터DPI·실계정/판매/취소/Guard는 실행하지 않았다. 전체 경우의 수100% 검증 또는 LIVE/전체 RELEASE_READY 선언0. 최초75개 판정47/16/0/3/9 유지. 운영 데이터·과거 배포·Auth/저널/진단 삭제0.
+## 이전 배포 — 0.20.13
 
 소스 **f1c86318e1f49a1b9f46fe69e5e56b6d25970248**, Windows x64 self-contained portable. `artifacts/releases/MarketCrate-0.20.13-stability-f1c8631-win-x64.zip` **66,738,853바이트 /418파일**. SHA256 **2F45D2EFD6C21D54AB30271D31F9448C3F15FE5F3E300B49B6AD10CF27B528CE**. 전체 ZIP entry/출하 파일 SHA 일치, SourceCommit/버전·x64 Core/WPF10.0.14/SQLite/DPAPI·원본 라이선스 byte 일치·실제 전용 PE/BAML·Mock/개발자가검증/사용자DB/Auth/로그/PDB 제외 검사 PASS. Release build 경고/오류0. 실제 앱/설치 실행은 미실행이다.
 

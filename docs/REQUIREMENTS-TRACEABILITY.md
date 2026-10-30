@@ -310,3 +310,7 @@ C03/C04/F03/F04/F05/F09/F10의 비장터 hash 누락·플래그 호환/전송 �
 번들 Core/WPF10.0.14와 Microsoft.Data.Sqlite/ProtectedData10.0.14·SQLitePCLRaw2.1.14(native3.54.0)를 사용한다. 호스트 SDK/런타임 설치·설정 변경0. 구 provider 생성→신 provider 읽기/쓰기→구 provider 재읽기 합성 DB 호환 PASS. NuGet advisory는 명시적 공개 source/프로젝트 coverage를 검사하며 빈 source를 PASS로 판정하지 않는다. 패키지 감사와 런타임 보안 최소 버전 검사는 별개다.
 
 최초75개47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED를 유지한다. 새 실제 GUI·실계정·판매/취소/Guard0. 이전 사용자 관측을 새 릴리즈 실증으로 확대하지 않는다. Auth/Preferences/거래 저널/진단/롤백 삭제0. 실제 전용 출하와 단일 최종 승인 전체 배치, DPAPI, 정제 JSONL/ZIP, Unknown 비재전송, 타 프로세스 비간섭을 유지한다.
+
+## 0.20.14 사용자 경로 추가 증거
+
+기존75개 ID와47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED를 유지한다. C07 수량, C13 선택 보존/명시적 제거, E05/E09 가격·합계/사전검증, F01/F03/F05/F10 단일 승인/중복/Unknown/복구, G08 입력·접근성의 새 증거는 USER-JOURNEY-QA(UJ01–14/UIJ01–04) 및 UserJourneyTests/UserInputUiTests다. 이전 실패를 직접 수정했으나 합성/WPF 성공만으로 실계정 항목을 승격하지 않는다.

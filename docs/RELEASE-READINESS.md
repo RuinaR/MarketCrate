@@ -45,3 +45,8 @@
 상세 source comparison은 OPEN-SOURCE-FLOW-AUDIT, UI/VM 연결은 REQUIREMENTS-TRACEABILITY, 사용자 직접 단계는 READ-ONLY-VALIDATION 및 ISOLATED-GUI-QA를 따른다.
 
 중간 회귀에서는 출하 제외인 개발 FileBatchJournal의 atomic File.Move 접근 거부가1회 관측됐다(374/375). 구체 원인은 미확정이며 해당 경로의 독립3회 반복은3/3 PASS다. 타 프로세스 조사·예외 삼키기·위험한 재전송은 하지 않았다. 원기록을 보존하고 최종 후보 결과와 분리한다.
+
+
+## 0.20.14 추가 입력 경로 검증
+
+수량 입력/재활용·명시적 게임 제거·합계 검증 보완과 사용자 명령14개 그룹/비표시 템플릿4개 그룹을 추가했다. 기본/번들10.0.14 양쪽에서 기능389/389·WPF75/75 PASS다. 자세한 입력 행렬과 실환경 미검증은 [USER-JOURNEY-QA](USER-JOURNEY-QA.md)를 따른다. 위0.20.13 보안·구/신 SQLite 검증은 그대로 유지하며 실계정 성공으로 확대하지 않는다.
