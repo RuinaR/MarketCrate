@@ -231,3 +231,6 @@ WPF 검사는 MainView/UserControl을 직접 Measure/Arrange하고 RenderTargetB
 ## 0.20.3 활성화 실패 안내·진단 연결 (2026-10-29 KST)
 
 0.20.3은 실제 거래 활성화 실패를 지갑·수수료·보관함·판매목록 대조 단계별로 안내합니다. 문제 해결에서는 최근 실패 작업을 우선 선택합니다. 활성화 실패 시 반복하지 말고 새로 표시된 확인 단계와 검토한 진단 ZIP을 확인하세요. 기본 모드 선택과 별개로 서버 계약 보호를 유지하며 실제 거래 성공이 검증된 배포본이라는 뜻이 아닙니다.
+## 0.20.13 배포
+
+[최신 portable ZIP](artifacts/releases/MarketCrate-0.20.13-stability-f1c8631-win-x64.zip), 소스 f1c8631. SHA256 2F45D2EFD6C21D54AB30271D31F9448C3F15FE5F3E300B49B6AD10CF27B528CE. 418파일 전체 해시 검증·실제 전용 검사 PASS. 번들 .NET/WPF10.0.14이며 호스트 런타임 설치가 필요 없는 구성이다. 롤백0.20.12와 기존 사용자 자료를 보존했다. 새 실계정/물리GUI 검증과 전체 RELEASE_READY는 미완료다. 세부 검사와 남은 조건은 [릴리즈 신뢰도](docs/RELEASE-READINESS.md)를 따른다.

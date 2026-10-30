@@ -563,3 +563,13 @@ ID 없는 요청은 현재 동일 자산의 게시 관측과 원요청 귀속을
 번들 Core/WPF10.0.14와 Microsoft.Data.Sqlite/ProtectedData10.0.14·SQLitePCLRaw2.1.14(native3.54.0)를 사용한다. 호스트 SDK/런타임 설치·설정 변경0. 구 provider 생성→신 provider 읽기/쓰기→구 provider 재읽기 합성 DB 호환 PASS. NuGet advisory는 명시적 공개 source/프로젝트 coverage를 검사하며 빈 source를 PASS로 판정하지 않는다. 패키지 감사와 런타임 보안 최소 버전 검사는 별개다.
 
 최초75개47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED를 유지한다. 새 실제 GUI·실계정·판매/취소/Guard0. 이전 사용자 관측을 새 릴리즈 실증으로 확대하지 않는다. Auth/Preferences/거래 저널/진단/롤백 삭제0. 실제 전용 출하와 단일 최종 승인 전체 배치, DPAPI, 정제 JSONL/ZIP, Unknown 비재전송, 타 프로세스 비간섭을 유지한다.
+
+## 최신 배포 — 0.20.13
+
+소스 **f1c86318e1f49a1b9f46fe69e5e56b6d25970248**, Windows x64 self-contained portable. `artifacts/releases/MarketCrate-0.20.13-stability-f1c8631-win-x64.zip` **66,738,853바이트 /418파일**. SHA256 **2F45D2EFD6C21D54AB30271D31F9448C3F15FE5F3E300B49B6AD10CF27B528CE**. 전체 ZIP entry/출하 파일 SHA 일치, SourceCommit/버전·x64 Core/WPF10.0.14/SQLite/DPAPI·원본 라이선스 byte 일치·실제 전용 PE/BAML·Mock/개발자가검증/사용자DB/Auth/로그/PDB 제외 검사 PASS. Release build 경고/오류0. 실제 앱/설치 실행은 미실행이다.
+
+기능375/375·비표시WPF71/71·배포20/20·advisory 검사기6/6 PASS, 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 공개 NuGet advisory 5개 프로젝트/직접·전이 검사 PASS. 번들10.0.14 콘솔 기능375/375, 구/신/구 provider의 active/archive/Unknown/Preferences 보존 PASS. 중간 개발 파일 저널 접근 거부1회와 정리 fixture 기대 파일 수 수정은 QA-MATRIX에 숨기지 않고 기록했다.
+
+최신본0.20.13 /롤백0.20.12(c75ceff, SHA256 2C0AF766F53FCED230F29FA86A6AC7035E08D51B1876897D60BC64653D6E8534). 과거 배포·사용자 설정·Auth·SQLite·거래 저널·진단 삭제0, 외부 바이너리 업로드0. 최초75개47/16/0/3/9 유지. 새 실계정/휴대폰 승인/실제 게시·물리GUI 미검증이며 전체 RELEASE_READY/LIVE_SELL_VERIFIED/100%를 선언하지 않는다.
+
+최소 사용자 확인: ZIP을 새 폴더에 풀기 → 로그인 복원 → 실제 보관함·판매목록·수수료·호가 직접 갱신 → 단일 항목의 새 가격/수량 최종 검토. 사용자가 거래 위험을 수락해 시험하는 경우에만 전체 판매등록1회 → 필요한 공식 모바일/이메일 확인 → 승인 후 게시 확인. Unknown/계약 불일치/금액 이상 시 추가 제출하지 않고 해당 작업 진단을 내보낸다. 취소 후 새 대상 검토는 원래 반환 확정과 다르며 실제 자산 ID·새 가격을 다시 확인한다.
