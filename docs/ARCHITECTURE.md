@@ -255,3 +255,7 @@ ISubmissionFailure marker는 미전송을 아는 Executor만 설정한다. Steam
 ## 0.20.14 입력에서 제출까지
 
 NumericStepper.InputText → SteamAssetRow.QuantityText/QuantityInputValid → SteamWorkspaceViewModel.HasQuantityInputErrors → Review/OpenTradingReview 검증으로 연결한다. 실제 뷰의 Value는 OneWay여서 WPF 재바인딩의 기본값이 행의 오류 문자를 덮지 않는다. ReviewAmountsValid는 행별 곱/전체 합계를 검사하고 Submit CanExecute/실행 모두 같은 조건을 요구한다. AsyncCommand.Execute와 ExecuteAsync는 같은 본문이며 테스트를 위해 서비스 호출로 우회하지 않는다. 서버/SQLite/Unknown/불변 배치 계약은 유지한다. 명시적 scope 제거의 선택 해제는 영속 거래 저널과 별개다.
+
+## 0.20.15 가격 조정의 경계
+
+Core의 PreviousValidBuyerPrice는 기존 FromBuyer 역산을 재사용하는 순수 함수다. VM LowerPriceOneStep은 저장하지 않는 새 검토의 선택이며 SteamReviewRow의 readonly BaselineQuote/LowerStepRequested와 현재 Quote로 비교를 계산한다. 실제 SaleLineSnapshot/SQLite 스키마는 변경하지 않고 최종 승인 quote만 고정한다. 같은 상품의 원래 주문 잔량 배분 후 가격별 제안을 변환하므로 수량 배정은 그대로다. 최종 재검증은 원래 orderbook digest/가격 시각을 계속 사용한다. 가격 옵션은 계정/수수료/전송 권한과 독립이고 새 권한을 부여하지 않는다.

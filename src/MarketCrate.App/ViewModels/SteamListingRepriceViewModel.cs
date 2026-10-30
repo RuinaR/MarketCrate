@@ -47,11 +47,20 @@ public sealed partial class SteamWorkspaceViewModel
         {ListingPriceStatus="조회 중 선택이 변경되었습니다. 다시 계산하세요. 취소/등록하지 않았습니다.";return;}
         var plan=SalePlanner.Build(rows.Select(x=>new SaleSelection(ListingAsset(x.Listing),books[(x.Listing.Asset.AppId,x.Listing.HashName)],1)),PriceBasis.Immediate);
         if(plan.UnpricedQuantity>0){ListingPriceStatus=$"구매주문 잔량 부족 {plan.UnpricedQuantity}개 · 전체 검토를 만들지 않았습니다. 수량/선택 범위를 줄이거나 최신 호가를 확인하세요.";return;}
-        var proposals=plan.Lines.Select(x=>(Row:rows.Single(r=>r.Listing.Asset==x.Selection.Asset.Key),Price:x.Allocation.BuyerPays,Fees:schedules[x.Selection.Asset.Key.AppId])).ToArray();
+        (SteamListingRow Row,long Price,SteamFeeSchedule Fees,FeeQuote? Baseline)[] proposals;
+        try
+        {
+            proposals=plan.Lines.Select(x=>
+            {
+                var schedule=schedules[x.Selection.Asset.Key.AppId];var baseline=schedule.FromBuyer(x.Allocation.BuyerPays,!LowerPriceOneStep);
+                return(Row:rows.Single(r=>r.Listing.Asset==x.Selection.Asset.Key),Price:LowerPriceOneStep?schedule.PreviousValidBuyerPrice(baseline.BuyerPays).BuyerPays:baseline.BuyerPays,Fees:schedule,Baseline:LowerPriceOneStep?(FeeQuote?)baseline:null);
+            }).ToArray();
+        }
+        catch(ArgumentException){ListingPriceStatus=LowerPriceOneStep?"한 단계 낮은 유효 가격을 계산할 수 없는 항목이 있습니다. 최저 가격·수수료를 확인하고 옵션이나 선택을 변경하세요. 취소·등록하지 않았습니다.":"호가와 유효 가격 증분·수수료가 일치하지 않습니다. 최신 자료를 확인하세요. 취소·등록하지 않았습니다.";return;}
         foreach(var proposal in proposals)_=proposal.Fees.FromBuyer(proposal.Price); // No rounding/substitution of unrepresentable prices.
         foreach(var schedule in schedules)gameFees[schedule.Key]=schedule.Value;
         fees=schedules.GetValueOrDefault(Game.AppId)??schedules.Values.First();Raise(nameof(CurrencyText));
-        Bulk(()=>{foreach(var proposal in proposals)proposal.Row.SetProposedPrice(proposal.Price,proposal.Fees);});
+        Bulk(()=>{foreach(var proposal in proposals)proposal.Row.SetProposedPrice(proposal.Price,proposal.Fees,proposal.Baseline);});
         BuildManagement(true);ListingPriceStatus=$"{rows.Length}건 가격별 분배 완료 · 현재 구매주문 기준이며 체결 보장 없음 · 검토 전체를 한 번 승인하면 취소/반환 확인 후 직렬 재등록합니다.";
         DiagnosticHub.Emit(DiagnosticEvent.PricePlan,DiagnosticArea.Management,requirement:"B10",count:rows.Length,reason:"Immediate");
     });

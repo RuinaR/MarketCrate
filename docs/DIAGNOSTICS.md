@@ -313,3 +313,7 @@ RequestNotSent는 현재 Executor가 판매 제출을 시도하지 않았다는 
 ## 0.20.14 사용자 입력·명령 검증
 
 수량 입력의 유효↔오류 전이만 UiSelection(9004), C07, InputRejected/Committed 및 Validation으로 기록한다. 원문 숫자/입력 문자열·계정/자산 식별자·키 입력 내용은 저장하지 않는다. 키마다 반복 로그를 남기지 않는다. 명시적 scope 제거는 ScopeRemoved 전이이며 저널 삭제가 아니다. AsyncCommand Execute/ExecuteAsync가 동일 UI 작업 scope와 예외 경로를 사용한다. 새 사용자 시나리오 UJ02는 동일 OperationId의 HTTP/JournalWrite/항목 Committed3건 연결과 토큰·쿠키·계정 원문 부재를 검사한다. 기존 정제·회전·ZIP 검토/내보내기·SQLite 권위·Unknown 비재전송 보호는 유지한다.
+
+## 0.20.15 가격 조정
+
+하향 옵션의 명시적 선택은 PricePlan(5000)/E05/LowerValidStep(OFF는Immediate)로 기록한다. 새 reason을 안전 토큰 목록에 추가했다. 원문/계정/인증·HTTP 원문 없이 기존 UI OperationId→최종검토→배치/항목 quote→HTTP→SQLite 결과 경로를 유지한다. 기본/변경 금액 비교는 실제 검토 입력을 사용하며 최종 snapshot은 그 승인 가격이다. 로그나 UI 비교가 서버 체결 증거는 아니다. 기존 ZIP 정제·사용자 검토·저널 권위를 유지한다.

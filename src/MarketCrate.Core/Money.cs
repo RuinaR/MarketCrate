@@ -55,6 +55,14 @@ public record SteamFeeSchedule(string Currency, long MinimumWire, long Increment
         if (requireExact && quote.BuyerPays != buyer) throw new ArgumentException("UnrepresentableBuyerPrice");
         return quote;
     }
+    // Greatest reachable buyer total strictly below an already valid baseline.
+    // Fee gaps and currency increments can make this much more than one display unit.
+    public FeeQuote PreviousValidBuyerPrice(long baselineBuyer)
+    {
+        var baseline=FromBuyer(baselineBuyer);
+        if(baseline.BuyerPays<=1)throw new ArgumentException("BelowMinimum");
+        return FromBuyer(baseline.BuyerPays-1,false);
+    }
     public void Validate()
     {
         _ = new Money(0, Currency);

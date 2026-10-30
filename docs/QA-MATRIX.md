@@ -517,3 +517,13 @@ UnsentAuthorization/UnsentQueueCancellation은 수정 전2FAIL→미전송Failed
 최종 runtime/journey-final-regression.txt: 기능389/389·비표시WPF75/75·배포20/20·advisory 검사기6/6 PASS. 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 경고/오류0. 자체125% 입력 오류/200% 검토 및 진행 결과 PNG 직접 검토. 실제 창/입력/Popup·모니터DPI·실계정 인증·거래/휴대폰은 NOT VERIFIED. Release는 합성/자가검증 UI를 포함하지 않는다. 이전 회귀/사용자 관측과 새 실환경 검증을 혼동하지 않는다.
 
 0.20.14 동일 후보를 번들 Core/WPF10.0.14 테스트 콘솔로도 순차 실행해 기능389/389·비표시WPF75/75 PASS를 확인했다. 실제 창/물리 입력/실계정 실행은0이다.
+
+## 0.20.15 한 단계 하향 옵션
+
+LowerPriceStepTests10그룹 및 LowerPriceStepUiTests2그룹 추가. KRW70→60/수령50→40/20% 감소, USD23→21 gap,4개 계약별250가격의 가장 가까운 하위 도달 가격, 최소 불가·수동 우회 차단, 실제 수동 입력 비교 갱신, 기본OFF/로그아웃 reset,3/4/3 배분·단일 승인·저널 확정가격·중복 승인, 자산 변경 차단, 소유 취소·재등록 후 하향 wire가격을 검사한다. 새 실제 체크박스/검토 비교·합계·최저가/승인 차단을 비표시 STA125/200% RTB로 검토했다.
+
+기존 전체 기능399/399·비표시WPF77/77·배포20/20·advisory 검사기6/6 PASS를 확인했고, 마지막 문구/관리 승인조건 보완 후 신규10/2도 재검증했다. 최종 회귀 결과는 확정 배포 절에 기록한다. 실제 계정/판매/취소/Guard/물리 GUI/DPI 미검증. 이 옵션이 실제 즉시 체결을 보장하지 않는다.
+
+### 0.20.15 최종 검증
+
+전체 runtime/lower-step-final-regression.txt 기능399/399·비표시WPF77/77·배포20/20·advisory 검사기6/6 PASS, 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 마지막 표시/관리 조건과 취소 후 실제 하향 wire 확인 후 관련10기능/2WPF 재검증 PASS. 새 수동 가격 증가/감소 비교를 포함한10/2는 번들 .NET/WPF10.0.14 테스트 콘솔에서도 PASS다.125/200% RTB에서 전체/행별 금액 비교와 스크롤·최종 버튼을 직접 열람했다. 실제 창·계정·조회·거래·Guard·원본 운영 데이터 변경0. 새 옵션의 실제 체결은 미검증이다.

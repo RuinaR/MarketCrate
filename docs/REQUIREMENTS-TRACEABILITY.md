@@ -314,3 +314,7 @@ C03/C04/F03/F04/F05/F09/F10의 비장터 hash 누락·플래그 호환/전송 �
 ## 0.20.14 사용자 경로 추가 증거
 
 기존75개 ID와47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED를 유지한다. C07 수량, C13 선택 보존/명시적 제거, E05/E09 가격·합계/사전검증, F01/F03/F05/F10 단일 승인/중복/Unknown/복구, G08 입력·접근성의 새 증거는 USER-JOURNEY-QA(UJ01–14/UIJ01–04) 및 UserJourneyTests/UserInputUiTests다. 이전 실패를 직접 수정했으나 합성/WPF 성공만으로 실계정 항목을 승격하지 않는다.
+
+## 0.20.15 추가 선택 가격 조정
+
+최초75개 ID/판정47 COMPLETE·16 PARTIAL·0 MISSING·3 BLOCKED·9 UNVERIFIED 유지. E05/E09/F01/F03의 새 증거는 LowerPriceStepTests의 가격 전후·부족/최저가·분할 수량·단일 승인 snapshot·소유 취소/재등록, LowerPriceStepUiTests의 실제 바인딩·전체/행별 감소액·차단 상태다. 한 단계 하향 옵션은 사용자 명시적 추가 요청이며 즉시거래가능가 기본 기준/평균 제거/기존 저널은 유지한다. 실계정 체결 또는 전체 RELEASE_READY로 승격하지 않는다.

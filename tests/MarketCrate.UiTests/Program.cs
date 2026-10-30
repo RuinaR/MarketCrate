@@ -33,6 +33,7 @@ internal static class Program
         {
             app.Resources.MergedDictionaries.Add(new() { Source = new Uri("/MarketCrate.App;component/Themes/Tokens/Colors.xaml", UriKind.Relative) });
             app.Resources.MergedDictionaries.Add(new() { Source = new Uri("/MarketCrate.App;component/Themes/Controls/Controls.xaml", UriKind.Relative) });
+            if(args.Contains("--lower-step")){LowerPriceStepUiTests.Run(Test,Render);Console.WriteLine($"LOWER UI RESULT {passed} PASS / {failed} FAIL");return failed==0?0:1;}
             if(args.Contains("--input-paths")){UserInputUiTests.Run(Test,Render);Console.WriteLine($"INPUT UI RESULT {passed} PASS / {failed} FAIL");return failed==0?0:1;}
             using var journal = new SqliteDemoStore(Path.Combine(Folder, Guid.NewGuid().ToString("N")));
             using var vm = new MainViewModel(new(), journal);
@@ -136,6 +137,7 @@ internal static class Program
             ThirteenthStageUiTests.Run((name,test)=>Test(name,test),Render);
             TwelfthStageUiTests.Run((name,test)=>Test(name,test),Render);
             UserInputUiTests.Run(Test,Render);
+            LowerPriceStepUiTests.Run(Test,Render);
             EleventhStageUiTests.Run((name,test)=>Test(name,test),Render);
             Test("바인딩 오류 없음 (의도적 invalid 가격 변환 제외)", () =>
             {
