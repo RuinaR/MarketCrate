@@ -44,6 +44,7 @@ public sealed partial class SteamWorkspaceViewModel
         token.ThrowIfCancellationRequested();
         var existing=Results.FirstOrDefault(x=>x.LineId==result.LineId);
         if(existing is not null)Results[Results.IndexOf(existing)]=result;else Results.Add(result);
+        if(await workspace.Store.LoadAsync(token) is {} active)UpdateObservedStates(active);
         RefreshRequests();Raise(nameof(BatchProgressText));EvidenceText=result.Message;
         Status=command.Kind=="cancel"?"취소 요청 상태 확인 완료 · 목록 부재만으로 반환을 확정하지 않습니다. 새 판매 요청은 보내지 않았습니다.":"판매 요청 상태 확인 완료 · 새 등록/재전송 없음";
         DiagnosticHub.Emit(DiagnosticEvent.EvidenceChecked,DiagnosticArea.Management,to:result.State.ToString(),requirement:"B09",reason:"RecoverOnly");

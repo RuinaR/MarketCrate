@@ -486,3 +486,10 @@ SSIM 이식 최종 검증: 기능359/359·비표시WPF69/69·배포계약19/19·
 - 초기 통합 빌드에서 신규 테스트의 링크되지 않은 fixture 참조와 취소 대조 메서드 이름 오류2건을 수정했다. 초기 회귀3건에서 전체 버킷 부재 거부 조건은 다시 유지했고, 스택의 ‘다른 등록 보유’와 ‘원 취소 계속 관측’을 분리했으며, 합성 fixture의 빈 목록에 남던 잔여 assets metadata 및 nullable 경로를 수정했다. 검증 기준을 완화해 성공시키지 않았다.
 
 0.20.11 최종 검증: 기능367/367 PASS, 비표시WPF70/70 PASS, 배포계약19/19 PASS, 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 빌드 경고/오류0. 최종 자체 렌더에서 선택된 요청이 내부 record 문자열(Key 포함)로 보이는 공통 ComboBox 템플릿 누락을 발견했다. SelectionContent의 ItemTemplateSelector 연결을 복구하고 최근 요청 기본 선택/기존 선택 유지 및 DisplayMemberPath의 실제 렌더 텍스트 검사를 추가했다. 마지막 템플릿 변경 후 전체 비표시 WPF70개를 다시 통과했고125/200% 승인 인계 이미지와 게시 후 이미지를 직접 확인했다. 실제 창·물리 입력·모니터 DPI·실계정·휴대폰은 미검증이다.
+
+## 0.20.12 기능 동등성 감사
+
+UnsentAuthorization/UnsentQueueCancellation은 수정 전2FAIL→미전송Failed/나머지Ready·진단·claim 해제로 검사한다. ReferenceFormParity는 외부 소스 여섯 필드와 독립 예상 USD/KRW/부분·전체 wire 데이터 대조다. InventoryReferenceCompatibility도 수정 전 ContractChanged를 재현했다. OfficialConfirmationGate는 공식 JS의 명시적 확인 요구와 모순되는 응답을 거부한다. PendingWithoutId는 현재 게시 관측 뒤 휴대폰 대기를 오인하지 않으며 원요청 상태/ID를 변경하지 않는지와 다음 조회에서 대기로 바뀐 관측의 초기화를 검사한다.
+
+
+0.20.12 검증: 전체 기능372/372 PASS, 비표시 WPF71/71 PASS, 배포계약19/19 PASS, 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 빌드 경고/오류0. 전송 전 권한 해제/queue 취소2건과 비장터 시장명 누락1건을 수정 전 실패로 재현했다. 마지막 요청 기록/현재 관측 문구 분리 후 관련 판매 계약 전체와 비표시 WPF를 재확인했다. ID 없는 게시 관측 이미지와 승인 인계 이미지는 자체 RTB로 검토하며 실제 창/휴대폰/계정은 실행하지 않았다. 추가 테스트 작성 중 nullable 경고1건은 fixture의 확인된 workspace 참조로 수정했다. 관측은 원요청 상태/ID를 바꾸지 않고 다음 명시적 대조에서 초기화한다.

@@ -94,8 +94,13 @@ public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatch
                 await journal.SaveAsync(record, CancellationToken.None);
                 progress?.Report(record);
                 DiagnosticHub.Emit(DiagnosticEvent.ItemReserved,DiagnosticArea.Sales,requirement:"F03",to:SaleState.Submitting.ToString(),journal:"IntentDurable");
-                LineResult result;
+                LineResult result;var stopAfterLine=false;
                 try { result = await executor.SubmitAsync(line, RequestKey(snapshot, line), cancellationToken); }
+                catch(Exception error) when(error is ISubmissionFailure{RequestNotSent:true})
+                {
+                    DiagnosticHub.Emit(DiagnosticEvent.ItemResult,DiagnosticArea.Sales,DiagnosticOutcome.Blocked,LogLevel.Warning,error is OperationCanceledException?DiagnosticError.Cancelled:DiagnosticError.Validation,exception:error,reason:"RequestNotSent");
+                    result=new(line.LineId,SaleState.Failed,"전송 전 중단 · 이 항목의 판매 요청은 보내지 않았습니다. 계정·보관함·가격을 확인하고 새로 검토하세요.");stopAfterLine=true;
+                }
                 catch (Exception e) when (e is TimeoutException or OperationCanceledException or IOException)
                 { DiagnosticHub.Emit(DiagnosticEvent.ItemResult,DiagnosticArea.Sales,DiagnosticOutcome.Unknown,LogLevel.Error,DiagnosticError.Transport,exception:e,reason:"ResponseLost"); result = new(line.LineId, SaleState.Unknown, "응답 불명: 자동 재전송 금지, 상태 대조 필요"); }
                 if (result.LineId != line.LineId) throw new InvalidDataException("응답 행 불일치");
@@ -106,7 +111,7 @@ public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatch
                 await journal.SaveAsync(record, CancellationToken.None);
                 DiagnosticHub.Emit(DiagnosticEvent.ItemResult,DiagnosticArea.Sales,result.State==SaleState.Unknown?DiagnosticOutcome.Unknown:result.State==SaleState.Failed?DiagnosticOutcome.Failed:result.State==SaleState.AwaitingSteamGuard?DiagnosticOutcome.Pending:DiagnosticOutcome.Succeeded,from:previousState.ToString(),to:result.State.ToString(),requirement:"F03",quote:line.UnitQuote,currency:line.Currency,count:line.Quantity,journal:"Committed",reason:result.State==SaleState.Unknown?"EvidenceMissing":"Committed");
                 progress?.Report(record);
-                if (result.State == SaleState.Unknown) break;
+                if (result.State == SaleState.Unknown||stopAfterLine) break;
                 if (i % 8 == 7) await Task.Yield();
             }
             DiagnosticHub.Emit(DiagnosticEvent.BatchFinished,DiagnosticArea.Sales,DiagnosticOutcome.Completed,count:record.Results.Length,journal:"Committed");

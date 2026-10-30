@@ -1,6 +1,18 @@
-# MarketCrate — 현재 상태 (2026-10-31 KST, 0.20.11)
+# MarketCrate — 현재 상태 (2026-10-31 KST, 0.20.12)
 
-## 최신 배포 — 0.20.11
+
+## 0.20.12 — 실제 기능 동등성 감사·로그 기반 오류 분리
+
+공개 기준 소스와 실제 UI→Provider→Executor→Coordinator→Store→UI 경로의 공통 계약/차이/미검증을 OPEN-SOURCE-FLOW-AUDIT에 기록했다. 판매 여섯 form 필드를 독립 예상 wire 값으로 대조했다. 새 실계정 판매/휴대폰 증거 없이100% 동작/LIVE_SELL_VERIFIED를 선언하지 않는다.
+
+수정한 결함: 전송 전 권한 상실·queue 취소를 Unknown으로 만들던 경로를 RequestNotSent로 분리(POST/Steam command0, 이후Ready 유지). 시장명 없는 비장터 항목/boolean flag의 전체 보관함 파싱 실패를 수정하되 marketable/tradable·가격키를 추정하지 않는다. 공식 공개 JS의 확인 분기와 모순되는 flag는 성공/모바일 대기로 꾸미지 않는다.
+
+ID 없는 요청은 현재 동일 자산의 게시 관측과 원요청 귀속을 별도로 표시한다. 최근5분 내 정확한 자산/금액/수량의 게시 증거가 있으면 그 항목에 계속 휴대폰 승인이 필요하다고 안내하지 않는다. 원래 Awaiting/Unknown·등록ID 미확정·감사 기록은 그대로 보존하고 재전송하지 않는다. 관측은 명시적 서버 대조 시에만 갱신하며 매 진행 이벤트마다 SQLite를 재조회하지 않는다.
+
+실계정/실제 GUI/전역 입력/타 프로세스 접근0. Auth·설정·SQLite·저널·진단·롤백 삭제0. 최초75개47/16/0/3/9 유지.
+
+
+## 이전 배포 — 0.20.11
 
 소스 **b487acc4df8f19c322fe6d2959fe19849c4b3c10**. `artifacts/releases/MarketCrate-0.20.11-guard-handoff-b487acc-win-x64.zip` **66,534,680바이트 /415파일**. SHA256 **CC83BA7F779935006FF0437794E7E80213B10119379527896832E35149E9285B**. 모든 ZIP entry SHA와 폴더 일치·SourceCommit/버전·x64 CLR/WPF/SQLite/DPAPI·실제 전용 PE/BAML·Mock/자가검증 UI/사용자 DB/Auth/진단/PDB 제외·SSIM LICENSE/NOTICE 전문 포함 및 원본 해시 일치 PASS.
 
@@ -593,3 +605,6 @@ SSIM 이식 최종 검증: 기능359/359·비표시WPF69/69·배포계약19/19·
 검증: 기능363/363 PASS, 비표시 WPF69/69 PASS, 배포계약19/19 PASS. 안전 정리 fixture8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가, 시스템 변경/승격 없이 미검증 유지). 빌드 경고/오류0. 수정 전 연속 배치 재현1 FAIL 후 수정 통과. 서버 목록 검사 추가로 기존 두 fixture가 개별 자산을 보유와 외부 판매에 동시에 두던 모순이 드러나 외부 등록을 다른 자산으로 고치고 기존 ID 재사용 Unknown 검사를 보존했다. 공유 배치 게이트까지 전체 회귀 후, UI 오류 원인 화이트리스트 연결을 관련29개 합성 계약으로 재확인했다. 자체 최종 검토 RTB 이미지를 직접 확인했고 실제 창/물리 입력/Steam 계정은 실행하지 않았다. 원본 진단은 로컬에서만 읽고 배포/Git에 넣지 않았다.
 
 0.20.11 최종 검증: 기능367/367 PASS, 비표시WPF70/70 PASS, 배포계약19/19 PASS, 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 빌드 경고/오류0. 최종 자체 렌더에서 선택된 요청이 내부 record 문자열(Key 포함)로 보이는 공통 ComboBox 템플릿 누락을 발견했다. SelectionContent의 ItemTemplateSelector 연결을 복구하고 최근 요청 기본 선택/기존 선택 유지 및 DisplayMemberPath의 실제 렌더 텍스트 검사를 추가했다. 마지막 템플릿 변경 후 전체 비표시 WPF70개를 다시 통과했고125/200% 승인 인계 이미지와 게시 후 이미지를 직접 확인했다. 실제 창·물리 입력·모니터 DPI·실계정·휴대폰은 미검증이다.
+
+
+0.20.12 검증: 전체 기능372/372 PASS, 비표시 WPF71/71 PASS, 배포계약19/19 PASS, 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 빌드 경고/오류0. 전송 전 권한 해제/queue 취소2건과 비장터 시장명 누락1건을 수정 전 실패로 재현했다. 마지막 요청 기록/현재 관측 문구 분리 후 관련 판매 계약 전체와 비표시 WPF를 재확인했다. ID 없는 게시 관측 이미지와 승인 인계 이미지는 자체 RTB로 검토하며 실제 창/휴대폰/계정은 실행하지 않았다. 추가 테스트 작성 중 nullable 경고1건은 fixture의 확인된 workspace 참조로 수정했다. 관측은 원요청 상태/ID를 바꾸지 않고 다음 명시적 대조에서 초기화한다.

@@ -41,7 +41,12 @@ public static class SubmissionTransportTests
             ("SSIM membership supports pending aliases and keeps unpriced ID-less assets",PendingMembership),
             ("Metadata-less pending asset cannot disappear into an empty tradable inventory",PendingMetadataGuard),
             ("One approval submits all lines then manual Guard and fresh listing evidence complete the batch",WholeGuardFlow),
-            ("Unpriced server-held asset cannot prove cancellation return or permit relisting",UnpricedCancelGuard)
+            ("Unpriced server-held asset cannot prove cancellation return or permit relisting",UnpricedCancelGuard),
+            ("Proven pre-send authorization loss is not an Unknown Steam request",UnsentAuthorization),
+            ("Cancelled mutation queue wait is not an ambiguous transmitted request",UnsentQueueCancellation),
+            ("Actual adapter wire form matches the reference six-field sell contract",ReferenceFormParity),
+            ("Reference inventory flags and nonmarketable missing market name remain distinct",InventoryReferenceCompatibility),
+            ("Official confirmation gate cannot contradict the declared mobile or email requirement",OfficialConfirmationGate)
         };
         int passed=0,failed=0;foreach(var(name,run)in tests)try{await run();passed++;Console.WriteLine("PASS "+name);}catch(Exception error){failed++;Console.WriteLine("FAIL "+name+": "+error);}return(passed,failed);
     }
@@ -118,6 +123,8 @@ public static class SubmissionTransportTests
     {
         using var f=new FifthStageTests.Fixture();await f.Login();await f.Prepare(1);f.EnableTrading();f.Server.MissingId=true;await f.Vm.SubmitAsync();
         f.Server.Publish=true;await f.Vm.RecoverAsync();Check(f.Server.Sends==1&&f.Vm.Results.Single().State==SaleState.AwaitingSteamGuard&&f.Vm.Results.Single().Message.Contains("서버 등록 ID 없음")&&f.Workspace!.Store.Commands().Single(x=>x.Kind=="sell").Approval==SteamApprovalChannel.Mobile);
+        Check(!f.Vm.HasApprovalHandoff&&f.Vm.ServerPostedObservationCount==1&&f.Vm.ApprovalHandoffText.Contains("귀속은 미확인")&&f.Workspace!.Store.Commands().Single().ListingId is null);
+        f.Server.Publish=false;await f.Vm.RecoverAsync();Check(f.Vm.HasApprovalHandoff&&f.Vm.ServerPostedObservationCount==0&&f.Server.Sends==1);
     }
     private static async Task EmptyCancellation()
     {
@@ -366,6 +373,67 @@ public static class SubmissionTransportTests
         var result=await f.Workspace.Executor.ReconcileCancellationAsync("held-cancel");
         Check(result.State==SaleState.Submitted&&f.Workspace.Store.Return("held-cancel")is null&&f.Server.Sends==1&&f.Server.Cancels==1);
     }
+    private static async Task UnsentAuthorization()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.Free=1;f.Server.ManyAssets=2;await f.Login();await f.Prepare(1);f.EnableTrading();
+        var first=f.Vm.ReviewRows.Single().Snapshot(0);var other=f.Vm.Assets.Single(x=>x.Asset.Key!=first.Asset.Key).Asset;
+        var batch=new SaleBatchSnapshot(Guid.NewGuid(),f.Workspace!.Authentication.SteamId!,DateTimeOffset.UtcNow,[first,first with{LineId="second",Asset=other}]);
+        var trace=new Trace();using var logging=DiagnosticHub.Use(trace);
+        var result=await f.Workspace.Batches.ExecuteAsync(batch,new BeforeSendProgress(record=>{if(record.Results.Any(x=>x.State==SaleState.Submitting))f.Workspace.Access.Acknowledge(true,true,true,false);}));
+        Check(result.Results[0].State==SaleState.Failed&&result.Results[1].State==SaleState.Ready&&f.Server.Sends==0&&f.Workspace.Store.Commands().Count==0);
+        Check(trace.Events.Any(x=>x.Reason=="RequestNotSent"&&x.Outcome==DiagnosticOutcome.Blocked));
+    }
+    private static async Task UnsentQueueCancellation()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();
+        var batch=new SaleBatchSnapshot(Guid.NewGuid(),f.Workspace!.Authentication.SteamId!,DateTimeOffset.UtcNow,[f.Vm.ReviewRows.Single().Snapshot(0)]);
+        using var cancel=new CancellationTokenSource();await f.Workspace.Store.Mutations.WaitAsync();BatchRecord result;
+        try{result=await f.Workspace.Batches.ExecuteAsync(batch,new BeforeSendProgress(record=>{if(record.Results.Any(x=>x.State==SaleState.Submitting))cancel.Cancel();}),cancel.Token);}
+        finally{f.Workspace.Store.Mutations.Release();}
+        Check(result.Results.Single().State==SaleState.Failed&&f.Server.Sends==0&&f.Workspace.Store.Commands().Count==0);
+        using var claim=f.Workspace.Store.AssetOperations.TryClaim(f.Workspace.Authentication.SteamId!,batch.Lines[0].Asset.Key.AssetId);Check(claim is not null);
+    }
+    private static async Task ReferenceFormParity()
+    {
+        // Independent expected wire data derived from helper e186d51 sellItem / SSIM28a503f sellOnMarket.
+        // KRW scaling is MarketCrate's separately tested currency contract, not proof of a live KRW fee.
+        foreach(var (currency,owned,quantity,wire) in new[]{("USD",1,1,"100"),("KRW",1,1,"10000"),("KRW",2,1,"10000"),("KRW",2,2,"10000")})
+        {
+            using var f=new FifthStageTests.Fixture();f.Server.Currency=currency;f.Server.Free=owned;await f.Login();await f.Prepare(quantity);f.EnableTrading();await f.Vm.SubmitAsync();
+            var actual=f.Server.SellFields.Single();
+            Check(actual.Keys.Order().SequenceEqual(new[]{"sessionid","appid","contextid","assetid","amount","price"}.Order()));
+            Check(actual["sessionid"]==f.Workspace!.Authentication.SessionId&&actual["appid"]=="730"&&actual["contextid"]=="2"&&actual["assetid"]=="101"&&actual["amount"]==quantity.ToString(System.Globalization.CultureInfo.InvariantCulture)&&actual["price"]==wire);
+            Check(f.Server.Sends==1&&f.Vm.Results.Single().State==SaleState.AwaitingSteamGuard);
+        }
+    }
+    private static Task InventoryReferenceCompatibility()
+    {
+        using var server=new SteamContractServer();var root=System.Text.Json.Nodes.JsonNode.Parse(server.InventoryJson(1))!;var description=root["descriptions"]![0]!;
+        description["marketable"]=0;description["tradable"]=1;description.AsObject().Remove("market_hash_name");
+        var asset=SteamContract.Inventory(root.ToJsonString(),730,"2","CS2").Assets.Single();Check(!asset.Marketable&&asset.Tradable&&asset.MarketHashName==""&&asset.Name=="Synthetic stack");
+        description["market_hash_name"]="Synthetic stack";description["marketable"]=true;description["tradable"]=false;
+        asset=SteamContract.Inventory(root.ToJsonString(),730,"2","CS2").Assets.Single();Check(asset.Marketable&&!asset.Tradable);
+        foreach(var invalid in new[]{"invalidFlag","missingMarketName"})
+        {
+            var copy=root.DeepClone();var d=copy["descriptions"]![0]!;
+            if(invalid=="invalidFlag")d["marketable"]=2;else d.AsObject().Remove("market_hash_name");
+            var rejected=false;try{SteamContract.Inventory(copy.ToJsonString(),730,"2","CS2");}catch(SteamException){rejected=true;}Check(rejected);
+        }
+        return Task.CompletedTask;
+    }
+    private static Task OfficialConfirmationGate()
+    {
+        // Public economy_v2.js OnSuccess and current marketselldialog gate on requires_confirmation.
+        foreach(var channel in new[]{"needs_mobile_confirmation","needs_email_confirmation"})
+        {
+            var reply="{\"success\":true,\"requires_confirmation\":false,\""+channel+"\":true}";
+            Check(SteamContract.Sell(reply).State==SaleState.Unknown);
+        }
+        Check(SteamContract.Sell("{\"success\":true,\"requires_confirmation\":false,\"needs_mobile_confirmation\":false}").State==SaleState.Submitted);
+        Check(SteamContract.Sell("{\"success\":true,\"requires_confirmation\":true,\"needs_mobile_confirmation\":true}").Approval==SteamApprovalChannel.Mobile);
+        return Task.CompletedTask;
+    }
+    private sealed class BeforeSendProgress(Action<BatchRecord> callback):IProgress<BatchRecord>{public void Report(BatchRecord record)=>callback(record);}
     private sealed class Trace:IDiagnosticLog{public Guid SessionId{get;}=Guid.NewGuid();public List<DiagnosticRecord> Events{get;}=[];public void Write(DiagnosticRecord value)=>Events.Add(value);}
     private static void Check(bool value){if(!value)throw new Exception("submission transport contract assertion");}
 }

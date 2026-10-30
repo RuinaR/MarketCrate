@@ -390,3 +390,7 @@ OPEN-SOURCE-FLOW-AUDIT.md에서 pinned node-steam-session/community·SteamMarket
 ## 0.20.11 승인 경로·공통 장터 판별
 
 SSIM의 실제 sellOnMarket은 amount=1과 판매자 수령 wire 가격을 전송하고 모바일/추가 확인 응답을 반환한다. 일반 SteamMarketHelper도 여섯 form 필드 및 판매 후 공식 모바일 수동 확인을 사용한다. MarketCrate는 같은 핵심 요청을 기존 C# 어댑터로 전송하며 실제 KRW/수수료·수량 계약은 별도 검증한다. SSIM의 자동 확인은 비밀키에 의존하므로 도입하지 않는다. 다른 프로젝트가 작동하는 사실은 Valve 허가나 MarketCrate 실서버 호환성 증거가 아니다.
+
+## 0.20.12 기능 동등성 감사
+
+기준의 지원 게임/통화·자동 비밀키 확인·자동 재시도와 제품의 조건부KRW/스택·수동 확인·Unknown 보호는 다르다. 최신 공식 공개 JS와 개발자 이슈를 재확인했으나 계정별 수수료/Market Beta/등록 및 휴대폰 승인 성공은 외부 증거가 필요하다. 기본 보호를 제거해100%로 보이게 하지 않는다.

@@ -117,3 +117,44 @@ SSIM MoneyOps.ts/MarketService.ts 고정 커밋28a503f 재확인: 영구 예약�
 | 결과/진단 UI | helper 명시적 수동 확인 안내 | 승인 인계 안내·게시 재조회 버튼·개별 결과·안전 JSONL | 물리 GUI/휴대폰 미검증 |
 
 실제 코드/합성 결과/사용자 실계정 결과는 서로 다른 증거다. 원본 전체 앱의 자동확인·다계정/봇·우회 구조까지 복사하지 않았다.
+
+
+## 0.20.12 — 기준 프로젝트100% 가정과 실제 연결 경로 동등성
+
+### 최종 판정 기준
+기준 프로젝트가 지원 조건에서100% 동작한다고 가정해도 **현재 MarketCrate 전체100% 동등/실판매 검증 완료로 판정하지 않는다**. 실제 연결 기능의 요청·응답·인증 조건이 같은 구간은 계약 일치로 확인하고, 다른 구간은 아래처럼 분리한다. 코드가 비슷함/테스트 통과율을 실계정 성공률로 바꾸지 않는다.
+
+기준: SSIM28a503fa79869f3233814d0deaa906a8b3f66621, SteamMarketHelper e186d51efb742ddfb527d2ccb248c64fcee9c976, 기존 채택 steam-session3ac0f34. 실제 공개 소스를 재대조했으며 원본 앱을 실행한 differential test는 아니다. 여섯 필드는 외부 소스에서 독립적으로 정한 예상 wire 값과 실제 C# 어댑터의 합성 HTTP 캡처로 비교했다.
+
+| 기능/실제 호출 경로 | 공통 계약/차이 | 판정 |
+|---|---|---|
+| QR→Community 세션/로그인 복원 | SteamQrAuthentication/WebRefreshToken의 WebBrowser finalizelogin. helper는 브라우저 세션, SSIM은 별도 관리 구조 | 공통 프로토콜+의도적 차이; 새 실계정 세션 미검증 |
+| 로그인 저장 | DPAPI CurrentUser, 사용자 동의, 거래 권한 미저장 | 유지. 기존 사용자0.17 복원 성공을 새 버전 성공으로 확대하지 않음 |
+| 보관함→선택 | Provider→Contract.Inventory→VM, classid/instanceid/amount/marketable | 시장명 없는 비장터 항목/boolean 플래그 호환 결함 수정 |
+| 게임/context·이미지 | 사용자 scope/서버 관측/검증 CDN | SSIM의730/440 외 TBH/753까지100% 가정 확대 불가 |
+| 시세→가격별 수량 | 실제 orderbook→SalePlanner 공유 잔량→ReviewRows | 순수 계산 합성 검증; 실제 체결 보장 아님 |
+| KRW/수수료 | 서버 지갑·게임 설정·FeeContractResolver·정수 Money | 공식 JS 수식/분기 재확인. 실제 계정 계약 부족 범위 차단 |
+| 최종 승인→일괄 요청 | Snapshot→Coordinator→Store intent→직렬 Executor | 한 번 승인 전체 실행. 서버 원자 배치 아님 |
+| 실제 sell form | sessionid/appid/contextid/assetid/amount/price(판매자 wire) | **여섯 필드 계약 일치**, USD/KRW·개별/부분/전체 합성 캡처 |
+| 서버 접수→휴대폰 | 서버 requires_confirmation/mobile/email→UI→사용자 공식 앱 | SSIM 비밀키 자동 확인과 다름. 푸시 강제/자동 Guard 없음 |
+| 승인 후 게시/ID 없음 | Orders.Presence/Reconcile/Inspect/ID·자산·가격·수량 | ID 없는 현재 게시 관측과 원요청 귀속을 분리. 현재 관측이 게시면 계속 휴대폰 대기라고 안내하지 않음 |
+| 취소/재가격 | removelisting→접수→반환 증거→새 승인 | ID 변경/외부 등록/불명 스택 반환은 자동 확정 불가 |
+| 전송 전 실패/취소 | Executor ISubmissionFailure→Coordinator | **수정**: 판매 POST0을 Unknown으로 잘못 처리하지 않음 |
+| 전송 후 실패/복구 | intent/Unknown/이전 요청 키/명시적 대조 | 기준의 자동 재시도·phantom 확정과 의도적으로 다름 |
+| 장시간 배치 | 1.5초 읽기/3초 쓰기 하한·5분 시세 신선도 | 오래 걸리면 중단 가능, 무제한 일괄 실행과 동등하지 않음 |
+| UI/로그/배포 | 실제 전용 WPF/MVVM/JSONL/SQLite/portable | 비표시/합성/정적 증거이며 실계정·물리 GUI와 구분 |
+
+### 로그와 결함의 인과관계
+사용자 ZIP253324b5(0.20.9/23events)는 BatchFinished/UiFailure의 InvalidOperationException·Validation이며 판매 POST 증거가 없다.0.20.10의 다중 배치 이력 분리로 해당 코드 경로를 수정했다. ZIPf5413571(0.20.8/54events)는 Wallet/FeeContext/Inventory HTTP200 후 준비 실패였고0.20.9 이후 로컬 intent와 서버 자격 검사를 분리했다. 두 원본 ZIP은 이번에도 지정 절대 경로에서 읽기 전용으로 재확인했으며 복사/업로드하지 않았다. 요청된 과거8a812fa7 ZIP은 현재 지정 경로에 없어 재검증하지 못했다.
+
+이번 감사에서는 전송 전 권한 해제/queue 취소가 generic IOException·취소 처리로 Unknown이 되던 결함을 두 합성 실패로 먼저 재현했다. ISubmissionFailure.RequestNotSent 경계만 Failed(전송 전 중단)로 기록하고 나머지는 Ready로 보존한다. 실제 POST 시도 뒤 응답 불명은 여전히 Unknown이다. 과거 불명 저널을 소급 변경하지 않는다.
+
+helper는 비장터 항목의 시장키 누락/boolean marketable을 허용하지만 기존 Inventory 파서는 전체 보관함을 거부했다. 수정 전 ContractChanged를 재현하고 비장터 시장키는 빈 값으로 보존했다. 이름을 시장키로 생성하거나 marketable=true의 누락 키/잘못된 flag2를 정상 처리하지 않는다.
+
+### 추가 인터넷 조사
+Steam 공식 공개 economy_v2.js/market.js/marketselldialog.js/economy_common.js를 인증 없이 HTTP200으로 읽었다. 공식 판매 코드는 여섯 form 필드와 requires_confirmation 분기, mobile/email 안내, listingid가 있을 때만 모바일 인계 함수를 호출하는 경로를 보인다. 현재 public fee 분기도 newFeeRates 조건에 따라 API/지갑 기반으로 나뉘며 API HTML 실패가 legacy 증거는 아니다. 명시적 requires_confirmation=false와 mobile/email=true가 모순되면 Unknown으로 보존하도록 합성 검사했다.
+
+Steam Support 검색 자료는 모바일 또는 이메일 확인을 구분한다. node-steamcommunity #373은 Market Beta와 기존 파서의 호환 문제를 보고한 개발자 이슈이며 계정 전체의 정상 동작 증거로 사용하지 않았다. 커뮤니티의 푸시 미도착/대기목록 사례도 확인했으나 임의 재전송·고정 가격 임계값·계정 제한 우회 근거로 쓰지 않았다.
+
+### 마지막 외부 증거
+최신 빌드의 실제 수수료/등록 접수/공식 앱 수동 확인/등록 ID·자산·가격·수량 게시 증거가 아직 없다. 단일 항목→동일 상품 복수→다중 게임→취소/재가격→지원 스택을 분리해 사용자가 직접 검증해야 한다. Codex는 로그인·읽기 전용 계정 검사·판매·취소·Guard를 실행하지 않았다. 정상 작동을 예상할 기술 근거는 확대했지만 전체100%/LIVE_SELL_VERIFIED는 부여하지 않는다.

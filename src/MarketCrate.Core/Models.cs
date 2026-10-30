@@ -46,6 +46,8 @@ public interface IMarketOrderProvider
     Capability Capability { get; }
     IReadOnlyList<LineResult> GetOrders();
 }
+// Only an executor that knows no submission was attempted may set this marker.
+public interface ISubmissionFailure { bool RequestNotSent { get; } }
 public interface IMarketListingExecutor
 {
     Capability Capability { get; }

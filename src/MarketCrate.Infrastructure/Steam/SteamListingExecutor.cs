@@ -156,16 +156,17 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
     public async Task<LineResult> SubmitAsync(SaleLineSnapshot line, string requestKey, CancellationToken cancellationToken)
     {
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.ItemResult,DiagnosticArea.Sales,"F01");
-        if(auth.SteamId is not {} account)throw new SteamException(SteamFailure.Disabled);
+        if(auth.SteamId is not {} account)throw new SteamException(SteamFailure.Disabled){RequestNotSent=true};
         using var assetOperation=store.AssetOperations.TryClaim(account,line.Asset.Key.AssetId);
         if(assetOperation is null)
         {
             DiagnosticHub.Emit(DiagnosticEvent.ItemResult,DiagnosticArea.Sales,DiagnosticOutcome.Blocked,reason:"ConcurrentAssetOperation",to:SaleState.Failed.ToString(),requirement:"F05");
             return new(line.LineId,SaleState.Failed,"같은 자산의 다른 작업이 처리 중입니다. 이 요청은 전송하지 않았습니다.");
         }
-        await mutations.WaitAsync(cancellationToken);
+        var entered=false;var sendStarted=false;
         try
         {
+            await mutations.WaitAsync(cancellationToken);entered=true;
             var old = store.ReadCommand(requestKey);
             if (old is not null)
             {
@@ -194,6 +195,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
                     ["price"] = SteamContract.ToWire(line.UnitQuote.SellerReceives, line.Currency).ToString(CultureInfo.InvariantCulture)
                 });
                 request.Headers.Referrer=new("https://steamcommunity.com/profiles/"+auth.SteamId+"/inventory/");
+                sendStarted=true; // From this boundary onward a lost outcome must remain Unknown.
                 var body = await http.SendAsync(request, cancellationToken);
                 var response = SteamContract.Sell(body);
                 var conflict = SteamContract.Parse(body, root =>
@@ -213,7 +215,9 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
                 return new(line.LineId, SaleState.Unknown, error is SteamException {HttpStatus:{} status}?$"Steam 판매 요청 HTTP {status} · 승인 대기 응답 없음 · 결과 불명, 자동 재전송 금지":"Steam 응답 불명/접근 중단: 자동 재전송 금지");
             }
         }
-        finally { mutations.Release(); }
+        catch(SteamException error) when(!sendStarted){error.RequestNotSent=true;throw;}
+        catch(OperationCanceledException error) when(!sendStarted){throw new UnsentSteamCancellation(error,cancellationToken);}
+        finally { if(entered)mutations.Release(); }
     }
     public async Task<LineResult> ReconcileAsync(SaleLineSnapshot line, string requestKey, CancellationToken cancellationToken)
     {
@@ -226,7 +230,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         {
             var report = await InspectAsync(requestKey, cancellationToken);
             var observed=report.ObservedAssetState is {} actual?$"현재 Steam 동일 자산 상태: {ObservedLabel(actual)}. 원요청 귀속은 미확인. ":"현재 동일 자산 게시 증거 없음. ";
-            return new(line.LineId, command.State == SaleState.AwaitingSteamGuard ? command.State : SaleState.Unknown, $"{observed}{(command.State==SaleState.AwaitingSteamGuard?SteamContract.ApprovalHint(command.Approval):"결과 불명")} · 서버 등록 ID 없음 · 대조 {report.Verdict}: 자동 게시 확정/재전송 금지");
+            return new(line.LineId, command.State == SaleState.AwaitingSteamGuard ? command.State : SaleState.Unknown, $"{observed}{(report.ObservedAssetState==SaleState.Listed?"현재 관측 항목에 추가 승인이 필요하다고 판정하지 않습니다. 원래 요청 기록은 보존합니다.":command.State==SaleState.AwaitingSteamGuard?SteamContract.ApprovalHint(command.Approval):"결과 불명")} · 서버 등록 ID 없음 · 대조 {report.Verdict}: 자동 게시 확정/재전송 금지");
         }
         var listing = (await orders.RefreshAsync(cancellationToken)).SingleOrDefault(x => x.ListingId == command.ListingId);
         if(listing is null&&command.State==SaleState.AwaitingSteamGuard&&orders.Presence.Any(x=>x.Asset==line.Asset.Key&&x.State==SaleState.AwaitingSteamGuard))

@@ -36,6 +36,11 @@ public static class SteamContract
     private static string InstanceId(JsonElement value)
     {var text=value.GetString()??"";if(text.Length is <1 or >20||text.Any(c=>!char.IsAsciiDigit(c))||!ulong.TryParse(text,out _))throw new SteamException(SteamFailure.ContractChanged);return text;}
     public static long Integer(JsonElement value) => value.ValueKind == JsonValueKind.String ? long.Parse(value.GetString()!, CultureInfo.InvariantCulture) : value.GetInt64();
+    private static bool InventoryFlag(JsonElement value)
+    {
+        if(value.ValueKind==JsonValueKind.True)return true;if(value.ValueKind==JsonValueKind.False)return false;
+        var number=Integer(value);return number switch{0=>false,1=>true,_=>throw new SteamException(SteamFailure.ContractChanged)};
+    }
     private static bool Success(JsonElement root) => root.TryGetProperty("success", out var s) && (s.ValueKind == JsonValueKind.True || s.ValueKind == JsonValueKind.Number && s.GetInt32() == 1);
     public static SteamInventoryPage Inventory(string json, int appId, string context, string game) => Parse<SteamInventoryPage>(json, root =>
     {
@@ -67,8 +72,12 @@ public static class SteamContract
             var count = checked((int)Integer(a.GetProperty("amount")));
             if (count < 1 || d.GetProperty("appid").GetInt32() != appId) throw new SteamException(SteamFailure.ContractChanged);
             // Stackability is not proven by a single unit; stack splits remain conservative.
-            result.Add(new(new(appId, context, Id(a.GetProperty("assetid"))), game, d.GetProperty("name").GetString()!,
-                d.GetProperty("market_hash_name").GetString()!, count, count > 1, Integer(d.GetProperty("marketable")) == 1, Integer(d.GetProperty("tradable")) == 1));
+            var marketable=InventoryFlag(d.GetProperty("marketable"));var tradable=InventoryFlag(d.GetProperty("tradable"));
+            var hash=d.TryGetProperty("market_hash_name",out var hashValue)&&hashValue.ValueKind!=JsonValueKind.Null?hashValue.GetString()??"":"";
+            if(marketable&&string.IsNullOrWhiteSpace(hash))throw new SteamException(SteamFailure.ContractChanged);
+            var name=d.TryGetProperty("name",out var nameValue)&&nameValue.ValueKind!=JsonValueKind.Null?nameValue.GetString():hash;
+            result.Add(new(new(appId,context,Id(a.GetProperty("assetid"))),game,string.IsNullOrWhiteSpace(name)?"이름 미확인":name,
+                hash,count,count>1,marketable,tradable));
             images.Add(result[^1].Key,Image(d));
             if (d.TryGetProperty("market_fee", out var fee))
             {
@@ -167,6 +176,11 @@ public static class SteamContract
             return value.ValueKind switch{JsonValueKind.True=>true,JsonValueKind.False=>false,JsonValueKind.Number when value.TryGetInt32(out var n)&&n is 0 or 1=>n==1,_=>throw new SteamException(SteamFailure.ContractChanged)};
         }
         var mobile=Flag("needs_mobile_confirmation");var email=Flag("needs_email_confirmation");var required=Flag("requires_confirmation");
+        if(root.TryGetProperty("requires_confirmation",out _)&&!required&&(mobile||email))
+        {
+            DiagnosticHub.Emit(DiagnosticEvent.ReadContract,DiagnosticArea.Sales,DiagnosticOutcome.Unknown,LogLevel.Warning,DiagnosticError.Schema,endpoint:"Sell",reason:"ConfirmationFlagsConflict");
+            return new(SaleState.Unknown,null);
+        }
         var channel=mobile&&email?SteamApprovalChannel.Either:mobile?SteamApprovalChannel.Mobile:email?SteamApprovalChannel.Email:required?SteamApprovalChannel.Unspecified:SteamApprovalChannel.None;
         var state=channel==SteamApprovalChannel.None?SaleState.Submitted:SaleState.AwaitingSteamGuard;
         DiagnosticHub.Emit(DiagnosticEvent.ReadContract,DiagnosticArea.Sales,state==SaleState.AwaitingSteamGuard?DiagnosticOutcome.Pending:DiagnosticOutcome.Completed,endpoint:"Sell",reason:channel switch{SteamApprovalChannel.Mobile=>"MobileConfirmationRequired",SteamApprovalChannel.Email=>"EmailConfirmationRequired",SteamApprovalChannel.Either=>"EitherConfirmationRequired",SteamApprovalChannel.Unspecified=>"ConfirmationChannelUnknown",_=>"NoConfirmationFlag"},to:state.ToString());

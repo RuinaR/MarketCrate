@@ -10,6 +10,7 @@ public sealed class SteamContractServer : HttpMessageHandler
     public sealed class TestClock : TimeProvider {private DateTimeOffset now=DateTimeOffset.UtcNow;public override DateTimeOffset GetUtcNow()=>now;public void Advance(int seconds=2)=>now=now.AddSeconds(seconds);}
     public TestClock Clock {get;}=new();
     public string Currency="KRW";public int Free=10;public bool MissingId,TimeoutSell,TimeoutCancel,HideReturnedAsset,FeeConflict,Denied,HoldLogin,RequireCaptcha,AuthNetworkFailure;
+    public List<Dictionary<string,string>> SellFields{get;}=[];
     public int Sends,Cancels,Calls;public bool Publish;public List<(string Id,int Quantity,long Seller)> Rows {get;}=[];
     private readonly Dictionary<string,long> created=[];
     public string? IconToken;public bool DynamicInventory,UnsupportedInventory,PrivateInventory;public string? HistoryOverride;public bool HidePublisherFee;public int InventoryReads;public TaskCompletionSource? HistoryStarted,HistoryRelease;
@@ -73,7 +74,7 @@ public sealed class SteamContractServer : HttpMessageHandler
         else if(path=="/market/sellitem/")
         {
             SellReferrer=request.Headers.Referrer;SellAjax=request.Headers.TryGetValues("X-Requested-With",out var values)&&values.Contains("XMLHttpRequest");
-            var form=await Fields(request);var quantity=int.Parse(form["amount"]);var seller=Money.FromWire(long.Parse(form["price"]),Currency).Minor;
+            var form=await Fields(request);SellFields.Add(form);var quantity=int.Parse(form["amount"]);var seller=Money.FromWire(long.Parse(form["price"]),Currency).Minor;
             if(requiredSession is {} csrf&&form["sessionid"]!=csrf){Sends++;return new(HttpStatusCode.BadRequest){Content=new StringContent("{\"success\":false,\"message\":\"invalid session\"}")};}
             if(SellStatus!=200){Sends++;return new((HttpStatusCode)SellStatus){Content=new StringContent(SellBody??"{}",System.Text.Encoding.UTF8,"application/json")};}
             Sends++;if(quantity>Free)return Json("{\"success\":false}");Free-=quantity;var id=(500+Sends).ToString();Rows.Add((id,quantity,seller));created[id]=DateTimeOffset.UtcNow.ToUnixTimeSeconds();

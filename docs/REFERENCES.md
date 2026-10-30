@@ -187,3 +187,23 @@ node-steam-session 3ac0f34(MIT), node-steamcommunity fa8d897(MIT), SteamMarketHe
 - [SteamMarketHelper e186d51](https://github.com/federicogiorgi/SteamMarketHelper/blob/e186d51efb742ddfb527d2ccb248c64fcee9c976/steam-market-helper.user.js): MIT, 여섯 sell form 필드/빈 취소 응답/보관함 페이징/공식 모바일 수동 확인 안내를 대조했다. KRW를 일괄 USD cents로 처리하는 코드는 채택하지 않았다.
 - [steam-session LoginSession.ts 3ac0f34](https://github.com/DoctorMcKay/node-steam-session/blob/3ac0f34fd964b3f886ba18ef4824ac43c942e030/src/LoginSession.ts): MIT, 이전 도입 WebBrowser refreshToken→getWebCookies→finalizelogin 계약 재확인. 디버그 원문/자동 재시도/SteamClient 토큰 우회는 제외했다.
 - Steam 공식 [Trade and Market Confirmations](https://help.steampowered.com/en/faqs/view/2E6E-A02C-5581-8904): 공개 페이지 접근은 됐으나 이번 도구의 텍스트 추출은 이미지 링크만 반환했다. 최신 본문을 새로 검증했다고 표시하지 않으며 기존 수동 확인 원칙을 유지한다.
+
+
+## 0.20.12 공개 인터넷 재검증 /2026-10-31 KST
+
+인증·쿠키 없이 공식 CDN의 공개 JS만 HTTP200으로 읽고 ignored runtime에 보존했다. 웹 도구에서 CDN 직접 열기는 실패해 일반 개발 HTTP 도구로 같은 공개 URL을 읽었다. 계정 조회/판매/취소는 실행하지 않았다.
+
+| 원본 | SHA256 | 확인 사항 |
+|---|---|---|
+| https://community.fastly.steamstatic.com/public/javascript/economy_v2.js | A3BBDF0A135524102CD055FD89D37EB3FD672FAE20BFBA0ABC700648DCB52512 | 여섯 판매 필드, requires_confirmation와 mobile/email 안내 |
+| https://community.fastly.steamstatic.com/public/javascript/market.js | AC938119E82C7D4C8D0F7843EF168483EFA4AF3E45DC987C068F340BB5AF72EC | 현재 공개 Market 소비 코드, 별도 API 계약으로 추측하지 않음 |
+| https://community.fastly.steamstatic.com/public/javascript/applications/community/marketselldialog.js | 6897FCC4D4F44F0A855140C4D9E597C95CF282DEFE43AAA756CA5E078BA9007A | newFeeRates별 API/지갑 분기, requires_confirmation gate, listingid 있을 때만 모바일 인계 |
+| https://community.fastly.steamstatic.com/public/javascript/economy_common.js | 84429D06A9EF8C250AC567F9FEDC9FB155D23CEB7442C92A19B815840C102784 | ToValidMarketPrice/CalculateFee/GetTotalWithFees의 floor·increment·반올림 순서 재확인 |
+
+추가 근거:
+- https://github.com/DoctorMcKay/node-steamcommunity/issues/373 : Market Beta UI에서 기존 가격 파싱이 깨지는 개발자 보고. 보고/버전 차이의 근거이며 모든 계정의 현재 장애를 뜻하지 않는다.
+- https://github.com/assetpaygg/steam-mobile/blob/main/README.md : 판매 응답/미확인 등록/모바일 승인·수수료 구성에 대한 유지보수 프로젝트 문서. 기능이100% 검증됐다는 독립 증거로 쓰지 않았고 코드·비밀키·런타임을 도입하지 않았다.
+- https://help.steampowered.com/en/faqs/view/2E6E-A02C-5581-8904 : 검색 인덱스에서 모바일/이메일 확인 분리를 확인했다. 직접 페이지 텍스트 도구는 이미지 링크만 반환했으므로 새 본문 전체를 검증했다고 하지 않는다.
+- 커뮤니티의 푸시 미도착/기존 승인 대기/가격 임계값 사례는 계정 조건의 차이를 찾는 참고로만 사용했다. 고정 임계값·무조건 재등록·인증 우회 근거로 채택하지 않았다.
+
+공식 JS는 이번에 프로젝트 소스로 복사/재배포하지 않고 계약·수식 검토와 합성 예상값에만 활용했다. 최신 공개 코드와 해당 사용자에게 실제 제공된 인증 응답은 서로 다른 증거다.

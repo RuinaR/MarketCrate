@@ -79,6 +79,17 @@ internal static class UsabilityUiTests
             }
             Directory.Delete(root,true);
         });
+        test("ID 없는 요청의 서버 게시 관측은 휴대폰 승인 대기와 별도로 렌더",()=>
+        {
+            var root=Path.Combine(Directory.GetCurrentDirectory(),"runtime","idless-ui-"+Guid.NewGuid().ToString("N"));using var server=new SteamContractServer{Free=1,MissingId=true};
+            using(var vm=new SteamWorkspaceViewModel(scope=>new(root,scope.AppId,scope.ContextId,scope.Name,new(true,"synthetic fixture only"),server.Connection(),server.Clock),true){RiskAccepted=true,CredentialsAccepted=true})
+            {
+                Complete(vm.BeginAsync());server.Clock.Advance();Complete(vm.CheckAsync());Complete(vm.LoadAsync());vm.Assets.Single().Selected=true;Complete(vm.RefreshPricesAsync());vm.BuildReview();vm.TradeAccepted=true;vm.EnableTrading.Execute(null);
+                Complete(vm.SubmitAsync());server.Publish=true;Complete(vm.RecoverAsync());vm.WorkPage=3;var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,800,1.25,"idless-server-observation.png");
+                Check(vm.ServerPostedObservationCount==1&&!vm.HasApprovalHandoff&&vm.Results.Single().State==SaleState.AwaitingSteamGuard&&Find<TextBlock>(view).Any(x=>x.Text.Contains("귀속은 미확인"))&&server.Sends==1,"observation confused with attribution or awaiting phone");
+            }
+            Directory.Delete(root,true);
+        });
     }
         // Detached control only; no desktop input, popup, or native window.
     private static void Complete(Task task){var watch=Stopwatch.StartNew();while(!task.IsCompleted){if(watch.Elapsed>TimeSpan.FromSeconds(20))throw new TimeoutException();var frame=new DispatcherFrame();Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Background,new Action(()=>frame.Continue=false));Dispatcher.PushFrame(frame);Thread.Sleep(1);}task.GetAwaiter().GetResult();}

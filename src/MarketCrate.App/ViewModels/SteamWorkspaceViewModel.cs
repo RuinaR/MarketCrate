@@ -21,6 +21,9 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     private bool[,]? matrix;
     private SteamFeeSchedule? fees;
     private readonly Dictionary<int,SteamFeeSchedule> gameFees=[];
+    private readonly HashSet<string> observedPostedLines=[];
+    private DateTimeOffset? observedPostedAt;
+    public int ServerPostedObservationCount=>observedPostedAt is {} at&&DateTimeOffset.UtcNow-at<=TimeSpan.FromMinutes(5)?observedPostedLines.Count:0;
     private readonly Dictionary<AssetKey,int> assetPublisherFees=[];
     private SteamFeeSchedule FeeFor(InventoryAsset asset)
     {
@@ -81,8 +84,8 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     public bool EmptyListings=>VisibleListings.Count==0;
     public bool HasServerListings=>Listings.Count>0||workspace?.Orders.Presence.Length>0;
     public string ListingMetadataSummary=>workspace?.Orders.UnpricedCount is >0?$"장터가 보유한 자산 {workspace.Orders.UnpricedCount}건의 등록 ID·가격·설명을 완전히 확인하지 못했습니다. 빈 판매목록이 아닙니다. 해당 자산의 중복 등록은 차단하며 공식 Steam 장터에서 확인하세요.":"";
-    public bool HasApprovalHandoff=>Results.Any(x=>x.State==SaleState.AwaitingSteamGuard);
-    public string ApprovalHandoffText=>HasApprovalHandoff?"Steam 승인 대기입니다. 각 항목의 확인 방식을 확인하세요. 모바일 확인은 공식 Steam 앱 → Steam Guard → 확인에서 직접 승인합니다. 푸시 알림이 없더라도 확인 목록을 열어 보세요. 이메일 확인을 요구한 항목은 이메일을 확인하세요. 승인 후 아래 ‘승인 후 게시 확인’을 누르세요. 알림이 없다는 이유로 다시 등록하지 마세요.":Results.Any(x=>x.State==SaleState.Unknown)?"일부 요청의 접수 결과를 확인하지 못했습니다. Steam Guard 요청이 생성됐다고 판단할 수 없습니다. 공식 장터 상태와 진단을 확인하고 자동·반복 등록하지 마세요.":"등록 요청 접수와 실제 장터 게시는 다릅니다. 승인 후 게시 확인으로 서버 상태를 확인하세요.";
+    public bool HasApprovalHandoff=>Results.Any(x=>x.State==SaleState.AwaitingSteamGuard&&!(ServerPostedObservationCount>0&&observedPostedLines.Contains(x.LineId)));
+    public string ApprovalHandoffText=>ServerPostedObservationCount>0?$"현재 같은 자산 {ServerPostedObservationCount}건의 판매 중 상태를 {observedPostedAt:HH:mm:ss} UTC에 관측했습니다. 원래 요청의 귀속은 미확인이며 요청 기록은 보존합니다. 이 관측 항목에 휴대폰 승인이 계속 필요하다고 표시하거나 다시 등록하지 않습니다. "+(HasApprovalHandoff?"다른 승인 대기 항목은 개별 안내를 확인하세요.":"상태가 바뀌면 다시 조회하세요."):HasApprovalHandoff?"등록 요청 기록에 Steam 확인 대기가 있습니다. 최신 상태는 게시 재조회로 확인하세요. 각 항목의 확인 방식을 확인하세요. 모바일 확인은 공식 Steam 앱 → Steam Guard → 확인에서 직접 승인합니다. 푸시 알림이 없더라도 확인 목록을 열어 보세요. 이메일 확인을 요구한 항목은 이메일을 확인하세요. 승인 후 아래 ‘승인 후 게시 확인’을 누르세요. 알림이 없다는 이유로 다시 등록하지 마세요.":Results.Any(x=>x.State==SaleState.Unknown)?"일부 요청의 접수 결과를 확인하지 못했습니다. Steam Guard 요청이 생성됐다고 판단할 수 없습니다. 공식 장터 상태와 진단을 확인하고 자동·반복 등록하지 마세요.":"등록 요청 접수와 실제 장터 게시는 다릅니다. 승인 후 게시 확인으로 서버 상태를 확인하세요.";
     public Command ClearSelection {get;}
     public Command ClearListings {get;}
     public Command RefreshReviewStatus {get;}
@@ -293,7 +296,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         }
         finally{workspace.Store.ClearRelistApproval(batch.BatchId);}
     });
-    public Task RecoverAsync() => Run(async token=>{RequireConnection();var stored=await workspace!.Store.LoadAsync(token);var record=stored?.Snapshot.AccountReference==workspace.Authentication.SteamId?await workspace.Batches.RecoverAsync(token):null;var listings=await workspace.Orders.RefreshAsync(token);token.ThrowIfCancellationRequested();if(record is not null)SetResults(record);SetListings(listings);await RefreshRepriceResultsAsync(token);RefreshRequests();Status="서버 상태 대조 완료 · 최근 재등록 최대10건 포함 · 불명 요청을 재전송하지 않았습니다. 이전 항목은 요청을 선택해 직접 대조하세요.";});
+    public Task RecoverAsync() => Run(async token=>{RequireConnection();var stored=await workspace!.Store.LoadAsync(token);var record=stored?.Snapshot.AccountReference==workspace.Authentication.SteamId?await workspace.Batches.RecoverAsync(token):null;var listings=await workspace.Orders.RefreshAsync(token);token.ThrowIfCancellationRequested();if(record is not null)SetResults(record,true);SetListings(listings);await RefreshRepriceResultsAsync(token);RefreshRequests();Status="서버 상태 대조 완료 · 최근 재등록 최대10건 포함 · 불명 요청을 재전송하지 않았습니다. 이전 항목은 요청을 선택해 직접 대조하세요.";});
     public Task InspectAsync() => Run(async token=>
     {
         RequireConnection();if(SelectedRequest is null)throw new SteamException(SteamFailure.Restricted);
@@ -351,11 +354,28 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         var result=await workspace.Executor.RepriceAsync(intent.Listing,intent.BuyerPrice,intent.Key,token);token.ThrowIfCancellationRequested();await RefreshRepriceResultsAsync(token,result.Key);Status="보존한 재가격 의도 대조 완료 · 접수와 서버 게시 상태를 구분하세요.";RefreshRequests();
     });
     private void SetListings(IEnumerable<SteamListing> rows){var listingRows=rows.ToArray();foreach(var result in workspace?.Executor.ObserveListings(listingRows)??[]){var index=Results.ToList().FindIndex(x=>x.LineId==result.LineId);if(index<0)Results.Add(result);else Results[index]=result;}ObserveCatalog(listingRows);RememberSelection();Bulk(()=>Listings.ReplaceAll(listingRows.Select(row=>new SteamListingRow(row,Changed){Image=workspace?.Orders.Images.GetValueOrDefault(row.ListingId),ImageOperation=DiagnosticHub.Context?.OperationId,Selected=listingSelections.GetValueOrDefault(row.ListingId)})));Filter();Changed();}
-    private void SetResults(BatchRecord record)
+    private void UpdateObservedStates(BatchRecord record)
     {
+        observedPostedLines.Clear();observedPostedAt=null;
+        if(workspace is null||record.Snapshot.AccountReference!=workspace.Authentication.SteamId)return;
+        var byLine=record.Results.ToDictionary(x=>x.LineId);
+        foreach(var line in record.Snapshot.Lines)
+        {
+            var result=byLine[line.LineId];
+            if(result.State is not(SaleState.Unknown or SaleState.AwaitingSteamGuard))continue;
+            var key=SaleBatchCoordinator.AttemptKey(record.Snapshot,line,result.Attempt);
+            var evidence=workspace.Store.Evidence(key);
+            if(evidence is not{ObservedAssetState:SaleState.Listed}||evidence.CheckedAt>DateTimeOffset.UtcNow.AddSeconds(5)||DateTimeOffset.UtcNow-evidence.CheckedAt>TimeSpan.FromMinutes(5))continue;
+            if(workspace.Store.ReadCommand(key) is not{ListingId:null})continue;
+            observedPostedLines.Add(line.LineId);observedPostedAt=evidence.CheckedAt;
+        }
+    }
+    private void SetResults(BatchRecord record,bool refreshObservations=false)
+    {
+        if(refreshObservations)UpdateObservedStates(record);else{observedPostedLines.Clear();observedPostedAt=null;}
         if(Results.Count!=record.Results.Length||!Results.Select(x=>x.LineId).SequenceEqual(record.Results.Select(x=>x.LineId))){Results.Clear();foreach(var result in record.Results)Results.Add(result);}
         else for(var index=0;index<record.Results.Length;index++)if(Results[index]!=record.Results[index])Results[index]=record.Results[index];
-        Raise(nameof(BatchProgressText));Raise(nameof(ApprovalHandoffText));Raise(nameof(HasApprovalHandoff));Raise(nameof(ListingMetadataSummary));Raise(nameof(HasServerListings));
+        Raise(nameof(BatchProgressText));Raise(nameof(ApprovalHandoffText));Raise(nameof(HasApprovalHandoff));Raise(nameof(ServerPostedObservationCount));Raise(nameof(ListingMetadataSummary));Raise(nameof(HasServerListings));
     }
     private sealed class BatchUiProgress(SteamWorkspaceViewModel owner):IProgress<BatchRecord>
     {
@@ -366,7 +386,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
             owner.SetResults(record);owner.OperationLabel="전체 판매등록 처리 중 · "+owner.BatchProgressText;
         }
     }
-    public string BatchProgressText=>$"전체 {Results.Count}건 · 미전송 {Results.Count(x=>x.State==SaleState.Ready)} · 처리 중 {Results.Count(x=>x.State==SaleState.Submitting)} · 접수 {Results.Count(x=>x.State==SaleState.Submitted)} · 승인 대기 {Results.Count(x=>x.State==SaleState.AwaitingSteamGuard)} · 게시 {Results.Count(x=>x.State==SaleState.Listed)} · 실패 {Results.Count(x=>x.State==SaleState.Failed)} · 불명 {Results.Count(x=>x.State==SaleState.Unknown)}";
+    public string BatchProgressText=>$"전체 {Results.Count}건 · 미전송 {Results.Count(x=>x.State==SaleState.Ready)} · 처리 중 {Results.Count(x=>x.State==SaleState.Submitting)} · 접수 {Results.Count(x=>x.State==SaleState.Submitted)} · 요청 기록의 승인 대기 {Results.Count(x=>x.State==SaleState.AwaitingSteamGuard)} · 게시 {Results.Count(x=>x.State==SaleState.Listed)} · 현재 게시 관측 {ServerPostedObservationCount} · 실패 {Results.Count(x=>x.State==SaleState.Failed)} · 불명 {Results.Count(x=>x.State==SaleState.Unknown)}";
     private void RefreshRequests()
     {
         var previous=SelectedRequest;
@@ -385,7 +405,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         DiagnosticHub.Emit(DiagnosticEvent.InventoryContract,DiagnosticArea.Data,HasPendingInventoryRequests?DiagnosticOutcome.Blocked:DiagnosticOutcome.Completed,endpoint:"Inventory",reason:"InventoryLocalPendingRows",count:Assets.Count(x=>x.PendingSubmissionQuantity>0),requirement:"C10");
         DiagnosticHub.Emit(DiagnosticEvent.InventoryContract,DiagnosticArea.Data,endpoint:"Inventory",reason:"InventorySelectableRows",count:Assets.Count(x=>x.CanSelect),requirement:"C10");
     }
-    private void ClearData(){LastFailedOperationId=null;Raise(nameof(DiagnosticOperationId));relistReview=null;ReviewContextText="";PendingRelists.Clear();SelectedRelist=null;tradeAccepted=!syntheticConnection;Raise(nameof(TradeAccepted));ResetDevelopmentTools();foreach(var read in ReadStatuses)read.Update(SteamReadState.NotQueried);readChecks.Clear();displayedChallenge=null;Raise(nameof(ContractSummary));ResetCatalog();gameFees.Clear();assetPublisherFees.Clear();TradingConfirmation=syntheticConnection?"":"실제 거래";TradingPreparation="실거래 모드 기본 선택 · 새 연결의 전송 권한은 서버 계약 확인 후 준비됩니다.";inventoryViews.Clear();retainedSelections.Clear();selections.Clear();listingSelections.Clear();VisibleAssets.Clear();VisibleListings.Clear();QrMatrix=null;Assets.Clear();Listings.Clear();ReviewRows.Clear();Results.Clear();Requests.Clear();RequestOptions.Clear();RepriceKeys.Clear();SelectedRequest=SelectedReprice=null;fees=null;ReviewOpen=ManagementOpen=false;managementBooks.Clear();EvidenceText="대조 증거 없음";HistoryText="중간가격 이력 미조회 (정확한 거래 VWAP 아님)";Raise(nameof(CurrencyText));}
+    private void ClearData(){observedPostedLines.Clear();observedPostedAt=null;LastFailedOperationId=null;Raise(nameof(DiagnosticOperationId));relistReview=null;ReviewContextText="";PendingRelists.Clear();SelectedRelist=null;tradeAccepted=!syntheticConnection;Raise(nameof(TradeAccepted));ResetDevelopmentTools();foreach(var read in ReadStatuses)read.Update(SteamReadState.NotQueried);readChecks.Clear();displayedChallenge=null;Raise(nameof(ContractSummary));ResetCatalog();gameFees.Clear();assetPublisherFees.Clear();TradingConfirmation=syntheticConnection?"":"실제 거래";TradingPreparation="실거래 모드 기본 선택 · 새 연결의 전송 권한은 서버 계약 확인 후 준비됩니다.";inventoryViews.Clear();retainedSelections.Clear();selections.Clear();listingSelections.Clear();VisibleAssets.Clear();VisibleListings.Clear();QrMatrix=null;Assets.Clear();Listings.Clear();ReviewRows.Clear();Results.Clear();Requests.Clear();RequestOptions.Clear();RepriceKeys.Clear();SelectedRequest=SelectedReprice=null;fees=null;ReviewOpen=ManagementOpen=false;managementBooks.Clear();EvidenceText="대조 증거 없음";HistoryText="중간가격 이력 미조회 (정확한 거래 VWAP 아님)";Raise(nameof(CurrencyText));}
     private void LogoutNow()=>EndSession(true);
     private void EndSession(bool forget){if(forget)DeleteRememberedLogin();imagesEnabled=false;Raise(nameof(ImagesEnabled));Raise(nameof(ImageLoader));DiagnosticHub.Emit(DiagnosticEvent.Logout,DiagnosticArea.Authentication,requirement:"A05");var cancelling=Busy||LoginState is SteamLoginState.AwaitingMobile or SteamLoginState.RequestingQr;operation?.Cancel();workspace?.Authentication.Dispose();ClearData();tradeAccepted=false;Raise(nameof(TradeAccepted));LoginState=cancelling?SteamLoginState.Cancelled:SteamLoginState.Disconnected;Status=forget?"로그아웃 · 로컬 저장 로그인 삭제 요청 · 거래 저널 보존":"앱 종료 · 메모리 세션 종료 · 선택한 로그인 유지와 거래 저널 보존";if(Busy)logoutRequested=true;else{workspace?.Dispose();workspace=null;}Changed();}
     private void Error(Exception error)
@@ -416,7 +436,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     private void Changed()
     {
         if(bulkUpdate)return;
-        Raise(nameof(BatchProgressText));Raise(nameof(ApprovalHandoffText));Raise(nameof(HasApprovalHandoff));Raise(nameof(ListingMetadataSummary));Raise(nameof(HasServerListings));
+        Raise(nameof(BatchProgressText));Raise(nameof(ApprovalHandoffText));Raise(nameof(HasApprovalHandoff));Raise(nameof(ServerPostedObservationCount));Raise(nameof(ListingMetadataSummary));Raise(nameof(HasServerListings));
         Raise(nameof(HasPendingInventoryRequests));Raise(nameof(InventorySyncSummary));OpenPendingInventoryRequests?.Refresh();
         Raise(nameof(InventoryEmptyTitle));Raise(nameof(InventoryEmptyHint));
         Raise(nameof(CanChangeRememberLogin));DeleteSavedLogin?.Refresh();

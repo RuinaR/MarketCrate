@@ -40,8 +40,9 @@ public sealed record SteamTradingPolicy(bool Enabled, string EvidenceReference, 
 #endif
 }
 public enum SteamTradingCheck { Consent, WalletIdentity, FeeContract, WalletConsistency, InventoryRead, SaleableAssets, PublisherFees, ListingsRead, ListingFees, SessionCheck }
-public sealed class SteamException(SteamFailure code, int? apiResult = null) : IOException(code.ToString())
+public sealed class SteamException(SteamFailure code, int? apiResult = null) : IOException(code.ToString()), ISubmissionFailure
 {
+    public bool RequestNotSent {get;internal set;}
     public SteamFailure Code { get; } = code;
     public int? ApiResult { get; } = apiResult;
     public string? Endpoint { get; internal set; }
@@ -51,6 +52,11 @@ public sealed class SteamException(SteamFailure code, int? apiResult = null) : I
     public int? HttpStatus {get;internal set;}
     public SteamTradingCheck? TradingCheck { get; internal set; }
 }
+
+// Preserve ordinary cancellation semantics while making the no-submission boundary explicit.
+internal sealed class UnsentSteamCancellation(OperationCanceledException cause,CancellationToken token)
+    : OperationCanceledException("Submission not attempted",cause,token),ISubmissionFailure
+{public bool RequestNotSent=>true;}
 
 // No browser cookie import, external host, redirects, automatic retries or response-body logging.
 public sealed partial class SteamHttp : IDisposable

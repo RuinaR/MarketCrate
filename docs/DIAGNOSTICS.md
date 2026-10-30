@@ -301,3 +301,7 @@ FreshOwnedAssetNewApproval/UnknownPreserved는 새 승인에서 현재 보유·�
 ## 0.20.11 승인 경로·공통 장터 판별
 
 ListingMetadataUnavailable은 상세 가격/등록 ID가 없는 서버 membership 건수다. 원문/계정/자산/쿠키/QR을 기록하지 않는다. 기존 OperationId/BatchId/OperationItemId·HTTP·가격·intent·승인 채널·게시 대조 이벤트를 유지한다. 이 이벤트나 AwaitingSteamGuard를 휴대폰 푸시 도착/실제 게시 성공으로 해석하지 않는다.
+
+## 0.20.12 기능 동등성 감사
+
+RequestNotSent는 현재 Executor가 판매 제출을 시도하지 않았다는 경계다. ItemResult Blocked/Validation 또는Cancelled와 연결 식별자를 남기고 결과Failed/나머지Ready로 보존한다. ConfirmationFlagsConflict는 명시적 확인 불필요와 확인 채널 요구의 모순이며 Unknown이다. 기존 POST 뒤 ResponseLost/EvidenceMissing은 그대로Unknown/자동 재전송 금지다. 원문·계정·QR·쿠키를 기록하지 않는다.

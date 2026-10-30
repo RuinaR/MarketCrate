@@ -239,3 +239,7 @@ SteamStateStore의 IBatchHistoryJournal.FindBatchAsync와 공유 ExecutionGate�
 ## 0.20.11 승인 경로·공통 장터 판별
 
 SteamMarketMembership→SteamContract.Listings→SteamOrdersProvider.Presence를 공통화했다. 금융 행(Listings)과 가격/등록ID가 부족한 membership을 분리한다. 새 등록·ID 재사용·취소/반환 판정은 동일 presence를 검사한다. 상세자료 없는 자산을 정상 빈 목록으로 만들지 않는다. 현재 목록 버킷·ID·금액 충돌은 실패 처리하며 예전 캐시를 정상 새 데이터로 바꾸지 않는다.
+
+## 0.20.12 기능 동등성 감사
+
+ISubmissionFailure marker는 미전송을 아는 Executor만 설정한다. SteamException 분류/OperationCanceledException 계층은 유지한다. 관측된 게시 상태는 기존 EvidenceReport에서 명시적 대조 후 VM 메모리로 읽으며 원요청 상태/귀속과 분리한다. 진행 이벤트마다 DB를 재조회하지 않는다. SQLite schema/기존 저널/인증 저장소 변경 없음.
