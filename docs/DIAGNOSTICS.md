@@ -293,3 +293,7 @@ EvidenceChecked/AssetStateObserved는 원요청 성공이 아니라 현재 동�
 ## 0.20.9 SSIM 실행 중 자산 잠금
 
 ConcurrentAssetOperation은 실행 중 같은 자산의 다른 작업 때문에 전송 전에 차단된 결과다. ItemResult/CancelResult Outcome=Blocked, State=Failed/미전송으로 표시하고 새로운 intent/HTTP POST가 없어 Unknown으로 처리하지 않는다. 원문·계정/asset key를 로그에 추가하지 않는다. 기존 Unknown의 영속 보호와 이 일시 잠금은 별개다.
+
+## 0.20.10 서버 동기화·새 승인
+
+FreshOwnedAssetNewApproval/UnknownPreserved는 새 승인에서 현재 보유·판매목록을 확인했고 원 불명 기록을 보존했음을 뜻한다. 원 요청 성공/실패 확정이 아니다. PreservedWithoutReplay는 이전 배치가 archive에 원자 보존됨을 나타낸다. PendingSubmissionSettling/ServerInventory/ServerListing/UncertainStack은 각각 직전 요청 대기/서버 수량·판매 가능 검증/현재 게시·승인대기/불명 스택의 전송 전 차단이다. 고정 화이트리스트 이유·건수만 남기며 계정/자산/원문/쿠키/QR을 기록하지 않는다.

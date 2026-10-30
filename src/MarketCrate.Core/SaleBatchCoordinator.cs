@@ -4,7 +4,7 @@ namespace MarketCrate.Core;
 
 public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatchJournal journal)
 {
-    private readonly SemaphoreSlim gate = new(1, 1);
+    private readonly SemaphoreSlim gate = journal is IBatchHistoryJournal history ? history.ExecutionGate : new(1, 1);
     public static string RequestKey(SaleBatchSnapshot batch, SaleLineSnapshot line) => $"{batch.BatchId:N}:{line.LineId}";
     public static string AttemptKey(SaleBatchSnapshot batch, SaleLineSnapshot line, int attempt) => attempt == 0 ? RequestKey(batch, line) : $"{RequestKey(batch, line)}:attempt:{attempt}";
 
@@ -65,8 +65,10 @@ public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatch
 #else
             if (executor is not IAuthorizedListingExecutor { CanExecute: true }) throw new InvalidOperationException("IntegrationBlocked");
 #endif
-            var existing = await journal.LoadAsync(cancellationToken);
-            // Journal is an intentionally single active batch. User must archive/clear completed demo data before another batch.
+            var existing = journal is IBatchHistoryJournal historyJournal
+                ? await historyJournal.FindBatchAsync(snapshot.BatchId, cancellationToken)
+                : await journal.LoadAsync(cancellationToken);
+            // A durable multi-batch journal preserves prior work without replaying it.
             if (existing != null)
             {
                 if (existing.Snapshot.BatchId != snapshot.BatchId) throw new InvalidOperationException("기존 활성 배치를 먼저 복구/대조하세요. 새 배치를 제출하지 않았습니다.");

@@ -33,7 +33,11 @@ public static class SubmissionTransportTests
             ("Server unmarketable asset still blocks readiness with an exact safe reason",UnmarketableReadiness),
             ("SSIM-derived claims are atomic account-scoped and released only by their owner",AssetOperationClaims),
             ("Recreated executors share in-flight protection for listing and cancellation",RecreatedExecutorClaims),
-            ("Different assets serialize through the shared store and cancelled queue wait releases its claim",SharedMutationQueue)
+            ("Different assets serialize through the shared store and cancelled queue wait releases its claim",SharedMutationQueue),
+            ("New approved batch does not replay or discard an earlier pending batch",SequentialBatches),
+            ("Old Unknown individual asset may receive a NEW approval after fresh server checks",OldUnknownNewApproval),
+            ("Unknown stack and current pending listing never become a duplicate transmission",ServerStateBoundaries),
+            ("Recreated batch coordinators serialize approval and preserve active journal",SharedBatchGate)
         };
         int passed=0,failed=0;foreach(var(name,run)in tests)try{await run();passed++;Console.WriteLine("PASS "+name);}catch(Exception error){failed++;Console.WriteLine("FAIL "+name+": "+error);}return(passed,failed);
     }
@@ -133,7 +137,7 @@ public static class SubmissionTransportTests
         f.Vm.Logout.Execute(null);await f.Login();await f.Vm.LoadAsync();
         var row=f.Vm.Assets.Single();Check(row.Owned==1&&row.Available==1&&row.CanSelect&&row.PendingSubmissionQuantity==1&&row.SelectionHint.Contains("이전")&&f.Vm.HasPendingInventoryRequests&&f.Vm.InventorySyncSummary.Contains("이전 요청"));
         f.Vm.SelectAll.Execute(null);Check(row.Selected&&f.Vm.OpenPendingInventoryRequests.CanExecute(null));
-        await f.Vm.RefreshPricesAsync();f.Vm.BuildReview();Check(f.Vm.ReviewOpen&&!f.Vm.Submit.CanExecute(null));await f.Vm.SubmitAsync();Check(f.Server.Sends==1&&f.Vm.Status.Contains("이전 전송"));f.Vm.CloseReview.Execute(null);
+        f.EnableTrading();await f.Vm.RefreshPricesAsync();f.Vm.BuildReview();Check(f.Vm.ReviewOpen&&f.Vm.Submit.CanExecute(null));await f.Vm.SubmitAsync();Check(f.Server.Sends==1&&f.Vm.Status.Contains("2분"));f.Vm.CloseReview.Execute(null);
         var sends=f.Server.Sends;f.Vm.OpenPendingInventoryRequests.Execute(null);
         Check(f.Vm.WorkPage==3&&f.Vm.SelectedRequest==original.RequestKey&&f.Vm.Results.Any(x=>x.State==SaleState.Unknown)&&f.Server.Sends==sends&&f.Workspace.Store.Available(row.Asset)==0);
         Check(trace.Events.Any(x=>x.Reason=="InventoryLocalPendingRows"&&x.Count==1)&&trace.Events.Any(x=>x.Reason=="InventorySelectableRows"&&x.Count==1)&&trace.Events.Any(x=>x.Reason=="InventoryReservationOpened"&&x.Count==1));
@@ -217,8 +221,8 @@ public static class SubmissionTransportTests
         var trace=new Trace();using var diagnostics=DiagnosticHub.Use(trace);
         await f.Workspace!.EnableUserTradingAsync(730,"2","Counter-Strike 2",true,true,default);f.Vm.TradeAccepted=true;
         Check(f.Vm.CanTrade&&f.Workspace.PendingSubmissionAssets==1&&f.Vm.Assets.Single().CanSelect&&f.Workspace.Store.ReadCommand(old.RequestKey)!.State==SaleState.Unknown&&f.Workspace.Store.Available(f.Vm.Assets.Single().Asset)==0);
-        f.Vm.SelectAll.Execute(null);await f.Vm.RefreshPricesAsync();f.Vm.BuildReview();Check(f.Vm.ReviewOpen&&!f.Vm.CanTradeReview&&!f.Vm.Submit.CanExecute(null));await f.Vm.SubmitAsync();
-        Check(f.Server.Sends==1&&f.Workspace.Store.Commands().Count==1&&f.Vm.Status.Contains("이전 전송"));
+        f.Vm.SelectAll.Execute(null);await f.Vm.RefreshPricesAsync();f.Vm.BuildReview();Check(f.Vm.ReviewOpen&&f.Vm.CanTradeReview&&f.Vm.Submit.CanExecute(null));await f.Vm.SubmitAsync();
+        Check(f.Server.Sends==1&&f.Workspace.Store.Commands().Count==1&&f.Vm.Status.Contains("2분"));
         Check(trace.Events.Any(x=>x.Reason=="ServerSaleableAssets"&&x.Count==1)&&trace.Events.Any(x=>x.Reason=="LocalSubmissionPending"&&x.Count==1));
     }
     private static async Task UnmarketableReadiness()
@@ -270,6 +274,57 @@ public static class SubmissionTransportTests
         await workspace.Store.Mutations.WaitAsync();using var cancelled=new CancellationTokenSource();var wait=two.SubmitAsync(next.Lines[0],SaleBatchCoordinator.RequestKey(next,next.Lines[0]),cancelled.Token);
         cancelled.Cancel();var stopped=false;try{await wait;}catch(OperationCanceledException){stopped=true;}finally{workspace.Store.Mutations.Release();}
         using var freed=workspace.Store.AssetOperations.TryClaim(workspace.Authentication.SteamId!,other.Key.AssetId);Check(stopped&&freed is not null&&f.Server.Sends==2&&workspace.Store.Commands().Count==2);
+    }
+    private static async Task SequentialBatches()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.ManyAssets=2;f.Server.Free=2;await f.Login();await f.Prepare(1);f.EnableTrading();
+        await f.Vm.SubmitAsync();var first=await f.Workspace!.Store.LoadAsync(default);Check(first is not null&&f.Server.Sends==1);
+        await f.Vm.LoadAsync();foreach(var row in f.Vm.Assets)row.Selected=false;f.Vm.Assets.Single(x=>x.Asset.Key.AssetId!="101").Selected=true;
+        await f.Vm.RefreshPricesAsync();f.Vm.BuildReview();await f.Vm.SubmitAsync();
+        Check(f.Server.Sends==2&&f.Workspace.Store.Commands().Count==2);
+        var second=await f.Workspace.Store.LoadAsync(default);Check(second is not null&&second.Snapshot.BatchId!=first!.Snapshot.BatchId);
+        var saved=await f.Workspace.Store.FindBatchAsync(first!.Snapshot.BatchId,default);Check(saved is not null&&saved.Snapshot.BatchId==first.Snapshot.BatchId&&saved.Results.SequenceEqual(first.Results));
+        await f.Workspace.Batches.ExecuteAsync(first.Snapshot);Check(f.Server.Sends==2);
+        f.Vm.Logout.Execute(null);await f.Login();f.EnableTrading();
+        saved=await f.Workspace!.Store.FindBatchAsync(first.Snapshot.BatchId,default);Check(saved is not null&&saved.Results.SequenceEqual(first.Results));
+        await f.Workspace.Batches.ExecuteAsync(first.Snapshot);Check(f.Server.Sends==2&&f.Workspace.Store.Commands().Count==2);
+    }
+    private static async Task OldUnknownNewApproval()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();
+        var line=f.Vm.ReviewRows.Single().Snapshot(0);var old=new SteamCommandRecord("old-response-lost",f.Workspace!.Authentication.SteamId!,line,"sell",SaleState.Unknown,SentAt:DateTimeOffset.UtcNow.AddMinutes(-5));
+        f.Workspace.Store.SaveCommand(old);var trace=new Trace();using var logging=DiagnosticHub.Use(trace);
+        Check(f.Server.Sends==0);await f.Vm.SubmitAsync();
+        Check(f.Server.Sends==1&&f.Workspace.Store.Commands().Count==2&&f.Workspace.Store.ReadCommand(old.RequestKey)==old);
+        Check(trace.Events.Any(x=>x.Reason=="FreshOwnedAssetNewApproval"&&x.JournalState=="UnknownPreserved"));
+        await f.Workspace.Batches.ExecuteAsync((await f.Workspace.Store.LoadAsync(default))!.Snapshot);Check(f.Server.Sends==1);
+    }
+    private static async Task ServerStateBoundaries()
+    {
+        var trace=new Trace();using var diagnostics=DiagnosticHub.Use(trace);
+        using(var f=new FifthStageTests.Fixture())
+        {
+            f.Server.Free=2;await f.Login();await f.Prepare(1);f.EnableTrading();var line=f.Vm.ReviewRows.Single().Snapshot(0);
+            f.Workspace!.Store.SaveCommand(new("old-stack",f.Workspace.Authentication.SteamId!,line,"sell",SaleState.Unknown,SentAt:DateTimeOffset.UtcNow.AddMinutes(-5)));
+            await f.Vm.SubmitAsync();Check(f.Server.Sends==0&&f.Workspace.Store.Commands().Count==1&&f.Vm.Status.Contains("수량형"));
+        }
+        using(var f=new FifthStageTests.Fixture())
+        {
+            f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();await f.Vm.SubmitAsync();var old=await f.Workspace!.Store.LoadAsync(default);
+            f.Server.Free=1;await f.Prepare(1);await f.Vm.SubmitAsync();
+            Check(f.Server.Sends==1&&f.Vm.Status.Contains("승인 대기")&&(await f.Workspace.Store.LoadAsync(default))!.Snapshot.BatchId==old!.Snapshot.BatchId);
+        }        Check(trace.Events.Any(x=>x.Reason=="UncertainStack"&&x.Error==DiagnosticError.Validation)&&trace.Events.Any(x=>x.Reason=="ServerListing"&&x.Context.OperationId!=Guid.Empty));
+    }
+    private static async Task SharedBatchGate()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();var workspace=f.Workspace!;
+        var batch=new SaleBatchSnapshot(Guid.NewGuid(),workspace.Authentication.SteamId!,DateTimeOffset.UtcNow,[f.Vm.ReviewRows.Single().Snapshot(0)]);
+        f.Server.ListingsStarted=new(TaskCreationOptions.RunContinuationsAsynchronously);var release=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);f.Server.ListingsRelease=release;
+        var first=new SaleBatchCoordinator(workspace.Executor,workspace.Store).ExecuteAsync(batch);await f.Server.ListingsStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        var second=new SaleBatchCoordinator(workspace.Executor,workspace.Store).ExecuteAsync(batch with{BatchId=Guid.NewGuid()});
+        Check(!second.IsCompleted&&f.Server.Sends==0);release.TrySetResult();await first;
+        var rejected=false;try{await second;}catch(SteamException){rejected=true;}
+        Check(rejected&&f.Server.Sends==1&&workspace.Store.Commands().Count==1&&(await workspace.Store.LoadAsync(default))!.Snapshot.BatchId==batch.BatchId);
     }
     private sealed class Trace:IDiagnosticLog{public Guid SessionId{get;}=Guid.NewGuid();public List<DiagnosticRecord> Events{get;}=[];public void Write(DiagnosticRecord value)=>Events.Add(value);}
     private static void Check(bool value){if(!value)throw new Exception("submission transport contract assertion");}

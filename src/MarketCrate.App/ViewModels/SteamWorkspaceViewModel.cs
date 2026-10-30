@@ -163,7 +163,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     public bool TradeAccepted { get => tradeAccepted; set { Set(ref tradeAccepted,value); if(!value&&workspace is not null){operation?.Cancel();workspace.Access.Acknowledge(RiskAccepted,CredentialsAccepted,true,false);} Changed(); } }
     public bool CanCancel=>RiskAccepted&&CredentialsAccepted&&TradeAccepted&&workspace?.Executor.CanCancel==true;
     public bool CanTrade => RiskAccepted&&CredentialsAccepted&&TradeAccepted&&workspace?.Executor.CanExecute == true;
-    public bool CanTradeReview=>CanTrade&&(PricingMode!=2||workspace?.Policy.MedianPriceContractSupported==true)&&!PendingSubmissionConflict&&StackReviewSupported;
+    public bool CanTradeReview=>CanTrade&&(PricingMode!=2||workspace?.Policy.MedianPriceContractSupported==true)&&StackReviewSupported;
     public string PricingContractText=>PricingMode==2?"이력 중앙값의 결제액/통화/기간 계약도 별도 확인 필요 · 기본 실제 제출 차단 · 추정은 정확한 거래 평균이 아닙니다.":"호가 기반 추정도 체결 보장 없음 · 실제 등록은 별도 허용/검증 전 차단";
     public bool Connected => workspace?.Authentication.Connected == true;
     public bool ReviewOpen { get => reviewOpen; private set { Set(ref reviewOpen,value); Changed(); } }
@@ -264,7 +264,6 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     }
     public Task SubmitAsync() => Run(async token =>
     {
-        if(PendingSubmissionConflict){Status="이전 전송 결과를 확인하기 전에는 새 판매 요청을 보낼 수 없습니다. 이전 요청 확인에서 서버 상태를 동기화하세요.";DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,DiagnosticOutcome.Blocked,reason:"PendingSubmission",requirement:"F05");return;}
         RequireConnection();if(!CanTradeReview || !ReviewOpen || ReviewRows.Count==0 || ReviewRows.Any(x=>!x.Valid))throw new SteamException(SteamFailure.Disabled);
         var lines=ReviewRows.Select((x,i)=>x.Snapshot(i)).ToImmutableArray();
         if(workspace!.Policy.StackAmountsSupported!=true)
@@ -389,7 +388,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     {
         LastFailedOperationId=DiagnosticHub.Context?.OperationId??LastOperationId;Raise(nameof(DiagnosticOperationId));
         if(authenticating||error is SteamException{Code:SteamFailure.Authentication or SteamFailure.Expired})PauseSavedLogin();
-        DiagnosticHub.Emit(DiagnosticEvent.UiFailure,DiagnosticArea.UI,DiagnosticOutcome.Failed,LogLevel.Error,error is SteamException se?se.Code switch{SteamFailure.Authentication or SteamFailure.Expired=>DiagnosticError.Authentication,SteamFailure.RateLimited=>DiagnosticError.RateLimited,SteamFailure.Transport=>DiagnosticError.Transport,SteamFailure.ContractChanged=>DiagnosticError.Schema,_=>DiagnosticError.Validation}:DiagnosticError.Validation,exception:error);
+        DiagnosticHub.Emit(DiagnosticEvent.UiFailure,DiagnosticArea.UI,DiagnosticOutcome.Failed,LogLevel.Error,error is SteamException se?se.Code switch{SteamFailure.Authentication or SteamFailure.Expired=>DiagnosticError.Authentication,SteamFailure.RateLimited=>DiagnosticError.RateLimited,SteamFailure.Transport=>DiagnosticError.Transport,SteamFailure.ContractChanged=>DiagnosticError.Schema,_=>DiagnosticError.Validation}:DiagnosticError.Validation,endpoint:(error as SteamException)?.Endpoint,reason:(error as SteamException)?.Endpoint,exception:error);
         if(authenticating&&workspace?.Authentication.LastFailureStage==SteamAuthStage.AccountValidation)
         {QrMatrix=null;LoginState=SteamLoginState.ContractFailure;}
         else if(error is SteamException {Code:SteamFailure.Authentication or SteamFailure.Expired})
@@ -401,6 +400,10 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         }
         if(!authenticating&&error is SteamException{TradingCheck:not null} tradingError){Status=TradingFailureText(tradingError);Changed();return;}
         if(!authenticating&&error is SteamException{Endpoint:"StackContract"}){Status="스택 수량 전송 계약이 검토 후 변경됐거나 확인되지 않았습니다. 판매 요청은 보내지 않았습니다. 새로 조회하고 검토하세요.";Changed();return;}
+        if(!authenticating&&error is SteamException{Endpoint:"PendingSubmissionSettling"}){Status="직전 요청이 아직 서버에 반영 중일 수 있습니다. 전송 후 2분이 지난 뒤 보관함·판매목록을 갱신하고 새로 검토하세요. 이번 요청은 전송하지 않았습니다.";Changed();return;}
+        if(!authenticating&&error is SteamException{Endpoint:"ServerInventory"}){Status="선택한 자산의 현재 보유 수량 또는 판매 가능 상태가 바뀌었습니다. 보관함을 갱신하고 새로 검토하세요. 이번 요청은 전송하지 않았습니다.";Changed();return;}
+        if(!authenticating&&error is SteamException{Endpoint:"ServerListing"}){Status="선택 자산이 현재 판매 중이거나 승인 대기 목록에 있습니다. 판매목록에서 상태를 확인하세요. 중복 요청은 전송하지 않았습니다.";Changed();return;}
+        if(!authenticating&&error is SteamException{Endpoint:"UncertainStack"}){Status="수량형 자산의 이전 요청과 현재 수량을 확정할 증거가 부족합니다. 스택의 중복 수량 전송은 차단했습니다.";Changed();return;}
         if(!authenticating&&error is SteamException{Endpoint:"PendingSubmission"}){Status="서버 보관함은 선택·가격 검토할 수 있지만 이전 전송 결과가 미확정입니다. 이전 요청 확인에서 동기화하세요. 자동 재전송은 하지 않습니다.";Changed();return;}
         if(!authenticating&&error is SteamException{Endpoint:"RepriceReturn"}){Status="일괄 재등록을 시작하지 않았습니다. 외부에서 등록된 항목은 원래 자산의 반환 인과 증거가 없어 자동 재등록을 지원하지 않습니다. 선택 취소는 별도 검토할 수 있습니다.";Changed();return;}
         if(!authenticating&&error is SteamException{Code:SteamFailure.StaleReview}){ReviewOpen=ManagementOpen=false;ReviewRows.Clear();managementBooks.Clear();Status="승인한 가격·수량·호가 자료가 변경되었거나 오래되었습니다. 갱신 후 새 최종 검토가 필요합니다. 자동으로 낮은 가격을 제출하지 않았습니다.";Changed();return;}

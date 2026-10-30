@@ -1,4 +1,17 @@
-# MarketCrate — 현재 상태 (2026-10-29 KST, 0.20.9)
+# MarketCrate — 현재 상태 (2026-10-29 KST, 0.20.10)
+
+## 0.20.10 — 현재 서버 상태 기반 새 배치와 이력 보존
+
+사용자 0.20.9 진단 253324b5의 작업 67fcb948-c733-42a9-8b25-43eae6531e5e / 배치 0ae502cc-c388-4f07-900d-1f7ccb12f3ef는 SubmitAsync→BatchCreated 뒤 SaleBatchCoordinator.ExecuteAsync에서 Validation/InvalidOperationException으로 중단됐다. 판매 POST나 Guard 접수의 증거가 아니다. 기존 단일 active 배치가 새 배치 ID를 무조건 거부하는 코드 경로를 합성으로 재현했다.
+
+SteamStateStore는 IBatchHistoryJournal로 승인 배치 ID를 조회한다. 검증을 통과한 새 배치의 첫 저장에서 이전 결과를 archive에 보존하고 새 active/result를 같은 SQLite 트랜잭션으로 저장한다. 기존 batch/result schema3를 유지한다. 실패한 사전 검증은 이전 active를 바꾸지 않는다. 같은 배치 ID 재호출/재시작은 보존 결과를 반환하며 전송하지 않는다. 실행기 재생성뿐 아니라 배치 코디네이터도 저장소 범위의 실행 게이트를 공유한다.
+
+일반 UI는 과거 로컬 수량을 차감해 최종 승인 버튼을 영구 비활성화하지 않는다. 최종 승인 시 인증된 최신 보관함·판매/승인대기 목록·수수료·호가·계정·가격을 검증한다. 현재 서버에 소유/marketable인 개별 자산이 판매·승인대기 목록에 없으면 오래된 Unknown 기록이 있어도 **사용자가 새로 승인한 별도 요청**을 허용한다. 원 Unknown/ID/감사 기록은 변경하지 않으며 과거 요청을 재실행하지 않는다. 직전 불명 요청은 로컬 2분 안정화 대기(서버 전파 시간 보장이 아님)를 적용한다. 불명 스택 수량·현재 서버 게시/승인대기·미지원 수수료/통화·접근 제한은 계속 차단한다. 보관함과 판매목록은 원자 스냅샷이 아니므로 이 검사를 통과해도 중복/제재 위험이 0이 되지 않는다. 최종 검토에 해당 위험을 안내한다.
+
+실제 SSIM28a503fa79869f3233814d0deaa906a8b3f66621의 MoneyOps.ts/MarketService.ts를 다시 확인했다. 이미 도입한 Apache-2.0 C# 자산 잠금과 LICENSE/NOTICE를 유지하며, 서버 listed/unconfirmed 사전 검사·작업 종료 잠금 해제 원칙을 적용했다. SSIM의 자동 Guard/재시도/통화 추정 폴백은 채택하지 않았다. 다른 프로젝트의 동작은 Valve 허가나 MarketCrate 실계정 성공의 증거가 아니다.
+
+실제 앱·Steam 계정·판매·취소·Guard 실행0, 사용자 Auth/설정/SQLite/저널/진단/이전 배포 삭제0. 최초75개 판정47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED 유지. 이번 서버 증거 없이 LIVE_SELL_VERIFIED/REAL_FEE_VERIFIED를 새로 부여하지 않는다.
+
 
 ## 0.20.9 — 실제 자산 검사와 로컬 중복 전송 보호 분리
 
@@ -546,3 +559,4 @@ MarketCrate의 SetGame은 Executor를 재생성하므로 인스턴스별 semapho
 
 기존 f3b7594는 활성화 수정 중간 소스이며 그 publish 폴더는 검사만 했고 최신 ZIP/latest로 등록하지 않았다. 최종 SSIM 포함 배포는 후속 소스 커밋과 ZIP 해시 절을 기준으로 한다. 이전 후보·사용자 데이터·진단·롤백본 삭제0.
 SSIM 이식 최종 검증: 기능359/359·비표시WPF69/69·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0. 관련25개 합성 계약도 최종 재확인했다. 원본 MoneyOps 기반 atomic claimAll/계정 구분/중복 키/소유자 중복 Dispose, 재생성 Executor의 동일 자산 제출·취소 동시 진입 거부, 서로 다른 자산 직렬화, queue 대기 취소 후 lease 해제를 확인했다. 동시 충돌은 전송 전 실패로 반환하고 새로운 intent/POST 없이 원 작업만 유지한다. 수정 전 f3b7594 실행기를 사용한 음성 재현은 SQLite 동시 접근 오류로 실패했고 새 실행기는 같은 경로를 통과했다. 실계정/실제 GUI/백그라운드 요청은 실행하지 않았다. Source LICENSE/NOTICE를 보존하고 실제 출하 타입이 있으면 해당 고지 파일 부재를 검사하도록 강화했다.
+검증: 기능363/363 PASS, 비표시 WPF69/69 PASS, 배포계약19/19 PASS. 안전 정리 fixture8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가, 시스템 변경/승격 없이 미검증 유지). 빌드 경고/오류0. 수정 전 연속 배치 재현1 FAIL 후 수정 통과. 서버 목록 검사 추가로 기존 두 fixture가 개별 자산을 보유와 외부 판매에 동시에 두던 모순이 드러나 외부 등록을 다른 자산으로 고치고 기존 ID 재사용 Unknown 검사를 보존했다. 공유 배치 게이트까지 전체 회귀 후, UI 오류 원인 화이트리스트 연결을 관련29개 합성 계약으로 재확인했다. 자체 최종 검토 RTB 이미지를 직접 확인했고 실제 창/물리 입력/Steam 계정은 실행하지 않았다. 원본 진단은 로컬에서만 읽고 배포/Git에 넣지 않았다.

@@ -231,3 +231,7 @@ SteamTradingViewModel.NeedsLiveReviewPreparation은 선택 AppID 중 Policy.Veri
 ## 0.20.9 SSIM 실행 중 자산 잠금
 
 SSIM의 자산 claim 알고리즘을 이식한 SteamAssetOperationGuard는 SteamStateStore 소유이며 모든 재생성 Executor가 공유한다. 자산 선점은 공유 mutation queue 대기 전에 수행한다. 동일 자산 충돌은 Failed/미전송이며 intent가 없어 Unknown으로 꾸미지 않는다. 다른 자산은 store.Mutations로 직렬화해 단일 SQLite 연결의 동시 쓰기를 피한다. lease는 취소/예외/성공 경로에서 정리하며 중복 Dispose가 다른 소유자의 잠금을 해제하지 않는다. 영구 의도/Unknown과는 별개다.
+
+## 0.20.10 서버 동기화·새 승인
+
+SteamStateStore의 IBatchHistoryJournal.FindBatchAsync와 공유 ExecutionGate가 여러 승인 배치를 보존한다. archive는 거래 성공 상태로 변환하는 기능이 아니다. 단일 active+result 기존 schema3는 유지하고 새 배치 저장 시 이전 active/result를 통합한 archive를 같은 트랜잭션으로 남긴다. 로컬 Available/ReservedSells 과거 API는 호환/진단용이며 실제 신규 제출 수량은 ValidateServerQuantity의 최신 서버 상태로 검사한다.

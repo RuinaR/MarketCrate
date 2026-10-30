@@ -95,3 +95,6 @@ ID 없는 요청은 재조회한 **동일 asset/app/context·상품·수량·통
 MarketCrate의 SetGame은 Executor를 재생성하므로 인스턴스별 semaphore만으로는 이전/새 Executor의 동시 작업을 보호하지 못했다. 수정 전 실행기로 동시 제출을 재현했을 때 SQLite SQL logic error가 발생했다(추가 중복 POST 성공을 확인했다는 뜻은 아님). 자산 잠금을 저장소 범위로 공유하고 SQLite 쓰기 큐도 공유해 같은 자산의 동시 제출/취소를 미전송 결과로 거절하고, 다른 자산은 직렬 처리한다. 잠금 소유 lease만 해제하며 대기 중 취소도 정리한다. 영속 Unknown은 해제/재전송하지 않고 별도 유지한다.
 
 기존 f3b7594는 활성화 수정 중간 소스이며 그 publish 폴더는 검사만 했고 최신 ZIP/latest로 등록하지 않았다. 최종 SSIM 포함 배포는 후속 소스 커밋과 ZIP 해시 절을 기준으로 한다. 이전 후보·사용자 데이터·진단·롤백본 삭제0.
+## 0.20.10 서버 동기화·새 승인
+
+SSIM MoneyOps.ts/MarketService.ts 고정 커밋28a503f 재확인: 영구 예약으로 UI를 차단하지 않고 실행 중 자산 claim을 종료 시 해제하며 listed/unconfirmed 자산을 사전 조회한다. MoneyOps C# 실도입 코드를 재사용하고 서버 상태 기반 새 승인 경로를 보완했다. SSIM 자동 확인/다계정/재전송·fallback은 적용하지 않았다.

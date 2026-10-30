@@ -87,10 +87,11 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
             schedules.Add(app,schedule);
         }
         if(snapshot.Lines.Any(x=>x.Asset.Stackable&&!executionPolicy.StackAmountsSupported&&schedules[x.Asset.Key.AppId].PublisherFallbackAppId!=x.Asset.Key.AppId))throw new SteamException(SteamFailure.Unsupported){Endpoint="StackContract"};
+        var currentListings=await orders.RefreshAsync(token);
         foreach (var group in snapshot.Lines.GroupBy(x => x.Asset.Key))
         {
             if (!current.TryGetValue(group.Key, out var found))throw new SteamException(SteamFailure.Restricted);
-            if(group.Sum(x => x.Quantity)>store.Available(found))throw new SteamException(SteamFailure.Restricted){Endpoint="PendingSubmission"};
+            ValidateServerQuantity(found,group.Sum(x=>x.Quantity),currentListings);
         }
         var validatedPrices=new Dictionary<(int,string,long),PriceSnapshot>();
         foreach (var line in snapshot.Lines)
@@ -116,6 +117,22 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         }
         BatchValidation.Validate(snapshot,DateTimeOffset.UtcNow); // Network preflight must not age an approval into a durable submission intent.
         foreach (var line in snapshot.Lines) approved.Add(SaleBatchCoordinator.RequestKey(snapshot, line), line);
+    }
+    // The server owns inventory/listing state. Old records are evidence, not Steam reservations.
+    // A NEW user-approved batch may use a currently owned individual asset; it never replays an old key.
+    private void ValidateServerQuantity(InventoryAsset asset,int quantity,IReadOnlyList<SteamListing> listings)
+    {
+        if(!asset.Marketable||asset.Locked||quantity<1||quantity>asset.Quantity)throw new SteamException(SteamFailure.Restricted){Endpoint="ServerInventory"};
+        var listed=listings.Any(x=>x.Asset==asset.Key);
+        if(!asset.Stackable&&listed)throw new SteamException(SteamFailure.Restricted){Endpoint="ServerListing"};
+        var uncertain=store.Commands().Where(x=>x.Account==auth.SteamId&&x.Kind=="sell"&&x.Line.Asset.Key==asset.Key&&x.State is SaleState.Unknown or SaleState.Submitting).ToArray();
+        if(uncertain.Length==0)return;
+        // A short settlement window avoids racing a response-lost request with a stale inventory replica.
+        // It is a local precaution, not a guarantee about Steam propagation or request idempotence.
+        if(uncertain.Any(x=>x.SentAt is {} sent&&DateTimeOffset.UtcNow-sent<TimeSpan.FromMinutes(2)))
+            throw new SteamException(SteamFailure.Restricted){Endpoint="PendingSubmissionSettling"};
+        if(asset.Stackable||listed)throw new SteamException(SteamFailure.Restricted){Endpoint="UncertainStack"};
+        DiagnosticHub.Emit(DiagnosticEvent.EvidenceChecked,DiagnosticArea.Sales,DiagnosticOutcome.Completed,reason:"FreshOwnedAssetNewApproval",requirement:"F05",count:uncertain.Length,journal:"UnknownPreserved");
     }
 #if MARKETCRATE_DEMO
     internal static FeePolicy Wallet(string html)
@@ -157,9 +174,15 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
             }
             if (!CanExecute || !approved.TryGetValue(requestKey, out var approval) || approval != line || DateTimeOffset.UtcNow - line.MarketTime > TimeSpan.FromMinutes(5))
                 throw new SteamException(SteamFailure.Disabled);
-            if (line.Quantity > store.Available(line.Asset))
-                throw new SteamException(SteamFailure.Restricted){Endpoint="PendingSubmission"};
             var before = await orders.RefreshAsync(cancellationToken);
+            var current=line.Asset;
+            if(store.Commands().Any(x=>x.Account==account&&x.Kind=="sell"&&x.Line.Asset.Key==line.Asset.Key&&x.State is SaleState.Unknown or SaleState.Submitting))
+            {
+                var provider=inventory.AppId==line.Asset.Key.AppId&&inventory.ContextId==line.Asset.Key.ContextId?inventory:new SteamInventoryProvider(http,auth,line.Asset.Key.AppId,line.Asset.Key.ContextId,line.Asset.Game);
+                current=(await provider.GetAsync(cancellationToken)).SingleOrDefault(x=>x.Key==line.Asset.Key)??throw new SteamException(SteamFailure.StaleReview);
+                if(current!=line.Asset)throw new SteamException(SteamFailure.StaleReview);
+            }
+            ValidateServerQuantity(current,line.Quantity,before);
             var intent = new SteamCommandRecord(requestKey, auth.SteamId!, line, "sell", SaleState.Submitting, SentAt: DateTimeOffset.UtcNow, BeforeListingIds: before.Select(x => x.ListingId).ToArray());
             store.SaveCommand(intent); // Flush local intent before network; server does not accept our idempotency key.
             try

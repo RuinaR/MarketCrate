@@ -59,6 +59,11 @@ public interface IAuthorizedListingExecutor : IMarketListingExecutor
     bool CanReconcile { get; }
     Task ValidateBatchAsync(SaleBatchSnapshot snapshot, CancellationToken token);
 }
+public interface IBatchHistoryJournal : IBatchJournal
+{
+    SemaphoreSlim ExecutionGate { get; }
+    Task<BatchRecord?> FindBatchAsync(Guid batchId, CancellationToken cancellationToken);
+}
 public interface IBatchJournal
 {
     Task<BatchRecord?> LoadAsync(CancellationToken cancellationToken);

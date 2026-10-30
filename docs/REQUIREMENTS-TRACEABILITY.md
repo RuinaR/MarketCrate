@@ -290,3 +290,7 @@ PARTIAL=일부 경로/기능 부족, MISSING=실행 코드 없음, BLOCKED=필�
 ## 0.20.9 활성화와 전송 검사
 
 0.20.9: C10/F05의 서버 자산 준비 검사와 로컬 중복 전송 보호가 혼재하던 경로를 수정했다. 기존 Unknown 재시작 후 준비 허용/최종 전송 거부 및 실제 marketable=false 준비 거부의 정상·오류 경로를 확인한다.75개 ID와47/16/0/3/9 유지, 실계정 원인 미확정/승격 없음.
+
+## 0.20.10 서버 동기화·새 승인
+
+F01/F05/F10/C10: SaleBatchCoordinator→IBatchHistoryJournal→SteamStateStore.FindBatchAsync/SaveAsync와 SteamListingExecutor.ValidateServerQuantity→실제 inventory/orders→intent→Submit 경로를 보완했다. 최초75개 ID/판정47/16/0/3/9 유지. 합성 검사와 현재 사용자의 실제 일괄 판매 실패 원인을 구분하며 실판매 성공으로 승격하지 않는다.

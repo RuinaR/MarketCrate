@@ -155,7 +155,18 @@ public static class FifteenthStageTests
                 if(Final401)return new(HttpStatusCode.Unauthorized){Content=new StringContent("{}")};
                 return new(HttpStatusCode.OK){Content=new StringContent("<script>g_bLoggedIn = true; g_steamID = '"+Account+"'; g_rgWalletInfo = {\"wallet_currency\":16,"+(MissingMinimum?"":"\"wallet_market_minimum\":100,")+"\"wallet_currency_increment\":100};</script>")};
             }
-            var response=await inner.SendAsync(request,token);if(ReuseId&&request.RequestUri.AbsolutePath=="/market/sellitem/"){response.Content.Dispose();response.Content=new StringContent("{\"success\":true,\"listingid\":\"900\"}");}return response;
+            var response=await inner.SendAsync(request,token);
+            if(request.RequestUri.AbsolutePath=="/market/mylistings/render/")
+            {
+                // The pre-existing listing belongs to a DIFFERENT asset. Listing and owned asset
+                // sharing one unstacked identity would be contradictory server state, not an ID-reuse test.
+                var node=System.Text.Json.Nodes.JsonNode.Parse(await response.Content.ReadAsStringAsync(token))!;
+                foreach(var section in new[]{"listings","listings_to_confirm"})foreach(var row in node[section]!.AsArray())
+                    if(row!["listingid"]!.GetValue<string>()=="900")row["asset"]!["id"]="202";
+                node["assets"]!["730"]!["2"]!["202"]=node["assets"]!["730"]!["2"]!["101"]!.DeepClone();
+                response.Content.Dispose();response.Content=new StringContent(node.ToJsonString());
+            }
+            if(ReuseId&&request.RequestUri.AbsolutePath=="/market/sellitem/"){response.Content.Dispose();response.Content=new StringContent("{\"success\":true,\"listingid\":\"900\"}");}return response;
         }
         protected override void Dispose(bool disposing){if(disposing)inner.Dispose();base.Dispose(disposing);}
     }

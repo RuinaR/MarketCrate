@@ -10,13 +10,14 @@ public sealed record SteamCommandRecord(string RequestKey, string Account, SaleL
 {public SteamApprovalChannel Approval{get;init;}}
 
 // Separate from Demo; no delete/reset UI and no auth material. A missing response never removes intent.
-public sealed partial class SteamStateStore : IBatchJournal, IDisposable
+public sealed partial class SteamStateStore : IBatchHistoryJournal, IDisposable
 {
     private readonly FileStream lease;
     private readonly SqliteConnection connection;
     private BatchRecord? batchCache;
     internal SteamAssetOperationGuard AssetOperations{get;}=new();
     internal SemaphoreSlim Mutations{get;}=new(1,1);
+    public SemaphoreSlim ExecutionGate{get;}=new(1,1);
     public SteamStateStore(string directory)
     {
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.StoreOpen,DiagnosticArea.Storage,"SYS-02");
@@ -183,6 +184,13 @@ public sealed partial class SteamStateStore : IBatchJournal, IDisposable
             command.Line.Asset.Key.AssetId.Any(c => c is < '0' or > '9') || command.Line.UnitQuote.SellerReceives < 1)
             throw new InvalidDataException("SteamCommandInvalid");
     }
+    public async Task<BatchRecord?> FindBatchAsync(Guid batchId,CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var current=await LoadAsync(cancellationToken);
+        var found=current?.Snapshot.BatchId==batchId?current:Read<BatchRecord>("archive",batchId.ToString("N"));
+        return found is null?null:BatchRecordGuard.Validate(found);
+    }
     public Task<BatchRecord?> LoadAsync(CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -202,20 +210,30 @@ public sealed partial class SteamStateStore : IBatchJournal, IDisposable
     public Task SaveAsync(BatchRecord record, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested(); BatchRecordGuard.Validate(record);
-        var old = LoadAsync(cancellationToken).GetAwaiter().GetResult(); if (old is not null) BatchRecordGuard.ValidateTransition(old, record);
+        var old = LoadAsync(cancellationToken).GetAwaiter().GetResult();
+        var newBatch=old is not null&&old.Snapshot.BatchId!=record.Snapshot.BatchId;
+        if(newBatch&&Read<BatchRecord>("archive",record.Snapshot.BatchId.ToString("N")) is not null)throw new InvalidDataException("ArchivedBatchImmutable");
+        if (old is not null&&!newBatch) BatchRecordGuard.ValidateTransition(old, record);
         SteamRelistPlan? relist=null;
-        if(old is null&&relistApproval is {} approval&&approval.Snapshot.BatchId==record.Snapshot.BatchId)
+        if((old is null||newBatch)&&relistApproval is {} approval&&approval.Snapshot.BatchId==record.Snapshot.BatchId)
         {
             if(approval.Snapshot!=record.Snapshot)throw new InvalidDataException("RelistApprovalMismatch");
             relist=Read<SteamRelistPlan>("relist",approval.Key)??throw new InvalidDataException("RelistPlanMissing");
             if(relist.SubmissionBatch is not null||relist.Account!=record.Snapshot.AccountReference)throw new InvalidDataException("RelistApprovalMismatch");
         }
         using var transaction = StorageDiagnostics.Begin(connection);
-        if (old is null) Upsert("batch", "active", record, transaction);
+        if(newBatch)
+        {
+            Upsert("archive",old!.Snapshot.BatchId.ToString("N"),old,transaction);
+            Execute("DELETE FROM state WHERE kind='result'",transaction);
+            Audit(old.Snapshot.BatchId.ToString("N"),SteamAuditAction.Archive,"PreservedWithoutReplay",transaction);
+        }
+        if (old is null||newBatch) Upsert("batch", "active", record, transaction);
         else for (var i = 0; i < record.Results.Length; i++)
             if (old.Results[i] != record.Results[i]) Upsert("result", i.ToString(System.Globalization.CultureInfo.InvariantCulture), record.Results[i], transaction);
         if(relist is not null)Upsert("relist",relist.Key,relist with{SubmissionBatch=record.Snapshot.BatchId},transaction);
         StorageDiagnostics.Commit(transaction); batchCache = record;
+        if(newBatch)DiagnosticHub.Emit(DiagnosticEvent.BatchRecovered,DiagnosticArea.Storage,DiagnosticOutcome.Completed,reason:"PreservedWithoutReplay",journal:"Committed",requirement:"F10");
         if(relist is not null){relistApproval=null;DiagnosticHub.Emit(DiagnosticEvent.Reprice,DiagnosticArea.Storage,journal:"Committed",requirement:"B10",reason:"SubmissionStarted");}
         return Task.CompletedTask;
     }
