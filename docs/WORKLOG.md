@@ -581,3 +581,11 @@ ID 없는 요청은 현재 동일 자산의 게시 관측과 원요청 귀속을
 AsyncCommand.Execute가 await 가능한 동일 ExecuteAsync 본문을 사용하므로 UI CanExecute를 건너뛰지 않고 로그인부터 결과/취소/재접속을 검사했다. 14개 신규 기능 그룹 및4개 실제 템플릿 그룹이 추가되어 최종389기능/75WPF 전부 PASS. 배포20/20, 보안 검사기6/6, 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED. 기존375/71 회귀를 유지했다. UI→HTTP→SQLite→항목결과 OperationId 및 토큰/쿠키/계정 로그 미포함을 검사했다. 최초75개 판정은 그대로다. 상세 범위와 한계는 USER-JOURNEY-QA 참조.
 
 중간 상관관계 검사는 ItemResult를 항목당1개로 잘못 가정했다. 실제 동일 OperationId에 실행기 시작/완료와 코디네이터 확정이 함께 있어9개였다. 최종 검사는 JournalState=Committed인 항목 결과3개를 확인한다. 실제 로그 연결 결함으로 오해하지 않으며 검증 기준을 약화한 것이 아니다. 게임 전환 후 오래된 자료로 검토하지 못하는 기존 보호도 유지해, 입력 수정 후 보관함/수수료·시세를 갱신하는 사용자 경로로 검사했다. 무의미한 재실행 없이 재현/가설/수정에 맞춰 국소 검사 후 최종 회귀를 수행했다.
+
+## 최신 배포 — 0.20.14 사용자 경로 검증
+
+소스 **1f3d95eaceab979197807a3ef4035ca8941cb251**. `artifacts/releases/MarketCrate-0.20.14-user-paths-1f3d95e-win-x64.zip` **66,740,827바이트 /418파일**. SHA256 **FDC735FF70F9CC1264A0EAFB296AE1B0EF80577678C0E3AFF65E4AA102F0238A**. Core/WPF10.0.14 x64 자체 포함·SQLite/DPAPI·실제 전용 PE/BAML·라이선스·사용자 DB/Auth/로그/테스트 UI/Mock/PDB 제외 및 ZIP 모든 파일 해시 일치 PASS. 실제 앱 실행/설치는 수행하지 않았다.
+
+기능389/389·비표시WPF75/75는 기본 및 번들10.0.14 환경에서 각각 PASS다. 배포20/20·advisory 검사기6/6 PASS, 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가), Release build 경고/오류0. 사용자 입력/실행 경로와 한계는 USER-JOURNEY-QA 참조. 무한 조작 조합100%·새 실계정/물리 GUI·전체 RELEASE_READY를 선언하지 않는다. 최초75개47/16/0/3/9 유지.
+
+최신0.20.14 /롤백0.20.13(f1c8631, SHA256 2F45D2EFD6C21D54AB30271D31F9448C3F15FE5F3E300B49B6AD10CF27B528CE). 기존 Auth·설정·SQLite·거래 저널·진단·과거 배포 삭제0, 원본 운영 자료/테스트 산출물 외부 전송0. 사용자는 수량을 직접 입력한 직후 검토 수량 확인 → 잘못된 입력에서 검토 비활성·게임 전환 후 오류 보존 → 정상 수정/갱신 → 실제 금액 최종 확인 순으로 물리 GUI를 점검할 수 있다. 실제 거래 시험은 사용자 직접 범위이며 Unknown이면 추가 등록을 중단한다.

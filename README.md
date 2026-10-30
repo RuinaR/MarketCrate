@@ -237,3 +237,7 @@ WPF 검사는 MainView/UserControl을 직접 Measure/Arrange하고 RenderTargetB
 ## 0.20.13 배포
 
 [최신 portable ZIP](artifacts/releases/MarketCrate-0.20.13-stability-f1c8631-win-x64.zip), 소스 f1c8631. SHA256 2F45D2EFD6C21D54AB30271D31F9448C3F15FE5F3E300B49B6AD10CF27B528CE. 418파일 전체 해시 검증·실제 전용 검사 PASS. 번들 .NET/WPF10.0.14이며 호스트 런타임 설치가 필요 없는 구성이다. 롤백0.20.12와 기존 사용자 자료를 보존했다. 새 실계정/물리GUI 검증과 전체 RELEASE_READY는 미완료다. 세부 검사와 남은 조건은 [릴리즈 신뢰도](docs/RELEASE-READINESS.md)를 따른다.
+
+## 0.20.14 배포
+
+[사용자 입력 경로 수정 portable ZIP](artifacts/releases/MarketCrate-0.20.14-user-paths-1f3d95e-win-x64.zip), 소스1f3d95e. SHA256 FDC735FF70F9CC1264A0EAFB296AE1B0EF80577678C0E3AFF65E4AA102F0238A.418파일 전체 해시/실제 전용/x64 자체 포함 검사 PASS. 롤백0.20.13과 사용자 데이터는 보존한다. [검증표와 미검증 범위](docs/USER-JOURNEY-QA.md)를 확인하세요.
