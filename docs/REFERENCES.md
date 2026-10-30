@@ -218,3 +218,7 @@ node-steam-session 3ac0f34(MIT), node-steamcommunity fa8d897(MIT), SteamMarketHe
 - https://www.nuget.org/packages/Microsoft.Data.Sqlite/10.0.14 및 SQLitePCLRaw.bundle_e_sqlite3/2.1.14 실제 nuspec/lock : native3.54.0. https://sqlite.org/changes.html 의 upstream3.54.1보다 최신이라는 주장0. https://sqlite.org/cves.html 검토만으로 모든 취약점 부재를 보장하지 않는다.
 
 공개 소스 비교와 합성 계약 일치는 인증된 실제 응답/휴대폰 승인/Valve 허가의 대체 증거가 아니다. 남은 조건은 RELEASE-READINESS 참조.
+
+## 2026-10-31 KST — 동일 표시 호가 미체결 조사
+
+공식 Community Market FAQ https://help.steampowered.com/en/faqs/view/61F0-72B7-9A18-C70B 의 교차통화·오래된 적격 구매주문 우선·잔고/처리 제한, 공식 economy_common.js(ToValidMarketPrice/CalculateFee/GetTotalWithFees) SHA256 84429D06A9EF8C250AC567F9FEDC9FB155D23CEB7442C92A19B815840C102784, MIT SteamMarketHelper e186d51의 buildOrderBook/targetPriceForNewListing/sellerPriceForTarget를 대조했다. helper 다운로드 SHA256 E58FA99339D826F42C2F8385645159A76FA816C68654A0423E42E1767C9F8276. 새 코드 도입0, 원본은 무시된 runtime/matching-research에만 보존한다. 공개 상품 페이지의 다른 통화/시간 수치를 사용자의 실시간 환율 증거로 간주하지 않는다. 동시점 원통화·개별 주문 적격 조건 미확보로 이번 체결 지연 원인은 미확정이다. MARKET-MATCHING-INVESTIGATION 참조.

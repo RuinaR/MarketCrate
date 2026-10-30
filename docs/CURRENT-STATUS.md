@@ -655,3 +655,7 @@ SSIM 이식 최종 검증: 기능359/359·비표시WPF69/69·배포계약19/19·
 번들 Core/WPF10.0.14와 Microsoft.Data.Sqlite/ProtectedData10.0.14·SQLitePCLRaw2.1.14(native3.54.0)를 사용한다. 호스트 SDK/런타임 설치·설정 변경0. 구 provider 생성→신 provider 읽기/쓰기→구 provider 재읽기 합성 DB 호환 PASS. NuGet advisory는 명시적 공개 source/프로젝트 coverage를 검사하며 빈 source를 PASS로 판정하지 않는다. 패키지 감사와 런타임 보안 최소 버전 검사는 별개다.
 
 최초75개47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED를 유지한다. 새 실제 GUI·실계정·판매/취소/Guard0. 이전 사용자 관측을 새 릴리즈 실증으로 확대하지 않는다. Auth/Preferences/거래 저널/진단/롤백 삭제0. 실제 전용 출하와 단일 최종 승인 전체 배치, DPAPI, 정제 JSONL/ZIP, Unknown 비재전송, 타 프로세스 비간섭을 유지한다.
+
+## 2026-10-31 — 사용자 실제 게시/미체결 관측
+
+사용자가0.20.14 정상 동작과 TBH Contaminated Soulstone - Torment의 실제 판매등록을 보고했고, 제공 화면에 구매자70원/판매자50원 및 같은 표시 최고 구매주문70원이 관측됐다. 이는 해당 범위의 사용자 등록/게시 증거이며 전체 거래/스택/통화/Guard·LIVE_READY로 확대하지 않는다. 공식 FAQ/최신 공개 수수료 JS/고정 SteamMarketHelper 실제 소스와 가격 경로를 대조했다. 교차 통화 환산·가격 증분으로 표시가격이 같아도 체결 조건이 다를 가능성이 있으나 원통화/서버 적격 증거가 없어 이번 원인을 확정하지 않았다. 세부 근거와 가격 유지 또는 명시적 한 유효 단계 하향 방법은 MARKET-MATCHING-INVESTIGATION.md 참조. 자동 인하/취소/재등록·코드/Release 변경·실계정 요청0. 조사 문서만 변경했으므로 기존 성공 회귀를 반복 실행하지 않았다.
