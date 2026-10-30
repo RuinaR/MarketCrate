@@ -99,7 +99,7 @@ internal static class FourthStageTests
             {
                 var assetRows = new Dictionary<string,object> { ["101"] = new { market_hash_name="Fixture item" } };
                 var contexts = new Dictionary<string,object> { ["2"] = assetRows };
-                var assets = new Dictionary<string,object> { ["730"] = contexts };
+                var assets = new Dictionary<string,object> { ["730"] = contexts };if(!Listed)assets.Clear();
                 body=JsonSerializer.Serialize(new{success=true,total_count=Listed?1:0,listings=Listed?new[]{new{listingid="501",price=100,fee=15,currencyid=2001,asset=new{appid=730,contextid="2",id="101",amount="1"}}}:[],listings_to_confirm=Array.Empty<object>(),listings_on_hold=Array.Empty<object>(),assets});
             }
             else throw new Exception("Unexpected synthetic route");

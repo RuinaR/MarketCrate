@@ -79,6 +79,10 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     public bool Descending {get=>descending;set{if(Set(ref descending,value))Filter();}}
     public bool EmptyAssets=>VisibleAssets.Count==0;
     public bool EmptyListings=>VisibleListings.Count==0;
+    public bool HasServerListings=>Listings.Count>0||workspace?.Orders.Presence.Length>0;
+    public string ListingMetadataSummary=>workspace?.Orders.UnpricedCount is >0?$"장터가 보유한 자산 {workspace.Orders.UnpricedCount}건의 등록 ID·가격·설명을 완전히 확인하지 못했습니다. 빈 판매목록이 아닙니다. 해당 자산의 중복 등록은 차단하며 공식 Steam 장터에서 확인하세요.":"";
+    public bool HasApprovalHandoff=>Results.Any(x=>x.State==SaleState.AwaitingSteamGuard);
+    public string ApprovalHandoffText=>HasApprovalHandoff?"Steam 승인 대기입니다. 각 항목의 확인 방식을 확인하세요. 모바일 확인은 공식 Steam 앱 → Steam Guard → 확인에서 직접 승인합니다. 푸시 알림이 없더라도 확인 목록을 열어 보세요. 이메일 확인을 요구한 항목은 이메일을 확인하세요. 승인 후 아래 ‘승인 후 게시 확인’을 누르세요. 알림이 없다는 이유로 다시 등록하지 마세요.":Results.Any(x=>x.State==SaleState.Unknown)?"일부 요청의 접수 결과를 확인하지 못했습니다. Steam Guard 요청이 생성됐다고 판단할 수 없습니다. 공식 장터 상태와 진단을 확인하고 자동·반복 등록하지 마세요.":"등록 요청 접수와 실제 장터 게시는 다릅니다. 승인 후 게시 확인으로 서버 상태를 확인하세요.";
     public Command ClearSelection {get;}
     public Command ClearListings {get;}
     public Command RefreshReviewStatus {get;}
@@ -193,7 +197,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         LastOperationId=DiagnosticHub.Context?.OperationId;Raise(nameof(LastOperationId));
         OperationLabel=stage switch{nameof(BeginAsync)=>"QR 인증 요청 중",nameof(CheckAsync)=>"모바일 승인 확인 중",nameof(RestoreRememberedAsync)=>"저장 로그인 복원 중",nameof(LoadAsync)=>"보관함·수수료·판매목록 조회 중",nameof(SubmitAsync)=>"판매등록 전 서버 재검증 중",nameof(OpenTradingReviewAsync)=>"계정·수수료·자산 검증 중",nameof(LoadFeesAsync)=>"지갑·수수료 조회 중",nameof(LoadWalletAsync)=>"지갑 통화 조회 중",nameof(LoadListingsAsync)=>"판매목록 조회 중",nameof(RefreshPricesAsync)=>"선택한 아이템 시세 조회 중",nameof(ManageAsync)=>"검토한 관리 요청 처리 중",nameof(CancelForNewReviewAsync)=>"새 대상 검토를 위한 전체 취소 중",nameof(ReviewCancelledTargetsAsync)=>"취소 후 새 판매 대상 조회 중",nameof(PrepareListingRepriceAsync)=>"일괄 재등록 가격 계산 중",_=>"요청 처리 중"};Busy=true;operation=new();authenticating=stage is nameof(BeginAsync) or nameof(CheckAsync) or nameof(RestoreRememberedAsync);
         var read=ReadFor(stage);read?.Update(SteamReadState.Loading);Raise(nameof(InventoryEmptyTitle));Raise(nameof(InventoryEmptyHint));if(read==PricesRead&&PricingMode==2)HistoryRead.Update(SteamReadState.Stale);
-        try{await action(operation.Token);read?.Update(read==InventoryRead&&Assets.Count==0||read==ListingsRead&&Listings.Count==0?SteamReadState.Empty:SteamReadState.Ready);}
+        try{await action(operation.Token);read?.Update(read==InventoryRead&&Assets.Count==0||read==ListingsRead&&!HasServerListings?SteamReadState.Empty:SteamReadState.Ready);}
         catch(OperationCanceledException)
         {
             read?.Update(SteamReadState.Cancelled);
@@ -351,7 +355,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     {
         if(Results.Count!=record.Results.Length||!Results.Select(x=>x.LineId).SequenceEqual(record.Results.Select(x=>x.LineId))){Results.Clear();foreach(var result in record.Results)Results.Add(result);}
         else for(var index=0;index<record.Results.Length;index++)if(Results[index]!=record.Results[index])Results[index]=record.Results[index];
-        Raise(nameof(BatchProgressText));
+        Raise(nameof(BatchProgressText));Raise(nameof(ApprovalHandoffText));Raise(nameof(HasApprovalHandoff));Raise(nameof(ListingMetadataSummary));Raise(nameof(HasServerListings));
     }
     private sealed class BatchUiProgress(SteamWorkspaceViewModel owner):IProgress<BatchRecord>
     {
@@ -368,14 +372,14 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         var previous=SelectedRequest;
         RefreshPendingRelists();Requests.Clear();RequestOptions.Clear();RepriceKeys.Clear();
         if(workspace is null)return;
-        foreach(var command in workspace.Store.Commands().Where(x=>x.Account==workspace.Authentication.SteamId))
+        foreach(var command in workspace.Store.Commands().Where(x=>x.Account==workspace.Authentication.SteamId).OrderByDescending(x=>x.SentAt))
         {
             Requests.Add(command.RequestKey);
             var kind=command.Kind=="cancel"?"취소":"등록";
             RequestOptions.Add(new(command.RequestKey,$"{kind} · {command.Line.Asset.Name} · {SteamStatusText.Label(command.State)} · {command.SentAt:MM-dd HH:mm} UTC"));
         }
         foreach(var plan in workspace.Store.Reprices().Where(x=>x.Account==workspace.Authentication.SteamId))RepriceKeys.Add(plan.Key);
-        SelectedRequest=RequestOptions.Any(x=>x.Key==previous)?previous:null;
+        SelectedRequest=RequestOptions.Any(x=>x.Key==previous)?previous:RequestOptions.FirstOrDefault()?.Key;
         var available=workspace.Store.AvailableAll(Assets.Select(x=>x.Asset).ToArray());
         Bulk(()=>{foreach(var row in Assets)row.UpdateSubmissionHold(Math.Max(0,row.Owned-available[row.Asset.Key]));});
         DiagnosticHub.Emit(DiagnosticEvent.InventoryContract,DiagnosticArea.Data,HasPendingInventoryRequests?DiagnosticOutcome.Blocked:DiagnosticOutcome.Completed,endpoint:"Inventory",reason:"InventoryLocalPendingRows",count:Assets.Count(x=>x.PendingSubmissionQuantity>0),requirement:"C10");
@@ -412,7 +416,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     private void Changed()
     {
         if(bulkUpdate)return;
-        Raise(nameof(BatchProgressText));
+        Raise(nameof(BatchProgressText));Raise(nameof(ApprovalHandoffText));Raise(nameof(HasApprovalHandoff));Raise(nameof(ListingMetadataSummary));Raise(nameof(HasServerListings));
         Raise(nameof(HasPendingInventoryRequests));Raise(nameof(InventorySyncSummary));OpenPendingInventoryRequests?.Refresh();
         Raise(nameof(InventoryEmptyTitle));Raise(nameof(InventoryEmptyHint));
         Raise(nameof(CanChangeRememberLogin));DeleteSavedLogin?.Refresh();

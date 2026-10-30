@@ -190,3 +190,19 @@ CancelBatchAsync는 불변 취소대상 전체를 서버목록과 비교한 뒤 
 ## 0.20.10 서버 동기화·새 승인
 
 현재 보유 개별 자산의 새 최종 승인은 과거 불명 ID를 재실행하는 동작과 구분한다. 최신 server inventory/listed/unconfirmed가 판단 기준이며 기존 불명 기록/요청 ID는 그대로 남긴다. 직전 2분 불명 요청 및 불명 스택은 전송하지 않는다. 같은 배치 ID를 다시 승인해도 archive/current의 기존 결과만 반환한다. 새 배치 사전검증 실패 시 이전 배치 및 거래 의도를 보존한다.
+
+## 0.20.11 — 실제 오픈소스 기준 승인 연결
+
+SSIM MarketModel.ts/AccountTrader.ts/MarketService.ts(28a503fa79869f3233814d0deaa906a8b3f66621), SteamMarketHelper sellItem/removeListing/fetchInventory(e186d51efb742ddfb527d2ccb248c64fcee9c976), 기존 채택한 MIT steam-session LoginSession.ts(3ac0f34fd964b3f886ba18ef4824ac43c942e030)를 실제 소스로 재확인했다. SSIM의 인증 비밀키 자동 확인/프록시·브라우저 지문 위장/재전송을 가져오는 방식은 채택하지 않았다.
+
+SSIM의 canonical market membership 로직을 C# SteamMarketMembership.cs로 부분 이식했다(Apache-2.0·저작권·원본 커밋·LICENSE/NOTICE 보존). pending_listings/listings_to_confirm을 함께 판독하며 동일 중복은 통합하고 충돌은 거부한다. metadata/가격/통화/등록 ID가 빠진 자산도 presence로 보존한다. 이 경우 완전한 금액 행이나 취소 가능한 가짜 등록 ID를 만들지 않는다. active/hold/pending 버킷 자체가 빠진 계약은 여전히 실패 처리하여 부재를 확정 증거로 사용하지 않는다. raw assets map의 추가 자산은 Unknown membership이며 게시 완료로 판정하지 않는다.
+
+Orders의 canonical Presence는 새 등록 전 검사·기존 등록 ID 재사용 검사·취소/반환·재가격 보호가 공유한다. 상세 금액이 없는 승인 대기 자산 때문에 서버 보관함이 새 판매 가능한 상태로 오인되지 않는다. 취소 ID가 사라져도 다른 스택 등록이 남아 있는 상태와 같은 원 취소가 아직 관측되는 상태를 분리하며, 반환 증거는 완화하지 않는다. 실제 수수료/통화/자산/호가/선택 수량·불변 스냅샷·전송 전 intent·직렬 처리·Unknown 보호를 유지한다.
+
+판매 결과에 공식 Steam 앱의 Steam Guard→확인 경로·푸시가 없을 때 확인 목록 직접 열기·이메일 분기·중복 재등록 금지를 안내하고, ‘승인 후 게시 확인’을 기존 Recover 명령에 연결했다. 한 번의 승인→가격별 전체 요청→각 승인 대기→사용자가 공식 모바일 앱에서 직접 확인→새 서버 게시 조회의 경로를 합성 검증한다. sellitem 응답의 needs_mobile_confirmation 등이 필요하며 QR 로그인 승인과 장터 확인은 별개다. 앱이 휴대폰 푸시나 승인 요청 생성을 강제할 수 없고 이메일/승인 불필요 상태도 구분한다. ID 없는 원요청 귀속/상세 금액이 불충분하면 현재 관측과 미확정을 구분하며 성공으로 꾸미지 않는다.
+
+실제 계정/Steam 로그인/판매·취소/Guard/실제 창/전역 입력 실행0. Auth·설정·SQLite·저널·진단·이전 배포 삭제0. 최초75개 판정47/16/0/3/9 유지. IMPLEMENTED와 합성 검증 범위만 확대하며 새 REAL_FEE_VERIFIED/LIVE_SELL_VERIFIED/전 제품 RELEASE_READY는 부여하지 않는다.
+
+### 사용자 직접 확인할 마지막 단계
+
+새 배포본에서 로그인 복원→현재 보관함/지갑·게임 수수료·호가 확인→사용자가 정한 단일 저가 아이템의 가격/수량 검토→전체 판매등록1회→항목별 서버 접수/모바일 또는 이메일 요구 확인→해당 공식 수단에서 사용자 직접 확인→승인 후 게시 확인으로 등록 ID·자산·가격·수량 대조. HTTP 오류/Unknown/메타데이터 미확인이라면 후속 다중 등록을 중단하고 진단을 확인한다. 등록 ID 없는 관측을 원요청 성공으로 꾸미지 않는다. MarketCrate의 단일 최종 승인과 Steam 앱에서 별도로 요구하는 개별/복수 확인은 다르다. 푸시 알림이나 승인 필요 여부를 클라이언트가 강제할 수 없다. 실제 계정의 성공 증거를 얻기 전 LIVE_SELL_VERIFIED를 부여하지 않는다.

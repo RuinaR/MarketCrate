@@ -235,3 +235,7 @@ SSIM의 자산 claim 알고리즘을 이식한 SteamAssetOperationGuard는 Steam
 ## 0.20.10 서버 동기화·새 승인
 
 SteamStateStore의 IBatchHistoryJournal.FindBatchAsync와 공유 ExecutionGate가 여러 승인 배치를 보존한다. archive는 거래 성공 상태로 변환하는 기능이 아니다. 단일 active+result 기존 schema3는 유지하고 새 배치 저장 시 이전 active/result를 통합한 archive를 같은 트랜잭션으로 남긴다. 로컬 Available/ReservedSells 과거 API는 호환/진단용이며 실제 신규 제출 수량은 ValidateServerQuantity의 최신 서버 상태로 검사한다.
+
+## 0.20.11 승인 경로·공통 장터 판별
+
+SteamMarketMembership→SteamContract.Listings→SteamOrdersProvider.Presence를 공통화했다. 금융 행(Listings)과 가격/등록ID가 부족한 membership을 분리한다. 새 등록·ID 재사용·취소/반환 판정은 동일 presence를 검사한다. 상세자료 없는 자산을 정상 빈 목록으로 만들지 않는다. 현재 목록 버킷·ID·금액 충돌은 실패 처리하며 예전 캐시를 정상 새 데이터로 바꾸지 않는다.

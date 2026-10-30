@@ -62,7 +62,7 @@ public sealed partial class SteamWorkspaceViewModel
     private async Task IndependentRead(SteamReadStatus read,Func<Task> action)
     {
         if(!CanRead)return;read.Update(SteamReadState.Loading);
-        try{await action();read.Update(read==ListingsRead&&Listings.Count==0?SteamReadState.Empty:SteamReadState.Ready);}
+        try{await action();read.Update(read==ListingsRead&&!HasServerListings?SteamReadState.Empty:SteamReadState.Ready);}
         catch(OperationCanceledException){read.Update(SteamReadState.Cancelled);throw;}
         catch(Exception error){ReadFailed(read,error);Error(error);}
     }

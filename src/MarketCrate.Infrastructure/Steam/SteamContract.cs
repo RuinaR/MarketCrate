@@ -8,7 +8,8 @@ namespace MarketCrate.Infrastructure.Steam;
 public sealed record SteamInventoryPage(ImmutableArray<InventoryAsset> Assets, string? Next, ImmutableDictionary<AssetKey, int>? PublisherFees = null, ImmutableDictionary<AssetKey,ItemImageReference>? Images=null)
 {public bool VerifiedEmpty{get;init;}public int? ReportedTotal{get;init;}}
 public sealed record SteamListing(string ListingId, AssetKey Asset, string HashName, int Quantity, string Currency, long SellerReceives, long Fees, SaleState State, DateTimeOffset? CreatedAt = null);
-public sealed record SteamListingsPage(ImmutableArray<SteamListing> Listings, int TotalActive, ImmutableDictionary<string,ItemImageReference>? Images=null);
+public sealed record SteamListingsPage(ImmutableArray<SteamListing> Listings, int TotalActive, ImmutableDictionary<string,ItemImageReference>? Images=null)
+{public ImmutableArray<SteamListingPresence> Presence{get;init;}=[];}
 public sealed record SteamHistoryPoint(DateTimeOffset At, decimal MedianMajor, int Volume);
 public sealed record SteamOrderBook(string Currency, ImmutableArray<BidLevel> Bids);
 public enum SteamApprovalChannel { None, Mobile, Email, Unspecified, Either }
@@ -129,26 +130,33 @@ public static class SteamContract
         if (!Success(root)) throw new SteamException(SteamFailure.Restricted);
         var rows = ImmutableArray.CreateBuilder<SteamListing>();
         var images=ImmutableDictionary.CreateBuilder<string,ItemImageReference>();
-        foreach (var (bucket, state) in new[] { ("listings", SaleState.Listed), ("listings_to_confirm", SaleState.AwaitingSteamGuard), ("listings_on_hold", SaleState.Submitted) })
+        // Known optional pending aliases are compatible. Missing entire membership buckets
+        // must not become negative evidence for submission/cancellation.
+        if(!root.TryGetProperty("listings",out _)||!root.TryGetProperty("listings_on_hold",out _)||
+            !root.TryGetProperty("pending_listings",out _)&&!root.TryGetProperty("listings_to_confirm",out _))throw new SteamException(SteamFailure.ContractChanged);
+        var presence=SteamMarketMembership.Read(root);
+        foreach (var (row,state) in SteamMarketMembership.Rows(root))
         {
-            // Missing buckets are not interpreted as complete emptiness.
-            foreach (var row in root.GetProperty(bucket).EnumerateArray())
-            {
-                var a = row.GetProperty("asset"); var key = new AssetKey(a.GetProperty("appid").GetInt32(), Id(a.GetProperty("contextid")), Id(a.GetProperty("id")));
-                var d = root.GetProperty("assets").GetProperty(key.AppId.ToString(CultureInfo.InvariantCulture)).GetProperty(key.ContextId).GetProperty(key.AssetId);
-                var currency = Currency(checked((int)Integer(row.GetProperty("currencyid"))) - 2000);
-                var seller = FromWire(Integer(row.GetProperty("price")), currency); var fee = FromWire(Integer(row.GetProperty("fee")), currency);
-                var quantity = checked((int)Integer(a.GetProperty("amount")));
-                if (key.AppId < 1 || quantity < 1 || seller < 1 || fee < 0) throw new SteamException(SteamFailure.ContractChanged);
-                rows.Add(new(Id(row.GetProperty("listingid")), key, d.GetProperty("market_hash_name").GetString()!, quantity, currency, seller, fee, state,
-                    row.TryGetProperty("time_created", out var created) ? DateTimeOffset.FromUnixTimeSeconds(Integer(created)) : null));
-                if(d.TryGetProperty("appid",out var da)&&da.GetInt32()!=key.AppId)throw new SteamException(SteamFailure.ContractChanged);
-                images.Add(rows[^1].ListingId,Image(d));
-            }
+            var a=row.GetProperty("asset");var key=SteamMarketMembership.Identity(a);
+            // A pending/held asset without these fields is still present, but has no verified financial quote.
+            var listingId=SteamMarketMembership.ListingId(row);
+            if(listingId is null||!row.TryGetProperty("currencyid",out var currencyId)||
+                !row.TryGetProperty("price",out var price)||!row.TryGetProperty("fee",out var fees)||!a.TryGetProperty("amount",out var amount)||
+                !root.TryGetProperty("assets",out var assetMap)||!assetMap.TryGetProperty(key.AppId.ToString(CultureInfo.InvariantCulture),out var apps)||
+                !apps.TryGetProperty(key.ContextId,out var contexts)||!contexts.TryGetProperty(key.AssetId,out var d)||
+                !d.TryGetProperty("market_hash_name",out var hash)||hash.ValueKind!=JsonValueKind.String||string.IsNullOrWhiteSpace(hash.GetString()))continue;
+            var currency=Currency(checked((int)Integer(currencyId))-2000);var seller=FromWire(Integer(price),currency);var fee=FromWire(Integer(fees),currency);
+            var quantity=checked((int)Integer(amount));if(quantity<1||seller<1||fee<0)throw new SteamException(SteamFailure.ContractChanged);
+            var listing=new SteamListing(listingId,key,hash.GetString()!,quantity,currency,seller,fee,state,
+                row.TryGetProperty("time_created",out var created)?DateTimeOffset.FromUnixTimeSeconds(Integer(created)):null);
+            if(rows.FirstOrDefault(x=>x.ListingId==listing.ListingId) is {} duplicate)
+            {if(duplicate!=listing)throw new SteamException(SteamFailure.ContractChanged);continue;}
+            if(d.TryGetProperty("appid",out var da)&&Integer(da)!=key.AppId)throw new SteamException(SteamFailure.ContractChanged);
+            rows.Add(listing);images.Add(listing.ListingId,Image(d));
         }
-        var total = root.GetProperty("total_count").GetInt32();
+        var total = checked((int)Integer(root.GetProperty("total_count")));
         if (total < 0 || rows.Select(x => x.ListingId).Distinct().Count() != rows.Count) throw new SteamException(SteamFailure.ContractChanged);
-        return new(rows.ToImmutable(), total,images.ToImmutable());
+        return new(rows.ToImmutable(), total,images.ToImmutable()){Presence=presence};
     });
     public static SteamSellResponse Sell(string json) => Parse<SteamSellResponse>(json, root =>
     {

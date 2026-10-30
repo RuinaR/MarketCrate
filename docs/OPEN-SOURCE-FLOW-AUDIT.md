@@ -98,3 +98,22 @@ MarketCrate의 SetGame은 Executor를 재생성하므로 인스턴스별 semapho
 ## 0.20.10 서버 동기화·새 승인
 
 SSIM MoneyOps.ts/MarketService.ts 고정 커밋28a503f 재확인: 영구 예약으로 UI를 차단하지 않고 실행 중 자산 claim을 종료 시 해제하며 listed/unconfirmed 자산을 사전 조회한다. MoneyOps C# 실도입 코드를 재사용하고 서버 상태 기반 새 승인 경로를 보완했다. SSIM 자동 확인/다계정/재전송·fallback은 적용하지 않았다.
+
+## 0.20.11 전체 판매 경로의 실제 코드 기준점
+
+| 기능 | 실제 오픈소스 기준 | MarketCrate 연결·확인 | 남은 조건 |
+|---|---|---|---|
+| QR/로그인 복원 | MIT steam-session LoginSession.ts getWebCookies | SteamQrAuthentication/SteamWebRefreshToken/DPAPI 저장, 기존 C# 이식 재사용 | 이번 실계정 미실행 |
+| Community 세션/CSRF | getWebCookies→finalizelogin, helper sessionId | 자체 세션만, 회전된 현재 쿠키에서 sell form 구성 | 기존 브라우저 쿠키 추출 없음 |
+| 보관함/이미지/페이징 | helper fetchInventory/asset+description | SteamInventoryProvider→VM 선택 보존/CDN 이미지 | 임의 context/없는 게임 생성 없음 |
+| 판매목록/승인대기 | SSIM MarketModel.parseMyListings | **신규 C# 부분 이식**, 두 pending alias/metadata-less presence 공통화 | 금융값은 미확인으로 분리 |
+| 호가·수량별 계획 | helper 가격 조회, SSIM seller-net 전송 | 기존 실제 orderbook→공유 잔량 분배→ReviewRows | 실제 체결 보장 없음 |
+| KRW/수수료 | SSIM 실제 등록 금액의 fee 검증과 비교 | FeeContractResolver/SteamFees 정수 계약 재사용 | SSIM CS2/USD 상수를 적용하지 않음 |
+| 전체 승인/진행 | helper/SSIM serial selling | SaleBatchSnapshot→SaleBatchCoordinator→공유 게이트/SQLite intent→여섯 필드 POST | 서버 원자 배치 아님 |
+| 승인 요청·휴대폰 | AccountTrader needsConfirmation, helper 공식 앱 안내 | sell 응답 모바일/이메일/미확인 구분→UI 인계→수동 승인 | 자동 승인·푸시 강제 없음 |
+| 게시 확인/ID 누락 | SSIM listed/unconfirmed canonical membership | Recover/Reconcile/Inspect, ID·전체 자산·금액·수량 대조 | ID 없는 원요청 귀속은 미확정 유지 |
+| 취소/재가격 | helper removelisting, SSIM 목록 재확인 | 현재 presence 검사→취소 접수→동일 자산 반환 증거→새 검토 | 불명 스택/반환은 차단 |
+| 장애/중복·재시작 | SSIM MoneyOps 작업 잠금 | 기존 C# 이식+영속 intent/다중 배치 archive | Unknown 자동 재전송 없음 |
+| 결과/진단 UI | helper 명시적 수동 확인 안내 | 승인 인계 안내·게시 재조회 버튼·개별 결과·안전 JSONL | 물리 GUI/휴대폰 미검증 |
+
+실제 코드/합성 결과/사용자 실계정 결과는 서로 다른 증거다. 원본 전체 앱의 자동확인·다계정/봇·우회 구조까지 복사하지 않았다.

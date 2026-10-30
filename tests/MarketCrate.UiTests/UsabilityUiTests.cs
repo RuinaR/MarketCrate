@@ -63,6 +63,22 @@ internal static class UsabilityUiTests
             }
             Directory.Delete(root,true);
         });
+        test("전체 배치 승인 후 공식 모바일 확인 안내·게시 재조회 명령·진행 결과 렌더",()=>
+        {
+            var root=Path.Combine(Directory.GetCurrentDirectory(),"runtime","guard-ui-"+Guid.NewGuid().ToString("N"));using var server=new SteamContractServer{PendingAlias=true};
+            using(var vm=new SteamWorkspaceViewModel(scope=>new(root,scope.AppId,scope.ContextId,scope.Name,new(true,"synthetic fixture only",true),server.Connection(),server.Clock),true){RiskAccepted=true,CredentialsAccepted=true})
+            {
+                Complete(vm.BeginAsync());server.Clock.Advance();Complete(vm.CheckAsync());Complete(vm.LoadAsync());vm.Assets.Single().Selected=true;vm.Assets.Single().Quantity=10;
+                Complete(vm.RefreshPricesAsync());vm.BuildReview();vm.TradeAccepted=true;vm.EnableTrading.Execute(null);Complete(vm.SubmitAsync());vm.WorkPage=3;
+                var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,800,1.25,"guard-handoff-125.png");render(view,1380,900,2,"guard-handoff-200.png");
+                Check(vm.SelectedRequest is not null&&Find<ComboBox>(view).Any(x=>ReferenceEquals(x.ItemsSource,vm.RequestOptions)&&Equals(x.SelectedValue,vm.SelectedRequest)),"empty request picker after submission");
+                var picker=Find<ComboBox>(view).Single(x=>ReferenceEquals(x.ItemsSource,vm.RequestOptions));Check(Find<TextBlock>(picker).Any(x=>x.Text.StartsWith("등록 ·"))&&!Find<TextBlock>(picker).Any(x=>x.Text.Contains("Key =")),"DisplayMemberPath ignored by selection template");
+                Check(vm.HasApprovalHandoff&&Find<TextBlock>(view).Any(x=>x.Text.Contains("푸시 알림이 없더라도"))&&Find<Button>(view).Any(x=>Equals(x.Content,"승인 후 게시 확인")&&ReferenceEquals(x.Command,vm.Recover)),"Guard handoff/command disconnected");
+                server.Publish=true;Complete(vm.RecoverAsync());render(view,1100,800,1,"guard-posted.png");
+                Check(!vm.HasApprovalHandoff&&vm.Results.All(x=>x.State==SaleState.Listed)&&server.Sends==3&&Application.Current.Windows.Count==0,"false completion/additional submission/native window");
+            }
+            Directory.Delete(root,true);
+        });
     }
         // Detached control only; no desktop input, popup, or native window.
     private static void Complete(Task task){var watch=Stopwatch.StartNew();while(!task.IsCompleted){if(watch.Elapsed>TimeSpan.FromSeconds(20))throw new TimeoutException();var frame=new DispatcherFrame();Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Background,new Action(()=>frame.Continue=false));Dispatcher.PushFrame(frame);Thread.Sleep(1);}task.GetAwaiter().GetResult();}

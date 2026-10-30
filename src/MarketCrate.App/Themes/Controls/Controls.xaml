@@ -232,7 +232,7 @@
           <Grid>
             <Rectangle x:Name="FocusRing" Panel.ZIndex="2" Stroke="{StaticResource Warning}" StrokeThickness="1" StrokeDashArray="2,2" Margin="3" RadiusX="4" RadiusY="4" IsHitTestVisible="False" Visibility="Collapsed"/>
             <p:ToggleButton x:Name="DropButton" Focusable="False" BorderBrush="{TemplateBinding BorderBrush}" IsChecked="{Binding IsDropDownOpen,RelativeSource={RelativeSource TemplatedParent},Mode=TwoWay}" HorizontalContentAlignment="Right" VerticalContentAlignment="Center" Padding="12,0" Margin="0" MinHeight="0"><Path Data="M0,0 L4,4 L8,0" Stroke="{StaticResource Ink}" StrokeThickness="1.5" Width="8" Height="5" VerticalAlignment="Center"/></p:ToggleButton>
-            <ContentPresenter x:Name="SelectionContent" Margin="12,0,36,0" VerticalAlignment="Center" HorizontalAlignment="Left" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" IsHitTestVisible="False" />
+            <ContentPresenter x:Name="SelectionContent" Margin="12,0,36,0" VerticalAlignment="Center" HorizontalAlignment="Left" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" IsHitTestVisible="False" />
             <Popup x:Name="PART_Popup" Placement="Bottom" StaysOpen="False" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False">
               <Border c:FocusCue.Enabled="True" Background="{StaticResource Panel}" BorderBrush="{StaticResource Edge}" BorderThickness="1" MinWidth="{Binding ActualWidth,RelativeSource={RelativeSource TemplatedParent}}">
                 <ScrollViewer MaxHeight="260">

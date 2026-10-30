@@ -18,6 +18,7 @@ public sealed class SteamContractServer : HttpMessageHandler
     public int SellStatus=200;public string? SellBody;public Uri? SellReferrer;public bool SellAjax;
     public bool RotateSessionOnListings;private string? requiredSession;
     public bool EmailConfirmation,UnspecifiedConfirmation;
+    public bool PendingAlias,PendingMetadataMissing;public int ListingReads;
     public bool EmptyCancelBody;public int CancelStatus=200;
     public TaskCompletionSource? InventoryStarted,InventoryRelease;
     public TaskCompletionSource? ListingsStarted,ListingsRelease;
@@ -55,7 +56,18 @@ public sealed class SteamContractServer : HttpMessageHandler
         else if(path=="/market/mylistings/render/")
         {
             ListingsStarted?.TrySetResult();if(ListingsRelease is {} release){ListingsRelease=null;await release.Task.WaitAsync(token);}
-            json=ListingsJson();
+            ListingReads++;json=ListingsJson();
+            if(PendingAlias||PendingMetadataMissing)
+            {
+                var node=System.Text.Json.Nodes.JsonNode.Parse(json)!.AsObject();
+                if(PendingAlias){node["pending_listings"]=node["listings_to_confirm"]!.DeepClone();node.Remove("listings_to_confirm");}
+                if(PendingMetadataMissing)
+                {
+                    foreach(var row in node[PendingAlias?"pending_listings":"listings_to_confirm"]!.AsArray()){row!.AsObject().Remove("listingid");row.AsObject().Remove("price");}
+                    node["assets"]=new System.Text.Json.Nodes.JsonObject();
+                }
+                json=node.ToJsonString();
+            }
             if(RotateSessionOnListings){requiredSession="0123456789abcdef01234567";var rotated=Json(json);rotated.Headers.Add("Set-Cookie","sessionid="+requiredSession+"; Path=/; Secure");return rotated;}
         }
         else if(path=="/market/sellitem/")
@@ -85,6 +97,7 @@ public sealed class SteamContractServer : HttpMessageHandler
         foreach(var row in Rows)created.TryAdd(row.Id,DateTimeOffset.UtcNow.ToUnixTimeSeconds());
         var rows=Rows.Select(x=>new{listingid=x.Id,price=new Money(x.Seller,Currency).Wire,fee=new Money(Schedule.FromSeller(x.Seller).Fees,Currency).Wire,currencyid=Currency=="KRW"?2016:2001,time_created=created[x.Id],asset=new{appid=ListingAppId,contextid=ListingContext,id="101",amount=x.Quantity.ToString()}}).ToArray();
         var assets=new Dictionary<string,object>{[ListingAppId.ToString()]=new Dictionary<string,object>{[ListingContext]=new Dictionary<string,object>{["101"]=new{market_hash_name="Synthetic stack",icon_url=IconToken??""}}}};
+        if(rows.Length==0)assets.Clear(); // Empty market must not invent a held inventory asset.
         return JsonSerializer.Serialize(new{success=true,total_count=Publish?rows.Length:0,listings=Publish?rows:[],listings_to_confirm=Publish?[]:rows,listings_on_hold=Array.Empty<object>(),assets});
     }
 }

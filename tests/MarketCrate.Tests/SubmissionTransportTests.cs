@@ -37,7 +37,11 @@ public static class SubmissionTransportTests
             ("New approved batch does not replay or discard an earlier pending batch",SequentialBatches),
             ("Old Unknown individual asset may receive a NEW approval after fresh server checks",OldUnknownNewApproval),
             ("Unknown stack and current pending listing never become a duplicate transmission",ServerStateBoundaries),
-            ("Recreated batch coordinators serialize approval and preserve active journal",SharedBatchGate)
+            ("Recreated batch coordinators serialize approval and preserve active journal",SharedBatchGate),
+            ("SSIM membership supports pending aliases and keeps unpriced ID-less assets",PendingMembership),
+            ("Metadata-less pending asset cannot disappear into an empty tradable inventory",PendingMetadataGuard),
+            ("One approval submits all lines then manual Guard and fresh listing evidence complete the batch",WholeGuardFlow),
+            ("Unpriced server-held asset cannot prove cancellation return or permit relisting",UnpricedCancelGuard)
         };
         int passed=0,failed=0;foreach(var(name,run)in tests)try{await run();passed++;Console.WriteLine("PASS "+name);}catch(Exception error){failed++;Console.WriteLine("FAIL "+name+": "+error);}return(passed,failed);
     }
@@ -325,6 +329,42 @@ public static class SubmissionTransportTests
         Check(!second.IsCompleted&&f.Server.Sends==0);release.TrySetResult();await first;
         var rejected=false;try{await second;}catch(SteamException){rejected=true;}
         Check(rejected&&f.Server.Sends==1&&workspace.Store.Commands().Count==1&&(await workspace.Store.LoadAsync(default))!.Snapshot.BatchId==batch.BatchId);
+    }
+    private static Task PendingMembership()
+    {
+        var row="{\"listingid\":\"501\",\"price\":10000,\"fee\":1500,\"currencyid\":2016,\"asset\":{\"appid\":730,\"contextid\":\"2\",\"id\":\"101\",\"amount\":\"1\"}}";
+        var assets="{\"730\":{\"2\":{\"101\":{\"market_hash_name\":\"Synthetic\"}}}}";
+        string Body(string pending,string legacy="[]",string metadata="{}")=>"{\"success\":true,\"total_count\":0,\"listings\":[],\"listings_on_hold\":[],\"pending_listings\":"+pending+",\"listings_to_confirm\":"+legacy+",\"assets\":"+metadata+"}";
+        var page=SteamContract.Listings(Body("["+row+"]","["+row+"]",assets));Check(page.Listings.Length==1&&page.Listings[0].State==SaleState.AwaitingSteamGuard&&page.Presence.Length==1);
+        var n=System.Text.Json.Nodes.JsonNode.Parse(row)!.AsObject();n.Remove("listingid");n.Remove("price");n["asset"]!.AsObject().Remove("id");n["asset"]!["assetid"]="101";
+        page=SteamContract.Listings(Body("["+n.ToJsonString()+"]"));Check(page.Listings.IsEmpty&&page.Presence.Length==1&&page.Presence[0].ListingId is null&&page.Presence[0].State==SaleState.AwaitingSteamGuard);
+        foreach(var malformed in new[]{Body("{}"),Body("["+row+"]","["+row.Replace("101","102")+"]",assets),"{\"success\":false}","{\"success\":true,\"total_count\":0,\"assets\":{}}"})
+        {var rejected=false;try{SteamContract.Listings(malformed);}catch(SteamException){rejected=true;}Check(rejected);}
+        return Task.CompletedTask;
+    }
+    private static async Task PendingMetadataGuard()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();await f.Vm.SubmitAsync();
+        f.Server.Free=1;f.Server.PendingAlias=f.Server.PendingMetadataMissing=true;await f.Vm.LoadListingsAsync();
+        Check(f.Workspace!.Orders.Presence.Length==1&&f.Workspace.Orders.UnpricedCount==1&&f.Vm.Listings.Count==0&&f.Vm.HasServerListings&&f.Vm.ListingsRead.State==MarketCrate.App.ViewModels.SteamReadState.Ready&&f.Vm.ListingMetadataSummary.Contains("빈 판매목록이 아닙니다"));
+        await f.Prepare(1);await f.Vm.SubmitAsync();Check(f.Server.Sends==1&&f.Vm.Status.Contains("승인 대기"));
+    }
+    private static async Task WholeGuardFlow()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.PendingAlias=true;await f.Login();await f.Prepare(10);f.EnableTrading();
+        await f.Vm.SubmitAsync();Check(f.Server.Sends==3&&f.Vm.Results.Count==3&&f.Vm.Results.All(x=>x.State==SaleState.AwaitingSteamGuard)&&f.Vm.HasApprovalHandoff&&f.Vm.ApprovalHandoffText.Contains("Steam Guard"));
+        var keys=f.Workspace!.Store.Commands().Select(x=>x.RequestKey).ToArray();var reads=f.Server.ListingReads;
+        await f.Vm.RecoverAsync();Check(f.Server.ListingReads>reads&&f.Server.Sends==3&&f.Vm.Results.All(x=>x.State==SaleState.AwaitingSteamGuard));
+        f.Server.Publish=true;await f.Vm.RecoverAsync();Check(f.Server.Sends==3&&f.Vm.Results.All(x=>x.State==SaleState.Listed)&&!f.Vm.HasApprovalHandoff);
+        f.Vm.Logout.Execute(null);await f.Login();await f.Vm.RecoverAsync();Check(f.Server.Sends==3&&f.Workspace!.Store.Commands().Select(x=>x.RequestKey).Order().SequenceEqual(keys.Order()));
+    }
+    private static async Task UnpricedCancelGuard()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();await f.Vm.SubmitAsync();f.Server.Publish=true;
+        var row=(await f.Workspace!.Orders.RefreshAsync()).Single();await f.Workspace.Executor.CancelAsync(row,"held-cancel");
+        f.Server.Rows.Add((row.ListingId,1,row.SellerReceives));f.Server.Publish=false;f.Server.PendingAlias=f.Server.PendingMetadataMissing=true;
+        var result=await f.Workspace.Executor.ReconcileCancellationAsync("held-cancel");
+        Check(result.State==SaleState.Submitted&&f.Workspace.Store.Return("held-cancel")is null&&f.Server.Sends==1&&f.Server.Cancels==1);
     }
     private sealed class Trace:IDiagnosticLog{public Guid SessionId{get;}=Guid.NewGuid();public List<DiagnosticRecord> Events{get;}=[];public void Write(DiagnosticRecord value)=>Events.Add(value);}
     private static void Check(bool value){if(!value)throw new Exception("submission transport contract assertion");}

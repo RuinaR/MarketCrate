@@ -38,3 +38,10 @@ ProtectedData10.0.9 패키지의 THIRD-PARTY-NOTICES.TXT(78,041바이트)는 포
 - SSIM 이름은 출처 설명에만 사용한다. SSIM 로고/아이콘/시각 자산을 사용하지 않으며 SSIM의 공식 빌드·제휴·보증을 주장하지 않는다. 원본 TRADEMARK.md의 설명/출처 용도 허용과 상표 제한을 확인했다.
 - maFile·identity_secret·shared_secret·자동 모바일 승인·proxy/IP분산·fingerprint 회피·다계정 봇 기능은 도입하지 않았다. 이식한 잠금은 실행 중 중복만 막고, 미확정 거래의 영속 판단은 기존 SQLite 저널이 담당한다. Valve의 허가 또는 실제 계정 동작 검증을 확보했다는 뜻이 아니다.
 - 원본: https://github.com/Santerxyz/SSIM/blob/28a503fa79869f3233814d0deaa906a8b3f66621/src/trading/MoneyOps.ts
+## 0.20.11 — SSIM MarketModel의 C# 부분 이식
+
+- 원본: Santerxyz/SSIM **28a503fa79869f3233814d0deaa906a8b3f66621**, `src/core/MarketModel.ts`의 parseMyListings/mergeParsed(장터 자산 membership·pending alias·metadata-less membership) 알고리즘.
+- Copyright2026 Santer.xyz, **Apache-2.0**. 기존 원 LICENSE/NOTICE 전문과 배포의 SSIM 고지를 그대로 유지한다. 새 파일 `SteamMarketMembership.cs`에 원본/커밋/변경 사실을 표시한다.
+- 변경: C# System.Text.Json, AppID/context/asset ID 엄격 검증, 충돌 거부, 가격/통화/등록 ID 미확인 항목은 별도 presence로 유지. 금액0·기본 통화·합성 listing ID를 생성하지 않는다. 최종 안전 조회에는 active/hold/pending(두 alias 중 하나) 명시적 버킷을 요구한다. Node/새 종속성/SSIM 상표·이미지를 추가하지 않았다.
+- 원본: https://github.com/Santerxyz/SSIM/blob/28a503fa79869f3233814d0deaa906a8b3f66621/src/core/MarketModel.ts
+- 자동 Guard/maFile/프록시·지문 위장/재시도 코드는 포함하지 않는다. 실행 가능한 전체 원본과 조건이 다른 부분을 명시하며 실제 서버 검증이나 Valve 허가를 의미하지 않는다.

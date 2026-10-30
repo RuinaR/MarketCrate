@@ -386,3 +386,7 @@ OPEN-SOURCE-FLOW-AUDIT.md에서 pinned node-steam-session/community·SteamMarket
 ## 0.20.10 서버 동기화·새 승인
 
 새 수수료/등록 서버 계약을 추정으로 활성화하지 않는다. 현재 서버 개별 자산+판매/승인대기 조회에 근거해 별도 신규 승인을 허용하는 경로와 과거 Unknown의 귀속 판정은 별개다. SSIM의 실제 사전 목록 검사 구조를 참고했지만 과거 요청 결과를 성공/실패로 꾸미지 않는다. 실제 원자 조회/서버 idempotency가 없으므로 중복·제재 위험과 실계정 미검증은 남는다.
+
+## 0.20.11 승인 경로·공통 장터 판별
+
+SSIM의 실제 sellOnMarket은 amount=1과 판매자 수령 wire 가격을 전송하고 모바일/추가 확인 응답을 반환한다. 일반 SteamMarketHelper도 여섯 form 필드 및 판매 후 공식 모바일 수동 확인을 사용한다. MarketCrate는 같은 핵심 요청을 기존 C# 어댑터로 전송하며 실제 KRW/수수료·수량 계약은 별도 검증한다. SSIM의 자동 확인은 비밀키에 의존하므로 도입하지 않는다. 다른 프로젝트가 작동하는 사실은 Valve 허가나 MarketCrate 실서버 호환성 증거가 아니다.

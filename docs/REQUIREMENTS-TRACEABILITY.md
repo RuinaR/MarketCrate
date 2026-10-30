@@ -294,3 +294,7 @@ PARTIAL=일부 경로/기능 부족, MISSING=실행 코드 없음, BLOCKED=필�
 ## 0.20.10 서버 동기화·새 승인
 
 F01/F05/F10/C10: SaleBatchCoordinator→IBatchHistoryJournal→SteamStateStore.FindBatchAsync/SaveAsync와 SteamListingExecutor.ValidateServerQuantity→실제 inventory/orders→intent→Submit 경로를 보완했다. 최초75개 ID/판정47/16/0/3/9 유지. 합성 검사와 현재 사용자의 실제 일괄 판매 실패 원인을 구분하며 실판매 성공으로 승격하지 않는다.
+
+## 0.20.11 승인 경로·공통 장터 판별
+
+B01/B04/B09/F01/F03/F06/F09: SteamMarketMembership→Orders.Presence→Executor 검증/취소 반환 보호→VM 승인 안내→Recover→서버 listing ID/자산/가격/수량 대조를 보완했다. 최초75개 ID와47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED를 유지한다. 상세 메타데이터 미확인은 일반 판매 행을 생성하지 않고 관측 및 사용자 안내로 제공하며 실계정 게시/Guard를 COMPLETE로 승격하지 않는다.

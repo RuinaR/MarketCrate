@@ -499,3 +499,26 @@ SteamStateStore는 IBatchHistoryJournal로 승인 배치 ID를 조회한다. 검
 latest0.20.10, rollback0.20.9(f9da6c6, SHA2561812E5BF7A072828E6292A896D7176699154FF8104C2EE2C5943F1A6EB15C9D1)를 보존했다. 이전0.20.8을 포함한 배포/증거/운영 데이터 삭제0. 원본 진단은 Git/ZIP에 포함하지 않았다. 기능363/363·WPF69/69·배포19/19 PASS, 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 최종 오류 원인 연결 관련29계약 추가 PASS. 새 실제 앱/실계정/판매·취소·물리 UI·Guard는 미검증이다.
 
 사용자 최소 확인: 새 ZIP을 별도 폴더에 풀기→로그인 복원→보관함/판매목록 갱신→대상 선택/시세 갱신→최종 검토→전체 판매등록 한 번 승인→항목별 접수/승인대기/실패/불명 확인. 오래된 개별 자산 불명 기록은 새 서버 확인과 별도 승인으로 진행 가능하며 최근 요청은2분 대기, 불명 스택은 별도 제한된다. 불명 발생 시 연속으로 승인하지 말고 해당 작업 진단을 확인한다. 서버 접수·공식 모바일 수동 승인·실제 게시 재조회는 서로 다른 단계다.
+
+## 0.20.11 — 실제 오픈소스 기준 승인 연결
+
+SSIM MarketModel.ts/AccountTrader.ts/MarketService.ts(28a503fa79869f3233814d0deaa906a8b3f66621), SteamMarketHelper sellItem/removeListing/fetchInventory(e186d51efb742ddfb527d2ccb248c64fcee9c976), 기존 채택한 MIT steam-session LoginSession.ts(3ac0f34fd964b3f886ba18ef4824ac43c942e030)를 실제 소스로 재확인했다. SSIM의 인증 비밀키 자동 확인/프록시·브라우저 지문 위장/재전송을 가져오는 방식은 채택하지 않았다.
+
+SSIM의 canonical market membership 로직을 C# SteamMarketMembership.cs로 부분 이식했다(Apache-2.0·저작권·원본 커밋·LICENSE/NOTICE 보존). pending_listings/listings_to_confirm을 함께 판독하며 동일 중복은 통합하고 충돌은 거부한다. metadata/가격/통화/등록 ID가 빠진 자산도 presence로 보존한다. 이 경우 완전한 금액 행이나 취소 가능한 가짜 등록 ID를 만들지 않는다. active/hold/pending 버킷 자체가 빠진 계약은 여전히 실패 처리하여 부재를 확정 증거로 사용하지 않는다. raw assets map의 추가 자산은 Unknown membership이며 게시 완료로 판정하지 않는다.
+
+Orders의 canonical Presence는 새 등록 전 검사·기존 등록 ID 재사용 검사·취소/반환·재가격 보호가 공유한다. 상세 금액이 없는 승인 대기 자산 때문에 서버 보관함이 새 판매 가능한 상태로 오인되지 않는다. 취소 ID가 사라져도 다른 스택 등록이 남아 있는 상태와 같은 원 취소가 아직 관측되는 상태를 분리하며, 반환 증거는 완화하지 않는다. 실제 수수료/통화/자산/호가/선택 수량·불변 스냅샷·전송 전 intent·직렬 처리·Unknown 보호를 유지한다.
+
+판매 결과에 공식 Steam 앱의 Steam Guard→확인 경로·푸시가 없을 때 확인 목록 직접 열기·이메일 분기·중복 재등록 금지를 안내하고, ‘승인 후 게시 확인’을 기존 Recover 명령에 연결했다. 한 번의 승인→가격별 전체 요청→각 승인 대기→사용자가 공식 모바일 앱에서 직접 확인→새 서버 게시 조회의 경로를 합성 검증한다. sellitem 응답의 needs_mobile_confirmation 등이 필요하며 QR 로그인 승인과 장터 확인은 별개다. 앱이 휴대폰 푸시나 승인 요청 생성을 강제할 수 없고 이메일/승인 불필요 상태도 구분한다. ID 없는 원요청 귀속/상세 금액이 불충분하면 현재 관측과 미확정을 구분하며 성공으로 꾸미지 않는다.
+
+실제 계정/Steam 로그인/판매·취소/Guard/실제 창/전역 입력 실행0. Auth·설정·SQLite·저널·진단·이전 배포 삭제0. 최초75개 판정47/16/0/3/9 유지. IMPLEMENTED와 합성 검증 범위만 확대하며 새 REAL_FEE_VERIFIED/LIVE_SELL_VERIFIED/전 제품 RELEASE_READY는 부여하지 않는다.
+
+## 0.20.11 승인 인계 종단 회귀
+
+- PendingMembership: 두 pending alias/동일 중복 통합/assetid alias/ID·가격·설명 누락의 presence 보존/충돌·오류·버킷 전체 누락 거부.
+- PendingMetadataGuard: 금융 행0건이 서버 정상 빈 목록으로 바뀌지 않으며 Ready+미확인 안내를 유지하고 현재 장터 보유 자산의 추가 POST0을 확인.
+- WholeGuardFlow: 최종 승인1회→구매주문 가격별3 POST→3개 AwaitingSteamGuard→재조회만으로 대기 유지→합성 서버의 사용자 승인 후 게시 전환→Listed→재시작 보존, 추가 등록0.
+- UnpricedCancelGuard: 취소 접수 후 상세 금액 없는 승인 대기 자산이 다시 관측되면 반환 proof를 만들거나 재등록하지 않음.
+- detached UI: 공식 앱/푸시 부재/이메일 안내, 게시 확인 명령, 최근 요청 기본 선택,125/200% 자체 렌더, 실창0. 새 안내를 추가해도 자동 승인 HTTP/전역 입력/실계정 실행0.
+- 초기 통합 빌드에서 신규 테스트의 링크되지 않은 fixture 참조와 취소 대조 메서드 이름 오류2건을 수정했다. 초기 회귀3건에서 전체 버킷 부재 거부 조건은 다시 유지했고, 스택의 ‘다른 등록 보유’와 ‘원 취소 계속 관측’을 분리했으며, 합성 fixture의 빈 목록에 남던 잔여 assets metadata 및 nullable 경로를 수정했다. 검증 기준을 완화해 성공시키지 않았다.
+
+0.20.11 최종 검증: 기능367/367 PASS, 비표시WPF70/70 PASS, 배포계약19/19 PASS, 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 빌드 경고/오류0. 최종 자체 렌더에서 선택된 요청이 내부 record 문자열(Key 포함)로 보이는 공통 ComboBox 템플릿 누락을 발견했다. SelectionContent의 ItemTemplateSelector 연결을 복구하고 최근 요청 기본 선택/기존 선택 유지 및 DisplayMemberPath의 실제 렌더 텍스트 검사를 추가했다. 마지막 템플릿 변경 후 전체 비표시 WPF70개를 다시 통과했고125/200% 승인 인계 이미지와 게시 후 이미지를 직접 확인했다. 실제 창·물리 입력·모니터 DPI·실계정·휴대폰은 미검증이다.

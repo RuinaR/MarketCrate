@@ -26,7 +26,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         {
             if(!byId.TryGetValue(command.ListingId!,out var actual))continue; // Absence is not proof of failure/return.
             var line=command.Line;
-            if(actual.Asset.AppId!=line.Asset.Key.AppId||actual.Asset.ContextId!=line.Asset.Key.ContextId||actual.HashName!=line.Asset.MarketHashName||actual.Quantity!=line.Quantity||actual.Currency!=line.Currency||actual.SellerReceives!=line.UnitQuote.SellerReceives||actual.Fees!=line.UnitQuote.Fees)continue;
+            if(actual.Asset!=line.Asset.Key||actual.HashName!=line.Asset.MarketHashName||actual.Quantity!=line.Quantity||actual.Currency!=line.Currency||actual.SellerReceives!=line.UnitQuote.SellerReceives||actual.Fees!=line.UnitQuote.Fees)continue;
             if(command.State==SaleState.Listed&&actual.State!=SaleState.Listed)continue;
             if(command.State!=actual.State)store.SaveCommand(command with{State=actual.State});
             results.Add(new(line.LineId,actual.State,actual.State==SaleState.AwaitingSteamGuard?SteamContract.ApprovalHint(command.Approval):"현재 Steam 판매목록의 등록 ID·상품·가격·수량 일치"));
@@ -123,7 +123,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
     private void ValidateServerQuantity(InventoryAsset asset,int quantity,IReadOnlyList<SteamListing> listings)
     {
         if(!asset.Marketable||asset.Locked||quantity<1||quantity>asset.Quantity)throw new SteamException(SteamFailure.Restricted){Endpoint="ServerInventory"};
-        var listed=listings.Any(x=>x.Asset==asset.Key);
+        var listed=listings.Any(x=>x.Asset==asset.Key)||orders.Presence.Any(x=>x.Asset==asset.Key);
         if(!asset.Stackable&&listed)throw new SteamException(SteamFailure.Restricted){Endpoint="ServerListing"};
         var uncertain=store.Commands().Where(x=>x.Account==auth.SteamId&&x.Kind=="sell"&&x.Line.Asset.Key==asset.Key&&x.State is SaleState.Unknown or SaleState.Submitting).ToArray();
         if(uncertain.Length==0)return;
@@ -183,7 +183,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
                 if(current!=line.Asset)throw new SteamException(SteamFailure.StaleReview);
             }
             ValidateServerQuantity(current,line.Quantity,before);
-            var intent = new SteamCommandRecord(requestKey, auth.SteamId!, line, "sell", SaleState.Submitting, SentAt: DateTimeOffset.UtcNow, BeforeListingIds: before.Select(x => x.ListingId).ToArray());
+            var intent = new SteamCommandRecord(requestKey, auth.SteamId!, line, "sell", SaleState.Submitting, SentAt: DateTimeOffset.UtcNow, BeforeListingIds: before.Select(x=>x.ListingId).Concat(orders.Presence.Where(x=>x.ListingId is not null).Select(x=>x.ListingId!)).Distinct(StringComparer.Ordinal).ToArray());
             store.SaveCommand(intent); // Flush local intent before network; server does not accept our idempotency key.
             try
             {
@@ -229,7 +229,9 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
             return new(line.LineId, command.State == SaleState.AwaitingSteamGuard ? command.State : SaleState.Unknown, $"{observed}{(command.State==SaleState.AwaitingSteamGuard?SteamContract.ApprovalHint(command.Approval):"결과 불명")} · 서버 등록 ID 없음 · 대조 {report.Verdict}: 자동 게시 확정/재전송 금지");
         }
         var listing = (await orders.RefreshAsync(cancellationToken)).SingleOrDefault(x => x.ListingId == command.ListingId);
-        if (listing is null || listing.HashName != line.Asset.MarketHashName || listing.Asset.AppId != line.Asset.Key.AppId || listing.Asset.ContextId != line.Asset.Key.ContextId || listing.Quantity != line.Quantity ||
+        if(listing is null&&command.State==SaleState.AwaitingSteamGuard&&orders.Presence.Any(x=>x.Asset==line.Asset.Key&&x.State==SaleState.AwaitingSteamGuard))
+            return new(line.LineId,SaleState.AwaitingSteamGuard,"이전 접수의 승인 대기 유지 · 현재 같은 자산이 승인 대기 목록에 관측됐으나 등록 ID·금액은 미확인입니다. 공식 Steam 앱/이메일에서 확인하고 다시 조회하세요. 게시 완료가 아닙니다.");
+        if (listing is null || listing.HashName != line.Asset.MarketHashName || listing.Asset != line.Asset.Key || listing.Quantity != line.Quantity ||
             listing.Currency != line.Currency || listing.SellerReceives != line.UnitQuote.SellerReceives || listing.Fees != line.UnitQuote.Fees)
             return new(line.LineId, SaleState.Unknown, "목록 부재/불일치: 판매/취소/비표시 구분 불가");
         store.SaveCommand(command with { State = listing.State });
@@ -299,17 +301,19 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         if (store.Return(requestKey) is not null) return new(intent.Line.LineId, SaleState.Reconciled, "저널의 확정 자산 반환 증거 보존");
         var current = (await orders.RefreshAsync(token)).SingleOrDefault(x => x.ListingId == intent.ListingId);
         var returned = (await new SteamInventoryProvider(http,auth,intent.Line.Asset.Key.AppId,intent.Line.Asset.Key.ContextId,intent.Line.Asset.Game).GetAsync(token)).SingleOrDefault(x => x.Key == intent.Line.Asset.Key && x.MarketHashName == intent.Line.Asset.MarketHashName);
+        var serverHeld=orders.Presence.Any(x=>x.ListingId==intent.ListingId||x.Asset==intent.Line.Asset.Key);
+        var stillObserved=orders.Presence.Any(x=>x.ListingId==intent.ListingId||x.ListingId is null&&x.Asset==intent.Line.Asset.Key);
         var originalSell=store.Commands().SingleOrDefault(x=>x.Kind=="sell"&&x.ListingId==intent.ListingId);
         // Stack increases may be unrelated merges. Without a causal cancellation event, do not release them.
-        var confirmed = originalSell is not null && !originalSell.Line.Asset.Stackable && intent.Line.Quantity==1 && current is null && intent.Accepted && returned is not null && !returned.Stackable && returned.Quantity==1 && intent.AvailableBefore==0;
-        var state = confirmed ? SaleState.Reconciled : current is null ? SaleState.Unknown : SaleState.Submitted;
+        var confirmed = originalSell is not null && !originalSell.Line.Asset.Stackable && intent.Line.Quantity==1 && current is null && !serverHeld && intent.Accepted && returned is not null && !returned.Stackable && returned.Quantity==1 && intent.AvailableBefore==0;
+        var state = confirmed ? SaleState.Reconciled : current is null&&!stillObserved ? SaleState.Unknown : SaleState.Submitted;
         if (confirmed)
         {
             store.SaveReturn(new(requestKey, originalSell!.RequestKey, returned!.Key, intent.Line.Quantity, DateTimeOffset.UtcNow));
         }
         DiagnosticHub.Emit(DiagnosticEvent.CancelResult,DiagnosticArea.Management,confirmed?DiagnosticOutcome.Reconciled:DiagnosticOutcome.Unknown,from:intent.State.ToString(),to:state.ToString(),reason:confirmed?"Committed":"NoCausalEvidence",requirement:"B09");
         store.SaveCommand(intent with { State = state });
-        return new(intent.Line.LineId, state, confirmed ? "취소 접수·목록 부재·동일 단일 자산 반환 대조 완료" : current is null ? "목록 부재/스택 증가만으로 취소 인과관계 확인 불가: 재등록 차단" : "목록에 아직 존재: 취소 완료 아님");
+        return new(intent.Line.LineId, state, confirmed ? "취소 접수·목록 부재·동일 단일 자산 반환 대조 완료" : serverHeld ? "서버가 해당 자산을 계속 보유하거나 승인 대기로 표시합니다. 상세 가격이 없어도 취소 완료/반환을 확정하지 않습니다." : current is null ? "목록 부재/스택 증가만으로 취소 인과관계 확인 불가: 재등록 차단" : "목록에 아직 존재: 취소 완료 아님");
     }
     public async Task<SteamEvidenceReport> InspectAsync(string requestKey, CancellationToken token = default)
     {

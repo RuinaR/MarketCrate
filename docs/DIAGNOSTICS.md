@@ -297,3 +297,7 @@ ConcurrentAssetOperation은 실행 중 같은 자산의 다른 작업 때문에 
 ## 0.20.10 서버 동기화·새 승인
 
 FreshOwnedAssetNewApproval/UnknownPreserved는 새 승인에서 현재 보유·판매목록을 확인했고 원 불명 기록을 보존했음을 뜻한다. 원 요청 성공/실패 확정이 아니다. PreservedWithoutReplay는 이전 배치가 archive에 원자 보존됨을 나타낸다. PendingSubmissionSettling/ServerInventory/ServerListing/UncertainStack은 각각 직전 요청 대기/서버 수량·판매 가능 검증/현재 게시·승인대기/불명 스택의 전송 전 차단이다. 고정 화이트리스트 이유·건수만 남기며 계정/자산/원문/쿠키/QR을 기록하지 않는다.
+
+## 0.20.11 승인 경로·공통 장터 판별
+
+ListingMetadataUnavailable은 상세 가격/등록 ID가 없는 서버 membership 건수다. 원문/계정/자산/쿠키/QR을 기록하지 않는다. 기존 OperationId/BatchId/OperationItemId·HTTP·가격·intent·승인 채널·게시 대조 이벤트를 유지한다. 이 이벤트나 AwaitingSteamGuard를 휴대폰 푸시 도착/실제 게시 성공으로 해석하지 않는다.

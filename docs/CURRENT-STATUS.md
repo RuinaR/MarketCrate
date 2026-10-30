@@ -1,6 +1,19 @@
-# MarketCrate — 현재 상태 (2026-10-30 KST, 0.20.10)
+# MarketCrate — 현재 상태 (2026-10-31 KST, 0.20.11)
 
-## 최신 배포 — 0.20.10
+## 0.20.11 — 실제 오픈소스 기준 승인 연결
+
+SSIM MarketModel.ts/AccountTrader.ts/MarketService.ts(28a503fa79869f3233814d0deaa906a8b3f66621), SteamMarketHelper sellItem/removeListing/fetchInventory(e186d51efb742ddfb527d2ccb248c64fcee9c976), 기존 채택한 MIT steam-session LoginSession.ts(3ac0f34fd964b3f886ba18ef4824ac43c942e030)를 실제 소스로 재확인했다. SSIM의 인증 비밀키 자동 확인/프록시·브라우저 지문 위장/재전송을 가져오는 방식은 채택하지 않았다.
+
+SSIM의 canonical market membership 로직을 C# SteamMarketMembership.cs로 부분 이식했다(Apache-2.0·저작권·원본 커밋·LICENSE/NOTICE 보존). pending_listings/listings_to_confirm을 함께 판독하며 동일 중복은 통합하고 충돌은 거부한다. metadata/가격/통화/등록 ID가 빠진 자산도 presence로 보존한다. 이 경우 완전한 금액 행이나 취소 가능한 가짜 등록 ID를 만들지 않는다. active/hold/pending 버킷 자체가 빠진 계약은 여전히 실패 처리하여 부재를 확정 증거로 사용하지 않는다. raw assets map의 추가 자산은 Unknown membership이며 게시 완료로 판정하지 않는다.
+
+Orders의 canonical Presence는 새 등록 전 검사·기존 등록 ID 재사용 검사·취소/반환·재가격 보호가 공유한다. 상세 금액이 없는 승인 대기 자산 때문에 서버 보관함이 새 판매 가능한 상태로 오인되지 않는다. 취소 ID가 사라져도 다른 스택 등록이 남아 있는 상태와 같은 원 취소가 아직 관측되는 상태를 분리하며, 반환 증거는 완화하지 않는다. 실제 수수료/통화/자산/호가/선택 수량·불변 스냅샷·전송 전 intent·직렬 처리·Unknown 보호를 유지한다.
+
+판매 결과에 공식 Steam 앱의 Steam Guard→확인 경로·푸시가 없을 때 확인 목록 직접 열기·이메일 분기·중복 재등록 금지를 안내하고, ‘승인 후 게시 확인’을 기존 Recover 명령에 연결했다. 한 번의 승인→가격별 전체 요청→각 승인 대기→사용자가 공식 모바일 앱에서 직접 확인→새 서버 게시 조회의 경로를 합성 검증한다. sellitem 응답의 needs_mobile_confirmation 등이 필요하며 QR 로그인 승인과 장터 확인은 별개다. 앱이 휴대폰 푸시나 승인 요청 생성을 강제할 수 없고 이메일/승인 불필요 상태도 구분한다. ID 없는 원요청 귀속/상세 금액이 불충분하면 현재 관측과 미확정을 구분하며 성공으로 꾸미지 않는다.
+
+실제 계정/Steam 로그인/판매·취소/Guard/실제 창/전역 입력 실행0. Auth·설정·SQLite·저널·진단·이전 배포 삭제0. 최초75개 판정47/16/0/3/9 유지. IMPLEMENTED와 합성 검증 범위만 확대하며 새 REAL_FEE_VERIFIED/LIVE_SELL_VERIFIED/전 제품 RELEASE_READY는 부여하지 않는다.
+
+
+## 이전 배포 — 0.20.10
 
 소스 b6d5f58a9a90f917f02663d16ddf5e693506d08f. `artifacts/releases/MarketCrate-0.20.10-server-state-b6d5f58-win-x64.zip` **66,529,683바이트 /415파일**. SHA256 **2DC8291C26D2DD1D549EDD200E3BB8DA03B89F45DBCA68A1AB3B1DBF40C3D418**. ZIP 전체 entry와 출하 폴더 SHA 일치, SourceCommit·버전·x64 CLR/WPF/SQLite·DPAPI·Apache LICENSE/NOTICE·실제 전용 PE/BAML·Mock/자가검증/사용자 DB/Auth/진단/PDB 제외 검사 PASS. 실행파일은 실행하지 않았다.
 
@@ -569,3 +582,5 @@ MarketCrate의 SetGame은 Executor를 재생성하므로 인스턴스별 semapho
 기존 f3b7594는 활성화 수정 중간 소스이며 그 publish 폴더는 검사만 했고 최신 ZIP/latest로 등록하지 않았다. 최종 SSIM 포함 배포는 후속 소스 커밋과 ZIP 해시 절을 기준으로 한다. 이전 후보·사용자 데이터·진단·롤백본 삭제0.
 SSIM 이식 최종 검증: 기능359/359·비표시WPF69/69·배포계약19/19·정리fixture9/9 PASS, 빌드 경고/오류0. 관련25개 합성 계약도 최종 재확인했다. 원본 MoneyOps 기반 atomic claimAll/계정 구분/중복 키/소유자 중복 Dispose, 재생성 Executor의 동일 자산 제출·취소 동시 진입 거부, 서로 다른 자산 직렬화, queue 대기 취소 후 lease 해제를 확인했다. 동시 충돌은 전송 전 실패로 반환하고 새로운 intent/POST 없이 원 작업만 유지한다. 수정 전 f3b7594 실행기를 사용한 음성 재현은 SQLite 동시 접근 오류로 실패했고 새 실행기는 같은 경로를 통과했다. 실계정/실제 GUI/백그라운드 요청은 실행하지 않았다. Source LICENSE/NOTICE를 보존하고 실제 출하 타입이 있으면 해당 고지 파일 부재를 검사하도록 강화했다.
 검증: 기능363/363 PASS, 비표시 WPF69/69 PASS, 배포계약19/19 PASS. 안전 정리 fixture8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가, 시스템 변경/승격 없이 미검증 유지). 빌드 경고/오류0. 수정 전 연속 배치 재현1 FAIL 후 수정 통과. 서버 목록 검사 추가로 기존 두 fixture가 개별 자산을 보유와 외부 판매에 동시에 두던 모순이 드러나 외부 등록을 다른 자산으로 고치고 기존 ID 재사용 Unknown 검사를 보존했다. 공유 배치 게이트까지 전체 회귀 후, UI 오류 원인 화이트리스트 연결을 관련29개 합성 계약으로 재확인했다. 자체 최종 검토 RTB 이미지를 직접 확인했고 실제 창/물리 입력/Steam 계정은 실행하지 않았다. 원본 진단은 로컬에서만 읽고 배포/Git에 넣지 않았다.
+
+0.20.11 최종 검증: 기능367/367 PASS, 비표시WPF70/70 PASS, 배포계약19/19 PASS, 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 빌드 경고/오류0. 최종 자체 렌더에서 선택된 요청이 내부 record 문자열(Key 포함)로 보이는 공통 ComboBox 템플릿 누락을 발견했다. SelectionContent의 ItemTemplateSelector 연결을 복구하고 최근 요청 기본 선택/기존 선택 유지 및 DisplayMemberPath의 실제 렌더 텍스트 검사를 추가했다. 마지막 템플릿 변경 후 전체 비표시 WPF70개를 다시 통과했고125/200% 승인 인계 이미지와 게시 후 이미지를 직접 확인했다. 실제 창·물리 입력·모니터 DPI·실계정·휴대폰은 미검증이다.

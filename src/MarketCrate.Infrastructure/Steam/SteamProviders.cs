@@ -96,6 +96,8 @@ public sealed class SteamOrdersProvider(SteamHttp http, SteamQrAuthentication au
 {
     private ImmutableArray<SteamListing> cache = [];
     public Dictionary<string,ItemImageReference> Images{get;}=[];
+    public ImmutableArray<SteamListingPresence> Presence{get;private set;}=[];
+    public int UnpricedCount{get{var ids=cache.Select(x=>x.ListingId).ToHashSet();return Presence.Count(x=>x.ListingId is null||!ids.Contains(x.ListingId));}}
     public Capability Capability => auth.Connected && http.Halted is null ? Capability.Experimental : Capability.IntegrationBlocked;
     public IReadOnlyList<LineResult> GetOrders() => cache.Select(x => new LineResult(x.ListingId, x.State, "Steam 목록 관측; 자동 갱신 없음")).ToArray();
     public async Task<ImmutableArray<SteamListing>> RefreshAsync(CancellationToken token = default)
@@ -103,20 +105,29 @@ public sealed class SteamOrdersProvider(SteamHttp http, SteamQrAuthentication au
         using var operation=DiagnosticHub.Operation(DiagnosticEvent.ListingsLoaded,DiagnosticArea.Data,"B01");
         if (!auth.Connected) throw new SteamException(SteamFailure.Authentication);
         var images=new Dictionary<string,ItemImageReference>();
-        var all = new Dictionary<string, SteamListing>(); int? total = null; var active = 0;
+        var all = new Dictionary<string, SteamListing>();var membership=new Dictionary<(AssetKey,string?),SteamListingPresence>();var listingIdentities=new Dictionary<string,SteamListingPresence>(); int? total = null; var active = 0;
         for (var start = 0; start < 10000; start += 100)
         {
             var page=await PageAsync(start,token);
             if(page.Images is {} pageImages)foreach(var image in pageImages)images[image.Key]=image.Value;
             total ??= page.TotalActive;
             if (total != page.TotalActive) break; // Unstable pagination is not a complete authoritative snapshot.
+            foreach(var observed in page.Presence)
+            {
+                if(observed.ListingId is {} id){if(listingIdentities.TryGetValue(id,out var existing)&&existing!=observed)throw new SteamException(SteamFailure.ContractChanged);listingIdentities[id]=observed;}
+                var key=(observed.Asset,observed.ListingId);
+                if(membership.TryGetValue(key,out var previous)&&previous!=observed)
+                {if(observed.State==SaleState.Unknown)continue;if(previous.State==SaleState.Unknown)membership.Remove(key);else throw new SteamException(SteamFailure.ContractChanged);}
+                if(membership.TryAdd(key,observed)&&observed.State==SaleState.Listed)active++;
+            }
             foreach (var row in page.Listings)
             {
                 if (all.TryGetValue(row.ListingId, out var old) && old != row) { http.Stop(SteamFailure.ContractChanged); throw new SteamException(SteamFailure.ContractChanged); }
-                if (all.TryAdd(row.ListingId, row) && row.State == SaleState.Listed) active++;
+                all.TryAdd(row.ListingId,row);
             }
-            if (active == total) { Images.Clear();foreach(var image in images)Images.Add(image.Key,image.Value);cache = all.Values.ToImmutableArray(); return cache; }
-            if (page.Listings.Count(x => x.State == SaleState.Listed) == 0) break;
+            if(active>total)throw new SteamException(SteamFailure.ContractChanged);
+            if (active == total) { Images.Clear();foreach(var image in images)Images.Add(image.Key,image.Value);cache = all.Values.ToImmutableArray();var explicitAssets=membership.Values.Where(x=>x.State!=SaleState.Unknown).Select(x=>x.Asset).ToHashSet();Presence=membership.Values.Where(x=>x.State!=SaleState.Unknown||!explicitAssets.Contains(x.Asset)).ToImmutableArray();DiagnosticHub.Emit(DiagnosticEvent.ListingsLoaded,DiagnosticArea.Data,count:UnpricedCount,reason:"ListingMetadataUnavailable",requirement:"B04"); return cache; }
+            if (page.Presence.Count(x => x.State == SaleState.Listed) == 0) break;
         }
         throw new SteamException(SteamFailure.ContractChanged);
     }

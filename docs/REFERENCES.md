@@ -179,3 +179,11 @@ node-steam-session 3ac0f34(MIT), node-steamcommunity fa8d897(MIT), SteamMarketHe
 ## 0.20.9 SSIM 실행 중 자산 잠금
 
 실제 채택: SSIM28a503fa79869f3233814d0deaa906a8b3f66621/src/trading/MoneyOps.ts의 자산별 claim/claimAll/release 로직을 C#으로 부분 이식. Apache-2.0·Copyright2026Santer.xyz·LICENSE/NOTICE 전문 보존/출하. 원본: https://github.com/Santerxyz/SSIM/blob/28a503fa79869f3233814d0deaa906a8b3f66621/src/trading/MoneyOps.ts . MarketService.ts의 실행 중 잠금/저널 분리, helper sellItem/fetchInventory와 대조했다. 원본 TRADEMARK.md는 출처 용도만 허용하며 실제 상표·아이콘은 사용하지 않는다. 전체 앱·자동 Guard·프록시/지문 우회는 도입하지 않았다.
+
+## 2026-10-31 KST / 0.20.11 실제 소스 재확인
+
+- SSIM28a503f의 [MarketModel.ts](https://github.com/Santerxyz/SSIM/blob/28a503fa79869f3233814d0deaa906a8b3f66621/src/core/MarketModel.ts): canonical membership/두 pending alias/설명 없는 자산 보존. **Apache-2.0 C# 부분 이식**, LICENSE/NOTICE 배포 보존. 본문 내 빈 통화/금액 폴백은 도입하지 않았다.
+- 동일 커밋 [AccountTrader.ts](https://github.com/Santerxyz/SSIM/blob/28a503fa79869f3233814d0deaa906a8b3f66621/src/trading/AccountTrader.ts): getListedAssets/sellOnMarket/confirmMarketListings 비교. 모바일 확인 자동화·비밀키·proxy/fingerprint·회피는 미채택.
+- [SteamMarketHelper e186d51](https://github.com/federicogiorgi/SteamMarketHelper/blob/e186d51efb742ddfb527d2ccb248c64fcee9c976/steam-market-helper.user.js): MIT, 여섯 sell form 필드/빈 취소 응답/보관함 페이징/공식 모바일 수동 확인 안내를 대조했다. KRW를 일괄 USD cents로 처리하는 코드는 채택하지 않았다.
+- [steam-session LoginSession.ts 3ac0f34](https://github.com/DoctorMcKay/node-steam-session/blob/3ac0f34fd964b3f886ba18ef4824ac43c942e030/src/LoginSession.ts): MIT, 이전 도입 WebBrowser refreshToken→getWebCookies→finalizelogin 계약 재확인. 디버그 원문/자동 재시도/SteamClient 토큰 우회는 제외했다.
+- Steam 공식 [Trade and Market Confirmations](https://help.steampowered.com/en/faqs/view/2E6E-A02C-5581-8904): 공개 페이지 접근은 됐으나 이번 도구의 텍스트 추출은 이미지 링크만 반환했다. 최신 본문을 새로 검증했다고 표시하지 않으며 기존 수동 확인 원칙을 유지한다.

@@ -163,7 +163,8 @@ public static class FifteenthStageTests
                 var node=System.Text.Json.Nodes.JsonNode.Parse(await response.Content.ReadAsStringAsync(token))!;
                 foreach(var section in new[]{"listings","listings_to_confirm"})foreach(var row in node[section]!.AsArray())
                     if(row!["listingid"]!.GetValue<string>()=="900")row["asset"]!["id"]="202";
-                node["assets"]!["730"]!["2"]!["202"]=node["assets"]!["730"]!["2"]!["101"]!.DeepClone();
+                if(node["assets"]?["730"]?["2"]?["101"] is {} metadata)node["assets"]!["730"]!["2"]!["202"]=metadata.DeepClone();
+                if(!new[]{"listings","listings_to_confirm"}.SelectMany(section=>node[section]!.AsArray()).Any(row=>row!["asset"]!["id"]!.GetValue<string>()=="101"))node["assets"]?["730"]?["2"]?.AsObject().Remove("101");
                 response.Content.Dispose();response.Content=new StringContent(node.ToJsonString());
             }
             if(ReuseId&&request.RequestUri.AbsolutePath=="/market/sellitem/"){response.Content.Dispose();response.Content=new StringContent("{\"success\":true,\"listingid\":\"900\"}");}return response;
