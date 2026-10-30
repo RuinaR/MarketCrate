@@ -239,3 +239,11 @@ latest0.20.10, rollback0.20.9(f9da6c6, SHA2561812E5BF7A072828E6292A896D717669915
 검증 범위는 코드·공식 공개 소스·합성 계약·자체 렌더·배포 정적 검사다. 새 실제 앱·설치·물리 GUI·실계정·등록 접수·휴대폰 승인·실제 게시 확인은 미검증이다. 최초75개47/16/0/3/9 유지,100% 동등/LIVE_SELL_VERIFIED/전체 RELEASE_READY를 선언하지 않는다.
 
 사용자 최소 재검증: 새 ZIP을 별도 폴더에 풀기→로그인 복원→실제 보관함/수수료/호가 갱신→단일 품목의 금액·수량 최종 검토→전체 판매등록1회→개별 결과의 미전송/접수/모바일·이메일 요구 확인→필요한 경우 공식 앱에서 수동 확인→승인 후 게시 확인. 현재 게시 관측과 원요청 귀속 미확인은 별도로 표시한다. Unknown/계약 불일치가 있으면 후속 다중 등록을 중단하고 해당 작업 진단을 확인한다.
+
+## 0.20.13 — 최종 릴리즈 신뢰도 감사 (2026-10-31 KST)
+
+같은 BatchId에 변경된 계정/가격을 전달해 이전 승인을 재사용하는 경로, 취소 후 과거 로컬 전송 기록으로 새 실제 보유 자산 검토가 막히는 경로, 타 계정 AssetKey의 pending 수량 혼합을 수정했다. 서버 inventory와 active/pending membership을 기준으로 새 대상·새 가격·새 최종 승인을 요구하며 기존 Unknown/원요청 ID/감사 저널은 보존한다. 관련 코드·수정 전/후 증거·출하 기준은 [RELEASE-READINESS](RELEASE-READINESS.md)를 따른다.
+
+번들 Core/WPF10.0.14와 Microsoft.Data.Sqlite/ProtectedData10.0.14·SQLitePCLRaw2.1.14(native3.54.0)를 사용한다. 호스트 SDK/런타임 설치·설정 변경0. 구 provider 생성→신 provider 읽기/쓰기→구 provider 재읽기 합성 DB 호환 PASS. NuGet advisory는 명시적 공개 source/프로젝트 coverage를 검사하며 빈 source를 PASS로 판정하지 않는다. 패키지 감사와 런타임 보안 최소 버전 검사는 별개다.
+
+최초75개47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED를 유지한다. 새 실제 GUI·실계정·판매/취소/Guard0. 이전 사용자 관측을 새 릴리즈 실증으로 확대하지 않는다. Auth/Preferences/거래 저널/진단/롤백 삭제0. 실제 전용 출하와 단일 최종 승인 전체 배치, DPAPI, 정제 JSONL/ZIP, Unknown 비재전송, 타 프로세스 비간섭을 유지한다.

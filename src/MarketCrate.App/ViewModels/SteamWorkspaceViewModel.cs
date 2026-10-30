@@ -400,7 +400,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         }
         foreach(var plan in workspace.Store.Reprices().Where(x=>x.Account==workspace.Authentication.SteamId))RepriceKeys.Add(plan.Key);
         SelectedRequest=RequestOptions.Any(x=>x.Key==previous)?previous:RequestOptions.FirstOrDefault()?.Key;
-        var available=workspace.Store.AvailableAll(Assets.Select(x=>x.Asset).ToArray());
+        var available=workspace.Store.AvailableAll(Assets.Select(x=>x.Asset).ToArray(),workspace.Authentication.SteamId);
         Bulk(()=>{foreach(var row in Assets)row.UpdateSubmissionHold(Math.Max(0,row.Owned-available[row.Asset.Key]));});
         DiagnosticHub.Emit(DiagnosticEvent.InventoryContract,DiagnosticArea.Data,HasPendingInventoryRequests?DiagnosticOutcome.Blocked:DiagnosticOutcome.Completed,endpoint:"Inventory",reason:"InventoryLocalPendingRows",count:Assets.Count(x=>x.PendingSubmissionQuantity>0),requirement:"C10");
         DiagnosticHub.Emit(DiagnosticEvent.InventoryContract,DiagnosticArea.Data,endpoint:"Inventory",reason:"InventorySelectableRows",count:Assets.Count(x=>x.CanSelect),requirement:"C10");

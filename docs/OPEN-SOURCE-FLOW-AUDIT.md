@@ -158,3 +158,14 @@ Steam Support 검색 자료는 모바일 또는 이메일 확인을 구분한다
 
 ### 마지막 외부 증거
 최신 빌드의 실제 수수료/등록 접수/공식 앱 수동 확인/등록 ID·자산·가격·수량 게시 증거가 아직 없다. 단일 항목→동일 상품 복수→다중 게임→취소/재가격→지원 스택을 분리해 사용자가 직접 검증해야 한다. Codex는 로그인·읽기 전용 계정 검사·판매·취소·Guard를 실행하지 않았다. 정상 작동을 예상할 기술 근거는 확대했지만 전체100%/LIVE_SELL_VERIFIED는 부여하지 않는다.
+
+## 0.20.13 공개 소스·보안 재확인 — 2026-10-31 KST
+
+- SSIM 최신28a503fa79869f3233814d0deaa906a8b3f66621 / SteamMarketHelper 최신e186d51efb742ddfb527d2ccb248c64fcee9c976 / node-steam-session 최신3ac0f34fd964b3f886ba18ef4824ac43c942e030을 공개 GitHub API로 재확인했다. 기존 고정 원본/Apache-2.0·MIT 고지와 부분 C# 이식을 유지하며 새 전체 앱·Node·자동 Guard를 도입하지 않는다.
+- 공식 economy_v2 SHA256 A3BBDF0A135524102CD055FD89D37EB3FD672FAE20BFBA0ABC700648DCB52512, economy_common 84429D06A9EF8C250AC567F9FEDC9FB155D23CEB7442C92A19B815840C102784는 이전 확인본과 동일. marketselldialog 새 SHA256 6897FCC4D4F44F0A855140C4D9E597C95CF282DEFE43AAA756CA5E078BA9007A는 이전CB84BB8A와 다르지만 import URL contenthash 정규화 후 전체 본문 동일. 파서 계약 변경/새 수수료 모드의 증거는 아니다. 원본은 runtime/release-public-audit에만 보존하고 Git/배포에 포함하지 않는다.
+- Microsoft 보안 공지 https://github.com/dotnet/announcements/issues/496 및 https://github.com/dotnet/core/blob/main/release-notes/10.0/10.0.14/10.0.14.md : 2026-10-25 OOB10.0.14, Brotli/Windows socket 관련 수정. 번들만 갱신하며 호스트 SDK/Windows는 변경하지 않았다.
+- https://learn.microsoft.com/en-us/dotnet/core/project-sdk/msbuild-props#runtimeframeworkversion : self-contained runtime version 명시. 실제 Core/WPF includedFrameworks10.0.14 확인.
+- https://learn.microsoft.com/en-us/nuget/concepts/auditing-packages : public advisory source/직접·전이 의존성 확인. source가 빈 결과는 성공이 아니며 검사기에서 거절한다.
+- https://www.nuget.org/packages/Microsoft.Data.Sqlite/10.0.14 및 SQLitePCLRaw.bundle_e_sqlite3/2.1.14 실제 nuspec/lock : native3.54.0. https://sqlite.org/changes.html 의 upstream3.54.1보다 최신이라는 주장0. https://sqlite.org/cves.html 검토만으로 모든 취약점 부재를 보장하지 않는다.
+
+공개 소스 비교와 합성 계약 일치는 인증된 실제 응답/휴대폰 승인/Valve 허가의 대체 증거가 아니다. 남은 조건은 RELEASE-READINESS 참조.

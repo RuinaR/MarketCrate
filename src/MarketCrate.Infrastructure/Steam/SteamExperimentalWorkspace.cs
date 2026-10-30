@@ -91,7 +91,7 @@ public sealed class SteamExperimentalWorkspace : IDisposable
             DiagnosticHub.Emit(DiagnosticEvent.InventoryContract,DiagnosticArea.Data,endpoint:"Inventory",reason:"InventoryLocked",count:assets.Count(x=>x.Locked));
             DiagnosticHub.Emit(DiagnosticEvent.InventoryContract,DiagnosticArea.Data,endpoint:"Inventory",reason:"StackQuantityUnsupported",count:assets.Count(x=>x.Stackable&&!singleStackContract));
             if(saleable.Length==0)throw new SteamException(SteamFailure.Restricted);
-            var localAvailable=store.AvailableAll(saleable);
+            var localAvailable=store.AvailableAll(saleable,Authentication.SteamId);
             PendingSubmissionAssets=saleable.Count(x=>localAvailable[x.Key]<x.Quantity);
             DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,PendingSubmissionAssets>0?DiagnosticOutcome.Pending:DiagnosticOutcome.Completed,endpoint:"Inventory",reason:"LocalSubmissionPending",count:PendingSubmissionAssets);
             Step(SteamTradingCheck.PublisherFees);

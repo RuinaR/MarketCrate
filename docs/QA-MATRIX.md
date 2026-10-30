@@ -493,3 +493,19 @@ UnsentAuthorization/UnsentQueueCancellation은 수정 전2FAIL→미전송Failed
 
 
 0.20.12 검증: 전체 기능372/372 PASS, 비표시 WPF71/71 PASS, 배포계약19/19 PASS, 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 빌드 경고/오류0. 전송 전 권한 해제/queue 취소2건과 비장터 시장명 누락1건을 수정 전 실패로 재현했다. 마지막 요청 기록/현재 관측 문구 분리 후 관련 판매 계약 전체와 비표시 WPF를 재확인했다. ID 없는 게시 관측 이미지와 승인 인계 이미지는 자체 RTB로 검토하며 실제 창/휴대폰/계정은 실행하지 않았다. 추가 테스트 작성 중 nullable 경고1건은 fixture의 확인된 workspace 참조로 수정했다. 관측은 원요청 상태/ID를 바꾸지 않고 다음 명시적 대조에서 초기화한다.
+
+## 0.20.13 — 최종 릴리즈 신뢰도 감사 (2026-10-31 KST)
+
+같은 BatchId에 변경된 계정/가격을 전달해 이전 승인을 재사용하는 경로, 취소 후 과거 로컬 전송 기록으로 새 실제 보유 자산 검토가 막히는 경로, 타 계정 AssetKey의 pending 수량 혼합을 수정했다. 서버 inventory와 active/pending membership을 기준으로 새 대상·새 가격·새 최종 승인을 요구하며 기존 Unknown/원요청 ID/감사 저널은 보존한다. 관련 코드·수정 전/후 증거·출하 기준은 [RELEASE-READINESS](RELEASE-READINESS.md)를 따른다.
+
+번들 Core/WPF10.0.14와 Microsoft.Data.Sqlite/ProtectedData10.0.14·SQLitePCLRaw2.1.14(native3.54.0)를 사용한다. 호스트 SDK/런타임 설치·설정 변경0. 구 provider 생성→신 provider 읽기/쓰기→구 provider 재읽기 합성 DB 호환 PASS. NuGet advisory는 명시적 공개 source/프로젝트 coverage를 검사하며 빈 source를 PASS로 판정하지 않는다. 패키지 감사와 런타임 보안 최소 버전 검사는 별개다.
+
+최초75개47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED를 유지한다. 새 실제 GUI·실계정·판매/취소/Guard0. 이전 사용자 관측을 새 릴리즈 실증으로 확대하지 않는다. Auth/Preferences/거래 저널/진단/롤백 삭제0. 실제 전용 출하와 단일 최종 승인 전체 배치, DPAPI, 정제 JSONL/ZIP, Unknown 비재전송, 타 프로세스 비간섭을 유지한다.
+
+### 0.20.13 비결정적 개발 저널 검사 관측
+
+중간 최종 검사에서 FileBatchJournal.SaveAsync의 File.Move가 UnauthorizedAccessException으로1회 실패했다(374/375). FileBatchJournal은 일반 Release 컴파일 제외인 개발 전용 JSON 저널이다. 같은 소스의 앞선 전체375/375·번들10.0.14의375/375는 PASS였고, 해당 경로의 독립3회 반복도3/3 PASS다. 다른 프로세스/보안 프로그램을 조사하거나 원인을 추정하지 않았으며 실패 원인은 미확정이다. 오류를 성공으로 바꾸거나 전송/저널 보호를 완화하지 않았다. 후보 최종 검사는 별도 보고한다. 원기록 runtime/release-final-verification.txt 및 release-journal-reproduction.txt를 보존한다.
+
+### 0.20.13 후보 최종 검사
+
+기능375/375·자체WPF71/71·배포20/20 PASS. 추가 라이선스3개로 합성 정리 fixture가25/27파일이 되었는데 기대22/24가 남아 발생한 검사기 실패를 수정했다. 내용/해시/경계 검증을 유지한 최종 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가), advisory 검사기6/6 PASS. 공개 source/5개 프로젝트 NuGet audit PASS, 번들10.0.14에서 기능375/375 PASS. build 경고/오류0. 실제 앱/설치/실계정/물리 GUI 미실행. 200% 새 대상 검토 자체 RTB 이미지의 행/가격/버튼/경고 가독성을 직접 확인했으며 물리 DPI 검증이 아니다.

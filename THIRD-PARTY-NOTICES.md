@@ -5,8 +5,8 @@
 | 구성요소 | 버전 | 라이선스 / 출처 |
 |---|---|---|
 | SSIM MoneyOps.ts (부분 C# 이식) | 28a503fa79869f3233814d0deaa906a8b3f66621 | Apache-2.0 · Copyright2026 Santer.xyz · https://github.com/Santerxyz/SSIM |
-| Microsoft.Data.Sqlite, Microsoft.Data.Sqlite.Core | 8.0.31 | MIT · © Microsoft Corporation · https://github.com/dotnet/efcore |
-| SQLitePCLRaw.bundle_e_sqlite3, core, provider.e_sqlite3, lib.e_sqlite3 | 2.1.12 | Apache-2.0 · Copyright 2014-2024 SourceGear, LLC · https://github.com/ericsink/SQLitePCL.raw |
+| Microsoft.Data.Sqlite, Microsoft.Data.Sqlite.Core | 10.0.14 | MIT · © Microsoft Corporation · https://github.com/dotnet/efcore |
+| SQLitePCLRaw.bundle_e_sqlite3, core, provider.e_sqlite3, lib.e_sqlite3 | 2.1.14 | Apache-2.0 · Copyright 2014-2024 SourceGear, LLC · https://github.com/ericsink/SQLitePCL.raw |
 | QR Code Generator for .NET (순수 계산 소스 6파일) | v2.0.0, commit 11cf58fe6cec5bc44f70aa360e84b8d37570e37d | MIT · Manuel Bleichenbacher / Project Nayuki · https://github.com/manuelbl/QrCodeGenerator/tree/v2.0.0 |
 
 QR 소스: `src/MarketCrate.Infrastructure/ThirdParty/QrCodeGenerator`. 각 파일의 원 저작권/MIT 전문을 보존했고 `#nullable disable`만 추가했다. 원 LICENSE도 함께 보존하며 출력/배포에 `licenses/QrCodeGenerator-LICENSE.txt`와 이 고지를 복사한다. QR 생성에는 네트워크·외부 QR 이미지 서비스·시스템 화면 접근이 없다. 바이너리 패키지/새 SDK 설치는 하지 않았다. 이전 배포에서는 Steam 비교 제품 코드를 포함하지 않았다. 0.17.0부터 아래 MIT steam-session 흐름의 제한된 C# 이식을 포함한다.
@@ -45,3 +45,12 @@ ProtectedData10.0.9 패키지의 THIRD-PARTY-NOTICES.TXT(78,041바이트)는 포
 - 변경: C# System.Text.Json, AppID/context/asset ID 엄격 검증, 충돌 거부, 가격/통화/등록 ID 미확인 항목은 별도 presence로 유지. 금액0·기본 통화·합성 listing ID를 생성하지 않는다. 최종 안전 조회에는 active/hold/pending(두 alias 중 하나) 명시적 버킷을 요구한다. Node/새 종속성/SSIM 상표·이미지를 추가하지 않았다.
 - 원본: https://github.com/Santerxyz/SSIM/blob/28a503fa79869f3233814d0deaa906a8b3f66621/src/core/MarketModel.ts
 - 자동 Guard/maFile/프록시·지문 위장/재시도 코드는 포함하지 않는다. 실행 가능한 전체 원본과 조건이 다른 부분을 명시하며 실제 서버 검증이나 Valve 허가를 의미하지 않는다.
+
+## 0.20.13 — 의존성·런타임 보안 갱신
+
+현재 Microsoft.Data.Sqlite/Core10.0.14(MIT), ProtectedData10.0.14(MIT), SQLitePCLRaw bundle/core/provider/lib2.1.14(Apache-2.0), native SQLite3.54.0을 고정한다. 아래 이전 버전 절은 역사적 기록이다. 자체 콘솔의 실제 native SELECT sqlite_version()으로 확인했다.
+
+EFCore MIT 원문: https://github.com/dotnet/efcore/blob/v10.0.14/LICENSE.txt → licenses/EFCore-MIT-LICENSE.txt. Copyright (c) .NET Foundation and Contributors.
+SQLitePCLRaw LICENSE/NOTICE: https://github.com/ericsink/SQLitePCL.raw/tree/ed046114d5a30534e13294d94d78eb73de896ad4 → licenses/SQLitePCLRaw-LICENSE.txt, licenses/SQLitePCLRaw-NOTICE.txt. 패키지 nuspec은 Apache-2.0/Copyright2014-2024 SourceGear, LLC를 명시한다. v2.1.14 Git tag는 확인되지 않아 라이선스/NOTICE만 위 고정 main 커밋에서 보존했으며 해당 커밋의 구현을 이식했다는 의미가 아니다. 패키지 바이너리 출처/무결성은 lock contentHash를 따른다.
+
+Core/WPF10.0.14 runtime pack LICENSE/THIRD-PARTY-NOTICES와 기존 QR·steam-session·SSIM 전문을 보존한다. 호스트 SDK는 갱신/설치하지 않았다. 공개 NuGet advisory와 Microsoft 런타임 보안 공지를 별도로 검토했다. 전체 침투검사/실계정 호환성/Valve 허가/계정 제재 위험0의 선언이 아니다.

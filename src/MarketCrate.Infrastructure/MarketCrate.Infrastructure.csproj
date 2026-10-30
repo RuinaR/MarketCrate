@@ -4,13 +4,15 @@
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.31" />
-    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.9" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.14" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.14" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.14" />
     <ProjectReference Include="../MarketCrate.Core/MarketCrate.Core.csproj" />
     <None Update="ThirdParty/QrCodeGenerator/LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" TargetPath="licenses/QrCodeGenerator-LICENSE.txt" />
     <None Update="ThirdParty/steam-session/LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" TargetPath="licenses/steam-session-LICENSE.txt" />
     <None Update="ThirdParty/ssim/LICENSE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" TargetPath="licenses/SSIM-Apache-2.0-LICENSE.txt" />
     <None Update="ThirdParty/ssim/NOTICE" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" TargetPath="licenses/SSIM-NOTICE.txt" />
+    <None Update="ThirdParty/dependencies/*.txt" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" TargetPath="licenses/%(Filename)%(Extension)" />
   </ItemGroup>
   <ItemGroup Condition="'$(MarketCrateProduction)' == 'true'"><Compile Remove="DemoProviders.cs;SqliteDemoStore.cs;FileBatchJournal.cs;Steam/SteamReadSelfCheck.cs" /></ItemGroup>
 </Project>

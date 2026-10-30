@@ -15,12 +15,16 @@ function Pe([string]$Path,[uint16]$Machine=0x8664) {
 }
 New-Item -ItemType Directory -Path (Join-Path $folder 'licenses') | Out-Null
 foreach ($name in @('MarketCrate.App.exe','MarketCrate.App.dll','MarketCrate.Core.dll','MarketCrate.Infrastructure.dll','PresentationFramework.dll','PresentationCore.dll','WindowsBase.dll','System.Private.CoreLib.dll','coreclr.dll','clrjit.dll','hostfxr.dll','hostpolicy.dll','PresentationNative_cor3.dll','wpfgfx_cor3.dll','e_sqlite3.dll','System.Security.Cryptography.ProtectedData.dll')) { Pe (Join-Path $folder $name) }
-foreach ($name in @('THIRD-PARTY-NOTICES.md','licenses/QrCodeGenerator-LICENSE.txt','licenses/steam-session-LICENSE.txt','licenses/NETCore-LICENSE.txt','licenses/NETCore-THIRD-PARTY-NOTICES.txt','licenses/WindowsDesktop-LICENSE.txt')) { Set-Content -LiteralPath (Join-Path $folder $name) -Value 'synthetic notice' }
+foreach ($name in @('THIRD-PARTY-NOTICES.md','licenses/EFCore-MIT-LICENSE.txt','licenses/SQLitePCLRaw-LICENSE.txt','licenses/SQLitePCLRaw-NOTICE.txt','licenses/QrCodeGenerator-LICENSE.txt','licenses/steam-session-LICENSE.txt','licenses/NETCore-LICENSE.txt','licenses/NETCore-THIRD-PARTY-NOTICES.txt','licenses/WindowsDesktop-LICENSE.txt')) { Set-Content -LiteralPath (Join-Path $folder $name) -Value 'synthetic notice' }
 $config=Join-Path $folder 'MarketCrate.App.runtimeconfig.json'
-$selfConfig='{"runtimeOptions":{"includedFrameworks":[{"name":"Microsoft.NETCore.App","version":"10.0.9"},{"name":"Microsoft.WindowsDesktop.App","version":"10.0.9"}]}}'
+$selfConfig='{"runtimeOptions":{"includedFrameworks":[{"name":"Microsoft.NETCore.App","version":"10.0.14"},{"name":"Microsoft.WindowsDesktop.App","version":"10.0.14"}]}}'
 Set-Content -LiteralPath $config -Value $selfConfig
 Set-Content -LiteralPath (Join-Path $folder 'MarketCrate.App.deps.json') -Value '{"runtimeTarget":{"name":".NETCoreApp,Version=v10.0/win-x64"}}'
 Test-Case 'Self-contained file contract (not an executable compatibility test)' { $m=Assert-Distribution $folder SelfContained; if($m.Deployment -ne 'SelfContained'-or $m.AppExecuted) { throw 'Bad metadata' } }
+Test-Case 'Old bundled runtime below reviewed security minimum rejected' {
+    Set-Content -LiteralPath $config -Value $selfConfig.Replace('10.0.14','10.0.9')
+    try { Reject { Assert-Distribution $folder SelfContained } } finally { Set-Content -LiteralPath $config -Value $selfConfig }
+}
 Test-Case 'Wrong apphost architecture rejected' { Pe (Join-Path $folder 'MarketCrate.App.exe') 0x14c; Reject { Assert-Distribution $folder SelfContained }; Pe (Join-Path $folder 'MarketCrate.App.exe') }
 Test-Case 'Wrong WPF native architecture rejected' { Pe (Join-Path $folder 'wpfgfx_cor3.dll') 0x14c; Reject { Assert-Distribution $folder SelfContained }; Pe (Join-Path $folder 'wpfgfx_cor3.dll') }
 Test-Case 'Wrong SQLite architecture rejected' { Pe (Join-Path $folder 'e_sqlite3.dll') 0x14c; Reject { Assert-Distribution $folder SelfContained }; Pe (Join-Path $folder 'e_sqlite3.dll') }

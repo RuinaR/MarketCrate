@@ -72,6 +72,7 @@ public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatch
             if (existing != null)
             {
                 if (existing.Snapshot.BatchId != snapshot.BatchId) throw new InvalidOperationException("기존 활성 배치를 먼저 복구/대조하세요. 새 배치를 제출하지 않았습니다.");
+                BatchRecordGuard.ValidateTransition(existing,existing with{Snapshot=snapshot});
                 return existing;
             }
             BatchValidation.Validate(snapshot, DateTimeOffset.UtcNow);

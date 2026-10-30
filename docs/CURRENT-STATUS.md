@@ -1,7 +1,13 @@
-# MarketCrate — 현재 상태 (2026-10-31 KST, 0.20.12)
+# MarketCrate — 현재 상태 (2026-10-31 KST, 0.20.13)
+
+## 0.20.13 안정화 후보
+
+배치 승인 불변성·취소 후 새 대상 검토·계정별 pending 분리 결함을 수정했다. 번들 Core/WPF10.0.14, Sqlite/DPAPI10.0.14, PCL2.1.14(native3.54.0). 구/신/구 provider SQLite 호환 검사 PASS. 기능375/375·자체WPF71/71·배포20/20·advisory 검사기6/6 PASS. 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가), 공개 NuGet advisory 5개 프로젝트 검사 PASS. 기능375개는 번들10.0.14 콘솔 환경에서도 PASS다.
+
+중간 개발 전용 JSON 저널 접근 거부1회는 QA-MATRIX에 보존했고 독립3회 반복/최종 전체 기능은 PASS다. 라이선스3개 추가에 따른 합성 정리 fixture 파일 수 불일치도 기대 파일 집합25/27로 수정 후 전체 정리 검사를 통과했다. 운영 데이터 삭제0. [릴리즈 신뢰도·남은 실계정 조건](RELEASE-READINESS.md)을 따른다. 아래 이전 배포 기록을 새 검증 결과로 해석하지 않는다.
 
 
-## 최신 배포 — 0.20.12
+## 이전 배포 — 0.20.12
 
 소스 c75ceff18c0a353e0cd2c8f47afd5836760c875d. artifacts/releases/MarketCrate-0.20.12-parity-c75ceff-win-x64.zip **66,536,415바이트 /415파일**. SHA256 **2C0AF766F53FCED230F29FA86A6AC7035E08D51B1876897D60BC64653D6E8534**. 전체 ZIP entry/출하 폴더 SHA 일치, SourceCommit/버전·x64 CLR/WPF/SQLite/DPAPI·라이선스/실제 전용 PE/BAML·Mock/자가검증/사용자DB/Auth/로그/PDB 제외 정적 검사 PASS.
 
@@ -620,3 +626,11 @@ SSIM 이식 최종 검증: 기능359/359·비표시WPF69/69·배포계약19/19·
 
 
 0.20.12 검증: 전체 기능372/372 PASS, 비표시 WPF71/71 PASS, 배포계약19/19 PASS, 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 빌드 경고/오류0. 전송 전 권한 해제/queue 취소2건과 비장터 시장명 누락1건을 수정 전 실패로 재현했다. 마지막 요청 기록/현재 관측 문구 분리 후 관련 판매 계약 전체와 비표시 WPF를 재확인했다. ID 없는 게시 관측 이미지와 승인 인계 이미지는 자체 RTB로 검토하며 실제 창/휴대폰/계정은 실행하지 않았다. 추가 테스트 작성 중 nullable 경고1건은 fixture의 확인된 workspace 참조로 수정했다. 관측은 원요청 상태/ID를 바꾸지 않고 다음 명시적 대조에서 초기화한다.
+
+## 0.20.13 — 최종 릴리즈 신뢰도 감사 (2026-10-31 KST)
+
+같은 BatchId에 변경된 계정/가격을 전달해 이전 승인을 재사용하는 경로, 취소 후 과거 로컬 전송 기록으로 새 실제 보유 자산 검토가 막히는 경로, 타 계정 AssetKey의 pending 수량 혼합을 수정했다. 서버 inventory와 active/pending membership을 기준으로 새 대상·새 가격·새 최종 승인을 요구하며 기존 Unknown/원요청 ID/감사 저널은 보존한다. 관련 코드·수정 전/후 증거·출하 기준은 [RELEASE-READINESS](RELEASE-READINESS.md)를 따른다.
+
+번들 Core/WPF10.0.14와 Microsoft.Data.Sqlite/ProtectedData10.0.14·SQLitePCLRaw2.1.14(native3.54.0)를 사용한다. 호스트 SDK/런타임 설치·설정 변경0. 구 provider 생성→신 provider 읽기/쓰기→구 provider 재읽기 합성 DB 호환 PASS. NuGet advisory는 명시적 공개 source/프로젝트 coverage를 검사하며 빈 source를 PASS로 판정하지 않는다. 패키지 감사와 런타임 보안 최소 버전 검사는 별개다.
+
+최초75개47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED를 유지한다. 새 실제 GUI·실계정·판매/취소/Guard0. 이전 사용자 관측을 새 릴리즈 실증으로 확대하지 않는다. Auth/Preferences/거래 저널/진단/롤백 삭제0. 실제 전용 출하와 단일 최종 승인 전체 배치, DPAPI, 정제 JSONL/ZIP, Unknown 비재전송, 타 프로세스 비간섭을 유지한다.

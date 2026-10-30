@@ -48,8 +48,8 @@ public sealed partial class SteamWorkspaceViewModel
         var plans=workspace.Store.RelistPlans(account).Where(x=>x.SubmissionBatch is null).OrderByDescending(x=>x.CreatedAt).ToArray();
         var plan=SelectedRelist is {} choice?plans.FirstOrDefault(x=>x.Key==choice.Key):plans.FirstOrDefault();
         if(plan is null){ListingPriceStatus="새 대상 검토를 기다리는 취소 계획이 없습니다.";return;}
-        var current=await workspace.Orders.RefreshAsync(token);
-        if(plan.Listings.Any(x=>current.Any(now=>now.ListingId==x.ListingId)||workspace.Store.ReadCommand(plan.Key+":"+x.ListingId) is not {Accepted:true,Kind:"cancel"} command||command.Account!=account))
+        await workspace.Orders.RefreshAsync(token);
+        if(plan.Listings.Any(x=>workspace.Orders.Presence.Any(now=>now.ListingId==x.ListingId||now.ListingId is null&&now.Asset==x.Asset)||workspace.Store.ReadCommand(plan.Key+":"+x.ListingId) is not {Accepted:true,Kind:"cancel"} command||command.Account!=account))
         {ListingPriceStatus="모든 취소의 서버 접수·목록 부재를 확인하지 못했습니다. 불명 요청은 재전송하지 않으며 새 등록도 시작하지 않습니다.";return;}
         var assets=new List<InventoryAsset>();var imageRefs=new Dictionary<AssetKey,ItemImageReference>();
         foreach(var scope in plan.Listings.Select(x=>(x.Asset.AppId,x.Asset.ContextId)).Distinct())
@@ -61,10 +61,10 @@ public sealed partial class SteamWorkspaceViewModel
             foreach(var asset in inventory)if(provider.PublisherFeeBasisPoints(asset.Key) is {} rate)assetPublisherFees[asset.Key]=rate;
             foreach(var image in provider.Images)imageRefs[image.Key]=image.Value;
         }
-        var available=workspace.Store.AvailableAll(assets);var selected=new List<(InventoryAsset Asset,PriceSnapshot Price)>();
+        var serverHeld=workspace.Orders.Presence.Select(x=>x.Asset).ToHashSet();var selected=new List<(InventoryAsset Asset,PriceSnapshot Price)>();
         foreach(var group in plan.Listings.GroupBy(x=>(x.Asset.AppId,x.Asset.ContextId,x.HashName)))
         {
-            var candidates=assets.Where(x=>x.Key.AppId==group.Key.AppId&&x.Key.ContextId==group.Key.ContextId&&x.MarketHashName==group.Key.HashName&&x.Marketable&&!x.Locked&&!x.Stackable&&x.Quantity==1&&available[x.Key]>0).OrderBy(x=>x.Key.AssetId,StringComparer.Ordinal).Take(group.Count()).ToArray();
+            var candidates=assets.Where(x=>x.Key.AppId==group.Key.AppId&&x.Key.ContextId==group.Key.ContextId&&x.MarketHashName==group.Key.HashName&&x.Marketable&&!x.Locked&&!x.Stackable&&x.Quantity==1&&!serverHeld.Contains(x.Key)).OrderBy(x=>x.Key.AssetId,StringComparer.Ordinal).Take(group.Count()).ToArray();
             if(candidates.Length!=group.Count()){ListingPriceStatus="새 등록에 필요한 판매 가능 개별 자산이 부족합니다. 원래 취소의 반환을 추측하거나 예약을 해제하지 않았습니다.";return;}
             var schedule=await workspace.FeesAsync(group.Key.AppId,token);gameFees[group.Key.AppId]=schedule;
             if(group.Any(x=>x.Currency!=schedule.Currency))throw new SteamException(SteamFailure.Restricted);
@@ -77,8 +77,8 @@ public sealed partial class SteamWorkspaceViewModel
         if(allocation.UnpricedQuantity>0){ListingPriceStatus=$"구매주문 잔량 {allocation.UnpricedQuantity}개 부족 · 새 판매 검토를 만들지 않았습니다.";return;}
         token.ThrowIfCancellationRequested();if(!Connected||workspace.Authentication.SteamId!=account)throw new SteamException(SteamFailure.Authentication);
         // Authentication may remain valid while a listing reappears. Recheck before presenting new targets.
-        var fresh=await workspace.Orders.RefreshAsync(token);
-        if(plan.Listings.Any(x=>fresh.Any(now=>now.ListingId==x.ListingId)))throw new SteamException(SteamFailure.StaleReview);
+        await workspace.Orders.RefreshAsync(token);
+        if(plan.Listings.Any(x=>workspace.Orders.Presence.Any(now=>now.ListingId==x.ListingId||now.ListingId is null&&now.Asset==x.Asset))||selected.Any(x=>workspace.Orders.Presence.Any(now=>now.Asset==x.Asset.Key)))throw new SteamException(SteamFailure.StaleReview);
         fees=gameFees[selected[0].Asset.Key.AppId];pricingMode=0;Raise(nameof(PricingMode));
         ReviewRows.Clear();foreach(var line in allocation.Lines)ReviewRows.Add(new(line.Selection.Asset,1,line.Allocation.BuyerPays,line.Selection.Price,FeeFor(line.Selection.Asset),Changed,PriceBasis.Immediate){Image=imageRefs.GetValueOrDefault(line.Selection.Asset.Key),ImageOperation=DiagnosticHub.Context?.OperationId});
         relistReview=plan;ReviewContextText="취소 후 보관함에서 찾은 같은 상품을 새 판매 대상으로 제안합니다. 원래 아이템의 반환 인과관계는 미확인입니다. 기존 보유분일 수 있으므로 아래 실제 자산 ID·수량·새 가격을 확인하세요. 전체 판매등록 한 번 승인 시 이 새 대상 전체를 등록합니다.";

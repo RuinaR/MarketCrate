@@ -207,3 +207,14 @@ node-steam-session 3ac0f34(MIT), node-steamcommunity fa8d897(MIT), SteamMarketHe
 - 커뮤니티의 푸시 미도착/기존 승인 대기/가격 임계값 사례는 계정 조건의 차이를 찾는 참고로만 사용했다. 고정 임계값·무조건 재등록·인증 우회 근거로 채택하지 않았다.
 
 공식 JS는 이번에 프로젝트 소스로 복사/재배포하지 않고 계약·수식 검토와 합성 예상값에만 활용했다. 최신 공개 코드와 해당 사용자에게 실제 제공된 인증 응답은 서로 다른 증거다.
+
+## 0.20.13 공개 소스·보안 재확인 — 2026-10-31 KST
+
+- SSIM 최신28a503fa79869f3233814d0deaa906a8b3f66621 / SteamMarketHelper 최신e186d51efb742ddfb527d2ccb248c64fcee9c976 / node-steam-session 최신3ac0f34fd964b3f886ba18ef4824ac43c942e030을 공개 GitHub API로 재확인했다. 기존 고정 원본/Apache-2.0·MIT 고지와 부분 C# 이식을 유지하며 새 전체 앱·Node·자동 Guard를 도입하지 않는다.
+- 공식 economy_v2 SHA256 A3BBDF0A135524102CD055FD89D37EB3FD672FAE20BFBA0ABC700648DCB52512, economy_common 84429D06A9EF8C250AC567F9FEDC9FB155D23CEB7442C92A19B815840C102784는 이전 확인본과 동일. marketselldialog 새 SHA256 6897FCC4D4F44F0A855140C4D9E597C95CF282DEFE43AAA756CA5E078BA9007A는 이전CB84BB8A와 다르지만 import URL contenthash 정규화 후 전체 본문 동일. 파서 계약 변경/새 수수료 모드의 증거는 아니다. 원본은 runtime/release-public-audit에만 보존하고 Git/배포에 포함하지 않는다.
+- Microsoft 보안 공지 https://github.com/dotnet/announcements/issues/496 및 https://github.com/dotnet/core/blob/main/release-notes/10.0/10.0.14/10.0.14.md : 2026-10-25 OOB10.0.14, Brotli/Windows socket 관련 수정. 번들만 갱신하며 호스트 SDK/Windows는 변경하지 않았다.
+- https://learn.microsoft.com/en-us/dotnet/core/project-sdk/msbuild-props#runtimeframeworkversion : self-contained runtime version 명시. 실제 Core/WPF includedFrameworks10.0.14 확인.
+- https://learn.microsoft.com/en-us/nuget/concepts/auditing-packages : public advisory source/직접·전이 의존성 확인. source가 빈 결과는 성공이 아니며 검사기에서 거절한다.
+- https://www.nuget.org/packages/Microsoft.Data.Sqlite/10.0.14 및 SQLitePCLRaw.bundle_e_sqlite3/2.1.14 실제 nuspec/lock : native3.54.0. https://sqlite.org/changes.html 의 upstream3.54.1보다 최신이라는 주장0. https://sqlite.org/cves.html 검토만으로 모든 취약점 부재를 보장하지 않는다.
+
+공개 소스 비교와 합성 계약 일치는 인증된 실제 응답/휴대폰 승인/Valve 허가의 대체 증거가 아니다. 남은 조건은 RELEASE-READINESS 참조.

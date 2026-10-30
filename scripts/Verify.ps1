@@ -18,4 +18,6 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 pwsh -NoProfile -File scripts/Test-DistributionContracts.ps1
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 pwsh -NoProfile -File scripts/Test-ArtifactCleanup.ps1
+if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+pwsh -NoProfile -File scripts/Test-DependencyAuditContracts.ps1
 exit $LASTEXITCODE

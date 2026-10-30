@@ -4,6 +4,8 @@ using MarketCrate.Core;
 using MarketCrate.Infrastructure;
 using MarketCrate.App.ViewModels;
 
+if(args.Length==3&&args[0]=="--storage-compat")return await ReleaseSafetyTests.StorageCompatibility(args[1],args[2]);
+if(args.Contains("--release-safety")){var checks=await ReleaseSafetyTests.RunAsync();return checks.Failed==0?0:1;}
 if(args.Contains("--usability")){var focused=await UsabilityTests.RunAsync();return focused.Failed==0?0:1;}
 if(args.Contains("--fee-modes")){var focused=await FeeModeTests.RunAsync();return focused.Failed==0?0:1;}
 if(args.Contains("--submission-contracts")){var focused=await SubmissionTransportTests.RunAsync();return focused.Failed==0?0:1;}
@@ -51,6 +53,12 @@ var tests = new (string Name, Func<Task> Run)[] {
  ("MVVM 최종 명령 1회/더블 클릭/입력 오류",async()=> { var folder=TestFolder(); try { using var j=new FileBatchJournal(folder); using var vm=new MainViewModel(new(),j); await vm.InitializeAsync(); vm.SelectedGame="Counter-Strike 2"; vm.SelectAll.Execute(null); vm.Review.Execute(null); var count=vm.ReviewLines.Count; vm.HasInputErrors=true; Check(!vm.Submit.CanExecute(null)); vm.HasInputErrors=false; vm.ReviewLines[0].Price=2345; var complete=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously); vm.PropertyChanged+=(_,e)=> { if(e.PropertyName==nameof(vm.Busy) && !vm.Busy) complete.TrySetResult(); }; vm.Submit.Execute(null); vm.Submit.Execute(null); Check(await Task.WhenAny(complete.Task,Task.Delay(5000))==complete.Task); Equal(count,vm.Results.Count); Equal(2345L,(await j.LoadAsync(default))!.Snapshot.Lines[0].UnitQuote.BuyerPays); Check(!vm.IsReviewOpen); Check(!vm.Submit.CanExecute(null)); } finally { Directory.Delete(folder,true); } })
 };
 var failed = 0;
+if(args.Contains("--file-journal"))
+{
+    for(var attempt=0;attempt<3;attempt++)
+        await tests.Single(x=>x.Name=="파일 저널 재시작/독점/삭제").Run();
+    Console.WriteLine("PASS file journal scoped reproduction 3/3; no production GUI/network");return 0;
+}
 foreach (var test in tests) { try { await test.Run(); Console.WriteLine($"PASS {test.Name}"); } catch (Exception e) { failed++; Console.WriteLine($"FAIL {test.Name}: {e}"); } }
 var next = await NextStageTests.RunAsync();
 failed += next.Failed;
@@ -71,10 +79,11 @@ var walletPatch=await WalletRedirectPatchTests.RunAsync();failed+=walletPatch.Fa
 var liveOnly=await LiveOnlyTests.RunAsync();failed+=liveOnly.Failed;
 var feeResponse=await FeeResponseTests.RunAsync();failed+=feeResponse.Failed;
 var feeModes=await FeeModeTests.RunAsync();failed+=feeModes.Failed;
+var releaseSafety=await ReleaseSafetyTests.RunAsync();failed+=releaseSafety.Failed;
 var submissionTransport=await SubmissionTransportTests.RunAsync();failed+=submissionTransport.Failed;
 var usability=await UsabilityTests.RunAsync();failed+=usability.Failed;
 var sessions=OperatingSystem.IsWindows()?await SessionPersistenceTests.RunAsync():(Passed:0,Failed:0);failed+=sessions.Failed;
-var total = submissionTransport.Passed+submissionTransport.Failed+usability.Passed+usability.Failed+feeModes.Passed+feeModes.Failed+sessions.Passed+sessions.Failed+feeResponse.Passed+feeResponse.Failed+liveOnly.Passed+liveOnly.Failed+walletPatch.Passed+walletPatch.Failed+fifteenth.Passed+fifteenth.Failed+fourteenth.Passed+fourteenth.Failed+ thirteenth.Passed+thirteenth.Failed+ twelfth.Passed+twelfth.Failed+ eleventh.Passed+eleventh.Failed+tenth.Passed+tenth.Failed+ninth.Passed+ninth.Failed+eighth.Passed+eighth.Failed+seventh.Passed+seventh.Failed+sixth.Passed+sixth.Failed+tests.Length + next.Passed + next.Failed + third.Passed + third.Failed + fourth.Passed + fourth.Failed + fifth.Passed + fifth.Failed;
+var total = releaseSafety.Passed+releaseSafety.Failed+submissionTransport.Passed+submissionTransport.Failed+usability.Passed+usability.Failed+feeModes.Passed+feeModes.Failed+sessions.Passed+sessions.Failed+feeResponse.Passed+feeResponse.Failed+liveOnly.Passed+liveOnly.Failed+walletPatch.Passed+walletPatch.Failed+fifteenth.Passed+fifteenth.Failed+fourteenth.Passed+fourteenth.Failed+ thirteenth.Passed+thirteenth.Failed+ twelfth.Passed+twelfth.Failed+ eleventh.Passed+eleventh.Failed+tenth.Passed+tenth.Failed+ninth.Passed+ninth.Failed+eighth.Passed+eighth.Failed+seventh.Passed+seventh.Failed+sixth.Passed+sixth.Failed+tests.Length + next.Passed + next.Failed + third.Passed + third.Failed + fourth.Passed + fourth.Failed + fifth.Passed + fifth.Failed;
 Console.WriteLine($"RESULT {total - failed}/{total} PASS; {failed} FAIL · synthetic data only, no GUI/network (Steam HTTP replaced by test handler)");
 return failed == 0 ? 0 : 1;
 

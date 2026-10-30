@@ -16,15 +16,18 @@ function Assert-Distribution([string]$Path, [ValidateSet('FrameworkDependent','S
     $files = @($all | Where-Object { -not $_.PSIsContainer })
     if ($all | Where-Object { $_.PSIsContainer -and $_.Name -eq 'Auth' }) { throw 'Authentication store directory in distribution' }
     if ($files | Where-Object { $_.Extension -in @('.db','.sqlite','.log','.jsonl','.zip','.dmp','.mdmp','.pfx','.pem','.key','.p12','.authbin','.authlock') -or $_.Name -in @('refresh.pending','restore.blocked') -or $_.Name -match '(?i)\.(?:sqlite3?|db)(?:-(?:wal|shm|journal))?$|^\.env|(?:session|cookie|credential|token).*\.json$' }) { throw 'Unexpected local data in distribution' }
-    foreach ($name in @('MarketCrate.App.exe','MarketCrate.App.dll','MarketCrate.Core.dll','MarketCrate.Infrastructure.dll','MarketCrate.App.deps.json','THIRD-PARTY-NOTICES.md','licenses/QrCodeGenerator-LICENSE.txt','licenses/steam-session-LICENSE.txt','System.Security.Cryptography.ProtectedData.dll')) {
+    foreach ($name in @('MarketCrate.App.exe','MarketCrate.App.dll','MarketCrate.Core.dll','MarketCrate.Infrastructure.dll','MarketCrate.App.deps.json','THIRD-PARTY-NOTICES.md','licenses/EFCore-MIT-LICENSE.txt','licenses/SQLitePCLRaw-LICENSE.txt','licenses/SQLitePCLRaw-NOTICE.txt','licenses/QrCodeGenerator-LICENSE.txt','licenses/steam-session-LICENSE.txt','System.Security.Cryptography.ProtectedData.dll')) {
         if (-not (Test-Path -LiteralPath (Join-Path $Path $name) -PathType Leaf)) { throw 'Required application asset missing' }
     }
     Assert-X64Pe (Join-Path $Path 'MarketCrate.App.exe')
     $runtime = (Get-Content -LiteralPath (Join-Path $Path 'MarketCrate.App.runtimeconfig.json') -Raw | ConvertFrom-Json).runtimeOptions
+    $policy = [xml](Get-Content -LiteralPath (Join-Path $PSScriptRoot '../Directory.Build.props') -Raw)
+    $minimum = [version]$policy.Project.PropertyGroup.MarketCrateSecurityRuntimeVersion
     if ($Deployment -eq 'SelfContained') {
         if ($runtime.frameworks -or $runtime.framework -or -not $runtime.includedFrameworks) { throw 'Expected bundled runtime configuration' }
         foreach ($name in @('Microsoft.NETCore.App','Microsoft.WindowsDesktop.App')) {
-            if (-not ($runtime.includedFrameworks | Where-Object { $_.name -eq $name -and $_.version -match '^10\.0\.\d+$' })) { throw 'Bundled runtime framework missing' }
+            $framework = @($runtime.includedFrameworks | Where-Object { $_.name -eq $name })
+            if ($framework.Count -ne 1 -or $framework[0].version -notmatch '^10\.0\.\d+$' -or [version]$framework[0].version -lt $minimum) { throw 'Bundled runtime missing or below reviewed security minimum' }
         }
         $deps = Get-Content -LiteralPath (Join-Path $Path 'MarketCrate.App.deps.json') -Raw | ConvertFrom-Json
         if (-not $deps.runtimeTarget.name.EndsWith('/win-x64')) { throw 'Expected win-x64 runtime target' }
@@ -35,7 +38,8 @@ function Assert-Distribution([string]$Path, [ValidateSet('FrameworkDependent','S
         if ($files | Where-Object { $_.Extension -in @('.pdb','.dbg','.cs','.csproj') }) { throw 'Unexpected debug/development file in self-contained distribution' }
     } else {
         Assert-X64Pe (Join-Path $Path 'runtimes/win-x64/native/e_sqlite3.dll')
-        if ($runtime.includedFrameworks -or -not ($runtime.frameworks | Where-Object { $_.name -eq 'Microsoft.WindowsDesktop.App' -and $_.version -like '10.*' })) { throw 'Expected framework-dependent Desktop Runtime 10 configuration' }
+        $desktop = @($runtime.frameworks | Where-Object { $_.name -eq 'Microsoft.WindowsDesktop.App' })
+        if ($runtime.includedFrameworks -or $desktop.Count -ne 1 -or $desktop[0].version -notmatch '^10\.0\.\d+$' -or [version]$desktop[0].version -lt $minimum) { throw 'Expected framework-dependent Desktop Runtime at reviewed security minimum' }
     }
     $version = [System.Diagnostics.FileVersionInfo]::GetVersionInfo((Join-Path $Path 'MarketCrate.Core.dll')).ProductVersion
     $sourceCommit = if ($version -match '\+([0-9a-fA-F]{40})$') { $Matches[1].ToLowerInvariant() } else { $null }

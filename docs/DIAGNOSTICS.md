@@ -305,3 +305,7 @@ ListingMetadataUnavailable은 상세 가격/등록 ID가 없는 서버 membershi
 ## 0.20.12 기능 동등성 감사
 
 RequestNotSent는 현재 Executor가 판매 제출을 시도하지 않았다는 경계다. ItemResult Blocked/Validation 또는Cancelled와 연결 식별자를 남기고 결과Failed/나머지Ready로 보존한다. ConfirmationFlagsConflict는 명시적 확인 불필요와 확인 채널 요구의 모순이며 Unknown이다. 기존 POST 뒤 ResponseLost/EvidenceMissing은 그대로Unknown/자동 재전송 금지다. 원문·계정·QR·쿠키를 기록하지 않는다.
+
+## 0.20.13 진단/복구 신뢰도
+
+배치 ID가 같아도 계정/가격 snapshot이 다르면 전송 전 불변성 위반으로 종료한다. 취소 후 새 대상은 현재 보관함과 active/pending membership을 재검증하며 새 승인 전 POST하지 않는다. UI pending 수량·취소 원 sell 조회는 현재 계정으로 한정하고 다른 계정의 저널은 삭제하지 않는다. 진단 로그를 거래 확정의 권위로 사용하지 않으며 Unknown 원요청 ID/과거 감사 기록은 유지한다. 기존 민감정보 정제/디스크 실패/연결 ID/ZIP 사용자 검토 회귀는 최종 전체 검사에 포함했다. runtime의 보안/호환/회귀 보고서는 합성 테스트 증거이며 배포 ZIP/운영 진단에 포함하지 않는다.

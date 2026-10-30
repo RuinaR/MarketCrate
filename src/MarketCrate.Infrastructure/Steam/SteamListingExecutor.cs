@@ -307,7 +307,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         var returned = (await new SteamInventoryProvider(http,auth,intent.Line.Asset.Key.AppId,intent.Line.Asset.Key.ContextId,intent.Line.Asset.Game).GetAsync(token)).SingleOrDefault(x => x.Key == intent.Line.Asset.Key && x.MarketHashName == intent.Line.Asset.MarketHashName);
         var serverHeld=orders.Presence.Any(x=>x.ListingId==intent.ListingId||x.Asset==intent.Line.Asset.Key);
         var stillObserved=orders.Presence.Any(x=>x.ListingId==intent.ListingId||x.ListingId is null&&x.Asset==intent.Line.Asset.Key);
-        var originalSell=store.Commands().SingleOrDefault(x=>x.Kind=="sell"&&x.ListingId==intent.ListingId);
+        var originalSell=store.Commands().SingleOrDefault(x=>x.Kind=="sell"&&x.Account==auth.SteamId&&x.ListingId==intent.ListingId);
         // Stack increases may be unrelated merges. Without a causal cancellation event, do not release them.
         var confirmed = originalSell is not null && !originalSell.Line.Asset.Stackable && intent.Line.Quantity==1 && current is null && !serverHeld && intent.Accepted && returned is not null && !returned.Stackable && returned.Quantity==1 && intent.AvailableBefore==0;
         var state = confirmed ? SaleState.Reconciled : current is null&&!stillObserved ? SaleState.Unknown : SaleState.Submitted;

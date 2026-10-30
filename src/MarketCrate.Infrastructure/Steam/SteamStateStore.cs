@@ -152,8 +152,8 @@ public sealed partial class SteamStateStore : IBatchHistoryJournal, IDisposable
         using var command=connection.CreateCommand();command.CommandText="SELECT value FROM state WHERE kind='reprice'";using var reader=StorageDiagnostics.Reader(command);var result=new List<SteamRepriceIntent>();
         while(reader.Read())result.Add(JsonSerializer.Deserialize<SteamRepriceIntent>(reader.GetString(0))??throw new InvalidDataException("RepriceRecordInvalid"));return result;
     }
-    public int Available(InventoryAsset current)
-        => AvailableAll([current])[current.Key];
+    public int Available(InventoryAsset current,string? account=null)
+        => AvailableAll([current],account)[current.Key];
     public IReadOnlyList<SteamCommandRecord> ReservedSells()
     {
         var released=ReleasedSellKeys();
@@ -164,9 +164,10 @@ public sealed partial class SteamStateStore : IBatchHistoryJournal, IDisposable
         using var query=connection.CreateCommand();query.CommandText="SELECT value FROM state WHERE kind='return'";using var reader=StorageDiagnostics.Reader(query);
         var released=new HashSet<string>();while(reader.Read()){var proof=JsonSerializer.Deserialize<SteamReturnProof>(reader.GetString(0))!;if(proof.SellKey is not null)released.Add(proof.SellKey);}return released;
     }
-    public IReadOnlyDictionary<AssetKey,int> AvailableAll(IReadOnlyList<InventoryAsset> assets)
+    public IReadOnlyDictionary<AssetKey,int> AvailableAll(IReadOnlyList<InventoryAsset> assets,string? account=null)
     {
-        var groups=Commands().Where(x=>x.Kind=="sell").GroupBy(x=>x.Line.Asset.Key).ToDictionary(x=>x.Key,x=>x.ToArray());
+        if(account is not null&&(account.Length!=17||account.Any(c=>!char.IsAsciiDigit(c))))throw new ArgumentException("AccountScopeInvalid");
+        var groups=Commands().Where(x=>x.Kind=="sell"&&(account is null||x.Account==account)).GroupBy(x=>x.Line.Asset.Key).ToDictionary(x=>x.Key,x=>x.ToArray());
         var released=ReleasedSellKeys();
         return assets.ToDictionary(x=>x.Key,x=>
         {

@@ -116,3 +116,11 @@ SQLite 네이티브 라이브러리는 앱의 합성 DB만 처리한다. 테스�
 - https://help.steampowered.com/en/faqs/view/2E6E-A02C-5581-8904 — 거래/장터 보안 확인 절차.
 - https://steamcommunity.com/dev — 공개 Steam Web API 문서; 일반적인 개인 장터 대량 등록 공개 API를 전제하지 말 것.
 - 이 문서는 Valve의 서면 허가가 아님. 실제 기능은 현재 정책을 재검토해 `docs/CURRENT-STATUS.md`에 근거/날짜/제한을 보고.
+
+## 0.20.13 — 최종 릴리즈 신뢰도 감사 (2026-10-31 KST)
+
+같은 BatchId에 변경된 계정/가격을 전달해 이전 승인을 재사용하는 경로, 취소 후 과거 로컬 전송 기록으로 새 실제 보유 자산 검토가 막히는 경로, 타 계정 AssetKey의 pending 수량 혼합을 수정했다. 서버 inventory와 active/pending membership을 기준으로 새 대상·새 가격·새 최종 승인을 요구하며 기존 Unknown/원요청 ID/감사 저널은 보존한다. 관련 코드·수정 전/후 증거·출하 기준은 [RELEASE-READINESS](RELEASE-READINESS.md)를 따른다.
+
+번들 Core/WPF10.0.14와 Microsoft.Data.Sqlite/ProtectedData10.0.14·SQLitePCLRaw2.1.14(native3.54.0)를 사용한다. 호스트 SDK/런타임 설치·설정 변경0. 구 provider 생성→신 provider 읽기/쓰기→구 provider 재읽기 합성 DB 호환 PASS. NuGet advisory는 명시적 공개 source/프로젝트 coverage를 검사하며 빈 source를 PASS로 판정하지 않는다. 패키지 감사와 런타임 보안 최소 버전 검사는 별개다.
+
+최초75개47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED를 유지한다. 새 실제 GUI·실계정·판매/취소/Guard0. 이전 사용자 관측을 새 릴리즈 실증으로 확대하지 않는다. Auth/Preferences/거래 저널/진단/롤백 삭제0. 실제 전용 출하와 단일 최종 승인 전체 배치, DPAPI, 정제 JSONL/ZIP, Unknown 비재전송, 타 프로세스 비간섭을 유지한다.
