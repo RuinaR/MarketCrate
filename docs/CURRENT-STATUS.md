@@ -1,5 +1,14 @@
 # MarketCrate — 현재 상태 (2026-10-31 KST, 0.20.11)
 
+## 최신 배포 — 0.20.11
+
+소스 **b487acc4df8f19c322fe6d2959fe19849c4b3c10**. `artifacts/releases/MarketCrate-0.20.11-guard-handoff-b487acc-win-x64.zip` **66,534,680바이트 /415파일**. SHA256 **CC83BA7F779935006FF0437794E7E80213B10119379527896832E35149E9285B**. 모든 ZIP entry SHA와 폴더 일치·SourceCommit/버전·x64 CLR/WPF/SQLite/DPAPI·실제 전용 PE/BAML·Mock/자가검증 UI/사용자 DB/Auth/진단/PDB 제외·SSIM LICENSE/NOTICE 전문 포함 및 원본 해시 일치 PASS.
+
+기능367/367·비표시WPF70/70·배포19/19 PASS. 안전 정리fixture8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 새 앱 실행·설치·물리 GUI·실계정·휴대폰/실제 게시0. runtime/ui-tests/guard-handoff-125.png, guard-handoff-200.png, guard-posted.png는 격리된 자체 RTB 합성 이미지로만 검토했다. 최신본0.20.11/롤백0.20.10을 구분했고 이전 배포·Auth·설정·SQLite·저널·진단 삭제0. GitHub Release 바이너리 업로드0. 최초75개 판정47/16/0/3/9 유지.
+
+사용자 최소 절차: 새 ZIP→로그인 복원→실제 보관함/수수료/시세 갱신→대상·가격·수량 최종 검토→전체 판매등록1회→모바일/이메일/실패/불명 결과 확인→공식 Steam 앱/이메일에서 직접 확인→‘승인 후 게시 확인’ 클릭. 알림 도착이나 실제 서버 호환성을 보장하는 배포가 아니며, Unknown 또는 필수 계약 미확인 시 후속 다중 등록을 중단하고 진단을 확인한다. 남은 실계정 증거는 사용자 직접 검증 단계다.
+
+
 ## 0.20.11 — 실제 오픈소스 기준 승인 연결
 
 SSIM MarketModel.ts/AccountTrader.ts/MarketService.ts(28a503fa79869f3233814d0deaa906a8b3f66621), SteamMarketHelper sellItem/removeListing/fetchInventory(e186d51efb742ddfb527d2ccb248c64fcee9c976), 기존 채택한 MIT steam-session LoginSession.ts(3ac0f34fd964b3f886ba18ef4824ac43c942e030)를 실제 소스로 재확인했다. SSIM의 인증 비밀키 자동 확인/프록시·브라우저 지문 위장/재전송을 가져오는 방식은 채택하지 않았다.

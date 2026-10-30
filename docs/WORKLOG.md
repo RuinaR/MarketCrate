@@ -522,3 +522,11 @@ Orders의 canonical Presence는 새 등록 전 검사·기존 등록 ID 재사�
 - 초기 통합 빌드에서 신규 테스트의 링크되지 않은 fixture 참조와 취소 대조 메서드 이름 오류2건을 수정했다. 초기 회귀3건에서 전체 버킷 부재 거부 조건은 다시 유지했고, 스택의 ‘다른 등록 보유’와 ‘원 취소 계속 관측’을 분리했으며, 합성 fixture의 빈 목록에 남던 잔여 assets metadata 및 nullable 경로를 수정했다. 검증 기준을 완화해 성공시키지 않았다.
 
 0.20.11 최종 검증: 기능367/367 PASS, 비표시WPF70/70 PASS, 배포계약19/19 PASS, 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 빌드 경고/오류0. 최종 자체 렌더에서 선택된 요청이 내부 record 문자열(Key 포함)로 보이는 공통 ComboBox 템플릿 누락을 발견했다. SelectionContent의 ItemTemplateSelector 연결을 복구하고 최근 요청 기본 선택/기존 선택 유지 및 DisplayMemberPath의 실제 렌더 텍스트 검사를 추가했다. 마지막 템플릿 변경 후 전체 비표시 WPF70개를 다시 통과했고125/200% 승인 인계 이미지와 게시 후 이미지를 직접 확인했다. 실제 창·물리 입력·모니터 DPI·실계정·휴대폰은 미검증이다.
+
+## 최신 배포 — 0.20.11
+
+소스 **b487acc4df8f19c322fe6d2959fe19849c4b3c10**. `artifacts/releases/MarketCrate-0.20.11-guard-handoff-b487acc-win-x64.zip` **66,534,680바이트 /415파일**. SHA256 **CC83BA7F779935006FF0437794E7E80213B10119379527896832E35149E9285B**. 모든 ZIP entry SHA와 폴더 일치·SourceCommit/버전·x64 CLR/WPF/SQLite/DPAPI·실제 전용 PE/BAML·Mock/자가검증 UI/사용자 DB/Auth/진단/PDB 제외·SSIM LICENSE/NOTICE 전문 포함 및 원본 해시 일치 PASS.
+
+기능367/367·비표시WPF70/70·배포19/19 PASS. 안전 정리fixture8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 새 앱 실행·설치·물리 GUI·실계정·휴대폰/실제 게시0. runtime/ui-tests/guard-handoff-125.png, guard-handoff-200.png, guard-posted.png는 격리된 자체 RTB 합성 이미지로만 검토했다. 최신본0.20.11/롤백0.20.10을 구분했고 이전 배포·Auth·설정·SQLite·저널·진단 삭제0. GitHub Release 바이너리 업로드0. 최초75개 판정47/16/0/3/9 유지.
+
+사용자 최소 절차: 새 ZIP→로그인 복원→실제 보관함/수수료/시세 갱신→대상·가격·수량 최종 검토→전체 판매등록1회→모바일/이메일/실패/불명 결과 확인→공식 Steam 앱/이메일에서 직접 확인→‘승인 후 게시 확인’ 클릭. 알림 도착이나 실제 서버 호환성을 보장하는 배포가 아니며, Unknown 또는 필수 계약 미확인 시 후속 다중 등록을 중단하고 진단을 확인한다. 남은 실계정 증거는 사용자 직접 검증 단계다.
