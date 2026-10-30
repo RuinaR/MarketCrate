@@ -491,3 +491,11 @@ SteamStateStore는 IBatchHistoryJournal로 승인 배치 ID를 조회한다. 검
 실제 앱·Steam 계정·판매·취소·Guard 실행0, 사용자 Auth/설정/SQLite/저널/진단/이전 배포 삭제0. 최초75개 판정47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED 유지. 이번 서버 증거 없이 LIVE_SELL_VERIFIED/REAL_FEE_VERIFIED를 새로 부여하지 않는다.
 
 검증: 기능363/363 PASS, 비표시 WPF69/69 PASS, 배포계약19/19 PASS. 안전 정리 fixture8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가, 시스템 변경/승격 없이 미검증 유지). 빌드 경고/오류0. 수정 전 연속 배치 재현1 FAIL 후 수정 통과. 서버 목록 검사 추가로 기존 두 fixture가 개별 자산을 보유와 외부 판매에 동시에 두던 모순이 드러나 외부 등록을 다른 자산으로 고치고 기존 ID 재사용 Unknown 검사를 보존했다. 공유 배치 게이트까지 전체 회귀 후, UI 오류 원인 화이트리스트 연결을 관련29개 합성 계약으로 재확인했다. 자체 최종 검토 RTB 이미지를 직접 확인했고 실제 창/물리 입력/Steam 계정은 실행하지 않았다. 원본 진단은 로컬에서만 읽고 배포/Git에 넣지 않았다.
+
+## 최신 배포 — 0.20.10
+
+소스 b6d5f58a9a90f917f02663d16ddf5e693506d08f. `artifacts/releases/MarketCrate-0.20.10-server-state-b6d5f58-win-x64.zip` **66,529,683바이트 /415파일**. SHA256 **2DC8291C26D2DD1D549EDD200E3BB8DA03B89F45DBCA68A1AB3B1DBF40C3D418**. ZIP 전체 entry와 출하 폴더 SHA 일치, SourceCommit·버전·x64 CLR/WPF/SQLite·DPAPI·Apache LICENSE/NOTICE·실제 전용 PE/BAML·Mock/자가검증/사용자 DB/Auth/진단/PDB 제외 검사 PASS. 실행파일은 실행하지 않았다.
+
+latest0.20.10, rollback0.20.9(f9da6c6, SHA2561812E5BF7A072828E6292A896D7176699154FF8104C2EE2C5943F1A6EB15C9D1)를 보존했다. 이전0.20.8을 포함한 배포/증거/운영 데이터 삭제0. 원본 진단은 Git/ZIP에 포함하지 않았다. 기능363/363·WPF69/69·배포19/19 PASS, 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 최종 오류 원인 연결 관련29계약 추가 PASS. 새 실제 앱/실계정/판매·취소·물리 UI·Guard는 미검증이다.
+
+사용자 최소 확인: 새 ZIP을 별도 폴더에 풀기→로그인 복원→보관함/판매목록 갱신→대상 선택/시세 갱신→최종 검토→전체 판매등록 한 번 승인→항목별 접수/승인대기/실패/불명 확인. 오래된 개별 자산 불명 기록은 새 서버 확인과 별도 승인으로 진행 가능하며 최근 요청은2분 대기, 불명 스택은 별도 제한된다. 불명 발생 시 연속으로 승인하지 말고 해당 작업 진단을 확인한다. 서버 접수·공식 모바일 수동 승인·실제 게시 재조회는 서로 다른 단계다.
