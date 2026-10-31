@@ -1,3 +1,11 @@
+## 0.20.20 — 최저 유효 가격 유지·미전송 원인 안내
+
+사용자는 한 단계 하향 불가 시 최저가 유지를 요청했다. 검증된 최저 가격만 LowerOrMinimumBuyerPrice로 유지하고, 행/전체 검토에 최저 유효 가격 유지·Steam/게임 수수료·실수령 감소0을 표시한다. KRW/USD/수수료0 조합에서 검증했다. 보관함/판매 중 재가격 제안에 같은 규칙을 적용하며 잘못된 통화·수수료·호가 없음·최저가 미만 입력은 계속 차단한다. PreviousValidBuyerPrice의 엄격한 계산 계약은 보존한다.
+
+첨부0.20.19 로그는 최종3건 검토→호가 재조회→OrderbookChanged/StaleReview로 전송 전 중단됐다. Sell HTTP 요청/항목 Submitting intent는 없어서 해당 작업의 Steam 확인 요청도 생성되지 않았다. 실제 승인 알림 전송 장애로 해석하지 않는다. 이 검증 위치에서만 RequestNotSent/OrderbookChanged를 명시하고 사용자에게 시세 갱신→새 최종 검토→전체 판매등록을 안내한다. 호가 변경 차단이나 승인 불변성을 제거하지 않는다. SteamException이 IOException을 상속해 BatchFinished를 Storage로 잘못 분류하던 진단도 실제 실패 분류 인터페이스로 수정했다.
+
+기능430/430·비표시WPF79/79·배포20/20·advisory 검사기6/6 PASS, 정리8 PASS/0 FAIL/1 NOT VERIFIED, build 경고/오류0. 3개 개별 자산을 최저 유효가로 한 번 승인→3요청/중복0, 호가 변경0요청→명시적 시세 갱신·새 승인→3요청 합성 검증.125/200% 최저가 검토 RTB를 직접 확인했다. 사용자 실제 계정/새 버전 거래·물리GUI는 NOT VERIFIED. Auth/설정/SQLite·기존 저널·과거 ZIP 삭제0, 75개47/16/0/3/9 유지.
+
 ## 최신 배포 — 0.20.19 승인 후 현재 목록 중심
 
 소스 **a3ef735f1d516c22de6d7424423e80cb62a7af19**. `artifacts/releases/MarketCrate-0.20.19-current-listings-a3ef735-win-x64.zip` **66,750,871바이트 /418파일**. SHA256 **2470686121811D9A4BD5A1F1FF09C5BD085996C74DDB41526E2E81B6E8869C91**. 전체 ZIP entry/출하 파일 해시·SourceCommit/버전·x64 CLR/WPF10.0.14·SQLite/DPAPI·라이선스·실제 전용 PE/BAML·Mock/개발UI/Auth/DB/로그/PDB 제외 검사 PASS. Release build 경고/오류0, 앱/설치/실계정 실행은 NOT VERIFIED.

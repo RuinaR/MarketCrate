@@ -433,6 +433,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         if(!authenticating&&error is SteamException{Endpoint:"UncertainStack"}){Status="수량형 자산의 이전 요청과 현재 수량을 확정할 증거가 부족합니다. 스택의 중복 수량 전송은 차단했습니다.";Changed();return;}
         if(!authenticating&&error is SteamException{Endpoint:"PendingSubmission"}){Status="서버 보관함은 선택·가격 검토할 수 있지만 이전 전송 결과가 미확정입니다. 이전 요청 확인에서 동기화하세요. 자동 재전송은 하지 않습니다.";Changed();return;}
         if(!authenticating&&error is SteamException{Endpoint:"RepriceReturn"}){Status="일괄 재등록을 시작하지 않았습니다. 외부에서 등록된 항목은 원래 자산의 반환 인과 증거가 없어 자동 재등록을 지원하지 않습니다. 선택 취소는 별도 검토할 수 있습니다.";Changed();return;}
+        if(!authenticating&&error is SteamException{Code:SteamFailure.StaleReview,Endpoint:"OrderbookChanged",RequestNotSent:true}){ReviewOpen=ManagementOpen=false;ReviewRows.Clear();managementBooks.Clear();Status="최종 확인에서 호가가 바뀌어 판매 요청을 보내지 않았습니다. Steam 승인 요청도 생성되지 않았습니다. 보관함의 시세 갱신 후 새 최종 검토에서 전체 판매등록을 다시 승인하세요. 자동 가격 변경·재전송은 하지 않습니다.";Changed();return;}
         if(!authenticating&&error is SteamException{Code:SteamFailure.StaleReview}){ReviewOpen=ManagementOpen=false;ReviewRows.Clear();managementBooks.Clear();Status="승인한 가격·수량·호가 자료가 변경되었거나 오래되었습니다. 갱신 후 새 최종 검토가 필요합니다. 자동으로 낮은 가격을 제출하지 않았습니다.";Changed();return;}
         Status=authenticating&&error is SteamException{Code:SteamFailure.Disabled}?"이 환경에서는 인증을 시작할 수 없습니다 (Disabled).":authenticating?"인증 작업 실패 · "+(workspace?.Authentication.LastFailureStage?.ToString()??"AuthBegin"):RequestsBlocked?"서버 제한 또는 안전 차단 · 추가 요청 중단":"이 조회를 완료하지 못했습니다. 다른 조회는 사용할 수 있습니다.";Changed();
     }
@@ -480,22 +481,22 @@ public sealed class SteamAssetRow(InventoryAsset asset,int available,Action chan
 public sealed class SteamReviewRow:Observable
 {
     private readonly SteamFeeSchedule fees;private readonly Action changed;private readonly PriceEvidence? priceEvidence;private readonly string bookDigest;private string text;private readonly long originalBid,recommended,reference;private readonly bool adjustmentUnavailable;
-    public bool LowerStepRequested{get;}public FeeQuote? BaselineQuote{get;}public string Currency=>fees.Currency;
+    public bool MinimumPricePinned{get{try{return LowerStepRequested&&!adjustmentUnavailable&&BaselineQuote is not null&&recommended==BaselineQuote.BuyerPays&&Quote.BuyerPays==recommended;}catch(Exception error)when(error is ArgumentException or OverflowException){return false;}}} public bool LowerStepRequested{get;}public FeeQuote? BaselineQuote{get;}public string Currency=>fees.Currency;
     public string AdjustmentComparison
     {
         get
         {
             if(!LowerStepRequested)return "";
             if(adjustmentUnavailable||BaselineQuote is null)return "한 단계 낮은 유효 가격을 계산할 수 없습니다. 최저 가격/호가 부족/수수료를 확인하고 선택 또는 옵션을 변경하세요.";
-            try{return PriceComparisonText.Format(BaselineQuote,Quote,fees.Currency,Quantity);}catch(Exception error)when(error is ArgumentException or OverflowException){return "가격 입력/금액 범위를 확인해야 하향 전후 금액을 비교할 수 있습니다.";}
+            try{return (MinimumPricePinned?"최저 유효 가격 유지 · 더 낮출 수 없음\n":"")+PriceComparisonText.Format(BaselineQuote,Quote,fees.Currency,Quantity);}catch(Exception error)when(error is ArgumentException or OverflowException){return "가격 입력/금액 범위를 확인해야 하향 전후 금액을 비교할 수 있습니다.";}
         }
     }
     public ItemImageReference? Image{get;init;}public Guid? ImageOperation{get;init;}
     public InventoryAsset Asset{get;}public int Quantity{get;}public DateTimeOffset CapturedAt{get;}public bool Insufficient{get;}public string Identity=>$"{Asset.Game} · {Asset.Name} · {Quantity}개";
     public string PriceText{get=>text;set{if(!Set(ref text,value))return;DiagnosticHub.Emit(DiagnosticEvent.PriceEdited,DiagnosticArea.Pricing,requirement:"E05",reason:Valid?"Committed":"InputRejected");Raise(nameof(Valid));Raise(nameof(Amounts));Raise(nameof(PriceBasis));Raise(nameof(PriceWarning));Raise(nameof(AdjustmentComparison));changed();}}
     public SteamReviewRow(InventoryAsset asset,int quantity,long buyer,PriceSnapshot price,SteamFeeSchedule fees,Action changed,MarketCrate.Core.PriceBasis basis=MarketCrate.Core.PriceBasis.Immediate,bool lowerOneStep=false)
-    {bookDigest=OrderbookFingerprint.Of(price);priceEvidence=basis==MarketCrate.Core.PriceBasis.MedianEstimate?price.Estimate:null;Asset=asset;Quantity=quantity;CapturedAt=price.CapturedAt;Insufficient=buyer==0;this.fees=fees;this.changed=changed;originalBid=buyer;reference=price.Bids.IsEmpty?0:price.Bids[0].BuyerPays;LowerStepRequested=lowerOneStep;try{BaselineQuote=fees.FromBuyer(buyer,false);buyer=lowerOneStep?fees.PreviousValidBuyerPrice(BaselineQuote.BuyerPays).BuyerPays:BaselineQuote.BuyerPays;}catch(Exception error)when(error is ArgumentException or OverflowException){buyer=0;adjustmentUnavailable=lowerOneStep;}recommended=buyer;text=buyer==0?"":FormatPrice(buyer,fees.Currency);}
-    public string PriceBasis=>adjustmentUnavailable?"한 단계 하향 불가 · 최저 가격·호가·수수료 확인 필요":priceEvidence is {} ev?$"Steam pricehistory · 기간 중앙값의 거래량 가중 중앙값 추정 · 정확한 평균/즉시거래가능가 아님 · {ev.Buckets}구간/서버 거래량 {ev.Volume} · {ev.WindowStart:MM-dd HH:mm}–{ev.WindowEnd:MM-dd HH:mm} UTC":Insufficient?"매수 잔량 부족 · 직접 가격 필요 · 예상 미체결 수량":$"{PriceDisplay.Immediate} · 호가 {new Money(originalBid,fees.Currency)} · 증분/수수료 반영 추천 {new Money(recommended,fees.Currency)} · {(text==FormatPrice(recommended,fees.Currency)?"추천":"수동 수정")}";
+    {bookDigest=OrderbookFingerprint.Of(price);priceEvidence=basis==MarketCrate.Core.PriceBasis.MedianEstimate?price.Estimate:null;Asset=asset;Quantity=quantity;CapturedAt=price.CapturedAt;Insufficient=buyer==0;this.fees=fees;this.changed=changed;originalBid=buyer;reference=price.Bids.IsEmpty?0:price.Bids[0].BuyerPays;LowerStepRequested=lowerOneStep;try{BaselineQuote=fees.FromBuyer(buyer,false);buyer=lowerOneStep?fees.LowerOrMinimumBuyerPrice(BaselineQuote.BuyerPays).BuyerPays:BaselineQuote.BuyerPays;}catch(Exception error)when(error is ArgumentException or OverflowException){buyer=0;adjustmentUnavailable=lowerOneStep;}recommended=buyer;text=buyer==0?"":FormatPrice(buyer,fees.Currency);}
+    public string PriceBasis=>MinimumPricePinned?"최저 유효 가격 유지 · 수수료 반영 최저가로 제안 · 실제 체결 보장 없음":adjustmentUnavailable?"한 단계 하향 불가 · 최저 가격·호가·수수료 확인 필요":priceEvidence is {} ev?$"Steam pricehistory · 기간 중앙값의 거래량 가중 중앙값 추정 · 정확한 평균/즉시거래가능가 아님 · {ev.Buckets}구간/서버 거래량 {ev.Volume} · {ev.WindowStart:MM-dd HH:mm}–{ev.WindowEnd:MM-dd HH:mm} UTC":Insufficient?"매수 잔량 부족 · 직접 가격 필요 · 예상 미체결 수량":$"{PriceDisplay.Immediate} · 호가 {new Money(originalBid,fees.Currency)} · 증분/수수료 반영 추천 {new Money(recommended,fees.Currency)} · {(text==FormatPrice(recommended,fees.Currency)?"추천":"수동 수정")}";
     public bool Valid{get{try{var quote=Quote;_=checked(quote.BuyerPays*Quantity);_=checked(quote.Fees*Quantity);_=checked(quote.SellerReceives*Quantity);return !adjustmentUnavailable&&Quantity>=1&&Quantity<=Asset.Quantity&&(priceEvidence is null||priceEvidence.Fresh(DateTimeOffset.UtcNow))&&!PriceOutlier&&DateTimeOffset.UtcNow-CapturedAt<=TimeSpan.FromMinutes(5)&&CapturedAt<=DateTimeOffset.UtcNow.AddSeconds(5);}catch(Exception e)when(e is ArgumentException or OverflowException){return false;}}}
     public bool PriceOutlier{get{try{return reference>0&&(Quote.BuyerPays<reference/2m||Quote.BuyerPays>reference*2m);}catch(Exception e)when(e is ArgumentException or OverflowException){return false;}}}
     public string PriceWarning=>PriceOutlier?"가격 이상: 조회한 최상위 호가의 50~200% 범위를 벗어났습니다. 시세를 갱신하고 검토하세요.":DateTimeOffset.UtcNow-CapturedAt>TimeSpan.FromMinutes(5)?"시세 오래됨 · 검토를 갱신하세요.":"조회 후 5분 이내만 승인 가능 · 최종 요청 전 서버 데이터 재검증";
@@ -511,7 +512,7 @@ public sealed class SteamListingRow(SteamListing listing,Action changed):Observa
 {
     private FeeQuote? comparisonBaseline;
     public bool HasStepProposal=>comparisonBaseline is not null;
-    public string ComparisonFor(FeeQuote actual)=>comparisonBaseline is {} baseline?PriceComparisonText.Format(baseline,actual,Listing.Currency,Listing.Quantity):"";
+    public string ComparisonFor(FeeQuote actual)=>comparisonBaseline is {} baseline?(proposalFees?.LowerOrMinimumBuyerPrice(baseline.BuyerPays).BuyerPays==baseline.BuyerPays&&actual.BuyerPays==baseline.BuyerPays?"최저 유효 가격 유지 · 더 낮출 수 없음\n":"")+PriceComparisonText.Format(baseline,actual,Listing.Currency,Listing.Quantity):"";
     public void ClearPriceComparison(){comparisonBaseline=null;Raise(nameof(HasStepProposal));Raise(nameof(Proposal));}
     public ItemImageReference? Image{get;init;}public Guid? ImageOperation{get;init;}
     private string metric="즉시거래가능가 미조회";public string Metric{get=>metric;set=>Set(ref metric,value);}

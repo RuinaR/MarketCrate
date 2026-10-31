@@ -1,3 +1,11 @@
+## 0.20.20 최저가 유지와 호가 변경 재검토
+
+LowerPriceStepTests는 기존10개 중 최저가 정책 테스트를 사용자 요청에 맞게 변경하고2개 통합을 추가했다. 수정 전9 PASS/3 FAIL. 최저가 유지/기준과 동일한 수수료·실수령/감소0/최저가 미만 입력 거부, KRW/USD 및 수수료0 조합의250가격 property, 다른 실패 조건 보존을 검증한다. MinimumBatch는 자산3개/각1개를 최저 buyer3·net1 합성 계약으로 한 번 승인하고3요청/동일승인 재전송0을 검사한다. 이 값은 실제 사용자 계정의 고정 수수료를 뜻하지 않는다.
+
+StaleThenFresh: 검토 뒤 호가3개 잔량→2개 변경 시 주문/intent0·검토 폐기·Steam 확인 미생성 안내·Validation 진단. 사용자가 시세를 갱신하고 새 검토를 승인하면3건을 처리한다. 호가 검증을 완화하거나 이전 가격으로 자동 재전송하지 않는다. 기존 UI 최저가 차단 테스트는 유지/명시 표시 및 미만 입력 거부로 수정하고125/200% RTB를 검토했다.
+
+runtime/minimum-floor-full.txt 기능430/430·비표시WPF79/79·배포20/20·advisory 검사기6/6 PASS, 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가), 경고/오류0. 실제 Steam/GUI 미실행.
+
 ## 0.20.19 현재 목록 기본 흐름
 
 CurrentOnlyAbsent: 접수 후 서버 목록 부재→판매 중 화면 빈 목록, history 호출0/추가 판매0, 기존 접수·배치 저널 불변. CurrentOnlyListed: 남아 있는 항목 표시, history0. CurrentOnlyDenied:403은 재시도/우회 없이 중단·기존 화면/행 보존. CurrentOnlyCancelled: 취소 시 기존 화면/행·저널 유지. 기존 WPF 승인 인계 테스트는 실제 ShowCurrentListings 명령/현재 목록 이동/거래내역 호출0을 검사한다. 선택적 Recover 및 금액·Unknown 회귀는 유지한다.

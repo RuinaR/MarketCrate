@@ -63,7 +63,7 @@ public sealed partial class SteamWorkspaceViewModel
             proposals=plan.Lines.Select(x=>
             {
                 var schedule=schedules[x.Selection.Asset.Key.AppId];var baseline=schedule.FromBuyer(x.Allocation.BuyerPays,!LowerPriceOneStep);
-                return(Row:rows.Single(r=>r.Listing.Asset==x.Selection.Asset.Key),Price:LowerPriceOneStep?schedule.PreviousValidBuyerPrice(baseline.BuyerPays).BuyerPays:baseline.BuyerPays,Fees:schedule,Baseline:LowerPriceOneStep?(FeeQuote?)baseline:null);
+                return(Row:rows.Single(r=>r.Listing.Asset==x.Selection.Asset.Key),Price:LowerPriceOneStep?schedule.LowerOrMinimumBuyerPrice(baseline.BuyerPays).BuyerPays:baseline.BuyerPays,Fees:schedule,Baseline:LowerPriceOneStep?(FeeQuote?)baseline:null);
             }).ToArray();
         }
         catch(ArgumentException){ListingPriceStatus=LowerPriceOneStep?"한 단계 낮은 유효 가격을 계산할 수 없는 항목이 있습니다. 최저 가격·수수료를 확인하고 옵션이나 선택을 변경하세요. 취소·등록하지 않았습니다.":"호가와 유효 가격 증분·수수료가 일치하지 않습니다. 최신 자료를 확인하세요. 취소·등록하지 않았습니다.";return;}

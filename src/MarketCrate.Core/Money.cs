@@ -71,4 +71,11 @@ public record SteamFeeSchedule(string Currency, long MinimumWire, long Increment
             new[] { Steam, Publisher }.Any(x => x.Millionths is < 0 or > 1_000_000 || x.CapWire < 0 || x.CapWire % IncrementWire != 0))
             throw new ArgumentException("UnsupportedFeeSchedule");
     }
+    // Only a verified minimum clamps the explicit lower-price choice. Other errors still fail.
+    public FeeQuote LowerOrMinimumBuyerPrice(long baselineBuyer)
+    {
+        var baseline=FromBuyer(baselineBuyer);
+        var minimum=FromSeller(Money.FromWire(MinimumWire,Currency).Minor);
+        return baseline.BuyerPays==minimum.BuyerPays?minimum:PreviousValidBuyerPrice(baselineBuyer);
+    }
 }

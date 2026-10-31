@@ -38,8 +38,10 @@ public interface IDiagnosticLog
 }
 
 // Typed whitelist: never accepts raw URL/query/header/body/exception message/account/asset strings.
+public interface IDiagnosticFailure { DiagnosticError Category {get;} }
 public static class DiagnosticHub
 {
+    public static DiagnosticError FailureCategory(Exception error)=>error is OperationCanceledException?DiagnosticError.Cancelled:error is IDiagnosticFailure known?known.Category:error is IOException?DiagnosticError.Storage:DiagnosticError.Validation;
     private sealed record Ambient(IDiagnosticLog? Log, DiagnosticContext? Context);
     private static readonly AsyncLocal<Ambient?> ambient = new();
     private static IDiagnosticLog? defaultLog;

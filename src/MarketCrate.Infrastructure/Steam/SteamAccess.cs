@@ -40,8 +40,9 @@ public sealed record SteamTradingPolicy(bool Enabled, string EvidenceReference, 
 #endif
 }
 public enum SteamTradingCheck { Consent, WalletIdentity, FeeContract, WalletConsistency, InventoryRead, SaleableAssets, PublisherFees, ListingsRead, ListingFees, SessionCheck }
-public sealed class SteamException(SteamFailure code, int? apiResult = null) : IOException(code.ToString()), ISubmissionFailure
+public sealed class SteamException(SteamFailure code, int? apiResult = null) : IOException(code.ToString()), ISubmissionFailure, IDiagnosticFailure
 {
+    DiagnosticError IDiagnosticFailure.Category=>SteamDiagnostics.Classify(this);
     public bool RequestNotSent {get;internal set;}
     public SteamFailure Code { get; } = code;
     public int? ApiResult { get; } = apiResult;

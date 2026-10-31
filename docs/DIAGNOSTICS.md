@@ -1,3 +1,9 @@
+## 0.20.20 전송 전 호가 변경
+
+ValidateBatchAsync의 OrderbookChanged는 batch 전송 전 검증에서만 RequestNotSent=true/Endpoint=OrderbookChanged를 설정한다. UI는 이 명시적 증거가 있을 때에만 판매 요청/Steam 확인 미생성과 새 검토 절차를 안내한다. 일반 StaleReview/전송 후 Unknown은 미전송으로 추정하지 않는다.
+
+IDiagnosticFailure.Category로 SteamException의 Validation/Transport/RateLimited 등 기존 분류를 Core coordinator에 전달한다. IOException이라는 상속 이유만으로 Steam 계약 오류를 Storage로 기록하지 않는다. 순수 IO 실패는 기존 Storage로 유지한다. 추가 합성 StaleThenFresh는 BatchFinished Error=Validation/Storage0·판매요청0을 검사한다. 원본 HTTP·인증정보 기록0.
+
 ## 0.20.19 기본 현재 목록과 고급 대조 구분
 
 ShowCurrentListingsAsync의 UI OperationId→Listings GET 페이지들→ReadContract/SetListings→판매 중 화면만 연결한다. 일반 승인 후 버튼에서 MarketHistory/BatchRecovered를 호출하지 않는다. 읽기 상태/로딩·취소·실패는 ListingsRead에 반영하고403/429/계약 차단을 준수한다. 고급 Recover/선택 요청 대조를 명시적으로 누른 경우에만 기존 상세 증거 이벤트를 남긴다. 운영 로그/거래 저널 보존 역할과 비밀정보 제외 원칙은 변하지 않는다.

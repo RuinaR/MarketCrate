@@ -48,7 +48,7 @@ public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatch
             DiagnosticHub.Emit(DiagnosticEvent.BatchFinished,DiagnosticArea.Sales,DiagnosticOutcome.Completed,count:record.Results.Length,journal:"Committed");
             return record;
         }
-        catch(Exception error){DiagnosticHub.Emit(DiagnosticEvent.BatchFinished,DiagnosticArea.Sales,DiagnosticOutcome.Failed,LogLevel.Error,error is OperationCanceledException?DiagnosticError.Cancelled:error is IOException?DiagnosticError.Storage:DiagnosticError.Validation,exception:error,journal:"JournalPreserved");throw;}
+        catch(Exception error){DiagnosticHub.Emit(DiagnosticEvent.BatchFinished,DiagnosticArea.Sales,DiagnosticOutcome.Failed,LogLevel.Error,DiagnosticHub.FailureCategory(error),exception:error,journal:"JournalPreserved");throw;}
         finally { gate.Release(); }
     }
 
@@ -118,7 +118,7 @@ public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatch
             DiagnosticHub.Emit(DiagnosticEvent.BatchFinished,DiagnosticArea.Sales,DiagnosticOutcome.Completed,count:record.Results.Length,journal:"Committed");
             return record;
         }
-        catch(Exception error){DiagnosticHub.Emit(DiagnosticEvent.BatchFinished,DiagnosticArea.Sales,DiagnosticOutcome.Failed,LogLevel.Error,error is OperationCanceledException?DiagnosticError.Cancelled:error is IOException?DiagnosticError.Storage:DiagnosticError.Validation,exception:error,journal:"JournalPreserved");throw;}
+        catch(Exception error){DiagnosticHub.Emit(DiagnosticEvent.BatchFinished,DiagnosticArea.Sales,DiagnosticOutcome.Failed,LogLevel.Error,DiagnosticHub.FailureCategory(error),exception:error,journal:"JournalPreserved");throw;}
         finally { gate.Release(); }
     }
 
@@ -158,7 +158,7 @@ public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatch
             DiagnosticHub.Emit(DiagnosticEvent.BatchFinished,DiagnosticArea.Sales,DiagnosticOutcome.Completed,count:record.Results.Length,journal:"Committed");
             return record;
         }
-        catch(Exception error){DiagnosticHub.Emit(DiagnosticEvent.BatchFinished,DiagnosticArea.Sales,DiagnosticOutcome.Failed,LogLevel.Error,error is OperationCanceledException?DiagnosticError.Cancelled:error is IOException?DiagnosticError.Storage:DiagnosticError.Validation,exception:error,journal:"JournalPreserved");throw;}
+        catch(Exception error){DiagnosticHub.Emit(DiagnosticEvent.BatchFinished,DiagnosticArea.Sales,DiagnosticOutcome.Failed,LogLevel.Error,DiagnosticHub.FailureCategory(error),exception:error,journal:"JournalPreserved");throw;}
         finally { gate.Release(); }
     }
 

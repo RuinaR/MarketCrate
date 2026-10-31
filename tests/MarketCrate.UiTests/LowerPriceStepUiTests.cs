@@ -28,14 +28,14 @@ internal static class LowerPriceStepUiTests
             }
             Directory.Delete(root,true);
         });
-        test("최저 유효 가격은 하향 불가·수동 입력으로 차단 우회 불가",()=>
+        test("하향 불가 최저 유효 가격은 그대로 유지·미만 수동 입력은 거부",()=>
         {
             var root=Path.Combine(Directory.GetCurrentDirectory(),"runtime","lower-min-ui-"+Guid.NewGuid().ToString("N"));using var server=new SteamContractServer();
             using(var vm=new SteamWorkspaceViewModel(scope=>new(root,scope.AppId,scope.ContextId,scope.Name,new(true,"synthetic",true),server.Connection(),server.Clock),true){RiskAccepted=true,CredentialsAccepted=true})
             {
                 Complete(vm.BeginAsync());server.Clock.Advance();Complete(vm.CheckAsync());Complete(vm.LoadAsync());vm.SelectAll.Execute(null);Complete(vm.RefreshPricesAsync());vm.LowerPriceOneStep=true;vm.BuildReview();
                 var row=new SteamReviewRow(vm.Assets[0].Asset,1,30,new("KRW",DateTimeOffset.UtcNow,"synthetic",TimeSpan.Zero,[],[new(30,1)]),new("KRW",1000,1000,new(50000),new(100000)),()=>{},lowerOneStep:true);vm.ReviewRows.Clear();vm.ReviewRows.Add(row);vm.TradeAccepted=true;vm.EnableTrading.Execute(null);row.PriceText="30";
-                Check(!row.Valid&&!vm.Submit.CanExecute(null)&&vm.ReviewAdjustmentSummary.Contains("계산 불가"),"Minimum silently used original price");var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,780,1.25,"lower-minimum-blocked.png");Check(server.Sends==0,"Unexpected submission");
+                Check(row.Valid&&row.MinimumPricePinned&&row.Quote.BuyerPays==30&&vm.ReviewAdjustmentSummary.Contains("최저 유효 가격 유지"),"Minimum was not retained explicitly");var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,780,1.25,"lower-minimum-retained.png");render(view,1100,780,2,"lower-minimum-retained-200.png");row.PriceText="20";Check(!row.Valid&&!vm.Submit.CanExecute(null),"Below minimum accepted");Check(server.Sends==0,"Unexpected submission");
             }
             Directory.Delete(root,true);
         });

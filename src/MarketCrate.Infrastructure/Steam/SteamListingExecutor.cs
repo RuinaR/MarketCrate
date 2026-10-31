@@ -105,7 +105,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
             if(!validatedPrices.TryGetValue(priceKey,out var price))
             {price=line.Evidence is {} evidenceSource?await prices.RefreshEstimateAsync(asset,evidenceSource.WindowEnd-evidenceSource.WindowStart,token):await prices.RefreshAsync(asset,token);validatedPrices.Add(priceKey,price);}
             if(line.OrderbookDigest is {} digest&&OrderbookFingerprint.Of(price)!=digest)
-            {DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,DiagnosticOutcome.Blocked,LogLevel.Warning,DiagnosticError.Validation,reason:"OrderbookChanged");throw new SteamException(SteamFailure.StaleReview);}
+            {DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,DiagnosticOutcome.Blocked,LogLevel.Warning,DiagnosticError.Validation,reason:"OrderbookChanged");throw new SteamException(SteamFailure.StaleReview){Endpoint="OrderbookChanged",RequestNotSent=true};}
             if(line.Evidence is {} evidence)
             {
                 if(evidence.Currency!=line.Currency||!evidence.Fresh(DateTimeOffset.UtcNow))throw new SteamException(SteamFailure.StaleReview);
