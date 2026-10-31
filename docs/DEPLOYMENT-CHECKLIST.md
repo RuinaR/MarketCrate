@@ -1,3 +1,11 @@
+## 최신 배포 — 0.20.17 판매목록 빈 자산 맵
+
+소스 **72b7b703caa5133c4719198fe80297b2d39d75c7**. `artifacts/releases/MarketCrate-0.20.17-empty-listings-72b7b70-win-x64.zip` **66,749,751바이트 /418파일**. SHA256 **9139E51CCD5C4C378E04C9D448DCA428D2DBD6D808C1C35C42BE5D77910D502D**. ZIP 모든 entry와 출하 파일 SHA 일치, 버전/커밋·x64 CLR/WPF10.0.14·SQLite/DPAPI·라이선스·실제 전용 PE/BAML·Mock/개발UI/개인DB/Auth/로그/PDB 제외 검사 PASS. Release 경고/오류0, 앱/설치/실계정 실행은 NOT VERIFIED.
+
+기능419/419·비표시WPF79/79·배포20/20·advisory 검사기6/6 PASS, 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 최초75개47/16/0/3/9 유지. 원본 로그를 저장하지 않아 사용자의 root assets 정확한 JSON 종류는 미확정이며 출하 IL로 비객체 거부 분기만 확정했다. 빈 [] 호환은 합성 계약/활성화 경로로 검증했다. 잘못된 맵/금액/total_count/403·429 보호는 유지한다.
+
+최신0.20.17/롤백0.20.16(209d0a7, SHA256 FAEE88178DE08A507A5852924017CB834CE38F79B68D2CBD307ECB6C1DE68693) 보존. 기존 사용자 Auth·설정·SQLite·저널·진단·이전 ZIP 삭제/초기화0. 사용자는 새 폴더에 ZIP 해제→기존 로그인 복원→보관함/판매목록 갱신→실제 거래 준비 또는 최종 가격 검토로 기존 실패 지점을 재확인할 수 있다. 이 확인만으로 판매 요청은 전송하지 않으며 최종 전체 판매등록은 별도 사용자 승인이다. 실패 시 새 작업 진단을 내보내고 원본문/인증정보를 별도 수집하지 않는다.
+
 ## 최신 배포 — 0.20.16 즉시 체결 상태 대조
 
 소스 **209d0a7f958b623c9be490374e0294f371fa40bb**. `artifacts/releases/MarketCrate-0.20.16-instant-sale-209d0a7-win-x64.zip` **66,748,818바이트 /418파일**. SHA256 **FAEE88178DE08A507A5852924017CB834CE38F79B68D2CBD307ECB6C1DE68693**. ZIP 전체 entry/출하 파일 해시 일치·버전/커밋·x64 CLR/WPF10.0.14·SQLite/DPAPI·라이선스·실제 전용 PE/BAML·Auth/개인DB/로그/PDB/Mock/자가검증 제외 정적 검사 PASS. Release build 경고/오류0. 앱/설치/실계정은 미실행이다.
