@@ -1,3 +1,9 @@
+## 2026-10-31 KST — 원본 거래내역 금액 보존
+
+[vladpuz/steam-market SteamMarket.ts myHistory()](https://raw.githubusercontent.com/vladpuz/steam-market/master/src/SteamMarket.ts)와 [PurchaseResponse](https://raw.githubusercontent.com/vladpuz/steam-market/master/src/types/PurchaseResponse.ts)를 직접 확인했다. received_amount를 원본으로 반환하고 received_currencyid를 분리하며 funds_held/funds_revoked가 nullable인 구조를 참고했다. package.json은3.0.4/MIT를 선언한다. 고정 SHA/라이선스 파일 본문은 확보하지 않아 코드 직접 복사0; 프로토콜 매핑을 독립 C#으로 반영했다. JS Number ID 변환/광범위 쿠키 가져오기는 채택하지 않는다.
+
+[SnaBe getMyHistory 실제 코드](https://raw.githubusercontent.com/SnaBe/node-steam-market-fetcher/master/index.js)는 norender 원본 반환을 대조했다. Node 런타임/외부 라이브러리 도입0. 사용자 실환경 로그가 보인 원화 FromWire 페이지 전체 중단을 해결했으나 새 실제 응답/금액을 가져와 시험한 것은 아니다. 원본 자료·세션 정보 외부 송신0.
+
 ## 2026-10-31 KST — 빈 장터 자산 맵
 
 프로젝트 보존 공식 market.js의 MergeWithAssetArray(ObjectIsEmpty로 빈 자료 조기 반환)를 확인했다. SSIM 기반 C# 변환의 객체 강제 조건이 빈 []를 거부한 것이 호환 차이다. 기존 SSIM 28a503f Apache-2.0 부분 개작 파일의 저작권/NOTICE는 보존하고 수정 설명을 갱신했다. 이번 web의 원본 SSIM raw 링크는 cache miss, 웹 검색의 외부 타입 문서는 empty [] 실제 응답 증거가 아니므로 새 실서버 계약 검증으로 취급하지 않는다. 출하 DLL/사용자 안전 스택+합성 배열 형식으로 결함을 재현했다. 새로운 외부 코드 도입/의존성0.

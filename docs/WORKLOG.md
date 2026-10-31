@@ -1,3 +1,9 @@
+## 2026-10-31 — 0.20.18 유사 프로젝트 대조·KRW 이력 복구
+
+사용자는1개씩3건 실체결을 확인했고 앱 종료로 ZIP을 만들지 못했다. MarketCrate 소유 Logs의 최신 session JSONL이 보존된 것을 확인하고 관련 MarketHistory 이벤트만 정제 분석했다. HTTP200 뒤 received_amount의 FromWire 변환에서 발생한 Schema 예외가 전체3건 대조를 중단한 것이 확인됐다. vladpuz/steam-market myHistory/PurchaseResponse와 SnaBe getMyHistory를 실제 소스로 대조했다. 원본 금액·통화를 별도 보존하는 방식을 독립 C# 구현에 반영하고 JS Number로 ID를 좁히는 방식은 도입하지 않았다. 원본wire 정수끼리 정확 비교, nullable 보류/철회 지원, 파싱 CorrelationId/원인별 진단 추가. 새 의존성/Node runtime/코드 직접 복사0.
+
+추가5개 및 전체424기능/79WPF/20배포·advisory 검사기6 PASS, 정리8 PASS/1 NOT VERIFIED, 경고/오류0. SQLite/Auth·실제 등록가격/수수료·실거래 송신 정책은 변경0. 실제 Steam·GUI/타 프로세스 실행0, 사용자 로그·Auth·설정·저널·이전 배포 삭제0. 새 실제3건 체결대조는 사용자 직접 확인이 필요하다.
+
 ## 2026-10-31 — 0.20.17 배포 확정
 
 소스72b7b70 origin/main push 성공. ZIP66,749,751바이트/418파일·모든 entry SHA·실제 전용 PE/BAML·라이선스/개인자료 제외 PASS. 전체419/79/20·advisory 검사기6 PASS, 정리8 PASS/1 NOT VERIFIED. 롤백0.20.16과 운영 데이터/진단 모두 보존, 삭제0. 실제 Steam·앱/설치 실행0. ZIP 경로/해시는 CURRENT-STATUS 및 배포 체크리스트 참조.

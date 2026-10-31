@@ -1,3 +1,14 @@
+## 0.20.18 원화 이력 단위·배치 대조
+
+InstantSaleRefreshTests 추가5개. 기존12개와 신규4개의 수정 전 집중 검사12 PASS/4 FAIL, 원본 wire 정수 처리 후16/16 PASS, nullable 보류/철회 필드를 포함한 최종17개 및 전체424/424 PASS다. 비표시WPF79/79·배포20/20·advisory 검사기6/6 PASS, 정리8 PASS/0 FAIL/1 NOT VERIFIED, build 경고/오류0. runtime/history-wire-before/after/full.txt는 추적/출하 제외다.
+
+- 같은 상품의 개별 자산3개를 한 단계 낮춘 가격·단일 승인으로 제출. 원화 원본3141 같은 비정수 표시단위의 다른 과거 이력+현재3건을 같은 페이지에 넣어 모두 Sold, history GET1회, 판매 추가 전송0을 검증.
+- 대상 금액 자체가 승인wire보다1 작으면 반올림/허용오차 없이 Unknown·원접수 보존.
+- 원단가/받은금액이 일치해도 승인금액과 다르면 HistoryAmountMismatch/OperationId로 추적.
+- 2^53 초과 원본 정수/KRW·USD 보존, 신규 nullable 보류/철회는 오류 아님. 명시적 철회는 체결 확정 제외.
+
+실사용 JSONL의 HTTP200→FromWire@IL64, Parse@IL646 실패와 출하 DLL IL을 대조해 received_amount 변환 실패를 확인했다. 값/대상 자체는 원본문이 없어 미확정이다. 새 파서의 실제 서버 재대조는 NOT VERIFIED. 원본 로그를 테스트 fixture/Git/배포로 복사0.
+
 0.20.17 최종: 기능419/419·비표시WPF79/79·배포20/20·advisory 검사기6/6 PASS, 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). runtime/listing-assets-full.txt, 경고/오류0. 실계정 재검증·물리 GUI는 NOT VERIFIED.
 
 ## 0.20.17 판매목록 맵 형식 회귀

@@ -1,3 +1,9 @@
+## 0.20.18 거래내역의 불일치 원인
+
+MarketHistory HTTP·본문 파싱은 같은 CorrelationId를 유지한다. EvidenceChecked의 HistoryNoSaleCandidate/HistoryAssetMismatch/HistoryQuantityMismatch/HistoryCurrencyMismatch/HistoryAmountMismatch/HistoryTimeMismatch/HistoryMultipleCandidates로 후보 없는 이유를 분리한다. ReadContract HistoryQuoteConflict는 서버의 이력 원단가와 실수령이 서로 모순된 경우로, 해당 행을 성공 처리하지 않는다. 실제 금액·계정/상품/자산/구매 ID·원본 JSON은 로그에 넣지 않는다. 확정하는 경우만 기존 HistorySaleMatched→Sold→SQLite audit/배치 결과로 이어진다. 새 실패 이유 token은 정적 화이트리스트로 제한한다.
+
+앱 종료는 진단 로그 삭제가 아니다. 이번에는 LocalAppData의 MarketCrate/Logs session JSONL이 보존돼 원인을 분석할 수 있었다. Auth/쿠키·DPAPI 저장소·운영 DB를 읽지 않았고 원본 JSONL은 외부 전송하지 않았다.
+
 ## 0.20.17 판매목록 맵 자료형
 
 Listings/ReadContract의 AssetsMapEmptyArray는 root/app/context의 명시적 빈 배열을 수용한 이벤트다. PreviousState=AssetsRoot/AssetsApp/AssetsContext, NewState=JsonArray, Count=0. AssetsMapInvalidShape는 JsonArray(내용 있음)/JsonNull/JsonOther 분류와 Schema/Blocked로 남긴다. 원본 키·자산/계정 값·JSON 조각을 기록하지 않는다. 같은 UI OperationId/요청 CorrelationId로 TradingCheck ListingsRead→HTTP200/JsonBody→맵 형식→권한 준비 또는 차단을 추적한다. 현재 사용자 ZIP은 이전 버전이라 안전한 IL 위치로만 root 비객체 분기를 확인했고 정확한 JSON 종류는 미확정이다.

@@ -11,6 +11,8 @@ public static class InstantSaleRefreshTests
         tests=[..tests,("Listing filling during fee lookup invalidates stale reprice without fee retry",GoneDuringFees)];
         tests=[..tests,("Known listing filled before first refresh is sold and survives restart",SoldBeforeRefresh),("Already posted listing transitions to sold without reverting historical evidence",SoldAfterListed),("ID-less exact asset sale is observation without fabricated request attribution",ObservedSold),("History purchase cancellation rollback currency amount and duplicate evidence cannot imply sold",InvalidHistory)];
         tests=[..tests,("History403 preserves old receipt and prevents repeat traffic or resubmission",HistoryDenied)];
+        tests=[..tests,("Off-grid historical KRW row cannot abort other instant-filled batch lines",OffGridBatch),("Off-grid target is not rounded into an approved amount",OffGridTarget),("History mismatch reason distinguishes amount from missing listing",AmountDiagnosis),("Wire parser preserves USD cents and KRW integer precision",RawUnits)];
+        tests=[..tests,("Public purchase contract nullable hold and revoked fields do not abort history",NullableFlags)];
         int passed=0,failed=0;foreach(var(name,test)in tests)try{await test();passed++;Console.WriteLine("PASS "+name);}catch(Exception error){failed++;Console.WriteLine("FAIL "+name+": "+error);}return(passed,failed);
     }
     private static HttpResponseMessage Html(string body)=>new(HttpStatusCode.OK){Content=new StringContent(body)};
@@ -81,4 +83,42 @@ public static class InstantSaleRefreshTests
     }
     private sealed class CaptureLog:IDiagnosticLog
     {public Guid SessionId{get;}=Guid.NewGuid();public List<DiagnosticRecord> Records{get;}=[];public void Write(DiagnosticRecord record)=>Records.Add(record);}
+    private static string MergeHistory(IEnumerable<SteamCommandRecord> commands,bool offGridFirst)
+    {
+        var list=commands.ToArray();var entries=new List<System.Text.Json.Nodes.JsonNode>();
+        if(offGridFirst)
+        {
+            var unrelated=list[0] with{ListingId="999",Line=list[0].Line with{Asset=list[0].Line.Asset with{Key=new(730,"2","999")}}};
+            var node=System.Text.Json.Nodes.JsonNode.Parse(History(unrelated))!;node["listings"]!["999"]!["original_price"]=3141;node["purchases"]!["999_880"]!["received_amount"]=3141;entries.Add(node);
+        }
+        entries.AddRange(list.Select(x=>System.Text.Json.Nodes.JsonNode.Parse(History(x))!));
+        var root=System.Text.Json.Nodes.JsonNode.Parse("{\"success\":true,\"events\":[],\"listings\":{},\"purchases\":{}}")!;
+        foreach(var entry in entries){foreach(var ev in entry["events"]!.AsArray())root["events"]!.AsArray().Add(ev!.DeepClone());foreach(var prop in entry["listings"]!.AsObject())root["listings"]![prop.Key]=prop.Value!.DeepClone();foreach(var prop in entry["purchases"]!.AsObject())root["purchases"]![prop.Key]=prop.Value!.DeepClone();}return root.ToJsonString();
+    }
+    private static async Task OffGridBatch()
+    {
+        var log=new CaptureLog();using var use=DiagnosticHub.Use(log);using var f=new FifthStageTests.Fixture();f.Server.Free=3;f.Server.ManyAssets=3;await f.Login();await f.Vm.LoadAsync();f.Vm.SelectAll.Execute(null);await f.Vm.RefreshPricesAsync();f.Vm.LowerPriceOneStep=true;f.Vm.BuildReview();Check(f.Vm.ReviewRows.Count==3&&f.Vm.ReviewRows.All(x=>x.Quote.BuyerPays<x.BaselineQuote!.BuyerPays));f.EnableTrading();await f.Vm.SubmitAsync();Check(f.Server.Sends==3);var commands=f.Workspace!.Store.Commands();f.Server.Rows.Clear();f.Server.MarketHistoryOverride=MergeHistory(commands,true);await f.Vm.RecoverAsync();
+        Check(f.Vm.Results.Count==3&&f.Vm.Results.All(x=>x.State==SaleState.Sold)&&f.Server.MarketHistoryReads==1&&f.Server.Sends==3);
+        Check(log.Records.Count(x=>x.Reason=="HistorySaleMatched")==3);
+        Check(!System.Text.Json.JsonSerializer.Serialize(log.Records).Contains("received_amount"));
+    }
+    private static async Task OffGridTarget()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();await f.Vm.SubmitAsync();var command=f.Workspace!.Store.Commands().Single();var root=System.Text.Json.Nodes.JsonNode.Parse(History(command))!;var id=command.ListingId!;var wire=SteamContract.ToWire(command.Line.UnitQuote.SellerReceives,"KRW")-1;root["listings"]![id]!["original_price"]=wire;root["purchases"]![id+"_880"]!["received_amount"]=wire;
+        Check(SteamSaleHistory.Parse(root.ToJsonString()).Length==1);f.Server.Rows.Clear();f.Server.MarketHistoryOverride=root.ToJsonString();await f.Vm.RecoverAsync();Check(f.Vm.Results.Single().State==SaleState.Unknown&&f.Server.Sends==1&&f.Workspace.Store.ReadCommand(command.RequestKey)==command);
+    }
+    private static async Task AmountDiagnosis()
+    {
+        var log=new CaptureLog();using var use=DiagnosticHub.Use(log);using var f=new FifthStageTests.Fixture();f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();await f.Vm.SubmitAsync();var command=f.Workspace!.Store.Commands().Single();var node=System.Text.Json.Nodes.JsonNode.Parse(History(command))!;node["listings"]![command.ListingId!]!["original_price"]=9900;node["purchases"]![command.ListingId+"_880"]!["received_amount"]=9900;f.Server.Rows.Clear();f.Server.MarketHistoryOverride=node.ToJsonString();await f.Vm.RecoverAsync();Check(f.Vm.Results.Single().State==SaleState.Unknown&&log.Records.Any(x=>x.Reason=="HistoryAmountMismatch"&&x.Endpoint=="MarketHistory"&&x.Context.OperationId!=Guid.Empty));
+    }
+    private static Task RawUnits()
+    {
+        var asset=new InventoryAsset(new(730,"2","101"),"Steam","item","item",1,false,true,true);var command=new SteamCommandRecord("synthetic","76561198000000001",new("line",asset,1,"KRW",new(115,100,5,10),DateTimeOffset.UtcNow),"sell",SaleState.Submitted,"900",DateTimeOffset.UtcNow);
+        var krw=History(command).Replace("10000","9007199254740901");Check(SteamSaleHistory.Parse(krw).Length==1);var usd=krw.Replace("2016","2001");Check(SteamSaleHistory.Parse(usd).Single().Currency=="USD");return Task.CompletedTask;
+    }
+    private static Task NullableFlags()
+    {
+        var asset=new InventoryAsset(new(730,"2","101"),"Steam","item","item",1,false,true,true);var command=new SteamCommandRecord("synthetic","76561198000000001",new("line",asset,1,"KRW",new(115,100,5,10),DateTimeOffset.UtcNow),"sell",SaleState.Submitted,"900",DateTimeOffset.UtcNow);
+        var node=System.Text.Json.Nodes.JsonNode.Parse(History(command))!;var sale=node["purchases"]!["900_880"]!;sale["funds_held"]=null;sale["funds_revoked"]=null;Check(SteamSaleHistory.Parse(node.ToJsonString()).Length==1);sale["funds_revoked"]=1;Check(SteamSaleHistory.Parse(node.ToJsonString()).Length==0);return Task.CompletedTask;
+    }
 }

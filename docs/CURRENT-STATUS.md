@@ -1,3 +1,11 @@
+## 0.20.18 — 즉시 체결 뒤 KRW 거래내역 전체 중단 수정
+
+사용자는 단일 수량3건이 실제로 체결됐지만 앱에 Unknown으로 남았다고 확인했다. 앱 종료 후에도 남아 있는 MarketCrate JSONL을 읽기 전용 분석했다. 0.20.17의18:02 KST 대조2회 모두 MarketHistory HTTP200 뒤 SteamContract.FromWire@IL64/SteamSaleHistory.Parse@IL646에서 실패했다. 출하 IL과 비교해 received_amount 정수→원화 표시 단위 변환 지점임을 확인했다. 이력의 KRW 원본 금액이100으로 나누어떨어지지 않아 페이지 전체 파싱이 중단됐고 뒤의 항목도 모두 대조되지 않았다. 원본문/개별 금액은 없으므로 해당 이력이 현재3건인지 다른 과거 이력인지는 미확정이다.
+
+SteamSaleHistory는 이제 금액을 ReceivedWire 정수로 보존하고, 확인할 요청의 확정 실수령만 ToWire로 변환해 원본 정수끼리 정확히 비교한다. 원본 금액을 반올림하거나 계정의 현재 표시/등록 증분으로 이력 페이지를 거부하지 않는다. 잘못된 통화·실수령/원단가 모순·ID/자산/수량/시각 불일치·복수 후보는 계속 Unknown이다. 공개 구매계약의 nullable 보류/철회 필드도 수용하며 명시적 철회는 계속 배제한다. 요청 CorrelationId를 파싱까지 유지하고 불일치 이유별 안전 진단을 추가했다. 실제 판매가격·수수료·송신 계약과 SQLite/Auth 스키마는 변경0.
+
+추가5기능 포함 전체424/424·비표시WPF79/79·배포20/20·advisory 검사기6/6 PASS. 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가), build 경고/오류0. 새 코드의 사용자 실제3건 재대조는 NOT VERIFIED이며 LIVE 검증으로 승격하지 않는다. 최초75개47/16/0/3/9 유지. 운영 로그/설정/Auth/SQLite/저널·이전 배포 삭제0, 실제 GUI·Steam 요청·타 프로세스 접근0.
+
 ## 최신 배포 — 0.20.17 판매목록 빈 자산 맵
 
 소스 **72b7b703caa5133c4719198fe80297b2d39d75c7**. `artifacts/releases/MarketCrate-0.20.17-empty-listings-72b7b70-win-x64.zip` **66,749,751바이트 /418파일**. SHA256 **9139E51CCD5C4C378E04C9D448DCA428D2DBD6D808C1C35C42BE5D77910D502D**. ZIP 모든 entry와 출하 파일 SHA 일치, 버전/커밋·x64 CLR/WPF10.0.14·SQLite/DPAPI·라이선스·실제 전용 PE/BAML·Mock/개발UI/개인DB/Auth/로그/PDB 제외 검사 PASS. Release 경고/오류0, 앱/설치/실계정 실행은 NOT VERIFIED.

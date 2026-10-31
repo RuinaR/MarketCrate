@@ -1,3 +1,7 @@
+## 0.20.18 거래내역 wire 정수
+
+등록용 금액 grid와 이미 발생한 이력의 원본 정수 형식은 별개다. 이력은 ReceivedWire로 보존하고 해당 요청의 확정 net만 ToWire로 변환해 정확히 비교한다. 다른 과거 행이 원화 표시단위에 맞지 않는다는 이유로 전체 페이지를 실패시키지 않는다. 대상 net이 다르면1wire 차이도 반올림하지 않고 Unknown이다. 원단가/실수령·통화·ID/자산/수량/시각 대조와 원요청 귀속 보호는 유지하며 스택 부분 체결 합산/미확정 반환을 새로 허용하지 않는다. 실제 등록가격·수수료·배치 승인·직렬 송신·Unknown 자동 재전송 금지는 그대로다.
+
 ## 0.20.16 추가 — 개인 장터 판매 체결 증거
 
 명시적 Reconcile/Recover에서 현재 목록 부재 시에만 같은 세션의 myhistory/render 최근100개를 읽는다. 한 UI OperationId에서 정상/실패 모두 최대1회 시도하고403/429/인증/Challenge 안전 차단을 준수한다. event_type3의 listingid/purchaseid 복합 연결, 판매측 listing.asset, 원래 단가·받은 금액과 통화, 구매 수량1, 요청 시각 이후를 대조한다. 구매자 자산 ID가 달라도 판매측 원자산과 알려진 listingid를 확인한다. failed/needs_rollback/funds_returned/funds_revoked를 확인하고 통화·금액 모순/중복 이벤트는 성공으로 처리하지 않는다. funds_held는 체결과 대금 지급 가능성을 분리한다.

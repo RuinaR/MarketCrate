@@ -1,3 +1,7 @@
+## 0.20.18 F09 이력 단위 보완
+
+75개 ID/판정47/16/0/3/9 유지. ReconcileAsync→ObserveSoldAsync→SteamSaleHistory.FindAsync/Parse→원본 wire 정수 비교→Sold 저장/현재 UI 경로를 보완했다. OffGridBatch/OffGridTarget/AmountDiagnosis/RawUnits/NullableFlags의5개 합성 회귀가 추가됐다. 사용자 실제 판매 완료3건과 앱의 실패 로그는 관측 사실이며, 새 코드의 실제 서버 재대조 성공 증거는 아직 없으므로 판정을 승격하지 않는다.
+
 ## 0.20.17 B01/F09 조회 연결 보완
 
 75개 ID·47/16/0/3/9 유지. PrepareTradingAsync→EnableUserTradingAsync.ListingsRead→Orders.RefreshAsync/PageAsync→SteamContract.Listings→SteamMarketMembership.MapEntries→조회 결과/세션 전송 권한으로 이어지는 [] 빈 맵 처리를 보완했다. ListingAssetMapTests.Activation은 서버 자산2개/활성판매0건을 합성해 권한 준비 성공 및 전송0을 검증한다. Unsupported 스택/금액/total_count 검증은 삭제하지 않았다. 원본문 없는 사용자 진단은 root 비객체 실패만 확정이며 새 버전 실계정 성공/COMPLETE 승격은 미확인이다.
