@@ -12,6 +12,7 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
     private readonly SemaphoreSlim mutations = store.Mutations;
     private readonly SemaphoreSlim repricing = new(1, 1);
     private readonly Dictionary<string, SaleLineSnapshot> approved = [];
+    private readonly SteamSaleHistory saleHistory=new(http);
     public Capability Capability => CanExecute ? Capability.Experimental : Capability.IntegrationBlocked;
     private readonly SteamTradingPolicy executionPolicy = policy ?? SteamTradingPolicy.Blocked;
     public bool CanCancel => auth.Connected && http.Halted is null && http.Access.Trading && executionPolicy.Enabled && !string.IsNullOrWhiteSpace(executionPolicy.EvidenceReference) && (!executionPolicy.UserInitiated||http.Access.TradingAccount==auth.SteamId);
@@ -226,20 +227,42 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         if (!CanReconcile || command is null || command.Account != auth.SteamId || command.Line != line || command.Kind != "sell")
             return new(line.LineId, SaleState.Unknown, "동일 계정/요청 증거 없음");
         if (store.IsReleased(requestKey)) return new(line.LineId,SaleState.Reconciled,"취소 및 동일 자산 반환 증거로 원래 등록 예약 해제");
+        if(command.State==SaleState.Sold)return new(line.LineId,SaleState.Sold,"판매 완료 · 이전 거래내역 대조 기록 · 새 판매 요청 없음");
         if (command.ListingId is null)
         {
             var report = await InspectAsync(requestKey, cancellationToken);
             var observed=report.ObservedAssetState is {} actual?$"현재 Steam 동일 자산 상태: {ObservedLabel(actual)}. 원요청 귀속은 미확인. ":"현재 동일 자산 게시 증거 없음. ";
-            return new(line.LineId, command.State == SaleState.AwaitingSteamGuard ? command.State : SaleState.Unknown, $"{observed}{(report.ObservedAssetState==SaleState.Listed?"현재 관측 항목에 추가 승인이 필요하다고 판정하지 않습니다. 원래 요청 기록은 보존합니다.":command.State==SaleState.AwaitingSteamGuard?SteamContract.ApprovalHint(command.Approval):"결과 불명")} · 서버 등록 ID 없음 · 대조 {report.Verdict}: 자동 게시 확정/재전송 금지");
+            var pending=report.ObservedAssetState==SaleState.AwaitingSteamGuard||orders.Presence.Any(x=>x.Asset==line.Asset.Key&&x.State==SaleState.AwaitingSteamGuard);
+            var retainedReceipt=command.State==SaleState.AwaitingSteamGuard&&(pending||report.ObservedAssetState==SaleState.Listed);
+            if(!pending&&report.ObservedAssetState is null&&await ObserveSoldAsync(command,cancellationToken) is {} sold)return sold;
+            var hint=report.ObservedAssetState==SaleState.Listed?"현재 관측 항목에 추가 승인이 필요하다고 판정하지 않습니다. 원래 요청 기록은 보존합니다.":pending?SteamContract.ApprovalHint(command.Approval):"현재 승인 대기도 확인하지 못했습니다. 즉시 체결·취소·기타 처리 여부는 거래내역 확인이 필요합니다.";
+            return new(line.LineId,retainedReceipt?SaleState.AwaitingSteamGuard:SaleState.Unknown,$"{observed}{hint} · 서버 등록 ID 없음 · 대조 {report.Verdict}: 자동 게시 확정/재전송 금지");
         }
         var listing = (await orders.RefreshAsync(cancellationToken)).SingleOrDefault(x => x.ListingId == command.ListingId);
         if(listing is null&&command.State==SaleState.AwaitingSteamGuard&&orders.Presence.Any(x=>x.Asset==line.Asset.Key&&x.State==SaleState.AwaitingSteamGuard))
             return new(line.LineId,SaleState.AwaitingSteamGuard,"이전 접수의 승인 대기 유지 · 현재 같은 자산이 승인 대기 목록에 관측됐으나 등록 ID·금액은 미확인입니다. 공식 Steam 앱/이메일에서 확인하고 다시 조회하세요. 게시 완료가 아닙니다.");
-        if (listing is null || listing.HashName != line.Asset.MarketHashName || listing.Asset != line.Asset.Key || listing.Quantity != line.Quantity ||
+        if(listing is null)
+        {
+            if(await ObserveSoldAsync(command,cancellationToken) is {} sold)return sold;
+            DiagnosticHub.Emit(DiagnosticEvent.EvidenceChecked,DiagnosticArea.Sales,DiagnosticOutcome.Unknown,LogLevel.Warning,DiagnosticError.EvidenceMissing,endpoint:"Listings",reason:"ListingNoLongerPresent",requirement:"F09");
+            return new(line.LineId,SaleState.Unknown,"현재 판매·승인 대기 목록에 등록 ID가 없습니다. 즉시 체결·취소·기타 처리 여부는 거래내역 확인이 필요합니다. 판매완료를 추측하거나 자동 재전송하지 않습니다.");
+        }
+        if (listing.HashName != line.Asset.MarketHashName || listing.Asset != line.Asset.Key || listing.Quantity != line.Quantity ||
             listing.Currency != line.Currency || listing.SellerReceives != line.UnitQuote.SellerReceives || listing.Fees != line.UnitQuote.Fees)
             return new(line.LineId, SaleState.Unknown, "목록 부재/불일치: 판매/취소/비표시 구분 불가");
         store.SaveCommand(command with { State = listing.State });
         return new(line.LineId, listing.State, listing.State==SaleState.AwaitingSteamGuard?SteamContract.ApprovalHint(command.Approval)+" · 서버 등록 ID 대조":"서버 listingid·가격·수량 대조 결과");
+    }
+    private async Task<LineResult?> ObserveSoldAsync(SteamCommandRecord command,CancellationToken token)
+    {
+        SteamHistorySale? sale;
+        try{sale=await saleHistory.FindAsync(command,token);}
+        catch(SteamException error){SteamDiagnostics.Failure(error,"MarketHistory");return null;}
+        if(sale is null)return null;
+        var attributed=command.ListingId is not null;
+        DiagnosticHub.Emit(DiagnosticEvent.EvidenceChecked,DiagnosticArea.Sales,attributed?DiagnosticOutcome.Reconciled:DiagnosticOutcome.Unknown,endpoint:"MarketHistory",reason:attributed?"HistorySaleMatched":"HistoryAssetSaleObserved",to:attributed?"Sold":"Unknown",requirement:"F09");
+        if(attributed)store.SaveCommand(command with{State=SaleState.Sold});
+        return new(command.Line.LineId,attributed?SaleState.Sold:SaleState.Unknown,(attributed?"판매 완료 · 거래내역의 등록 ID·자산·수량·통화·실수령·시각 일치":"현재 동일 자산의 판매 체결 관측 · 원래 응답에 등록 ID가 없어 원요청 귀속은 미확인 · 재전송 금지")+(sale.Held?" · 판매대금은 Steam 보류 상태입니다.":" · 새 판매 요청 없음"));
     }
     public async Task<LineResult> CancelAsync(SteamListing reviewed, string requestKey, CancellationToken token = default)
     {

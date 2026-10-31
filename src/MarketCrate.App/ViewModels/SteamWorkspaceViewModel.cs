@@ -86,7 +86,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     public bool HasServerListings=>Listings.Count>0||workspace?.Orders.Presence.Length>0;
     public string ListingMetadataSummary=>workspace?.Orders.UnpricedCount is >0?$"장터가 보유한 자산 {workspace.Orders.UnpricedCount}건의 등록 ID·가격·설명을 완전히 확인하지 못했습니다. 빈 판매목록이 아닙니다. 해당 자산의 중복 등록은 차단하며 공식 Steam 장터에서 확인하세요.":"";
     public bool HasApprovalHandoff=>Results.Any(x=>x.State==SaleState.AwaitingSteamGuard&&!(ServerPostedObservationCount>0&&observedPostedLines.Contains(x.LineId)));
-    public string ApprovalHandoffText=>ServerPostedObservationCount>0?$"현재 같은 자산 {ServerPostedObservationCount}건의 판매 중 상태를 {observedPostedAt:HH:mm:ss} UTC에 관측했습니다. 원래 요청의 귀속은 미확인이며 요청 기록은 보존합니다. 이 관측 항목에 휴대폰 승인이 계속 필요하다고 표시하거나 다시 등록하지 않습니다. "+(HasApprovalHandoff?"다른 승인 대기 항목은 개별 안내를 확인하세요.":"상태가 바뀌면 다시 조회하세요."):HasApprovalHandoff?"등록 요청 기록에 Steam 확인 대기가 있습니다. 최신 상태는 게시 재조회로 확인하세요. 각 항목의 확인 방식을 확인하세요. 모바일 확인은 공식 Steam 앱 → Steam Guard → 확인에서 직접 승인합니다. 푸시 알림이 없더라도 확인 목록을 열어 보세요. 이메일 확인을 요구한 항목은 이메일을 확인하세요. 승인 후 아래 ‘승인 후 게시 확인’을 누르세요. 알림이 없다는 이유로 다시 등록하지 마세요.":Results.Any(x=>x.State==SaleState.Unknown)?"일부 요청의 접수 결과를 확인하지 못했습니다. Steam Guard 요청이 생성됐다고 판단할 수 없습니다. 공식 장터 상태와 진단을 확인하고 자동·반복 등록하지 마세요.":"등록 요청 접수와 실제 장터 게시는 다릅니다. 승인 후 게시 확인으로 서버 상태를 확인하세요.";
+    public string ApprovalHandoffText=>ServerPostedObservationCount>0?$"현재 같은 자산 {ServerPostedObservationCount}건의 판매 중 상태를 {observedPostedAt:HH:mm:ss} UTC에 관측했습니다. 원래 요청의 귀속은 미확인이며 요청 기록은 보존합니다. 이 관측 항목에 휴대폰 승인이 계속 필요하다고 표시하거나 다시 등록하지 않습니다. "+(HasApprovalHandoff?"다른 승인 대기 항목은 개별 안내를 확인하세요.":"상태가 바뀌면 다시 조회하세요."):HasApprovalHandoff?"등록 요청 기록에 Steam 확인 대기가 있습니다. 최신 상태는 게시 재조회로 확인하세요. 각 항목의 확인 방식을 확인하세요. 모바일 확인은 공식 Steam 앱 → Steam Guard → 확인에서 직접 승인합니다. 푸시 알림이 없더라도 확인 목록을 열어 보세요. 이메일 확인을 요구한 항목은 이메일을 확인하세요. 승인 후 아래 ‘승인 후 게시 확인’을 누르세요. 알림이 없다는 이유로 다시 등록하지 마세요.":Results.Any(x=>x.State==SaleState.Unknown)?"일부 요청의 현재 상태를 확정하지 못했습니다. 이미 체결되었을 수도 있으므로 거래내역과 항목별 안내를 확인하세요. 승인 대기라고 단정하거나 자동·반복 등록하지 마세요.":Results.Any(x=>x.State==SaleState.Sold)?"거래내역에서 판매 완료를 확인했습니다. 대금 보류 여부는 각 항목과 공식 Steam 거래내역을 확인하세요.":"등록 요청 접수와 실제 장터 게시는 다릅니다. 승인 후 게시 확인으로 서버 상태를 확인하세요.";
     public Command ClearSelection {get;}
     public Command ClearListings {get;}
     public Command RefreshReviewStatus {get;}
@@ -389,7 +389,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
             owner.SetResults(record);owner.OperationLabel="전체 판매등록 처리 중 · "+owner.BatchProgressText;
         }
     }
-    public string BatchProgressText=>$"전체 {Results.Count}건 · 미전송 {Results.Count(x=>x.State==SaleState.Ready)} · 처리 중 {Results.Count(x=>x.State==SaleState.Submitting)} · 접수 {Results.Count(x=>x.State==SaleState.Submitted)} · 요청 기록의 승인 대기 {Results.Count(x=>x.State==SaleState.AwaitingSteamGuard)} · 게시 {Results.Count(x=>x.State==SaleState.Listed)} · 현재 게시 관측 {ServerPostedObservationCount} · 실패 {Results.Count(x=>x.State==SaleState.Failed)} · 불명 {Results.Count(x=>x.State==SaleState.Unknown)}";
+    public string BatchProgressText=>$"전체 {Results.Count}건 · 미전송 {Results.Count(x=>x.State==SaleState.Ready)} · 처리 중 {Results.Count(x=>x.State==SaleState.Submitting)} · 접수 {Results.Count(x=>x.State==SaleState.Submitted)} · 요청 기록의 승인 대기 {Results.Count(x=>x.State==SaleState.AwaitingSteamGuard)} · 게시 {Results.Count(x=>x.State==SaleState.Listed)} · 판매 완료 {Results.Count(x=>x.State==SaleState.Sold)} · 현재 게시 관측 {ServerPostedObservationCount} · 실패 {Results.Count(x=>x.State==SaleState.Failed)} · 불명 {Results.Count(x=>x.State==SaleState.Unknown)}";
     private void RefreshRequests()
     {
         var previous=SelectedRequest;
@@ -399,7 +399,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         {
             Requests.Add(command.RequestKey);
             var kind=command.Kind=="cancel"?"취소":"등록";
-            RequestOptions.Add(new(command.RequestKey,$"{kind} · {command.Line.Asset.Name} · {SteamStatusText.Label(command.State)} · {command.SentAt:MM-dd HH:mm} UTC"));
+            RequestOptions.Add(new(command.RequestKey,$"{kind} · {command.Line.Asset.Name} · 저장 기록: {SteamStatusText.Label(command.State)} · {command.SentAt:MM-dd HH:mm} UTC"));
         }
         foreach(var plan in workspace.Store.Reprices().Where(x=>x.Account==workspace.Authentication.SteamId))RepriceKeys.Add(plan.Key);
         SelectedRequest=RequestOptions.Any(x=>x.Key==previous)?previous:RequestOptions.FirstOrDefault()?.Key;

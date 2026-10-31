@@ -94,7 +94,7 @@ public sealed partial class SteamHttp : IDisposable
         {
             "api.steampowered.com" => path is "/IAuthenticationService/BeginAuthSessionViaQR/v1/" or "/IAuthenticationService/PollAuthSessionStatus/v1/",
             "login.steampowered.com" => path == "/jwt/finalizelogin",
-            "steamcommunity.com" => path is "/login/settoken" or "/market/" or "/market/ajaxfeestructure/" or "/market/orderbook" or "/market/pricehistory/" or "/market/mylistings/render/" or "/market/sellitem/" ||
+            "steamcommunity.com" => path is "/login/settoken" or "/market/" or "/market/ajaxfeestructure/" or "/market/orderbook" or "/market/pricehistory/" or "/market/myhistory/render/" or "/market/mylistings/render/" or "/market/sellitem/" ||
                 path.StartsWith("/inventory/", StringComparison.Ordinal) || path.StartsWith("/market/removelisting/", StringComparison.Ordinal) || IsFeeContext(uri),
             _ => false
         };
@@ -109,7 +109,7 @@ public sealed partial class SteamHttp : IDisposable
         var endpoint=path switch {
             "/IAuthenticationService/BeginAuthSessionViaQR/v1/"=>"AuthBegin", "/IAuthenticationService/PollAuthSessionStatus/v1/"=>"AuthPoll",
             "/jwt/finalizelogin"=>"AuthFinalize", "/login/settoken"=>"AuthTransfer", "/market/"=>"Wallet", "/market/ajaxfeestructure/"=>"Fees",
-            "/market/orderbook"=>"Orderbook", "/market/pricehistory/"=>"History", "/market/mylistings/render/"=>"Listings", "/market/sellitem/"=>"Sell",
+            "/market/orderbook"=>"Orderbook", "/market/pricehistory/"=>"History", "/market/myhistory/render/"=>"MarketHistory", "/market/mylistings/render/"=>"Listings", "/market/sellitem/"=>"Sell",
             _=>IsFeeContext(request.RequestUri!)?"FeeContext":path.StartsWith("/inventory/",StringComparison.Ordinal)?"Inventory":"Cancel"};
         DiagnosticHub.Emit(DiagnosticEvent.HttpRequest,DiagnosticArea.HTTP,DiagnosticOutcome.Started,endpoint:endpoint,method:request.Method.Method);
         var mustPost = path.Contains("AuthSession", StringComparison.Ordinal) || path is "/jwt/finalizelogin" or "/login/settoken" or "/market/sellitem/" || path.StartsWith("/market/removelisting/", StringComparison.Ordinal);

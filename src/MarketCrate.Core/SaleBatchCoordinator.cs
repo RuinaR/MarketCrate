@@ -138,7 +138,7 @@ public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatch
             BatchRecordGuard.Validate(record);
             for (var i = 0; i < record.Results.Length; i++)
             {
-                if (record.Results[i].State is not (SaleState.Submitting or SaleState.Unknown or SaleState.Submitted or SaleState.AwaitingSteamGuard)) continue;
+                if (record.Results[i].State is not (SaleState.Submitting or SaleState.Unknown or SaleState.Submitted or SaleState.AwaitingSteamGuard or SaleState.Listed)) continue;
                 var line = record.Snapshot.Lines[i];
                 using var itemScope=DiagnosticHub.Scope(batch:record.Snapshot.BatchId,item:AttemptKey(record.Snapshot,line,record.Results[i].Attempt));
                 LineResult result;
@@ -146,9 +146,11 @@ public sealed class SaleBatchCoordinator(IMarketListingExecutor executor, IBatch
                 catch (Exception e) when (e is IOException or TimeoutException)
                 { result = new(line.LineId, SaleState.Unknown, "상태 대조 실패: 재전송하지 않았습니다."); }
                 if (result.LineId != line.LineId) throw new InvalidDataException("대조 응답 행 불일치");
-                if (result.State is not (SaleState.Unknown or SaleState.Submitted or SaleState.AwaitingSteamGuard or SaleState.Listed or SaleState.Failed or SaleState.Reconciled))
+                if (result.State is not (SaleState.Unknown or SaleState.Submitted or SaleState.AwaitingSteamGuard or SaleState.Listed or SaleState.Sold or SaleState.Failed or SaleState.Reconciled))
                     throw new InvalidDataException("안전하지 않은 대조 상태: 재제출 금지");
                 var previousState=record.Results[i].State;
+                if(previousState==SaleState.Listed&&result.State!=SaleState.Sold&&result.State!=SaleState.Listed)
+                    result=new(line.LineId,SaleState.Listed,"과거 게시 확인 기록 · 현재 체결/취소 결과는 미확인 · "+result.Message);
                 record = Update(record, i, result with { Attempt = record.Results[i].Attempt });
                 await journal.SaveAsync(record, cancellationToken);
                 DiagnosticHub.Emit(DiagnosticEvent.EvidenceChecked,DiagnosticArea.Sales,result.State==SaleState.Unknown?DiagnosticOutcome.Unknown:DiagnosticOutcome.Reconciled,from:previousState.ToString(),to:result.State.ToString(),reason:result.State==SaleState.Unknown?"EvidenceMissing":"Committed",requirement:"F09",journal:"Committed");

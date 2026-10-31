@@ -1,3 +1,9 @@
+## 2026-10-31 KST — 개인 장터 체결 대조 계약
+
+- [SnaBe 실제 getMyHistory](https://raw.githubusercontent.com/SnaBe/node-steam-market-fetcher/master/index.js) 및 [응답 타입](https://raw.githubusercontent.com/SnaBe/node-steam-market-fetcher/master/index.d.ts): 인증된 개인 이력의 events/listings/purchases 연결 구조 참고. [vladpuz PurchaseResponse](https://raw.githubusercontent.com/vladpuz/steam-market/master/src/types/PurchaseResponse.ts)도 rollback/보류·실수령 구조 대조. 코드 직접 도입0, 독립 C# 파서 구현. LICENSE 본문은 이번 웹 도구에서 cache miss여서 재사용 허가를 새로 확인했다고 주장하지 않는다.
+- [실제 구현 작성자의 응답 관측](https://qiita.com/platoronical/items/98652eac0c380a5e953b): 판매/구매 이벤트 구분, 복합키, 판매측 원자산과 구매측 변경 자산, 통화/금액 구분 참고. 공식 보증은 아니며 새 파서는 합성 계약 검증이다. 코드 복제0.
+- 공식 market.js의 프로젝트 보존 공개 파일에서 LoadMarketHistory/myhistory/페이지 소비를 확인했다. 현재 CDN URL은 이번 web 도구에서 접근 불가여서 최신 응답 실증으로 과장하지 않는다. authenticated 요청/원본 사용자 응답 확보0. 최근100개 제한·자산1개 단위만 확인하며 부분 스택 계약은 확대하지 않는다.
+
 # MarketCrate — 외부 자료·레퍼런스
 
 ## 2026-10-29 KST — 0.20.2 classic 수수료 경로

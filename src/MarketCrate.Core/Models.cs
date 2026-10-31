@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 namespace MarketCrate.Core;
 
 public enum Capability { Mock, PermittedReadOnly, Unavailable, IntegrationBlocked, Experimental }
-public enum SaleState { Draft, Ready, Submitting, Submitted, AwaitingSteamGuard, Listed, Failed, Unknown, Reconciled }
+public enum SaleState { Draft, Ready, Submitting, Submitted, AwaitingSteamGuard, Listed, Failed, Unknown, Reconciled, Sold }
 public record AssetKey(int AppId, string ContextId, string AssetId);
 public record InventoryAsset(AssetKey Key, string Game, string Name, string MarketHashName,
     int Quantity, bool Stackable, bool Marketable, bool Tradable, bool Locked = false);

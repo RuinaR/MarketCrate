@@ -1,3 +1,13 @@
+## 0.20.16 추가 — 체결 대조 진단
+
+HTTP endpoint=MarketHistory로 현재 UI OperationId/CorrelationId를 유지한다. EvidenceChecked reason=HistorySaleMatched는 알려진 원래 등록 ID 및 자산/수량/금액/통화/시각 일치이며 NewState=Sold다. HistoryAssetSaleObserved는 ID 없는 원접수의 동일 자산 체결 관측일 뿐 Outcome/State=Unknown을 유지한다. Command JournalWrite/Audit의 Sold와 BatchRecovered/배치 저장으로 연결한다. 계정/구매자·판매자 식별자, purchaseid, 원본 events/listings/purchases, HTTP 본문은 진단/ZIP에 남기지 않는다. 신규 회귀에서 OperationId/안전 reason 연결 및 평문 인증정보·계정·원본 응답 필드 부재를 검사한다.
+
+## 0.20.16 목록 변경과 현재 승인 증거
+
+Management/FinalValidation의 안전 reason `RepriceSelectionChanged`는 최신 서버 목록 대조에서 이전 선택의 ID·자산·수량·가격·통화·상태 불일치가 발생했다는 뜻이다. 기존 UI Run OperationId로 Listings HTTP 및 수수료 상태와 연결한다. Unsupported 수수료 실패 후 독립 목록 대조는 한 번이며 서버 제한 시 실행하지 않는다. Sales/EvidenceChecked의 `ListingNoLongerPresent`는 알려진 등록 ID가 완전한 현재 목록에 없다는 뜻이다. 즉시 체결을 증명하지 않으며 Error=EvidenceMissing/Outcome=Unknown으로 기록한다. ID 없는 접수는 기존 Inspect 증거와 UI 결과 Unknown으로 연결한다. 원저널과 로그는 별개이며 후보 ID나 Sold를 생성하지 않는다.
+
+사용자 ZIP의 해당 작업은 재가격 중 AppContextMissing/Unverified였다. 승인 갱신·등록 시도 증거는 없으므로 새로운 실제 원인 확정을 주장하지 않는다. 인증정보·계정/자산 원값·원본 HTML/HTTP·운영 진단을 소스/배포에 넣지 않는다.
+
 # 진단 시스템 (0.20.0, 2026-10-29 KST)
 
 ## 0.20 연결 보완

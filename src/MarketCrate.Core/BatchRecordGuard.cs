@@ -19,8 +19,9 @@ public static class BatchRecordGuard
             var allowed = from switch
             {
                 SaleState.Ready => to == SaleState.Submitting,
-                SaleState.Submitting => to is SaleState.Submitted or SaleState.AwaitingSteamGuard or SaleState.Listed or SaleState.Failed or SaleState.Unknown or SaleState.Reconciled,
-                SaleState.Submitted or SaleState.AwaitingSteamGuard or SaleState.Unknown => to is SaleState.Submitted or SaleState.AwaitingSteamGuard or SaleState.Listed or SaleState.Failed or SaleState.Unknown or SaleState.Reconciled,
+                SaleState.Submitting => to is SaleState.Submitted or SaleState.AwaitingSteamGuard or SaleState.Listed or SaleState.Failed or SaleState.Unknown or SaleState.Reconciled or SaleState.Sold,
+                SaleState.Submitted or SaleState.AwaitingSteamGuard or SaleState.Unknown => to is SaleState.Submitted or SaleState.AwaitingSteamGuard or SaleState.Listed or SaleState.Failed or SaleState.Unknown or SaleState.Reconciled or SaleState.Sold,
+                SaleState.Listed => to == SaleState.Sold,
                 _ => false
             };
             if (!allowed) throw new InvalidDataException("확정 결과 역행/자동 재전송 상태 금지");

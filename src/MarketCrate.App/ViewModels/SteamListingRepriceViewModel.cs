@@ -27,12 +27,22 @@ public sealed partial class SteamWorkspaceViewModel
         {ListingPriceStatus="게시 확인된 개별 수량1 항목만 지원합니다. 스택/동일 자산 분할·승인 대기·불명 항목은 취소하지 않았습니다.";return;}
         var groups=rows.GroupBy(x=>(x.Listing.Asset.AppId,x.Listing.HashName)).ToArray();
         if(groups.Length>10){ListingPriceStatus="한 번에 최대10상품의 시세만 조회합니다. 선택 범위를 줄이세요.";return;}
+        if(!await RefreshRepriceSelectionAsync(rows,token))return;
         var schedules=new Dictionary<int,SteamFeeSchedule>();var books=new Dictionary<(int,string),PriceSnapshot>();
         foreach(var app in rows.Select(x=>x.Listing.Asset.AppId).Distinct())
         {
             OperationLabel="재등록 수수료 확인 중";FeesRead.Update(SteamReadState.Loading);
             try{schedules[app]=await workspace!.FeesAsync(app,token);token.ThrowIfCancellationRequested();FeesRead.Update(SteamReadState.Ready);}
-            catch(Exception error){ReadFailed(FeesRead,error);ListingPriceStatus="판매 수수료 확인 실패 · 계정 연결의 조회 상태와 문제 해결을 확인하세요. 취소·등록 요청은 보내지 않았습니다.";throw;}
+            catch(OperationCanceledException){FeesRead.Update(SteamReadState.Cancelled);throw;}
+            catch(Exception error)
+            {
+                ReadFailed(FeesRead,error);
+                // A listing may fill between the preflight GET and fee-context GET.
+                // One independent listing recheck only; never retry a restricted/failed fee request.
+                if(error is SteamException{Code:SteamFailure.Unsupported}&&CanReadFeature("Listings")&&!await RefreshRepriceSelectionAsync(rows,token))
+                {gameFees.Remove(app);if(Game.AppId==app)fees=null;FeesRead.Update(SteamReadState.Stale);Raise(nameof(CurrencyText));return;}
+                ListingPriceStatus="판매 수수료 확인 실패 · 계정 연결의 조회 상태와 문제 해결을 확인하세요. 취소·등록 요청은 보내지 않았습니다.";throw;
+            }
         }
         foreach(var group in groups)
         {
@@ -64,6 +74,19 @@ public sealed partial class SteamWorkspaceViewModel
         BuildManagement(true);ListingPriceStatus=$"{rows.Length}건 가격별 분배 완료 · 현재 구매주문 기준이며 체결 보장 없음 · 검토 전체를 한 번 승인하면 취소/반환 확인 후 직렬 재등록합니다.";
         DiagnosticHub.Emit(DiagnosticEvent.PricePlan,DiagnosticArea.Management,requirement:"B10",count:rows.Length,reason:"Immediate");
     });
+    private async Task<bool> RefreshRepriceSelectionAsync(SteamListingRow[] rows,CancellationToken token)
+    {
+        OperationLabel="선택한 판매등록의 현재 상태 확인 중";ListingsRead.Update(SteamReadState.Loading);
+        SteamListing[] current;
+        try{current=(await workspace!.Orders.RefreshAsync(token)).ToArray();token.ThrowIfCancellationRequested();ListingsRead.Update(current.Length==0?SteamReadState.Empty:SteamReadState.Ready);}
+        catch(OperationCanceledException){ListingsRead.Update(SteamReadState.Cancelled);throw;}
+        catch(Exception error){ReadFailed(ListingsRead,error);throw;}
+        if(rows.All(x=>current.Any(now=>now.ListingId==x.Listing.ListingId&&now.Asset==x.Listing.Asset&&now.HashName==x.Listing.HashName&&now.Quantity==x.Listing.Quantity&&now.Currency==x.Listing.Currency&&now.SellerReceives==x.Listing.SellerReceives&&now.Fees==x.Listing.Fees&&now.State==SaleState.Listed)))return true;
+        SetListings(current);RefreshRequests();
+        ListingPriceStatus="선택한 등록이 사라졌거나 가격·수량·상태가 변경되어 판매목록을 갱신했습니다. 즉시 체결 여부는 거래내역에서 확인하세요. 남은 항목을 확인하고 새로 검토하세요. 이전 선택으로 취소·재등록하지 않았습니다.";
+        DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Management,DiagnosticOutcome.Blocked,LogLevel.Warning,DiagnosticError.Validation,endpoint:"Listings",reason:"RepriceSelectionChanged",requirement:"B10",count:rows.Length);
+        return false;
+    }
     private static InventoryAsset ListingAsset(SteamListing listing)=>new(listing.Asset,"Steam",listing.HashName,listing.HashName,listing.Quantity,listing.Quantity>1,true,false);
     private async Task RefreshRepriceResultsAsync(CancellationToken token,string? only=null)
     {

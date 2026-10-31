@@ -1,3 +1,7 @@
+## 0.20.16 F09/F10/B10 보완
+
+75개 ID/판정47/16/0/3/9 유지. ReconcileAsync→SteamSaleHistory.FindAsync/Parse→같은 세션 MarketHistory GET→등록 ID/자산/단일 수량/통화/실수령/시각→SaveCommand Sold/audit→Batches.Recover 저장→SetResults/UI 판매 완료까지 연결했다. ID 없는 체결 관측은 원요청 귀속 미확인이다. InstantSaleRefreshTests의 SoldBeforeRefresh/SoldAfterListed/ObservedSold/InvalidHistory/HistoryDenied 및 InstantSaleRefreshUiTests가 합성 증거다. 재가격 전체 선택 사전 대조와 Unsupported 중간 소멸도 보완했다. 새 실계정/체결 이력/스택 부분 체결 검증이 없어 COMPLETE 승격0.
+
 # 요구사항–구현–검증 추적표 (0.20.0, 2026-10-29 KST)
 
 ## 0.20 전체75개 코드·UI 재대조

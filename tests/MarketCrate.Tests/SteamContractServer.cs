@@ -21,6 +21,7 @@ public sealed class SteamContractServer : HttpMessageHandler
     public bool EmailConfirmation,UnspecifiedConfirmation;
     public bool PendingAlias,PendingMetadataMissing;public int ListingReads;
     public bool EmptyCancelBody;public int CancelStatus=200;
+    public string? MarketHistoryOverride;public int MarketHistoryReads;public int MarketHistoryStatus=200;
     public TaskCompletionSource? InventoryStarted,InventoryRelease;
     public TaskCompletionSource? ListingsStarted,ListingsRelease;
     public SteamFeeSchedule Schedule=>new(Currency,Currency=="KRW"?100:1,Currency=="KRW"?100:1,new(50000),new(100000));
@@ -54,6 +55,7 @@ public sealed class SteamContractServer : HttpMessageHandler
         else if(path=="/market/ajaxfeestructure/")json="{\"steam_fee\":{\"fee_rate\":\"0.05\",\"fee_cap\":\"0\"},\"publisher_fee\":{\"fee_rate\":\"0.1\",\"fee_cap\":\"0\"}}";
         else if(path=="/market/orderbook")json=JsonSerializer.Serialize(new{data=new{success=true,data=new{eCurrency=Currency=="KRW"?16:1,rgCompactBuyOrders=new long[]{new Money(115,Currency).Wire,3,new Money(Currency=="KRW"?113:112,Currency).Wire,4,new Money(110,Currency).Wire,3}}}});
         else if(path=="/market/pricehistory/"){HistoryStarted?.TrySetResult();if(HistoryRelease is not null)await HistoryRelease.Task.WaitAsync(token);json=HistoryOverride??HistoryJson();}
+        else if(path=="/market/myhistory/render/"){MarketHistoryReads++;if(MarketHistoryStatus!=200)return new((HttpStatusCode)MarketHistoryStatus){Content=new StringContent("{}")};json=MarketHistoryOverride??"{\"success\":true,\"start\":0,\"pagesize\":100,\"total_count\":0,\"events\":[],\"listings\":{},\"purchases\":{}}";}
         else if(path=="/market/mylistings/render/")
         {
             ListingsStarted?.TrySetResult();if(ListingsRelease is {} release){ListingsRelease=null;await release.Task.WaitAsync(token);}

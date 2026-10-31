@@ -97,7 +97,7 @@ public sealed partial class SteamStateStore : IBatchHistoryJournal, IDisposable
         var previous = ReadCommand(command.RequestKey);
         if (previous is not null && (previous.Account != command.Account || previous.Line != command.Line || previous.Kind != command.Kind || previous.SentAt != command.SentAt || previous.AvailableBefore != command.AvailableBefore ||
             !(previous.BeforeListingIds ?? []).SequenceEqual(command.BeforeListingIds ?? []) ||
-            previous.ListingId is not null && previous.ListingId != command.ListingId || previous.Approval!=SteamApprovalChannel.None&&previous.Approval!=command.Approval || previous.State == SaleState.Listed && command.State != previous.State))
+            previous.ListingId is not null && previous.ListingId != command.ListingId || previous.Approval!=SteamApprovalChannel.None&&previous.Approval!=command.Approval || (previous.State == SaleState.Listed && command.State is not(SaleState.Listed or SaleState.Sold) || previous.State == SaleState.Sold && command.State != SaleState.Sold)))
             throw new InvalidDataException("SteamCommandImmutable");
         using var transaction=StorageDiagnostics.Begin(connection);Upsert("command",command.RequestKey,command,transaction);
         Audit(command.RequestKey,command.Kind=="sell"?SteamAuditAction.Sell:SteamAuditAction.Cancel,command.State.ToString(),transaction);StorageDiagnostics.Commit(transaction);
@@ -124,7 +124,7 @@ public sealed partial class SteamStateStore : IBatchHistoryJournal, IDisposable
     {
         var record=LoadAsync(default).GetAwaiter().GetResult()??throw new InvalidDataException("NoActiveBatch");
         if(account is not null&&record.Snapshot.AccountReference!=account)throw new SteamException(SteamFailure.Restricted);
-        if(record.Results.Any(x=>x.State is not(SaleState.Listed or SaleState.Failed or SaleState.Reconciled or SaleState.Ready)))throw new InvalidOperationException("UnresolvedBatch");
+        if(record.Results.Any(x=>x.State is not(SaleState.Listed or SaleState.Sold or SaleState.Failed or SaleState.Reconciled or SaleState.Ready)))throw new InvalidOperationException("UnresolvedBatch");
         using var transaction=StorageDiagnostics.Begin(connection);Upsert("archive",record.Snapshot.BatchId.ToString("N"),record,transaction);
         Execute("DELETE FROM state WHERE kind IN ('batch','result')",transaction);Audit(record.Snapshot.BatchId.ToString("N"),SteamAuditAction.Archive,"Preserved",transaction);StorageDiagnostics.Commit(transaction);batchCache=null;
     }
@@ -157,7 +157,7 @@ public sealed partial class SteamStateStore : IBatchHistoryJournal, IDisposable
     public IReadOnlyList<SteamCommandRecord> ReservedSells()
     {
         var released=ReleasedSellKeys();
-        return Commands().Where(x=>x.Kind=="sell"&&x.State!=SaleState.Failed&&!released.Contains(x.RequestKey)).ToArray();
+        return Commands().Where(x=>x.Kind=="sell"&&x.State is not(SaleState.Failed or SaleState.Sold)&&!released.Contains(x.RequestKey)).ToArray();
     }
     private HashSet<string> ReleasedSellKeys()
     {
@@ -173,7 +173,7 @@ public sealed partial class SteamStateStore : IBatchHistoryJournal, IDisposable
         {
             if(!groups.TryGetValue(x.Key,out var commands))return x.Quantity;
             var capacity=Math.Max(x.Quantity,commands.Max(c=>c.Line.Asset.Quantity));
-            var reserved=commands.Where(c=>c.State!=SaleState.Failed&&!released.Contains(c.RequestKey)).Sum(c=>c.Line.Quantity);
+            var reserved=commands.Where(c=>c.State is not(SaleState.Failed or SaleState.Sold)&&!released.Contains(c.RequestKey)).Sum(c=>c.Line.Quantity);
             return Math.Max(0,Math.Min(x.Quantity,checked(capacity-reserved)));
         });
     }

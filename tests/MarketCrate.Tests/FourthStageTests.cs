@@ -102,6 +102,7 @@ internal static class FourthStageTests
                 var assets = new Dictionary<string,object> { ["730"] = contexts };if(!Listed)assets.Clear();
                 body=JsonSerializer.Serialize(new{success=true,total_count=Listed?1:0,listings=Listed?new[]{new{listingid="501",price=100,fee=15,currencyid=2001,asset=new{appid=730,contextid="2",id="101",amount="1"}}}:[],listings_to_confirm=Array.Empty<object>(),listings_on_hold=Array.Empty<object>(),assets});
             }
+            else if(path=="/market/myhistory/render/")body="{\"success\":true,\"events\":[],\"listings\":{},\"purchases\":{}}";
             else throw new Exception("Unexpected synthetic route");
             return new(HttpStatusCode.OK){Content=new StringContent(body)};
         }

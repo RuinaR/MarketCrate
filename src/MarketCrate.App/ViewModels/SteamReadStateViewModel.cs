@@ -71,5 +71,5 @@ public sealed partial class SteamWorkspaceViewModel
 
 public static class SteamStatusText
 {
-    public static string Label(SaleState value)=>value switch{SaleState.Draft=>"검토 전",SaleState.Ready=>"준비됨",SaleState.Submitting=>"처리 중",SaleState.Submitted=>"접수됨 · 게시 미확인",SaleState.AwaitingSteamGuard=>"Steam 승인 대기",SaleState.Listed=>"판매 등록 확인",SaleState.Failed=>"실패",SaleState.Unknown=>"결과 불명 · 대조 필요",SaleState.Reconciled=>"대조 완료",_=>"확인 필요"};
+    public static string Label(SaleState value)=>value switch{SaleState.Draft=>"검토 전",SaleState.Ready=>"준비됨",SaleState.Submitting=>"처리 중",SaleState.Submitted=>"접수됨 · 게시 미확인",SaleState.AwaitingSteamGuard=>"Steam 승인 대기",SaleState.Listed=>"판매 등록 확인",SaleState.Failed=>"실패",SaleState.Unknown=>"결과 불명 · 대조 필요",SaleState.Sold=>"판매 완료",SaleState.Reconciled=>"대조 완료",_=>"확인 필요"};
 }
