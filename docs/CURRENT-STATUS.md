@@ -1,3 +1,11 @@
+## 최신 배포 — 0.20.19 승인 후 현재 목록 중심
+
+소스 **a3ef735f1d516c22de6d7424423e80cb62a7af19**. `artifacts/releases/MarketCrate-0.20.19-current-listings-a3ef735-win-x64.zip` **66,750,871바이트 /418파일**. SHA256 **2470686121811D9A4BD5A1F1FF09C5BD085996C74DDB41526E2E81B6E8869C91**. 전체 ZIP entry/출하 파일 해시·SourceCommit/버전·x64 CLR/WPF10.0.14·SQLite/DPAPI·라이선스·실제 전용 PE/BAML·Mock/개발UI/Auth/DB/로그/PDB 제외 검사 PASS. Release build 경고/오류0, 앱/설치/실계정 실행은 NOT VERIFIED.
+
+전체 기능428/428·비표시WPF79/79·배포20/20·advisory 검사기6/6 PASS. 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가).125/200% 승인 인계와 현재 판매목록 자체 RTB를 직접 검토했다. 75개 판정47/16/0/3/9 유지. 정상 기본 흐름에서 history 호출/후속 체결 추적0, 원래 요청/중복 보호 기록은 보존한다.
+
+롤백0.20.18(d3eb49e, SHA256 15645A9B553A9775EB8DD92A724E53E06A9CBCC253EE4F938A16CF6C92ED2C25)과 모든 사용자 Auth/설정/SQLite/저널/진단·이전 ZIP 보존, 삭제0. 사용자는 새 폴더에 해제→로그인 복원→필요 시 공식 Steam 앱 수동 확인→승인 후 판매 중 보기로 현재 남은 항목을 확인한다. 이미 팔린 항목의 정밀 이력 대조는 일반 사용에 필요하지 않다. 응답 불명 요청을 새로 전송하거나 원기록을 성공으로 조작하지 않는다.
+
 ## 0.20.19 — Steam 확인 이후 현재 판매목록 중심
 
 사용자는 Steam Guard 수동 확인 뒤 체결 기록을 계속 관리할 필요 없이, 판매목록 갱신에서 남은 항목만 보기를 요청했다. 기본 버튼을 승인 후 판매 중 보기(ShowCurrentListings)로 연결했다. 현재 Orders.RefreshAsync/SetListings만 수행하고 판매 중 화면으로 이동한다. 체결 이력 조회/Batches.Recover/원본 Unknown 재전송은 실행하지 않는다. 일반 판매목록 갱신도 기존처럼 현재 서버 목록만 보여준다. 사라진 항목의 체결/취소 원인을 추측하거나 허위 완료로 저장하지 않는다.

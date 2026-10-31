@@ -1,3 +1,7 @@
+## 0.20.19 F09/B01 사용자 흐름 변경
+
+사용자 명시적 요청에 따라 일반 승인 후 경로를 ShowCurrentListings→Orders.Refresh/SetListings→판매 중 화면으로 변경했다. 이력 대조/개별 결과 추적은 선택적 고급 기능으로 보존한다. CurrentOnlyAbsent/Listed/Denied/Cancelled와 WPF 주명령 연결 회귀로 검증했다. 75개 ID·47/16/0/3/9 유지, 실제 서버/물리 GUI 미검증으로 승격0. 내부 거래 저널·Unknown·중복 보호는 삭제하지 않는다.
+
 ## 0.20.18 F09 이력 단위 보완
 
 75개 ID/판정47/16/0/3/9 유지. ReconcileAsync→ObserveSoldAsync→SteamSaleHistory.FindAsync/Parse→원본 wire 정수 비교→Sold 저장/현재 UI 경로를 보완했다. OffGridBatch/OffGridTarget/AmountDiagnosis/RawUnits/NullableFlags의5개 합성 회귀가 추가됐다. 사용자 실제 판매 완료3건과 앱의 실패 로그는 관측 사실이며, 새 코드의 실제 서버 재대조 성공 증거는 아직 없으므로 판정을 승격하지 않는다.
