@@ -1,3 +1,11 @@
+0.20.17 최종: 기능419/419·비표시WPF79/79·배포20/20·advisory 검사기6/6 PASS, 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). runtime/listing-assets-full.txt, 경고/오류0. 실계정 재검증·물리 GUI는 NOT VERIFIED.
+
+## 0.20.17 판매목록 맵 형식 회귀
+
+ListingAssetMapTests8개: root [] 정상 빈 목록, app/context [] 정상, null/스칼라/내용 있는 배열9종 거부, metadata 없는 canonical active/ID 없는 pending 보존·가격 생성0, total_count 모순 차단, 자산2건/판매목록0건의 실제 사용자 활성화 서비스 경로·요청0, 진단 OperationId/형식/원본문자열 누출0. 최초 수정 전2 PASS/6 FAIL, 최종 결과는 아래 최신 배포 절 참조. 초기 활성화 fixture가 신형 미지원 스택으로 구성돼 수량 필터에서 실패했으므로 실제 코드 제한을 유지한 채 자산2개/각1개로 바로잡았다.
+
+사용자 ZIP의 Read@IL287은 root assets 비객체 거부로 출하 IL과 매핑했다. 실제 원문은 없어 []와null 구분을 관측했다고 주장하지 않는다. 공개 empty-map 소비+결정적 합성 []를 재현해 파서를 보완했다. 자동 재시도/보안 제한 우회0, 실제 계정/실제 GUI는 NOT VERIFIED.
+
 0.20.16 최종 결과: 기능411/411·비표시WPF79/79·배포20/20·advisory 검사기6/6 PASS, 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가), build 경고/오류0. runtime/instant-sale-release-final.txt. Sold/대금 보류 결과와 Unknown125/200% RTB 직접 검토. 실계정 체결 이력·물리 GUI는 NOT VERIFIED.
 
 ## 0.20.16 추가 체결 경로

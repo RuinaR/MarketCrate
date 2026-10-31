@@ -5,6 +5,7 @@ using MarketCrate.Infrastructure;
 using MarketCrate.App.ViewModels;
 
 if(args.Length==3&&args[0]=="--storage-compat")return await ReleaseSafetyTests.StorageCompatibility(args[1],args[2]);
+if(args.Contains("--listing-assets")){var checks=await ListingAssetMapTests.RunAsync();Console.WriteLine($"LISTING ASSETS RESULT {checks.Passed} PASS / {checks.Failed} FAIL");return checks.Failed==0?0:1;}
 if(args.Contains("--instant-sale")){var checks=await InstantSaleRefreshTests.RunAsync();Console.WriteLine($"INSTANT SALE RESULT {checks.Passed} PASS / {checks.Failed} FAIL");return checks.Failed==0?0:1;}
 if(args.Contains("--lower-step")){var checks=await LowerPriceStepTests.RunAsync();Console.WriteLine($"LOWER STEP RESULT {checks.Passed} PASS / {checks.Failed} FAIL");return checks.Failed==0?0:1;}
 if(args.Contains("--user-journeys")){var checks=await UserJourneyTests.RunAsync();Console.WriteLine($"USER JOURNEY RESULT {checks.Passed} PASS / {checks.Failed} FAIL");return checks.Failed==0?0:1;}
@@ -87,9 +88,10 @@ var submissionTransport=await SubmissionTransportTests.RunAsync();failed+=submis
 var usability=await UsabilityTests.RunAsync();failed+=usability.Failed;
 var sessions=OperatingSystem.IsWindows()?await SessionPersistenceTests.RunAsync():(Passed:0,Failed:0);failed+=sessions.Failed;
 var instantSale=await InstantSaleRefreshTests.RunAsync();failed+=instantSale.Failed;
+var listingAssets=await ListingAssetMapTests.RunAsync();failed+=listingAssets.Failed;
 var lowerStep=await LowerPriceStepTests.RunAsync();failed+=lowerStep.Failed;
 var journeys=await UserJourneyTests.RunAsync();failed+=journeys.Failed;
-var total = instantSale.Passed+instantSale.Failed+lowerStep.Passed+lowerStep.Failed+journeys.Passed+journeys.Failed+releaseSafety.Passed+releaseSafety.Failed+submissionTransport.Passed+submissionTransport.Failed+usability.Passed+usability.Failed+feeModes.Passed+feeModes.Failed+sessions.Passed+sessions.Failed+feeResponse.Passed+feeResponse.Failed+liveOnly.Passed+liveOnly.Failed+walletPatch.Passed+walletPatch.Failed+fifteenth.Passed+fifteenth.Failed+fourteenth.Passed+fourteenth.Failed+ thirteenth.Passed+thirteenth.Failed+ twelfth.Passed+twelfth.Failed+ eleventh.Passed+eleventh.Failed+tenth.Passed+tenth.Failed+ninth.Passed+ninth.Failed+eighth.Passed+eighth.Failed+seventh.Passed+seventh.Failed+sixth.Passed+sixth.Failed+tests.Length + next.Passed + next.Failed + third.Passed + third.Failed + fourth.Passed + fourth.Failed + fifth.Passed + fifth.Failed;
+var total = listingAssets.Passed+listingAssets.Failed+instantSale.Passed+instantSale.Failed+lowerStep.Passed+lowerStep.Failed+journeys.Passed+journeys.Failed+releaseSafety.Passed+releaseSafety.Failed+submissionTransport.Passed+submissionTransport.Failed+usability.Passed+usability.Failed+feeModes.Passed+feeModes.Failed+sessions.Passed+sessions.Failed+feeResponse.Passed+feeResponse.Failed+liveOnly.Passed+liveOnly.Failed+walletPatch.Passed+walletPatch.Failed+fifteenth.Passed+fifteenth.Failed+fourteenth.Passed+fourteenth.Failed+ thirteenth.Passed+thirteenth.Failed+ twelfth.Passed+twelfth.Failed+ eleventh.Passed+eleventh.Failed+tenth.Passed+tenth.Failed+ninth.Passed+ninth.Failed+eighth.Passed+eighth.Failed+seventh.Passed+seventh.Failed+sixth.Passed+sixth.Failed+tests.Length + next.Passed + next.Failed + third.Passed + third.Failed + fourth.Passed + fourth.Failed + fifth.Passed + fifth.Failed;
 Console.WriteLine($"RESULT {total - failed}/{total} PASS; {failed} FAIL · synthetic data only, no GUI/network (Steam HTTP replaced by test handler)");
 return failed == 0 ? 0 : 1;
 

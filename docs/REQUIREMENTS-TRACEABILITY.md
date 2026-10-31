@@ -1,3 +1,7 @@
+## 0.20.17 B01/F09 조회 연결 보완
+
+75개 ID·47/16/0/3/9 유지. PrepareTradingAsync→EnableUserTradingAsync.ListingsRead→Orders.RefreshAsync/PageAsync→SteamContract.Listings→SteamMarketMembership.MapEntries→조회 결과/세션 전송 권한으로 이어지는 [] 빈 맵 처리를 보완했다. ListingAssetMapTests.Activation은 서버 자산2개/활성판매0건을 합성해 권한 준비 성공 및 전송0을 검증한다. Unsupported 스택/금액/total_count 검증은 삭제하지 않았다. 원본문 없는 사용자 진단은 root 비객체 실패만 확정이며 새 버전 실계정 성공/COMPLETE 승격은 미확인이다.
+
 ## 0.20.16 F09/F10/B10 보완
 
 75개 ID/판정47/16/0/3/9 유지. ReconcileAsync→SteamSaleHistory.FindAsync/Parse→같은 세션 MarketHistory GET→등록 ID/자산/단일 수량/통화/실수령/시각→SaveCommand Sold/audit→Batches.Recover 저장→SetResults/UI 판매 완료까지 연결했다. ID 없는 체결 관측은 원요청 귀속 미확인이다. InstantSaleRefreshTests의 SoldBeforeRefresh/SoldAfterListed/ObservedSold/InvalidHistory/HistoryDenied 및 InstantSaleRefreshUiTests가 합성 증거다. 재가격 전체 선택 사전 대조와 Unsupported 중간 소멸도 보완했다. 새 실계정/체결 이력/스택 부분 체결 검증이 없어 COMPLETE 승격0.

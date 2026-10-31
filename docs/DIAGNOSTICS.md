@@ -1,3 +1,7 @@
+## 0.20.17 판매목록 맵 자료형
+
+Listings/ReadContract의 AssetsMapEmptyArray는 root/app/context의 명시적 빈 배열을 수용한 이벤트다. PreviousState=AssetsRoot/AssetsApp/AssetsContext, NewState=JsonArray, Count=0. AssetsMapInvalidShape는 JsonArray(내용 있음)/JsonNull/JsonOther 분류와 Schema/Blocked로 남긴다. 원본 키·자산/계정 값·JSON 조각을 기록하지 않는다. 같은 UI OperationId/요청 CorrelationId로 TradingCheck ListingsRead→HTTP200/JsonBody→맵 형식→권한 준비 또는 차단을 추적한다. 현재 사용자 ZIP은 이전 버전이라 안전한 IL 위치로만 root 비객체 분기를 확인했고 정확한 JSON 종류는 미확정이다.
+
 ## 0.20.16 추가 — 체결 대조 진단
 
 HTTP endpoint=MarketHistory로 현재 UI OperationId/CorrelationId를 유지한다. EvidenceChecked reason=HistorySaleMatched는 알려진 원래 등록 ID 및 자산/수량/금액/통화/시각 일치이며 NewState=Sold다. HistoryAssetSaleObserved는 ID 없는 원접수의 동일 자산 체결 관측일 뿐 Outcome/State=Unknown을 유지한다. Command JournalWrite/Audit의 Sold와 BatchRecovered/배치 저장으로 연결한다. 계정/구매자·판매자 식별자, purchaseid, 원본 events/listings/purchases, HTTP 본문은 진단/ZIP에 남기지 않는다. 신규 회귀에서 OperationId/안전 reason 연결 및 평문 인증정보·계정·원본 응답 필드 부재를 검사한다.

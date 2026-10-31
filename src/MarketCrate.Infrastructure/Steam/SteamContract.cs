@@ -151,8 +151,8 @@ public static class SteamContract
             var listingId=SteamMarketMembership.ListingId(row);
             if(listingId is null||!row.TryGetProperty("currencyid",out var currencyId)||
                 !row.TryGetProperty("price",out var price)||!row.TryGetProperty("fee",out var fees)||!a.TryGetProperty("amount",out var amount)||
-                !root.TryGetProperty("assets",out var assetMap)||!assetMap.TryGetProperty(key.AppId.ToString(CultureInfo.InvariantCulture),out var apps)||
-                !apps.TryGetProperty(key.ContextId,out var contexts)||!contexts.TryGetProperty(key.AssetId,out var d)||
+                !root.TryGetProperty("assets",out var assetMap)||assetMap.ValueKind!=JsonValueKind.Object||!assetMap.TryGetProperty(key.AppId.ToString(CultureInfo.InvariantCulture),out var apps)||
+                apps.ValueKind!=JsonValueKind.Object||!apps.TryGetProperty(key.ContextId,out var contexts)||contexts.ValueKind!=JsonValueKind.Object||!contexts.TryGetProperty(key.AssetId,out var d)||
                 !d.TryGetProperty("market_hash_name",out var hash)||hash.ValueKind!=JsonValueKind.String||string.IsNullOrWhiteSpace(hash.GetString()))continue;
             var currency=Currency(checked((int)Integer(currencyId))-2000);var seller=FromWire(Integer(price),currency);var fee=FromWire(Integer(fees),currency);
             var quantity=checked((int)Integer(amount));if(quantity<1||seller<1||fee<0)throw new SteamException(SteamFailure.ContractChanged);

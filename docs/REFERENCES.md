@@ -1,3 +1,7 @@
+## 2026-10-31 KST — 빈 장터 자산 맵
+
+프로젝트 보존 공식 market.js의 MergeWithAssetArray(ObjectIsEmpty로 빈 자료 조기 반환)를 확인했다. SSIM 기반 C# 변환의 객체 강제 조건이 빈 []를 거부한 것이 호환 차이다. 기존 SSIM 28a503f Apache-2.0 부분 개작 파일의 저작권/NOTICE는 보존하고 수정 설명을 갱신했다. 이번 web의 원본 SSIM raw 링크는 cache miss, 웹 검색의 외부 타입 문서는 empty [] 실제 응답 증거가 아니므로 새 실서버 계약 검증으로 취급하지 않는다. 출하 DLL/사용자 안전 스택+합성 배열 형식으로 결함을 재현했다. 새로운 외부 코드 도입/의존성0.
+
 ## 2026-10-31 KST — 개인 장터 체결 대조 계약
 
 - [SnaBe 실제 getMyHistory](https://raw.githubusercontent.com/SnaBe/node-steam-market-fetcher/master/index.js) 및 [응답 타입](https://raw.githubusercontent.com/SnaBe/node-steam-market-fetcher/master/index.d.ts): 인증된 개인 이력의 events/listings/purchases 연결 구조 참고. [vladpuz PurchaseResponse](https://raw.githubusercontent.com/vladpuz/steam-market/master/src/types/PurchaseResponse.ts)도 rollback/보류·실수령 구조 대조. 코드 직접 도입0, 독립 C# 파서 구현. LICENSE 본문은 이번 웹 도구에서 cache miss여서 재사용 허가를 새로 확인했다고 주장하지 않는다.

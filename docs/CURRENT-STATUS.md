@@ -1,3 +1,13 @@
+0.20.17 최종 전체 검사: 기능419/419·비표시WPF79/79·배포20/20·advisory 검사기6/6 PASS, 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). build 경고/오류0. 신규8개 합성 계약은 빈 맵·권한 준비·미확인 자산 보존·진단 누출 방지를 검증한다. 실제 계정/앱 실행0.
+
+## 0.20.17 — 판매목록 assets 빈 맵 호환 수정
+
+사용자0.20.16 진단에서 QR 세션/지갑·수수료·서버 자산2건 검증 뒤 Listings HTTP200/JsonBody 파싱이 SteamMarketMembership.Read@IL287에서 실패했다. 출하0.20.16 IL을 읽기 전용 대조해 `assets.ValueKind != Object`의 명시적 throw임을 확인했다. 따라서 로그인·수수료·실제 판매 요청 실패와 다르다. 원본 응답을 수집하지 않아 실제 자료형이 []인지 null인지까지는 미확정이다.
+
+객체만 허용하던 맵 순회를 객체 또는 명시적 빈 배열[]로 확장했다. root/app/context 맵의 빈 배열만 허용하고 null/스칼라/내용 있는 배열은 계속 차단한다. 공식 공개 JS 보존본의 ObjectIsEmpty→MergeWithAssetArray 소비와 호환한다. canonical 판매/승인대기 자산은 metadata 맵이 없어도 유지하고 금액·상품명을 생성하지 않는다. total_count/전체 페이지 검증은 그대로이며 숫자 불일치를 빈 목록으로 확정하지 않는다. 이 수정은 안전 차단 삭제나 합성 실거래 성공 대체가 아니다. 실계정 새 버전 검증은 사용자 직접 단계다.
+
+기존 Auth·설정·SQLite·저널·Unknown/Sold·호가/단일 최종 승인 보존, 스키마/의존성 변경0. 최초75개47/16/0/3/9 유지. 실제 앱/Steam/호스트 UI/타 프로세스 접근0. 최신 배포·전체 결과는 확정 후 기록한다.
+
 ## 최신 배포 — 0.20.16 즉시 체결 상태 대조
 
 소스 **209d0a7f958b623c9be490374e0294f371fa40bb**. `artifacts/releases/MarketCrate-0.20.16-instant-sale-209d0a7-win-x64.zip` **66,748,818바이트 /418파일**. SHA256 **FAEE88178DE08A507A5852924017CB834CE38F79B68D2CBD307ECB6C1DE68693**. ZIP 전체 entry/출하 파일 해시 일치·버전/커밋·x64 CLR/WPF10.0.14·SQLite/DPAPI·라이선스·실제 전용 PE/BAML·Auth/개인DB/로그/PDB/Mock/자가검증 제외 정적 검사 PASS. Release build 경고/오류0. 앱/설치/실계정은 미실행이다.

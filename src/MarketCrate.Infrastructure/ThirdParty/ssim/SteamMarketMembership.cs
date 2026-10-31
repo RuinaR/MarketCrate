@@ -3,7 +3,7 @@
 // C# partial adaptation of src/core/MarketModel.ts (parseMyListings / mergeParsed),
 // SSIM commit 28a503fa79869f3233814d0deaa906a8b3f66621.
 // https://github.com/Santerxyz/SSIM/blob/28a503fa79869f3233814d0deaa906a8b3f66621/src/core/MarketModel.ts
-// Modified: strict identities and conflicts; absent money/metadata stays unavailable, never zero-filled.
+// Modified: strict identities/conflicts; empty PHP-style maps may be []; missing quotes stay unavailable.
 using System.Collections.Immutable;
 using System.Text.Json;
 using MarketCrate.Core;
@@ -53,13 +53,24 @@ internal static class SteamMarketMembership
         var referenced=found.Values.Select(x=>x.Asset).ToHashSet();
         if(root.TryGetProperty("assets",out var assets))
         {
-            if(assets.ValueKind!=JsonValueKind.Object)throw new SteamException(SteamFailure.ContractChanged);
-            foreach(var app in assets.EnumerateObject())foreach(var context in app.Value.EnumerateObject())foreach(var asset in context.Value.EnumerateObject())
+            foreach(var app in MapEntries(assets,"AssetsRoot"))foreach(var context in MapEntries(app.Value,"AssetsApp"))foreach(var asset in MapEntries(context.Value,"AssetsContext"))
             {
                 var key=Identity(JsonSerializer.SerializeToElement(new{appid=app.Name,contextid=context.Name,id=asset.Name}));
                 if(!referenced.Contains(key))found[(key,null)]=new(key,null,SaleState.Unknown);
             }
         }
         return found.Values.ToImmutableArray();
+    }
+    private static IEnumerable<JsonProperty> MapEntries(JsonElement value,string location)
+    {
+        if(value.ValueKind==JsonValueKind.Object)
+        {foreach(var entry in value.EnumerateObject())yield return entry;yield break;}
+        if(value.ValueKind==JsonValueKind.Array&&value.GetArrayLength()==0)
+        {
+            DiagnosticHub.Emit(DiagnosticEvent.ReadContract,DiagnosticArea.Data,endpoint:"Listings",from:location,to:"JsonArray",reason:"AssetsMapEmptyArray",count:0,requirement:"B01");
+            yield break;
+        }
+        DiagnosticHub.Emit(DiagnosticEvent.ReadContract,DiagnosticArea.Data,DiagnosticOutcome.Blocked,LogLevel.Warning,DiagnosticError.Schema,endpoint:"Listings",from:location,to:value.ValueKind switch{JsonValueKind.Array=>"JsonArray",JsonValueKind.Null=>"JsonNull",_=>"JsonOther"},reason:"AssetsMapInvalidShape",requirement:"B01");
+        throw new SteamException(SteamFailure.ContractChanged);
     }
 }

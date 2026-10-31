@@ -1,3 +1,7 @@
+## 2026-10-31 — 0.20.17 판매목록 계약 오류
+
+사용자0.20.16 실거래 활성화 실패 ZIP을 메모리에서 읽고 raw ZIP/응답/인증 데이터를 복사하지 않았다. 정상 수수료·자산2건 이후 Listings HTTP200/JSON→SteamMarketMembership.Read@IL287의 스키마 예외. 출하 DLL IL의 root assets 객체 강제 throw와 정확히 매핑했다. 빈 배열 맵 호환 누락을 수정하고 잘못된 자료형은 계속 차단했다. metadata 없음이 canonical membership을 지우거나 금액0을 생성하지 않도록 인접 재무 파서도 보완했다. 신규8기능 합성 회귀·형식별 진단, 버전0.20.17. 운영 Auth·SQLite·저널·진단·이전 ZIP 변경/삭제0. 실제 Steam/GUI 요청·타 프로세스 조사0.
+
 ## 2026-10-31 — 0.20.16 배포 확정
 
 소스209d0a7, Release ZIP66,748,818바이트/418파일·전체 entry SHA 일치 PASS. 전체411/79/20 및 advisory 검사기6 PASS, 정리8 PASS/1 NOT VERIFIED. 원본 진단·Auth·저널·이전 배포 삭제0. 롤백0.20.15 보존. 실제 거래내역 파서는 공개 소스 기반 합성 검사이며 새 실계정 조회/체결·물리 GUI 실행0. Git 소스 커밋 origin/main push 성공. 최신 ZIP 경로/해시는 CURRENT-STATUS 참조.
