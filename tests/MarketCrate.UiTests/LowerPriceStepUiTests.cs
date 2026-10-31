@@ -12,6 +12,16 @@ internal static class LowerPriceStepUiTests
 {
     public static void Run(Action<string,Action> test,Action<FrameworkElement,int,int,double,string> render)
     {
+        test("30원 최저가의 한 단계 하향 재등록은 기존 등록 유지 안내",()=>
+        {
+            var root=Path.Combine(Directory.GetCurrentDirectory(),"runtime","minimum-reprice-ui-"+Guid.NewGuid().ToString("N"));using var server=new SteamContractServer();server.KrwIncrement=1000;server.Free=1;server.Publish=true;server.Rows.Add(("900",1,10));server.OrderbookOverride="{\"data\":{\"success\":true,\"data\":{\"eCurrency\":16,\"rgCompactBuyOrders\":[3000,1]}}}";
+            using(var vm=new SteamWorkspaceViewModel(scope=>new(root,scope.AppId,scope.ContextId,scope.Name,new(true,"synthetic",true),server.Connection(),server.Clock),true){RiskAccepted=true,CredentialsAccepted=true})
+            {
+                Complete(vm.BeginAsync());server.Clock.Advance();Complete(vm.CheckAsync());Complete(vm.LoadListingsAsync());vm.SelectAllListings.Execute(null);vm.LowerPriceOneStep=true;Complete(vm.PrepareListingReprice.ExecuteAsync());vm.WorkPage=2;
+                Check(vm.ListingPriceStatus.Contains("이미 제안 가격")&&!vm.ManagementOpen&&server.Cancels==0&&server.Sends==0,"Minimum unnecessarily cancelled/relisted");var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,780,1.25,"minimum-reprice-125.png");render(view,1100,780,2,"minimum-reprice-200.png");Check(PresentationSource.FromVisual(view)==null,"Window displayed");
+            }
+            Directory.Delete(root,true);
+        });
         test("매수 잔량 부족 마지막 행의 수동 입력·합계·단일 배치 승인",()=>
         {
             var root=Path.Combine(Directory.GetCurrentDirectory(),"runtime","manual-shortage-ui-"+Guid.NewGuid().ToString("N"));using var server=new SteamContractServer();server.Free=2;server.ManyAssets=2;server.OrderbookOverride="{\"data\":{\"success\":true,\"data\":{\"eCurrency\":16,\"rgCompactBuyOrders\":[11500,1]}}}";

@@ -426,6 +426,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
             LoginState=error is SteamException e?e.Code switch{SteamFailure.Disabled=>LoginState,SteamFailure.Denied=>SteamLoginState.Denied,SteamFailure.Transport=>SteamLoginState.NetworkFailure,SteamFailure.Forbidden or SteamFailure.RateLimited or SteamFailure.Challenge=>SteamLoginState.AccessBlocked,_=>SteamLoginState.ContractFailure}:SteamLoginState.ContractFailure;
         }
         if(!authenticating&&error is SteamException{TradingCheck:not null} tradingError){Status=TradingFailureText(tradingError);Changed();return;}
+        if(!authenticating&&error is SteamException{FeeContractReason:"AppContextMissing"}){Status="현재 Steam 페이지에서 해당 게임의 수수료 설정을 확인하지 못했습니다. 가격 하향 계산과는 별개이며 다른 조회는 사용할 수 있습니다. 문제 해결에서 이 작업의 진단을 확인하세요.";Changed();return;}
         if(!authenticating&&error is SteamException{Endpoint:"StackContract"}){Status="스택 수량 전송 계약이 검토 후 변경됐거나 확인되지 않았습니다. 판매 요청은 보내지 않았습니다. 새로 조회하고 검토하세요.";Changed();return;}
         if(!authenticating&&error is SteamException{Endpoint:"PendingSubmissionSettling"}){Status="직전 요청이 아직 서버에 반영 중일 수 있습니다. 전송 후 2분이 지난 뒤 보관함·판매목록을 갱신하고 새로 검토하세요. 이번 요청은 전송하지 않았습니다.";Changed();return;}
         if(!authenticating&&error is SteamException{Endpoint:"ServerInventory"}){Status="선택한 자산의 현재 보유 수량 또는 판매 가능 상태가 바뀌었습니다. 보관함을 갱신하고 새로 검토하세요. 이번 요청은 전송하지 않았습니다.";Changed();return;}

@@ -1,3 +1,7 @@
+## 0.20.22 — 변경 없는 재등록
+
+PricePlan/Management/Completed/RepriceUnchanged는 최신 검증을 거친 제안 전체가 현재 구매자·실수령 금액과 같아서 취소/등록 없이 유지했음을 뜻한다. 서버 판매 성공 이벤트가 아니다. 기존 FeeValidated의 PreviousState=AppContextMissing을 SteamException.FeeContractReason으로 UI에 전달한다. 계정/원문 HTTP/쿠키를 기록하지 않는다.
+
 ## 0.20.21 수동 부족 가격
 
 FinalValidation / Sales / Completed / Orderbook / ManualShortagePrice는 명시적으로 입력한 수동 가격에 대해 최신 빈 호가·통화·수수료 검증을 통과했음을 의미한다. 서버 접수/체결 성공을 의미하지 않는다. 기존 OperationId/배치 문맥을 유지하며 원본 HTTP·계정 비밀을 추가 기록하지 않는다. 호가 변경/파싱 실패는 기존 오류 경로로 전송 전 중단한다.

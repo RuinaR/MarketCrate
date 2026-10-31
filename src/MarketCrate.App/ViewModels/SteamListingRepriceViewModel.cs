@@ -41,7 +41,9 @@ public sealed partial class SteamWorkspaceViewModel
                 // One independent listing recheck only; never retry a restricted/failed fee request.
                 if(error is SteamException{Code:SteamFailure.Unsupported}&&CanReadFeature("Listings")&&!await RefreshRepriceSelectionAsync(rows,token))
                 {gameFees.Remove(app);if(Game.AppId==app)fees=null;FeesRead.Update(SteamReadState.Stale);Raise(nameof(CurrencyText));return;}
-                ListingPriceStatus="판매 수수료 확인 실패 · 계정 연결의 조회 상태와 문제 해결을 확인하세요. 취소·등록 요청은 보내지 않았습니다.";throw;
+                ListingPriceStatus=error is SteamException{FeeContractReason:"AppContextMissing"}
+                    ?"현재 Steam 페이지에 이 게임의 수수료 설정이 없어 재등록 가격을 확인할 수 없습니다. 최저가 하향 오류가 아닙니다. 기존 판매등록은 유지했고 취소·등록 요청은 보내지 않았습니다."
+                    :"판매 수수료 확인 실패 · 계정 연결의 조회 상태와 문제 해결을 확인하세요. 취소·등록 요청은 보내지 않았습니다.";throw;
             }
         }
         foreach(var group in groups)
@@ -68,6 +70,12 @@ public sealed partial class SteamWorkspaceViewModel
         }
         catch(ArgumentException){ListingPriceStatus=LowerPriceOneStep?"한 단계 낮은 유효 가격을 계산할 수 없는 항목이 있습니다. 최저 가격·수수료를 확인하고 옵션이나 선택을 변경하세요. 취소·등록하지 않았습니다.":"호가와 유효 가격 증분·수수료가 일치하지 않습니다. 최신 자료를 확인하세요. 취소·등록하지 않았습니다.";return;}
         foreach(var proposal in proposals)_=proposal.Fees.FromBuyer(proposal.Price); // No rounding/substitution of unrepresentable prices.
+        if(LowerPriceOneStep&&proposals.All(x=>x.Baseline?.BuyerPays==x.Price&&x.Price==checked(x.Row.Listing.SellerReceives+x.Row.Listing.Fees)&&x.Fees.FromBuyer(x.Price).SellerReceives==x.Row.Listing.SellerReceives))
+        {
+            Bulk(()=>{foreach(var proposal in proposals)proposal.Row.SetProposedPrice(proposal.Price,proposal.Fees,proposal.Baseline);});
+            ListingPriceStatus="선택한 전체 항목이 이미 제안 가격으로 판매 중입니다. 최저 유효 가격에서는 더 낮추지 않습니다. 기존 등록을 유지하며 취소·재등록하지 않습니다.";
+            DiagnosticHub.Emit(DiagnosticEvent.PricePlan,DiagnosticArea.Management,DiagnosticOutcome.Completed,reason:"RepriceUnchanged",requirement:"B10",count:rows.Length);return;
+        }
         foreach(var schedule in schedules)gameFees[schedule.Key]=schedule.Value;
         fees=schedules.GetValueOrDefault(Game.AppId)??schedules.Values.First();Raise(nameof(CurrencyText));
         Bulk(()=>{foreach(var proposal in proposals)proposal.Row.SetProposedPrice(proposal.Price,proposal.Fees,proposal.Baseline);});

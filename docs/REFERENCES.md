@@ -1,3 +1,7 @@
+## 2026-11-01 KST — 최저가 재등록 조사
+
+사용자 진단의 FeeValidated/AppContextMissing을 일차 근거로 삼았다. node-steamcommunity components/market.js 공개 코드를 확인했으나 getMarketApps는 장터 앱 이름 목록이며 누락된 계정별 게임 수수료 계약의 대체 근거가 아니다(https://raw.githubusercontent.com/DoctorMcKay/node-steamcommunity/master/components/market.js). 해당 코드 복사/라이브러리 도입0. 공식 economy_common.js URL은 웹 도구 접근 실패로 최신 내용을 재검증하지 못했다. 이번 변경에서 기존 검증된 계산식을 변경하거나 공개 일반 수수료율로 보충하지 않는다.
+
 ## 2026-10-31 KST — 원본 거래내역 금액 보존
 
 [vladpuz/steam-market SteamMarket.ts myHistory()](https://raw.githubusercontent.com/vladpuz/steam-market/master/src/SteamMarket.ts)와 [PurchaseResponse](https://raw.githubusercontent.com/vladpuz/steam-market/master/src/types/PurchaseResponse.ts)를 직접 확인했다. received_amount를 원본으로 반환하고 received_currencyid를 분리하며 funds_held/funds_revoked가 nullable인 구조를 참고했다. package.json은3.0.4/MIT를 선언한다. 고정 SHA/라이선스 파일 본문은 확보하지 않아 코드 직접 복사0; 프로토콜 매핑을 독립 C#으로 반영했다. JS Number ID 변환/광범위 쿠키 가져오기는 채택하지 않는다.

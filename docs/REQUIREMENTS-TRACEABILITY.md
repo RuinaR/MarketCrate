@@ -1,3 +1,7 @@
+## 0.20.22 B10/D10 수수료 누락·변경 없는 재등록
+
+SteamFees→FeeContractReason→SteamWorkspaceViewModel/ListingPriceStatus로 AppContextMissing 안내를 연결했다. PrepareListingReprice의 최신 수수료/호가 검증 후 전체 제안이 현재 구매자/실수령 가격과 같으면 기존 등록 유지. MinimumReprice/MissingFees/비표시WPF로 검사한다.75개47/16/0/3/9 유지, 실계정 계약 미확정으로 승격0.
+
 ## 0.20.21 E05/E09/F02 수동 부족 가격 경로
 
 SteamReviewRow.PriceText/Valid→ReviewAdjustmentSummary→Snapshot.ManuallyPricedShortage→SaleBatchCoordinator→SteamListingExecutor.ValidateBatchAsync→SQLite/실제 어댑터 경로를 연결했다. LowerPriceStepTests.ManualShortage/ManualEmptyBook/ManualBookChanged 및 WPF 실제 TextBox 바인딩 회귀로 확인한다. 전체433/80/20 PASS,75개 ID·47/16/0/3/9 유지, 실제 서버/물리 입력 미검증으로 승격0.

@@ -52,6 +52,7 @@ public sealed class SteamException(SteamFailure code, int? apiResult = null) : I
     public SteamBodyKind? BodyKind { get; internal set; }
     public int? HttpStatus {get;internal set;}
     public SteamTradingCheck? TradingCheck { get; internal set; }
+    public string? FeeContractReason { get; internal set; }
 }
 
 // Preserve ordinary cancellation semantics while making the no-submission boundary explicit.

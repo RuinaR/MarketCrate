@@ -99,7 +99,7 @@ public static class SteamFees
             FeeContractMode.VerifiedLegacy=>FeeContractResolver.Legacy(evidence),
             FeeContractMode.VerifiedNew=>await FetchStructureAsync(http,appId,wallet.PricingWallet(),token),
             FeeContractMode.Restricted=>throw new SteamException(SteamFailure.Authorization){Endpoint="Fees"},
-            _=>throw new SteamException(SteamFailure.Unsupported){Endpoint="Fees"}
+            _=>throw new SteamException(SteamFailure.Unsupported){Endpoint="Fees",FeeContractReason=evidence.Reason}
         };
         return evidence.Reason=="ClassicInventoryContext"?schedule with{PublisherFallbackAppId=appId}:schedule;
     }

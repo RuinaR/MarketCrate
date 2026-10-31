@@ -22,7 +22,8 @@ public static class LowerPriceStepTests
             ("Manual edits refresh comparison and closed review requires a new plan",Manual),
             ("Changed asset state rejects discounted approval without submission",ChangedBook),
             ("Lower option survives neither logout nor restored connection",Reset),
-            ("Listing batch lower proposals are compared before any cancellation",Listing)
+            ("Listing batch lower proposals are compared before any cancellation",Listing),
+            ("KRW30 minimum lower reprice preserves current listing without cancellation",MinimumReprice)
         };
         int passed=0,failed=0;foreach(var(name,test)in tests)try{await test();passed++;Console.WriteLine("PASS "+name);}catch(Exception error){failed++;Console.WriteLine("FAIL "+name+": "+error);}return(passed,failed);
     }
@@ -76,6 +77,10 @@ public static class LowerPriceStepTests
     private static async Task Manual(){using var f=new FifthStageTests.Fixture();await f.Login();f.Vm.LowerPriceOneStep=true;await f.Prepare(1);var row=f.Vm.ReviewRows.Single();var before=row.AdjustmentComparison;row.PriceText=SteamReviewRow.FormatPrice(row.BaselineQuote!.BuyerPays,"KRW");Check(row.AdjustmentComparison!=before&&row.AdjustmentComparison.Contains("0%"));row.PriceText=SteamReviewRow.FormatPrice(f.Server.Schedule.FromSeller(row.BaselineQuote.SellerReceives+1).BuyerPays,"KRW");Check(row.AdjustmentComparison.Contains("실수령 증가")&&f.Vm.ReviewAdjustmentSummary.Contains("실수령 증가"));f.Vm.CloseReview.Execute(null);f.Vm.LowerPriceOneStep=false;f.Vm.Review.Execute(null);Check(f.Vm.ReviewRows.All(x=>!x.LowerStepRequested)&&f.Server.Sends==0);}
     private static async Task ChangedBook(){using var f=new FifthStageTests.Fixture();await f.Login();f.Vm.LowerPriceOneStep=true;await f.Prepare(1);f.EnableTrading();f.Server.Free=0;await f.Vm.Submit.ExecuteAsync();Check(f.Server.Sends==0&&!f.Vm.ReviewOpen);}
     private static async Task Reset(){using var f=new FifthStageTests.Fixture();await f.Login();f.Vm.LowerPriceOneStep=true;f.Vm.Logout.Execute(null);Check(!f.Vm.LowerPriceOneStep);await f.Login();Check(!f.Vm.LowerPriceOneStep&&f.Server.Sends==0);}
+    private static async Task MinimumReprice()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.KrwIncrement=1000;f.Server.Free=1;f.Server.OrderbookOverride=Book("3000,1");await f.Login();await f.Prepare(1);f.EnableTrading();await f.Vm.Submit.ExecuteAsync();f.Server.Publish=true;await f.Vm.LoadListingsAsync();f.Vm.SelectAllListings.Execute(null);f.Vm.LowerPriceOneStep=true;await f.Vm.PrepareListingRepriceAsync();Check(f.Vm.Listings.Single().Listing.SellerReceives==10&&f.Vm.Listings.Single().Listing.Fees==20&&f.Vm.ListingPriceStatus.Contains("이미 제안 가격")&&!f.Vm.ManagementOpen&&f.Server.Cancels==0&&f.Server.Sends==1&&f.Vm.Connected);
+    }
     private static async Task Listing()
     {
         using var f=new FifthStageTests.Fixture();f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();await f.Vm.Submit.ExecuteAsync();f.Server.Publish=true;await f.Vm.LoadListingsAsync();f.Vm.SelectAllListings.Execute(null);f.Vm.LowerPriceOneStep=true;await f.Vm.PrepareListingRepriceAsync();Check(f.Vm.ManagementOpen&&f.Vm.ManagementSummary.Contains("실수령 감소")&&f.Vm.Listings.All(x=>x.HasStepProposal)&&f.Server.Cancels==0);
