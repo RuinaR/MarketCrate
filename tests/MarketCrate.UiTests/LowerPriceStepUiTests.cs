@@ -12,6 +12,19 @@ internal static class LowerPriceStepUiTests
 {
     public static void Run(Action<string,Action> test,Action<FrameworkElement,int,int,double,string> render)
     {
+        test("매수 잔량 부족 마지막 행의 수동 입력·합계·단일 배치 승인",()=>
+        {
+            var root=Path.Combine(Directory.GetCurrentDirectory(),"runtime","manual-shortage-ui-"+Guid.NewGuid().ToString("N"));using var server=new SteamContractServer();server.Free=2;server.ManyAssets=2;server.OrderbookOverride="{\"data\":{\"success\":true,\"data\":{\"eCurrency\":16,\"rgCompactBuyOrders\":[11500,1]}}}";
+            using(var vm=new SteamWorkspaceViewModel(scope=>new(root,scope.AppId,scope.ContextId,scope.Name,new(true,"synthetic",true),server.Connection(),server.Clock),true){RiskAccepted=true,CredentialsAccepted=true})
+            {
+                Complete(vm.BeginAsync());server.Clock.Advance();Complete(vm.CheckAsync());Complete(vm.LoadAsync());vm.SelectAll.Execute(null);Complete(vm.RefreshPricesAsync());vm.LowerPriceOneStep=true;vm.BuildReview();vm.TradeAccepted=true;vm.EnableTrading.Execute(null);
+                var row=vm.ReviewRows.Last();Check(row.Insufficient&&!vm.Submit.CanExecute(null),"Missing price accepted");var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,780,1.25,"manual-shortage-before.png");
+                var input=Find<TextBox>(view).Single(x=>ReferenceEquals(x.DataContext,row));input.Text="100";input.GetBindingExpression(TextBox.TextProperty)!.UpdateSource();
+                Check(row.Valid&&vm.Submit.CanExecute(null)&&vm.ReviewAdjustmentSummary.Contains("수동 가격"),"Manual binding did not enable validated batch");render(view,1100,780,1.25,"manual-shortage-125.png");render(view,1100,780,2,"manual-shortage-200.png");
+                Complete(vm.Submit.ExecuteAsync());Check(server.Sends==2&&vm.Results.All(x=>x.State==SaleState.AwaitingSteamGuard),"Manual row omitted from batch");Check(Application.Current.Windows.Count==0&&PresentationSource.FromVisual(view)==null,"Window was displayed");
+            }
+            Directory.Delete(root,true);
+        });
         test("한 단계 하향 체크박스·기준/변경 수수료·실수령 감소·단일 승인 연결",()=>
         {
             var root=Path.Combine(Directory.GetCurrentDirectory(),"runtime","lower-ui-"+Guid.NewGuid().ToString("N"));using var server=new SteamContractServer();

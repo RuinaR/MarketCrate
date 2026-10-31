@@ -1,3 +1,7 @@
+## 0.20.21 E05/E09/F02 수동 부족 가격 경로
+
+SteamReviewRow.PriceText/Valid→ReviewAdjustmentSummary→Snapshot.ManuallyPricedShortage→SaleBatchCoordinator→SteamListingExecutor.ValidateBatchAsync→SQLite/실제 어댑터 경로를 연결했다. LowerPriceStepTests.ManualShortage/ManualEmptyBook/ManualBookChanged 및 WPF 실제 TextBox 바인딩 회귀로 확인한다. 전체433/80/20 PASS,75개 ID·47/16/0/3/9 유지, 실제 서버/물리 입력 미검증으로 승격0.
+
 ## 0.20.20 E05/E09/F02 보완
 
 사용자 요청으로 검증된 최저 유효가 유지 정책을 LowerOrMinimumBuyerPrice→SteamReviewRow/재가격 제안→행/전체 비교→기존 단일 배치에 연결했다. MinimumBatch/StaleThenFresh와 WPF 최저가 유지 회귀를 포함한다. 호가 변경 미전송은 직접 증명한 검증 위치에서만 안내하며 새 시세·검토 승인이 필요하다. 전체430/79/20 PASS, 실계정 미검증. 75개 ID·47/16/0/3/9 유지, COMPLETE 승격0.

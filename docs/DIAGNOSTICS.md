@@ -1,3 +1,7 @@
+## 0.20.21 수동 부족 가격
+
+FinalValidation / Sales / Completed / Orderbook / ManualShortagePrice는 명시적으로 입력한 수동 가격에 대해 최신 빈 호가·통화·수수료 검증을 통과했음을 의미한다. 서버 접수/체결 성공을 의미하지 않는다. 기존 OperationId/배치 문맥을 유지하며 원본 HTTP·계정 비밀을 추가 기록하지 않는다. 호가 변경/파싱 실패는 기존 오류 경로로 전송 전 중단한다.
+
 ## 0.20.20 전송 전 호가 변경
 
 ValidateBatchAsync의 OrderbookChanged는 batch 전송 전 검증에서만 RequestNotSent=true/Endpoint=OrderbookChanged를 설정한다. UI는 이 명시적 증거가 있을 때에만 판매 요청/Steam 확인 미생성과 새 검토 절차를 안내한다. 일반 StaleReview/전송 후 Unknown은 미전송으로 추정하지 않는다.

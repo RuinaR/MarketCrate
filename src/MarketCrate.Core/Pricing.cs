@@ -77,6 +77,7 @@ public static class BatchValidation
             if (!line.Asset.Marketable || line.Asset.Locked || line.Quantity < 1 || line.Currency is not ("KRW" or "USD") || q.SellerReceives < 1 || q.SteamFee < 0 || q.GameFee < 0 ||
                 q.BuyerPays != checked(q.SellerReceives + q.SteamFee + q.GameFee)) throw new ArgumentException("판매 조건/통화/수수료 오류");
             if(line.Evidence is {} evidence&&(evidence.Currency!=line.Currency||evidence.Basis!=PriceBasis.MedianEstimate||!evidence.Fresh(now)))throw new ArgumentException("IndicatorUnavailable");
+            if(line.ManuallyPricedShortage&&(line.Evidence is not null||string.IsNullOrEmpty(line.OrderbookDigest)))throw new ArgumentException("ManualPriceEvidenceMissing");
             if (line.MarketTime > now.AddSeconds(5) || now - line.MarketTime > TimeSpan.FromMinutes(5)) throw new ArgumentException("오래된 시세: 검토를 갱신하세요.");
         }
         _ = batch.Gross; _ = batch.Net;

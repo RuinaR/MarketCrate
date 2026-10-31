@@ -14,6 +14,9 @@ public static class LowerPriceStepTests
             ("Review displays per-unit fees and quantity reduction and unavailable minimum",()=>Sync(Comparison)),
             ("Opt-in default OFF price allocation preserved and one approval sends all changed prices",Batch),
             ("Minimum is retained visibly while below-minimum manual input remains rejected",()=>Sync(Minimum)),
+            ("Last shortage row accepts a verified manual price and joins the same batch",ManualShortage),
+            ("Verified empty orderbook supports an explicit manual limit listing",ManualEmptyBook),
+            ("Orderbook failure or changed bids cannot use the manual empty-book path",ManualBookChanged),
             ("Three minimum-price assets submit once after one unchanged final approval",MinimumBatch),
             ("Changed orderbook sends no request and a fresh review can submit the whole batch",StaleThenFresh),
             ("Manual edits refresh comparison and closed review requires a new plan",Manual),
@@ -49,6 +52,19 @@ public static class LowerPriceStepTests
         await f.Vm.Submit.ExecuteAsync();Check(f.Server.Sends==0&&f.Workspace!.Store.Commands().Count==0&&!f.Vm.ReviewOpen&&f.Vm.Status.Contains("Steam 승인")&&f.Vm.Status.Contains("호가"));Check(log.Records.Any(x=>x.EventName=="BatchFinished"&&x.Outcome==DiagnosticOutcome.Failed&&x.Error==DiagnosticError.Validation)&&!log.Records.Any(x=>x.Error==DiagnosticError.Storage));await f.Vm.RefreshPrices.ExecuteAsync();f.Vm.Review.Execute(null);Check(f.Vm.ReviewOpen);await f.Vm.Submit.ExecuteAsync();Check(f.Server.Sends==3&&f.Vm.Results.All(x=>x.State==SaleState.AwaitingSteamGuard));
     }
     private sealed class Capture:IDiagnosticLog{public Guid SessionId{get;}=Guid.NewGuid();public List<DiagnosticRecord> Records{get;}=[];public void Write(DiagnosticRecord record)=>Records.Add(record);}
+    private static async Task ManualShortage()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.Free=2;f.Server.ManyAssets=2;f.Server.OrderbookOverride=Book("11500,1");await f.Login();await f.Vm.LoadAsync();f.Vm.SelectAll.Execute(null);await f.Vm.RefreshPricesAsync();f.Vm.LowerPriceOneStep=true;f.Vm.BuildReview();f.EnableTrading();var last=f.Vm.ReviewRows.Last();Check(last.Insufficient&&!last.Valid);last.PriceText="100";Check(last.Valid&&f.Vm.Submit.CanExecute(null)&&f.Vm.ReviewAdjustmentSummary.Contains("수동 가격"));await f.Vm.Submit.ExecuteAsync();Check(f.Server.Sends==2&&f.Server.SellFields.Last()["price"]==new Money(last.Quote.SellerReceives,"KRW").Wire.ToString()&&f.Vm.Results.All(x=>x.State==SaleState.AwaitingSteamGuard));
+    }
+    private static string Book(string rows)=>"{\"data\":{\"success\":true,\"data\":{\"eCurrency\":16,\"rgCompactBuyOrders\":["+rows+"]}}}";
+    private static async Task ManualEmptyBook()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.Free=1;f.Server.OrderbookOverride=Book("");await f.Login();f.Vm.LowerPriceOneStep=true;await f.Prepare(1);f.EnableTrading();var row=f.Vm.ReviewRows.Single();Check(!row.Valid);row.PriceText="30";Check(row.Valid&&f.Vm.Submit.CanExecute(null)&&row.PriceBasis.Contains("수동"));var implicitPrice=row.Snapshot(0) with{ManuallyPricedShortage=false};try{await f.Workspace!.Executor.ValidateBatchAsync(new(Guid.NewGuid(),f.Workspace.Authentication.SteamId!,DateTimeOffset.UtcNow,[implicitPrice]),default);throw new Exception("Implicit empty-book price accepted");}catch(MarketCrate.Infrastructure.Steam.SteamException){Check(f.Server.Sends==0);}await f.Vm.Submit.ExecuteAsync();Check(f.Server.Sends==1&&f.Vm.Results.Single().State==SaleState.AwaitingSteamGuard);var stored=(await f.Workspace!.Store.LoadAsync(default))!;Check(stored.Snapshot.Lines.Single().UnitQuote.BuyerPays==30&&stored.Snapshot.Lines.Single().ManuallyPricedShortage);
+    }
+    private static async Task ManualBookChanged()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.Free=1;f.Server.OrderbookOverride=Book("");await f.Login();f.Vm.LowerPriceOneStep=true;await f.Prepare(1);f.EnableTrading();f.Vm.ReviewRows.Single().PriceText="30";Check(f.Vm.Submit.CanExecute(null));f.Server.OrderbookOverride=Book("300,1");await f.Vm.Submit.ExecuteAsync();Check(f.Server.Sends==0&&f.Workspace!.Store.Commands().Count==0&&!f.Vm.ReviewOpen);
+    }
     private static async Task Batch()
     {
         using var f=new FifthStageTests.Fixture();await f.Login();Check(!f.Vm.LowerPriceOneStep);f.Vm.LowerPriceOneStep=true;await f.Prepare(10);f.EnableTrading();

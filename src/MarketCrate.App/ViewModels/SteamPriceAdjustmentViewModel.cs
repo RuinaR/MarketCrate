@@ -24,12 +24,16 @@ public sealed partial class SteamWorkspaceViewModel
         get
         {
             var rows=ReviewRows.Where(x=>x.LowerStepRequested).ToArray();if(rows.Length==0)return "";
-            if(rows.Any(x=>!x.Valid||x.BaselineQuote is null))return "한 단계 하향: 계산 불가·호가 부족 또는 입력 오류가 있는 항목을 확인하세요. 해당 항목을 제외하거나 원래 가격 옵션으로 새로 검토해야 합니다.";
+            if(rows.Any(x=>!x.Valid||!x.Insufficient&&x.BaselineQuote is null))return "가격 또는 수수료 입력을 확인하세요. 매수 잔량 부족 항목은 유효한 수동 가격을 입력해야 합니다.";
             try
             {
+                var manual=rows.Where(x=>x.Insufficient).ToArray();
+                var manualText=manual.Length==0?"":$"수동 가격 {manual.Length}행 · 구매자 {new Money(manual.Sum(x=>checked(x.Quote.BuyerPays*x.Quantity)),manual[0].Currency)} · 수수료 {new Money(manual.Sum(x=>checked(x.Quote.Fees*x.Quantity)),manual[0].Currency)} · 실수령 {new Money(manual.Sum(x=>checked(x.Quote.SellerReceives*x.Quantity)),manual[0].Currency)}\n기준 호가가 없어 수동 항목은 하향 비교만 생략하며 전체 판매등록에는 포함합니다.\n";
+                rows=rows.Where(x=>!x.Insufficient).ToArray();
+                if(rows.Length==0)return manualText;
                 var baseline=new FeeQuote(rows.Sum(x=>checked(x.BaselineQuote!.BuyerPays*x.Quantity)),rows.Sum(x=>checked(x.BaselineQuote!.SellerReceives*x.Quantity)),rows.Sum(x=>checked(x.BaselineQuote!.SteamFee*x.Quantity)),rows.Sum(x=>checked(x.BaselineQuote!.GameFee*x.Quantity)));
                 var actual=new FeeQuote(rows.Sum(x=>checked(x.Quote.BuyerPays*x.Quantity)),rows.Sum(x=>checked(x.Quote.SellerReceives*x.Quantity)),rows.Sum(x=>checked(x.Quote.SteamFee*x.Quantity)),rows.Sum(x=>checked(x.Quote.GameFee*x.Quantity)));
-                return (rows.Any(x=>x.MinimumPricePinned)?$"최저 유효 가격 유지 {rows.Count(x=>x.MinimumPricePinned)}행 · 더 낮출 수 없는 항목 포함\n":"")+"한 단계 하향 선택 · 호가 유지 대비 전체 합계\n"+PriceComparisonText.Format(baseline,actual,rows[0].Currency,1,true);
+                return manualText+(rows.Any(x=>x.MinimumPricePinned)?$"최저 유효 가격 유지 {rows.Count(x=>x.MinimumPricePinned)}행 · 더 낮출 수 없는 항목 포함\n":"")+"한 단계 하향 선택 · 호가가 있는 항목의 전체 합계\n"+PriceComparisonText.Format(baseline,actual,rows[0].Currency,1,true);
             }
             catch(OverflowException){return "하향 비교 합계가 지원 범위를 초과합니다. 수량·가격을 줄여 새로 검토하세요.";}
         }

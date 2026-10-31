@@ -111,7 +111,13 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
                 if(evidence.Currency!=line.Currency||!evidence.Fresh(DateTimeOffset.UtcNow))throw new SteamException(SteamFailure.StaleReview);
                 if(price.Estimate is not {} fresh||fresh.Minor!=evidence.Minor||fresh.Buckets!=evidence.Buckets||fresh.Volume!=evidence.Volume||fresh.SampleDigest!=evidence.SampleDigest){DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,DiagnosticOutcome.Blocked,LogLevel.Warning,DiagnosticError.Validation,reason:"HistoryChanged",requirement:"E09");throw new SteamException(SteamFailure.StaleReview);}
             }
-            if (price.Currency != line.Currency || price.Bids.IsEmpty) throw new SteamException(SteamFailure.Restricted);
+            if (price.Currency != line.Currency) throw new SteamException(SteamFailure.Restricted);
+            if(price.Bids.IsEmpty)
+            {
+                if(!line.ManuallyPricedShortage||line.Evidence is not null||line.OrderbookDigest is null)throw new SteamException(SteamFailure.Restricted);
+                DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,DiagnosticOutcome.Completed,endpoint:"Orderbook",reason:"ManualShortagePrice",count:line.Quantity,requirement:"E05");
+                continue; // Exact fee/net + fresh currency + unchanged empty-book digest were verified above.
+            }
             var reference = price.Bids[0].BuyerPays;
             if (line.UnitQuote.BuyerPays < reference / 2 || (decimal)line.UnitQuote.BuyerPays > (decimal)reference * 2)
                 throw new SteamException(SteamFailure.Restricted); // Require a new review, never reprice the immutable approval.
