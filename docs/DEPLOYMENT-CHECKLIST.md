@@ -1,3 +1,11 @@
+## 최신 배포 — 0.20.20 최저 유효 가격 유지
+
+소스 **426b6ee0146b0ff37611790265f76f7df9f2a370**. `artifacts/releases/MarketCrate-0.20.20-minimum-price-426b6ee-win-x64.zip` **66,751,408바이트 /418파일**. SHA256 **918C46D9D4CCB597DF74E5721AE11D33AB0C3FCEF4E179ED5DEF3808E1EEF04B**. ZIP 전체 entry/출하 파일 해시·SourceCommit/버전·x64 CLR/WPF10.0.14·SQLite/DPAPI·라이선스·실제 전용 PE/BAML·Mock/개발UI/Auth/DB/로그/PDB 제외 정적 검사 PASS. Release 경고/오류0. 앱/설치/실계정은 미실행이다.
+
+기능430/430·비표시WPF79/79·배포20/20·advisory 검사기6/6 PASS, 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 최저 유효가 유지/감소0 검토125/200% 자체 RTB 직접 확인. 새 코드의 실제 사용자 거래/모바일 승인은 NOT VERIFIED이며 75개47/16/0/3/9 유지.
+
+롤백0.20.19(a3ef735, SHA256 2470686121811D9A4BD5A1F1FF09C5BD085996C74DDB41526E2E81B6E8869C91)과 기존 Auth/설정/SQLite/저널/진단·과거 ZIP 보존, 삭제0. 사용자는 새 폴더에 해제→보관함 시세 갱신→최저가 유지 표시/수수료/실수령 확인→새 최종 검토의 전체 판매등록 승인 순으로 확인한다. 호가 변경 안내 시 이전 승인을 반복하지 말고 다시 시세를 갱신해 검토해야 한다. 첨부 작업은 전송 전 호가 변경으로 Sell0이며 Steam 확인 요청이 생성되지 않았다는 근거가 확인됐다. 자동 재전송/가격 변경·실제 Steam 실행0.
+
 ## 최신 배포 — 0.20.19 승인 후 현재 목록 중심
 
 소스 **a3ef735f1d516c22de6d7424423e80cb62a7af19**. `artifacts/releases/MarketCrate-0.20.19-current-listings-a3ef735-win-x64.zip` **66,750,871바이트 /418파일**. SHA256 **2470686121811D9A4BD5A1F1FF09C5BD085996C74DDB41526E2E81B6E8869C91**. 전체 ZIP entry/출하 파일 해시·SourceCommit/버전·x64 CLR/WPF10.0.14·SQLite/DPAPI·라이선스·실제 전용 PE/BAML·Mock/개발UI/Auth/DB/로그/PDB 제외 검사 PASS. Release build 경고/오류0, 앱/설치/실계정 실행은 NOT VERIFIED.

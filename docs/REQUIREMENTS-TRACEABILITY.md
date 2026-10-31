@@ -1,3 +1,7 @@
+## 0.20.20 E05/E09/F02 보완
+
+사용자 요청으로 검증된 최저 유효가 유지 정책을 LowerOrMinimumBuyerPrice→SteamReviewRow/재가격 제안→행/전체 비교→기존 단일 배치에 연결했다. MinimumBatch/StaleThenFresh와 WPF 최저가 유지 회귀를 포함한다. 호가 변경 미전송은 직접 증명한 검증 위치에서만 안내하며 새 시세·검토 승인이 필요하다. 전체430/79/20 PASS, 실계정 미검증. 75개 ID·47/16/0/3/9 유지, COMPLETE 승격0.
+
 ## 0.20.19 F09/B01 사용자 흐름 변경
 
 사용자 명시적 요청에 따라 일반 승인 후 경로를 ShowCurrentListings→Orders.Refresh/SetListings→판매 중 화면으로 변경했다. 이력 대조/개별 결과 추적은 선택적 고급 기능으로 보존한다. CurrentOnlyAbsent/Listed/Denied/Cancelled와 WPF 주명령 연결 회귀로 검증했다. 75개 ID·47/16/0/3/9 유지, 실제 서버/물리 GUI 미검증으로 승격0. 내부 거래 저널·Unknown·중복 보호는 삭제하지 않는다.
