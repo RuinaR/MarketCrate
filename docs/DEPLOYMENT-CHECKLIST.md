@@ -1,3 +1,11 @@
+## 최신 배포 — 0.20.18 KRW 거래내역 원본 단위 대조
+
+소스 **d3eb49e282cba23ebf26c418c5cfd048ee633de2**. `artifacts/releases/MarketCrate-0.20.18-history-wire-d3eb49e-win-x64.zip` **66,750,288바이트 /418파일**. SHA256 **15645A9B553A9775EB8DD92A724E53E06A9CBCC253EE4F938A16CF6C92ED2C25**. 전체 ZIP entry/출하 파일 SHA 일치·SourceCommit/버전·x64 CLR/WPF10.0.14·SQLite/DPAPI·라이선스·실제 전용 PE/BAML·Mock/개발UI/DB/Auth/로그/PDB 제외 정적 검사 PASS. Release 경고/오류0. 앱/설치/실계정은 미실행이다.
+
+전체 기능424/424·비표시WPF79/79·배포20/20·advisory 검사기6/6 PASS. 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 원화 이력1건의 비정수 표시단위 때문에 페이지 전체가 중단되는 합성 재현을 수정했고 신규5개 회귀를 포함한다. 사용자 실제3건의 새 버전 대조는 아직 NOT VERIFIED다. 75개 판정47/16/0/3/9 유지.
+
+롤백0.20.17(72b7b70, SHA256 9139E51CCD5C4C378E04C9D448DCA428D2DBD6D808C1C35C42BE5D77910D502D)과 모든 기존 배포·운영 로그·Auth·설정·SQLite·저널을 보존했다. 삭제/초기화0. 사용자는 새 폴더에 ZIP을 해제해 로그인 복원 후 기존 판매 결과의 ‘승인 후 게시 확인’ 또는 ‘선택 요청 상태 확인’을 실행하면 된다. 새 판매는 필요하지 않다. 원래 등록 ID/자산/통화/수량/원본 단위 금액/시각이 정확히 일치해야 판매 완료이며, 불일치는 새 이유별 진단과 Unknown을 유지한다. Codex의 실제 계정/GUI 요청0.
+
 ## 최신 배포 — 0.20.17 판매목록 빈 자산 맵
 
 소스 **72b7b703caa5133c4719198fe80297b2d39d75c7**. `artifacts/releases/MarketCrate-0.20.17-empty-listings-72b7b70-win-x64.zip` **66,749,751바이트 /418파일**. SHA256 **9139E51CCD5C4C378E04C9D448DCA428D2DBD6D808C1C35C42BE5D77910D502D**. ZIP 모든 entry와 출하 파일 SHA 일치, 버전/커밋·x64 CLR/WPF10.0.14·SQLite/DPAPI·라이선스·실제 전용 PE/BAML·Mock/개발UI/개인DB/Auth/로그/PDB 제외 검사 PASS. Release 경고/오류0, 앱/설치/실계정 실행은 NOT VERIFIED.

@@ -1,3 +1,7 @@
+## 2026-10-31 — 0.20.18 배포 확정
+
+소스d3eb49e origin/main push 완료. ZIP66,750,288바이트/418파일·모든 entry SHA·실제 전용 PE/BAML·라이선스·개인자료 제외 PASS. 전체424/79/20·advisory 검사기6 PASS, 정리8 PASS/1 NOT VERIFIED. 롤백0.20.17·운영 로그/Auth/저널 보존, 삭제0. 실제 계정의 새 체결 대조는 사용자 직접 단계이며 Codex Steam/GUI 실행0. 경로·해시는 CURRENT-STATUS 참조.
+
 ## 2026-10-31 — 0.20.18 유사 프로젝트 대조·KRW 이력 복구
 
 사용자는1개씩3건 실체결을 확인했고 앱 종료로 ZIP을 만들지 못했다. MarketCrate 소유 Logs의 최신 session JSONL이 보존된 것을 확인하고 관련 MarketHistory 이벤트만 정제 분석했다. HTTP200 뒤 received_amount의 FromWire 변환에서 발생한 Schema 예외가 전체3건 대조를 중단한 것이 확인됐다. vladpuz/steam-market myHistory/PurchaseResponse와 SnaBe getMyHistory를 실제 소스로 대조했다. 원본 금액·통화를 별도 보존하는 방식을 독립 C# 구현에 반영하고 JS Number로 ID를 좁히는 방식은 도입하지 않았다. 원본wire 정수끼리 정확 비교, nullable 보류/철회 지원, 파싱 CorrelationId/원인별 진단 추가. 새 의존성/Node runtime/코드 직접 복사0.
