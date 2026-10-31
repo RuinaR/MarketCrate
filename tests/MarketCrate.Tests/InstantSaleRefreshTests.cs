@@ -13,6 +13,7 @@ public static class InstantSaleRefreshTests
         tests=[..tests,("History403 preserves old receipt and prevents repeat traffic or resubmission",HistoryDenied)];
         tests=[..tests,("Off-grid historical KRW row cannot abort other instant-filled batch lines",OffGridBatch),("Off-grid target is not rounded into an approved amount",OffGridTarget),("History mismatch reason distinguishes amount from missing listing",AmountDiagnosis),("Wire parser preserves USD cents and KRW integer precision",RawUnits)];
         tests=[..tests,("Public purchase contract nullable hold and revoked fields do not abort history",NullableFlags)];
+        tests=[..tests,("Normal approval handoff shows remaining listings without history or journal rewrite",CurrentOnlyAbsent),("Normal approval handoff shows an unsold posted item without history",CurrentOnlyListed),("Normal current-list failure retains previous rows and view without bypass",CurrentOnlyDenied),("Cancelling current-list handoff preserves view and journal",CurrentOnlyCancelled)];
         int passed=0,failed=0;foreach(var(name,test)in tests)try{await test();passed++;Console.WriteLine("PASS "+name);}catch(Exception error){failed++;Console.WriteLine("FAIL "+name+": "+error);}return(passed,failed);
     }
     private static HttpResponseMessage Html(string body)=>new(HttpStatusCode.OK){Content=new StringContent(body)};
@@ -120,5 +121,26 @@ public static class InstantSaleRefreshTests
     {
         var asset=new InventoryAsset(new(730,"2","101"),"Steam","item","item",1,false,true,true);var command=new SteamCommandRecord("synthetic","76561198000000001",new("line",asset,1,"KRW",new(115,100,5,10),DateTimeOffset.UtcNow),"sell",SaleState.Submitted,"900",DateTimeOffset.UtcNow);
         var node=System.Text.Json.Nodes.JsonNode.Parse(History(command))!;var sale=node["purchases"]!["900_880"]!;sale["funds_held"]=null;sale["funds_revoked"]=null;Check(SteamSaleHistory.Parse(node.ToJsonString()).Length==1);sale["funds_revoked"]=1;Check(SteamSaleHistory.Parse(node.ToJsonString()).Length==0);return Task.CompletedTask;
+    }
+    private static async Task CurrentOnlyAbsent()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();await f.Vm.SubmitAsync();var command=f.Workspace!.Store.Commands().Single();var batch=await f.Workspace.Store.LoadAsync(default);f.Server.Rows.Clear();f.Server.MarketHistoryStatus=403;
+        await f.Vm.ShowCurrentListings.ExecuteAsync();await f.Vm.LoadListings.ExecuteAsync();
+        Check(f.Vm.WorkPage==2&&f.Vm.Listings.Count==0&&f.Server.MarketHistoryReads==0&&f.Server.Sends==1&&f.Workspace.Store.ReadCommand(command.RequestKey)==command&&await f.Workspace.Store.LoadAsync(default)==batch&&f.Vm.Results.Single().State==SaleState.AwaitingSteamGuard);
+    }
+    private static async Task CurrentOnlyListed()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();await f.Vm.SubmitAsync();f.Server.Publish=true;f.Server.MarketHistoryStatus=403;await f.Vm.ShowCurrentListings.ExecuteAsync();
+        Check(f.Vm.WorkPage==2&&f.Vm.Listings.Single().Listing.State==SaleState.Listed&&f.Server.MarketHistoryReads==0&&f.Server.Sends==1);
+    }
+    private static async Task CurrentOnlyDenied()
+    {
+        using var f=new ThirteenthStageTests.Fixture();await Active(f);f.Vm.WorkPage=3;f.Route=p=>p.Contains("mylistings")?new(HttpStatusCode.Forbidden){Content=new StringContent("{}")} :null;await f.Vm.ShowCurrentListings.ExecuteAsync();var reads=f.Reads.Count;await f.Vm.ShowCurrentListings.ExecuteAsync();
+        Check(f.Vm.WorkPage==3&&f.Vm.Listings.Count==1&&f.Vm.RequestsBlocked&&f.Reads.Count==reads&&!f.Vm.ShowCurrentListings.CanExecute(null)&&f.Server.MarketHistoryReads==0&&f.Server.Sends==0);
+    }
+    private static async Task CurrentOnlyCancelled()
+    {
+        using var f=new ThirteenthStageTests.Fixture();await Active(f);f.Vm.WorkPage=3;f.Server.ListingsStarted=new(TaskCreationOptions.RunContinuationsAsynchronously);f.Server.ListingsRelease=new(TaskCreationOptions.RunContinuationsAsynchronously);var task=f.Vm.ShowCurrentListings.ExecuteAsync();await f.Server.ListingsStarted.Task.WaitAsync(TimeSpan.FromSeconds(5));f.Vm.CancelOperation.Execute(null);await task;
+        Check(f.Vm.WorkPage==3&&f.Vm.Listings.Count==1&&!f.Vm.Busy&&f.Vm.ListingsRead.State==MarketCrate.App.ViewModels.SteamReadState.Cancelled&&f.Server.MarketHistoryReads==0&&f.Server.Sends==0);
     }
 }

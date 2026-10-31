@@ -1,3 +1,7 @@
+## 0.20.19 기본 현재 목록과 고급 대조 구분
+
+ShowCurrentListingsAsync의 UI OperationId→Listings GET 페이지들→ReadContract/SetListings→판매 중 화면만 연결한다. 일반 승인 후 버튼에서 MarketHistory/BatchRecovered를 호출하지 않는다. 읽기 상태/로딩·취소·실패는 ListingsRead에 반영하고403/429/계약 차단을 준수한다. 고급 Recover/선택 요청 대조를 명시적으로 누른 경우에만 기존 상세 증거 이벤트를 남긴다. 운영 로그/거래 저널 보존 역할과 비밀정보 제외 원칙은 변하지 않는다.
+
 ## 0.20.18 거래내역의 불일치 원인
 
 MarketHistory HTTP·본문 파싱은 같은 CorrelationId를 유지한다. EvidenceChecked의 HistoryNoSaleCandidate/HistoryAssetMismatch/HistoryQuantityMismatch/HistoryCurrencyMismatch/HistoryAmountMismatch/HistoryTimeMismatch/HistoryMultipleCandidates로 후보 없는 이유를 분리한다. ReadContract HistoryQuoteConflict는 서버의 이력 원단가와 실수령이 서로 모순된 경우로, 해당 행을 성공 처리하지 않는다. 실제 금액·계정/상품/자산/구매 ID·원본 JSON은 로그에 넣지 않는다. 확정하는 경우만 기존 HistorySaleMatched→Sold→SQLite audit/배치 결과로 이어진다. 새 실패 이유 token은 정적 화이트리스트로 제한한다.

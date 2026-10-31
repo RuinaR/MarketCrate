@@ -12,6 +12,7 @@ public sealed partial class SteamWorkspaceViewModel
     private bool syntheticConnection;
     public bool ContractToolsVisible=>syntheticConnection;
     public AsyncCommand LoadListings {get;private set;}=null!;
+    public AsyncCommand ShowCurrentListings {get;private set;}=null!;
     public AsyncCommand LoadFees {get;private set;}=null!;
     public AsyncCommand LoadWallet {get;private set;}=null!;
     public Command OpenOfficialMarket {get;private set;}=null!;
@@ -32,6 +33,7 @@ public sealed partial class SteamWorkspaceViewModel
         officialPage=open??(uri=>System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(uri.AbsoluteUri){UseShellExecute=true}));
         OpenOfficialMarket=new(()=>{DiagnosticHub.Emit(DiagnosticEvent.UiPage,DiagnosticArea.UI,requirement:"F01",reason:"OfficialMarket");officialPage(new("https://steamcommunity.com/market/"));},()=>!Busy&&!AnyReview);
         LoadListings=new(LoadListingsAsync,Error,()=>CanReadFeature("Listings")&&!Busy&&!AnyReview);
+        ShowCurrentListings=new(ShowCurrentListingsAsync,Error,()=>CanReadFeature("Listings")&&!Busy&&!AnyReview);
         LoadFees=new(LoadFeesAsync,Error,()=>CanReadFeature("Wallet")&&CanReadFeature("Fees")&&CanReadFeature("FeeContext")&&!Busy&&!AnyReview);
         LoadWallet=new(LoadWalletAsync,Error,()=>CanReadFeature("Wallet")&&!Busy&&!AnyReview);
     }
@@ -56,6 +58,12 @@ public sealed partial class SteamWorkspaceViewModel
         RequireConnection();var rows=await workspace!.Orders.RefreshAsync(token);token.ThrowIfCancellationRequested();
         SetListings(rows);RefreshRequests();RecordCheck("Listings",rows.Length);
         Status=CanTrade?"판매목록 조회 완료 · 실제 거래 세션 활성 · 이번 조회에서는 거래 요청을 보내지 않았습니다.":CanCancel?"판매목록 조회 완료 · 취소 전용 세션 · 새 판매등록은 별도 검토가 필요합니다.":"판매목록 조회 완료 · 판매·취소 전송은 별도 조건 확인과 최종 검토가 필요합니다.";
+    });
+    public Task ShowCurrentListingsAsync()=>Run(async token=>
+    {
+        RequireConnection();var rows=await workspace!.Orders.RefreshAsync(token);token.ThrowIfCancellationRequested();
+        SetListings(rows);RefreshRequests();RecordCheck("Listings",rows.Length);WorkPage=2;
+        Status="현재 판매목록 갱신 완료 · 남아 있는 항목만 표시합니다. 목록에 없는 항목의 체결 이력은 추적하지 않으며 새 판매 요청은 보내지 않았습니다.";
     });
     public Task LoadFeesAsync()=>Run(async token=>
     {

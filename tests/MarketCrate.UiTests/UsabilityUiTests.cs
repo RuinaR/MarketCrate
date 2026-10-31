@@ -73,8 +73,9 @@ internal static class UsabilityUiTests
                 var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,800,1.25,"guard-handoff-125.png");render(view,1380,900,2,"guard-handoff-200.png");
                 Check(vm.SelectedRequest is not null&&Find<ComboBox>(view).Any(x=>ReferenceEquals(x.ItemsSource,vm.RequestOptions)&&Equals(x.SelectedValue,vm.SelectedRequest)),"empty request picker after submission");
                 var picker=Find<ComboBox>(view).Single(x=>ReferenceEquals(x.ItemsSource,vm.RequestOptions));Check(Find<TextBlock>(picker).Any(x=>x.Text.StartsWith("등록 ·"))&&!Find<TextBlock>(picker).Any(x=>x.Text.Contains("Key =")),"DisplayMemberPath ignored by selection template");
-                Check(vm.HasApprovalHandoff&&Find<TextBlock>(view).Any(x=>x.Text.Contains("푸시 알림이 없더라도"))&&Find<Button>(view).Any(x=>Equals(x.Content,"승인 후 게시 확인")&&ReferenceEquals(x.Command,vm.Recover)),"Guard handoff/command disconnected");
-                server.Publish=true;Complete(vm.RecoverAsync());render(view,1100,800,1,"guard-posted.png");
+                Check(vm.HasApprovalHandoff&&Find<TextBlock>(view).Any(x=>x.Text.Contains("푸시 알림이 없더라도"))&&Find<Button>(view).Any(x=>Equals(x.Content,"승인 후 판매 중 보기")&&ReferenceEquals(x.Command,vm.ShowCurrentListings)),"Guard handoff/command disconnected");
+                server.Publish=true;Complete(vm.ShowCurrentListings.ExecuteAsync());render(view,1100,800,1,"guard-posted.png");
+                Check(vm.WorkPage==2&&server.MarketHistoryReads==0&&vm.Listings.Count==3,"Normal handoff unexpectedly followed history");
                 Check(!vm.HasApprovalHandoff&&vm.Results.All(x=>x.State==SaleState.Listed)&&server.Sends==3&&Application.Current.Windows.Count==0,"false completion/additional submission/native window");
             }
             Directory.Delete(root,true);

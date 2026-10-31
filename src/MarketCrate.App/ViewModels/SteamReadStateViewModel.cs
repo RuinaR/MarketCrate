@@ -58,7 +58,7 @@ public sealed partial class SteamWorkspaceViewModel
             catch(Exception error)when(error is ArgumentException or InvalidOperationException or OverflowException or SteamException){return "시세·수수료 자료가 부족합니다. 갱신 후 검토하세요.";}
         }
     }
-    private SteamReadStatus? ReadFor(string method)=>method switch{nameof(LoadAsync)=>InventoryRead,nameof(LoadListingsAsync) or nameof(RecoverAsync)=>ListingsRead,nameof(LoadFeesAsync)=>FeesRead,nameof(LoadWalletAsync)=>WalletRead,nameof(RefreshPricesAsync) or nameof(ListingMetricsAsync)=>PricesRead,nameof(HistoryAsync)=>HistoryRead,_=>null};
+    private SteamReadStatus? ReadFor(string method)=>method switch{nameof(LoadAsync)=>InventoryRead,nameof(LoadListingsAsync) or nameof(ShowCurrentListingsAsync) or nameof(RecoverAsync)=>ListingsRead,nameof(LoadFeesAsync)=>FeesRead,nameof(LoadWalletAsync)=>WalletRead,nameof(RefreshPricesAsync) or nameof(ListingMetricsAsync)=>PricesRead,nameof(HistoryAsync)=>HistoryRead,_=>null};
     private void ReadFailed(SteamReadStatus read,Exception error){var code=error is SteamException e?e.Code:SteamFailure.ContractChanged;read.Update(code==SteamFailure.Unsupported?SteamReadState.Unsupported:code==SteamFailure.Authorization||workspace?.FeatureFailure(read.Endpoint) is not null||RequestsBlocked?SteamReadState.AccessBlocked:SteamReadState.Failed,code);if(ReferenceEquals(read,FeesRead)){fees=null;gameFees.Remove(Game.AppId);Raise(nameof(CurrencyText));}Changed();}
     private async Task IndependentRead(SteamReadStatus read,Func<Task> action)
     {

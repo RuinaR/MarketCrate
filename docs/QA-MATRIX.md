@@ -1,3 +1,9 @@
+## 0.20.19 현재 목록 기본 흐름
+
+CurrentOnlyAbsent: 접수 후 서버 목록 부재→판매 중 화면 빈 목록, history 호출0/추가 판매0, 기존 접수·배치 저널 불변. CurrentOnlyListed: 남아 있는 항목 표시, history0. CurrentOnlyDenied:403은 재시도/우회 없이 중단·기존 화면/행 보존. CurrentOnlyCancelled: 취소 시 기존 화면/행·저널 유지. 기존 WPF 승인 인계 테스트는 실제 ShowCurrentListings 명령/현재 목록 이동/거래내역 호출0을 검사한다. 선택적 Recover 및 금액·Unknown 회귀는 유지한다.
+
+runtime/current-list-flow-full.txt: 기능428/428·비표시WPF79/79·배포20/20·advisory 검사기6/6 PASS, 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가), 경고/오류0. guard-handoff-125/200 및 guard-posted 자체 RTB를 검토한다. 물리 GUI·실서버는 NOT VERIFIED다.
+
 ## 0.20.18 원화 이력 단위·배치 대조
 
 InstantSaleRefreshTests 추가5개. 기존12개와 신규4개의 수정 전 집중 검사12 PASS/4 FAIL, 원본 wire 정수 처리 후16/16 PASS, nullable 보류/철회 필드를 포함한 최종17개 및 전체424/424 PASS다. 비표시WPF79/79·배포20/20·advisory 검사기6/6 PASS, 정리8 PASS/0 FAIL/1 NOT VERIFIED, build 경고/오류0. runtime/history-wire-before/after/full.txt는 추적/출하 제외다.
