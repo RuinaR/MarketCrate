@@ -244,3 +244,7 @@ WPF 검사는 MainView/UserControl을 직접 Measure/Arrange하고 RenderTargetB
 ## 0.20.14 배포
 
 [사용자 입력 경로 수정 portable ZIP](artifacts/releases/MarketCrate-0.20.14-user-paths-1f3d95e-win-x64.zip), 소스1f3d95e. SHA256 FDC735FF70F9CC1264A0EAFB296AE1B0EF80577678C0E3AFF65E4AA102F0238A.418파일 전체 해시/실제 전용/x64 자체 포함 검사 PASS. 롤백0.20.13과 사용자 데이터는 보존한다. [검증표와 미검증 범위](docs/USER-JOURNEY-QA.md)를 확인하세요.
+
+## 0.20.15 배포
+
+[한 단계 낮은 유효 가격 옵션 portable ZIP](artifacts/releases/MarketCrate-0.20.15-lower-step-59e3191-win-x64.zip), 소스59e3191. SHA256 3E55B1AECECE9728B381D0BC36DE9E2F155838FDE492EADC53F1BD5BE895A21D.418파일 전체 해시·실제 전용·자체 포함 x64 검사 PASS.0.20.14 롤백 및 사용자 자료 보존. 옵션은 기본OFF이며 [사용법·금액 감소·제한](docs/LOWER-PRICE-OPTION.md)을 확인하세요. 실제 즉시 체결을 보장하지 않습니다.

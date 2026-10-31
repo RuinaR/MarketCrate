@@ -603,3 +603,11 @@ SteamPriceAdjustmentViewModel/SteamReviewRow/Listing 제안에 기본/변경 Fee
 ### 0.20.15 최종 검증
 
 전체 runtime/lower-step-final-regression.txt 기능399/399·비표시WPF77/77·배포20/20·advisory 검사기6/6 PASS, 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 마지막 표시/관리 조건과 취소 후 실제 하향 wire 확인 후 관련10기능/2WPF 재검증 PASS. 새 수동 가격 증가/감소 비교를 포함한10/2는 번들 .NET/WPF10.0.14 테스트 콘솔에서도 PASS다.125/200% RTB에서 전체/행별 금액 비교와 스크롤·최종 버튼을 직접 열람했다. 실제 창·계정·조회·거래·Guard·원본 운영 데이터 변경0. 새 옵션의 실제 체결은 미검증이다.
+
+## 최신 배포 — 0.20.15 한 단계 하향 옵션
+
+소스 **59e3191afe21c3d11a86e53d343c2f96c3e7b779**. `artifacts/releases/MarketCrate-0.20.15-lower-step-59e3191-win-x64.zip` **66,743,543바이트 /418파일**. SHA256 **3E55B1AECECE9728B381D0BC36DE9E2F155838FDE492EADC53F1BD5BE895A21D**. ZIP 모든 entry SHA/출하 파일 일치, SourceCommit/버전·x64 Core/WPF10.0.14/SQLite/DPAPI·라이선스·실제 전용 PE/BAML·Mock/테스트UI/Auth/DB/로그/PDB 제외 정적 검사 PASS. Release build 경고·오류0. 실제 앱/설치는 미실행이다.
+
+전체 기능399/399·비표시WPF77/77·배포20/20·advisory 검사기6/6 PASS, 안전 정리8 PASS/0 FAIL/1 NOT VERIFIED(junction 생성 불가). 최종 문구/관리 승인조건 및 수동 증가 비교를 포함한 신규10기능/2WPF는 관련 재검증과 번들 .NET/WPF10.0.14에서도 PASS.125/200% 자체 RTB의 비교/스크롤/버튼을 직접 검토했다. 옵션의 실제 서버 체결/물리 GUI는 미검증이다. 실제 앱·계정·판매·취소·Guard 실행0, 최초75개47/16/0/3/9 유지.
+
+최신0.20.15/롤백0.20.14(1f3d95e, SHA256 FDC735FF70F9CC1264A0EAFB296AE1B0EF80577678C0E3AFF65E4AA102F0238A). 이전 배포·설정·DPAPI Auth·SQLite·저널·진단 삭제0, 외부 바이너리 업로드0. 사용자 확인: 새 폴더에 ZIP 해제 → 로그인/직접 갱신 → ‘즉시거래가능가보다 한 단계 낮게’ 직접 선택 → 최종 검토의 기본/변경 가격·수수료·실수령 감소액/비율 확인 → 원하는 경우 전체 판매등록 한 번 승인 → 공식 앱 수동 확인/서버 게시 대조. 최저 하향 불가 또는 계약/시세 변경은 옵션/대상/자료를 바꿔 새로 검토해야 한다. 자동 반복 인하나 체결 보장은 없다.
