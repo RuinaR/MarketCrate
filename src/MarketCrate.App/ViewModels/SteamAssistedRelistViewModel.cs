@@ -69,20 +69,20 @@ public sealed partial class SteamWorkspaceViewModel
             var schedule=await workspace.FeesAsync(group.Key.AppId,token);gameFees[group.Key.AppId]=schedule;
             if(group.Any(x=>x.Currency!=schedule.Currency))throw new SteamException(SteamFailure.Restricted);
             foreach(var asset in candidates)_=FeeFor(asset);
-            OperationLabel="새 대상의 즉시거래가능가 갱신 중";var price=await workspace.Prices.RefreshAsync(candidates[0],token);
+            OperationLabel="새 대상의 즉시거래가능가 갱신 중";var price=UseLowestSell?await workspace.Prices.RefreshLowestSellAsync(candidates[0],workspace.Orders.ForLowestSell(candidates[0]),token):await workspace.Prices.RefreshAsync(candidates[0],token);
             if(price.Currency!=schedule.Currency)throw new SteamException(SteamFailure.Restricted);
             selected.AddRange(candidates.Select(x=>(x,price)));
         }
-        var allocation=SalePlanner.Build(selected.Select(x=>new SaleSelection(x.Asset,x.Price,1)),PriceBasis.Immediate);
+        var allocation=UseLowestSell?SalePlanner.AtLowestSell(selected.Select(x=>new SaleSelection(x.Asset,x.Price,1))):SalePlanner.Build(selected.Select(x=>new SaleSelection(x.Asset,x.Price,1)),PriceBasis.Immediate);
         if(allocation.UnpricedQuantity>0){ListingPriceStatus=$"구매주문 잔량 {allocation.UnpricedQuantity}개 부족 · 새 판매 검토를 만들지 않았습니다.";return;}
         token.ThrowIfCancellationRequested();if(!Connected||workspace.Authentication.SteamId!=account)throw new SteamException(SteamFailure.Authentication);
         // Authentication may remain valid while a listing reappears. Recheck before presenting new targets.
         await workspace.Orders.RefreshAsync(token);
         if(plan.Listings.Any(x=>workspace.Orders.Presence.Any(now=>now.ListingId==x.ListingId||now.ListingId is null&&now.Asset==x.Asset))||selected.Any(x=>workspace.Orders.Presence.Any(now=>now.Asset==x.Asset.Key)))throw new SteamException(SteamFailure.StaleReview);
         fees=gameFees[selected[0].Asset.Key.AppId];pricingMode=0;Raise(nameof(PricingMode));
-        ReviewRows.Clear();foreach(var line in allocation.Lines)ReviewRows.Add(new(line.Selection.Asset,1,line.Allocation.BuyerPays,line.Selection.Price,FeeFor(line.Selection.Asset),Changed,PriceBasis.Immediate,LowerPriceOneStep){Image=imageRefs.GetValueOrDefault(line.Selection.Asset.Key),ImageOperation=DiagnosticHub.Context?.OperationId});
+        ReviewRows.Clear();foreach(var line in allocation.Lines)ReviewRows.Add(new(line.Selection.Asset,1,line.Allocation.BuyerPays,line.Selection.Price,FeeFor(line.Selection.Asset),Changed,PriceBasis.Immediate,LowerPriceOneStep,lowestSell:UseLowestSell){Image=imageRefs.GetValueOrDefault(line.Selection.Asset.Key),ImageOperation=DiagnosticHub.Context?.OperationId});
         relistReview=plan;ReviewContextText="취소 후 보관함에서 찾은 같은 상품을 새 판매 대상으로 제안합니다. 원래 아이템의 반환 인과관계는 미확인입니다. 기존 보유분일 수 있으므로 아래 실제 자산 ID·수량·새 가격을 확인하세요. 전체 판매등록 한 번 승인 시 이 새 대상 전체를 등록합니다.";
-        ReviewLiquidityText="현재 구매주문 기준 · 실제 즉시 체결 보장 없음 · 이전 승인 가격은 사용하지 않음";Raise(nameof(ReviewLiquidityText));Raise(nameof(CurrencyText));
+        ReviewLiquidityText=UseLowestSell?"최저 판매호가 기준 · 본인 판매등록 제외 · 체결 보장 없음 · 새 승인 필요":"현재 구매주문 기준 · 실제 즉시 체결 보장 없음 · 이전 승인 가격은 사용하지 않음";Raise(nameof(ReviewLiquidityText));Raise(nameof(CurrencyText));
         ReviewOpen=true;Status="새 실제 자산 검토 · 아직 판매 요청을 보내지 않았습니다.";
         DiagnosticHub.Emit(DiagnosticEvent.ReviewOpened,DiagnosticArea.Management,count:ReviewRows.Count,requirement:"B10",reason:"NewAssetReview");
     });

@@ -1,3 +1,7 @@
+## 2026-11-02 KST — 판매 주문장
+
+[assetpaygg/steam-mobile](https://github.com/assetpaygg/steam-mobile)의 공개 getOrderbook/summarizeOrderbook 계약에서 rgCompactSellOrders(가격·수량 쌍), amtMinSellOrder, 지갑 통화와 오름차순/최저 일치 검증을 대조했다. MIT 표기 확인. 구현 디렉터리는 웹 도구 접근 실패여서 소스 전체/고정 SHA를 검토했다고 주장하지 않는다. 직접 복사/런타임/종속성 도입0, C#으로 독립 계약 구현. 그 프로젝트의 모바일 모사/비밀키/자동 승인 기능은 도입하지 않는다. 공식 허가 또는 우리 실계정 성공의 근거가 아니다. 실제 계정의 매도 주문장 응답은 이번 작업에서 조회하지 않았다.
+
 ## 2026-11-01 KST — 최저가 재등록 조사
 
 사용자 진단의 FeeValidated/AppContextMissing을 일차 근거로 삼았다. node-steamcommunity components/market.js 공개 코드를 확인했으나 getMarketApps는 장터 앱 이름 목록이며 누락된 계정별 게임 수수료 계약의 대체 근거가 아니다(https://raw.githubusercontent.com/DoctorMcKay/node-steamcommunity/master/components/market.js). 해당 코드 복사/라이브러리 도입0. 공식 economy_common.js URL은 웹 도구 접근 실패로 최신 내용을 재검증하지 못했다. 이번 변경에서 기존 검증된 계산식을 변경하거나 공개 일반 수수료율로 보충하지 않는다.

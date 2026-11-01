@@ -14,13 +14,13 @@ internal static class ProductAuditUiTests
 {
     public static void Run(Action<string,Action> test,Action<FrameworkElement,int,int,double,string> render)
     {
-        test("실제 화면 가격 기준은 즉시거래가능가 하나·평균/기간 선택기 없음",()=>
+        test("실제 가격 기준은 즉시거래가능가·최저 판매호가이며 평균/기간 선택기 없음",()=>
         {
             using var vm=new SteamWorkspaceViewModel();vm.WorkPage=1;var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,800,1.25,"options28-immediate-inventory.png");
             Check(vm.PricingModes.SequenceEqual(new[]{PriceDisplay.Immediate})&&vm.ListingPricingModes.SequenceEqual(new[]{PriceDisplay.Immediate}),"retired price option remains");
             Check(!Find<ComboBox>(view).Any(x=>ReferenceEquals(x.ItemsSource,vm.PricingModes)||ReferenceEquals(x.ItemsSource,vm.PriceWindows)),"retired selectors remain");
-            Check(Find<TextBlock>(view).Any(x=>x.Text==PriceDisplay.Immediate),"fixed immediate label missing");vm.WorkPage=2;render(view,1100,800,1,"options28-immediate-listings.png");
-            Check(!Find<ComboBox>(view).Any(x=>ReferenceEquals(x.ItemsSource,vm.ListingPricingModes))&&Find<TextBlock>(view).Any(x=>x.Text==PriceDisplay.Immediate),"listing pricing selector or label mismatch");
+            Check(vm.PriceTargets.SequenceEqual(new[]{PriceDisplay.Immediate,PriceDisplay.LowestSell})&&Find<ComboBox>(view).Any(x=>ReferenceEquals(x.ItemsSource,vm.PriceTargets)),"price target selector missing");vm.WorkPage=2;render(view,1100,800,1,"options28-immediate-listings.png");
+            Check(!Find<ComboBox>(view).Any(x=>ReferenceEquals(x.ItemsSource,vm.ListingPricingModes))&&Find<ComboBox>(view).Any(x=>ReferenceEquals(x.ItemsSource,vm.PriceTargets)),"listing pricing selector mismatch");
         });
         test("전체 제품 XAML의 모든 주요 Command가 실제 VM 명령 객체로 연결",()=>
         {

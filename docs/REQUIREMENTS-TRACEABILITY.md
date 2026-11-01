@@ -1,3 +1,7 @@
+## 0.20.23 B10/D04/E05/F02 가격 기준 확장
+
+사용자 명시 요청으로 PriceTarget→보관함/판매 중 기존 UI→최신 전체 판매목록/rgCompactSellOrders→본인 수량 제외→최저 판매호가/직전 유효가→최종 검토→한 번 승인→Executor/SQLite/반환 검증을 연결했다. 기존 PriceBasis enum/과거 저널/평균 UI 제거는 유지한다. 정상·최저·빈 호가·자기 등록 소멸·실제 경쟁가 변경·중복 승인·통화/수수료 검사를 합성으로 검증했다. 실제 계정/거래/물리 입력 미검증으로75개47/16/0/3/9 및 ID 유지, 승격0. 최종 수치는 CURRENT-STATUS 참조.
+
 ## 0.20.22 B10/D10 수수료 누락·변경 없는 재등록
 
 SteamFees→FeeContractReason→SteamWorkspaceViewModel/ListingPriceStatus로 AppContextMissing 안내를 연결했다. PrepareListingReprice의 최신 수수료/호가 검증 후 전체 제안이 현재 구매자/실수령 가격과 같으면 기존 등록 유지. MinimumReprice/MissingFees/비표시WPF로 검사한다.75개47/16/0/3/9 유지, 실계정 계약 미확정으로 승격0.

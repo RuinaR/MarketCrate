@@ -1,3 +1,7 @@
+## 0.20.23 가격 기준 연결
+
+PriceTargets/PriceTarget→보관함·판매 중 기존 ComboBox→SalePlanner.AtLowestSell/SteamReviewRow→OrderbookFingerprint.ASK→SaleBatchSnapshot/SteamRepriceIntent→SQLite→SteamListingExecutor 최종 재조회 경로를 추가했다. PriceSnapshot.Asks는 기본 빈 배열로 확장하고 rgCompactSellOrders의 양의 정수·오름차순·최저 필드 일치를 검증한다. 가격 기준은 UI 한글 문자열로 분기하지 않는다. 원문 HTTP·인증정보 보관/새 네트워크 경로/라이브러리 도입0.
+
 # MarketCrate — 아키텍처 (0.20.0)
 
 ## 0.20 제품 경로 보완

@@ -63,6 +63,20 @@ public record SteamFeeSchedule(string Currency, long MinimumWire, long Increment
         if(baseline.BuyerPays<=1)throw new ArgumentException("BelowMinimum");
         return FromBuyer(baseline.BuyerPays-1,false);
     }
+    public FeeQuote LowestSellBaseline(long ask)
+    {
+        if(ask<=0)throw new ArgumentException("SellOrdersUnavailable");
+        var minimum=FromSeller(Money.FromWire(MinimumWire,Currency).Minor);
+        return ask<=minimum.BuyerPays?minimum:FromBuyer(ask,false);
+    }
+    public FeeQuote LowestSellQuote(long ask,bool lower)
+    {
+        var baseline=LowestSellBaseline(ask);
+        if(ask<baseline.BuyerPays)return baseline;
+        if(ask==baseline.BuyerPays)return lower?LowerOrMinimumBuyerPrice(ask):baseline;
+        if(lower)return baseline;
+        throw new ArgumentException("UnrepresentableBuyerPrice");
+    }
     public void Validate()
     {
         _ = new Money(0, Currency);

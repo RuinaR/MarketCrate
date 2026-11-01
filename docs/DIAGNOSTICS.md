@@ -1,3 +1,9 @@
+PricePlan/Pricing/B10/OwnSellExcluded는 현재 상품에서 제외한 본인 등록 행 수만 기록한다. 계정·자산·등록ID·원문 응답은 기록하지 않는다. 조회/전송 OperationId 문맥을 재사용하며 서버 목록과 깊이의 모순은 기존 StaleReview로 중단한다.
+
+## 0.20.23 최저 판매호가
+
+ReviewOpened/Pricing/E01 및 PricePlan/Management/B10에 reason=LowestSell을 허용한다. 기존 OperationId/CorrelationId/배치·저널 문맥과 HTTP Orderbook 요청을 재사용한다. ASK 증거의 최저 가격이 바뀌면 기존 StaleReview/OrderbookChanged로 중단한다. 수수료 AppContextMissing 원인을 새 가격 기준이 해결한 것으로 표시하지 않는다. 원문·계정·인증 비밀은 추가 기록하지 않는다.
+
 ## 0.20.22 — 변경 없는 재등록
 
 PricePlan/Management/Completed/RepriceUnchanged는 최신 검증을 거친 제안 전체가 현재 구매자·실수령 금액과 같아서 취소/등록 없이 유지했음을 뜻한다. 서버 판매 성공 이벤트가 아니다. 기존 FeeValidated의 PreviousState=AppContextMissing을 SteamException.FeeContractReason으로 UI에 전달한다. 계정/원문 HTTP/쿠키를 기록하지 않는다.

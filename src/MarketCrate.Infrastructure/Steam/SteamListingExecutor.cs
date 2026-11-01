@@ -57,8 +57,9 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
             var schedule=schedules[row.Listing.Asset.AppId];if(schedule.Currency!=row.Listing.Currency||schedule.FromSeller(row.Listing.SellerReceives).Fees!=row.Listing.Fees)throw new SteamException(SteamFailure.Restricted);
             _=schedule.FromBuyer(row.BuyerPrice);
             var key=(row.Listing.Asset.AppId,row.Listing.HashName);
-            if(!books.TryGetValue(key,out var price)){var a=new InventoryAsset(row.Listing.Asset,"Steam",row.Listing.HashName,row.Listing.HashName,1,false,true,false);price=await prices.RefreshAsync(a,token);books.Add(key,price);}
-            if(price.Currency!=schedule.Currency||price.Bids.IsEmpty||OrderbookFingerprint.Of(price)!=row.Book||row.BuyerPrice<price.Bids[0].BuyerPays/2||(decimal)row.BuyerPrice>(decimal)price.Bids[0].BuyerPays*2)throw new SteamException(SteamFailure.StaleReview);
+            if(!books.TryGetValue(key,out var price)){var a=new InventoryAsset(row.Listing.Asset,"Steam",row.Listing.HashName,row.Listing.HashName,1,false,true,false);price=OrderbookFingerprint.IsSell(row.Book)?await prices.RefreshLowestSellAsync(a,orders.ForLowestSell(a),token):await prices.RefreshAsync(a,token);books.Add(key,price);}
+            var levels=OrderbookFingerprint.IsSell(row.Book)?price.Asks:price.Bids;
+            if(price.Currency!=schedule.Currency||levels.IsEmpty||OrderbookFingerprint.For(price,row.Book)!=row.Book||row.BuyerPrice<levels[0].BuyerPays/2||(decimal)row.BuyerPrice>(decimal)levels[0].BuyerPays*2)throw new SteamException(SteamFailure.StaleReview);
         }
         if(!CanExecute||auth.SteamId!=account)throw new SteamException(SteamFailure.Authentication);
         DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Management,requirement:"B10",count:review.Count,reason:"Fresh");
@@ -103,8 +104,8 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
             if (!schedule.PublisherMatches(asset.Key.AppId,publisherFees.TryGetValue(asset.Key,out var fee)?fee:null)) throw new SteamException(SteamFailure.Restricted);
             var priceKey=(asset.Key.AppId,asset.MarketHashName,line.Evidence is {} source?(source.WindowEnd-source.WindowStart).Ticks:0);
             if(!validatedPrices.TryGetValue(priceKey,out var price))
-            {price=line.Evidence is {} evidenceSource?await prices.RefreshEstimateAsync(asset,evidenceSource.WindowEnd-evidenceSource.WindowStart,token):await prices.RefreshAsync(asset,token);validatedPrices.Add(priceKey,price);}
-            if(line.OrderbookDigest is {} digest&&OrderbookFingerprint.Of(price)!=digest)
+            {price=line.Evidence is {} evidenceSource?await prices.RefreshEstimateAsync(asset,evidenceSource.WindowEnd-evidenceSource.WindowStart,token):OrderbookFingerprint.IsSell(line.OrderbookDigest)?await prices.RefreshLowestSellAsync(asset,orders.ForLowestSell(asset),token):await prices.RefreshAsync(asset,token);validatedPrices.Add(priceKey,price);}
+            if(line.OrderbookDigest is {} digest&&OrderbookFingerprint.For(price,digest)!=digest)
             {DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,DiagnosticOutcome.Blocked,LogLevel.Warning,DiagnosticError.Validation,reason:"OrderbookChanged");throw new SteamException(SteamFailure.StaleReview){Endpoint="OrderbookChanged",RequestNotSent=true};}
             if(line.Evidence is {} evidence)
             {
@@ -112,13 +113,14 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
                 if(price.Estimate is not {} fresh||fresh.Minor!=evidence.Minor||fresh.Buckets!=evidence.Buckets||fresh.Volume!=evidence.Volume||fresh.SampleDigest!=evidence.SampleDigest){DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,DiagnosticOutcome.Blocked,LogLevel.Warning,DiagnosticError.Validation,reason:"HistoryChanged",requirement:"E09");throw new SteamException(SteamFailure.StaleReview);}
             }
             if (price.Currency != line.Currency) throw new SteamException(SteamFailure.Restricted);
-            if(price.Bids.IsEmpty)
+            var levels=OrderbookFingerprint.IsSell(line.OrderbookDigest)?price.Asks:price.Bids;
+            if(levels.IsEmpty)
             {
                 if(!line.ManuallyPricedShortage||line.Evidence is not null||line.OrderbookDigest is null)throw new SteamException(SteamFailure.Restricted);
                 DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Sales,DiagnosticOutcome.Completed,endpoint:"Orderbook",reason:"ManualShortagePrice",count:line.Quantity,requirement:"E05");
                 continue; // Exact fee/net + fresh currency + unchanged empty-book digest were verified above.
             }
-            var reference = price.Bids[0].BuyerPays;
+            var reference = levels[0].BuyerPays;
             if (line.UnitQuote.BuyerPays < reference / 2 || (decimal)line.UnitQuote.BuyerPays > (decimal)reference * 2)
                 throw new SteamException(SteamFailure.Restricted); // Require a new review, never reprice the immutable approval.
         }
@@ -399,6 +401,11 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         }
         finally{repricing.Release();}
     }
+    private async Task<PriceSnapshot> RefreshRepriceReferenceAsync(InventoryAsset asset,string? digest,CancellationToken token)
+    {
+        if(!OrderbookFingerprint.IsSell(digest))return await prices.RefreshAsync(asset,token);
+        await orders.RefreshAsync(token);return await prices.RefreshLowestSellAsync(asset,orders.ForLowestSell(asset),token);
+    }
     private async Task<SteamRepriceIntent> RepriceCoreAsync(SteamListing listing, long buyer, string key, CancellationToken token,string? reviewedOrderbook=null)
     {
         if (!CanExecute) throw new SteamException(SteamFailure.Disabled);
@@ -413,8 +420,8 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
             if(reviewedOrderbook is not null)
             {
                 var referenceAsset=new InventoryAsset(listing.Asset,"Steam",listing.HashName,listing.HashName,listing.Quantity,listing.Quantity>1,true,false);
-                var referencePrice=await prices.RefreshAsync(referenceAsset,token);
-                if(OrderbookFingerprint.Of(referencePrice)!=reviewedOrderbook)throw new SteamException(SteamFailure.StaleReview);
+                var referencePrice=await RefreshRepriceReferenceAsync(referenceAsset,reviewedOrderbook,token);
+                if(OrderbookFingerprint.For(referencePrice,reviewedOrderbook)!=reviewedOrderbook)throw new SteamException(SteamFailure.StaleReview);
             }
             if (store.Reprices().Any(x=>x.Account==auth.SteamId&&x.Listing.ListingId==listing.ListingId)) throw new SteamException(SteamFailure.Restricted);
             var schedule = await SteamFees.FetchResolvedAsync(http,auth, listing.Asset.AppId, token); if (listing.Currency != schedule.Currency) throw new SteamException(SteamFailure.Restricted);
@@ -429,16 +436,16 @@ public sealed class SteamListingExecutor(SteamHttp http, SteamQrAuthentication a
         if(resumed&&store.ReadCommand(cancelKey) is null&&intent.OrderbookDigest is {} beforeCancel)
         {
             var referenceAsset=new InventoryAsset(listing.Asset,"Steam",listing.HashName,listing.HashName,listing.Quantity,listing.Quantity>1,true,false);
-            if(OrderbookFingerprint.Of(await prices.RefreshAsync(referenceAsset,token))!=beforeCancel)throw new SteamException(SteamFailure.StaleReview);
+            if(OrderbookFingerprint.For(await RefreshRepriceReferenceAsync(referenceAsset,beforeCancel,token),beforeCancel)!=beforeCancel)throw new SteamException(SteamFailure.StaleReview);
         }
         if (store.ReadCommand(cancelKey) is null) await CancelAsync(listing, cancelKey, token);
         var status = await ReconcileCancellationAsync(cancelKey, token);
         if (status.State != SaleState.Reconciled) { intent = intent with { State = SteamRepriceState.AwaitingReturn }; store.SaveReprice(intent); return intent; }
         if (DateTimeOffset.UtcNow - intent.CreatedAt > TimeSpan.FromMinutes(5)) throw new SteamException(SteamFailure.StaleReview);
         var proof = store.Return(cancelKey)!; var asset = (await new SteamInventoryProvider(http,auth,proof.ReturnedAsset.AppId,proof.ReturnedAsset.ContextId,intent.Listing.HashName).GetAsync(token)).Single(x => x.Key == proof.ReturnedAsset);
-        var fees = await SteamFees.FetchResolvedAsync(http,auth, asset.Key.AppId, token); var price = await prices.RefreshAsync(asset, token);
-        if(executionPolicy.UserInitiated&&intent.OrderbookDigest is null||intent.OrderbookDigest is {} approvedBook&&OrderbookFingerprint.Of(price)!=approvedBook)throw new SteamException(SteamFailure.StaleReview);
-        var replacement = new SaleLineSnapshot("replacement", asset, listing.Quantity, fees.Currency, fees.FromBuyer(buyer), price.CapturedAt){OrderbookDigest=OrderbookFingerprint.Of(price)};
+        var fees = await SteamFees.FetchResolvedAsync(http,auth, asset.Key.AppId, token); var price = await RefreshRepriceReferenceAsync(asset,intent.OrderbookDigest,token);
+        if(executionPolicy.UserInitiated&&intent.OrderbookDigest is null||intent.OrderbookDigest is {} approvedBook&&OrderbookFingerprint.For(price,approvedBook)!=approvedBook)throw new SteamException(SteamFailure.StaleReview);
+        var replacement = new SaleLineSnapshot("replacement", asset, listing.Quantity, fees.Currency, fees.FromBuyer(buyer), price.CapturedAt){OrderbookDigest=OrderbookFingerprint.For(price,intent.OrderbookDigest)};
         var batch = new SaleBatchSnapshot(Guid.NewGuid(), auth.SteamId!, DateTimeOffset.UtcNow, [replacement]);
         await ValidateBatchAsync(batch, token); var replacementKey = SaleBatchCoordinator.RequestKey(batch, replacement);
         intent = intent with { State = SteamRepriceState.Submitting, ReplacementKey = replacementKey }; store.SaveReprice(intent);

@@ -3,6 +3,7 @@ namespace MarketCrate.Core;
 // User-facing terminology and migration boundary. Price calculations use PriceBasis, never these labels.
 public static class PriceDisplay
 {
+    public const string LowestSell = "최저 판매호가";
     public const string Immediate = "즉시거래가능가";
     public const string ImmediateExplanation = "현재 구매주문 기준 예상 가격이며 실제 즉시 체결을 보장하지 않습니다.";
     public const string MockAverage = "24시간 거래량 가중 평균가";

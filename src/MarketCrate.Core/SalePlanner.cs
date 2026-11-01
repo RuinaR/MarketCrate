@@ -12,6 +12,14 @@ public record SalePlan(ImmutableArray<PlannedSale> Lines, int UnpricedQuantity)
 
 public static class SalePlanner
 {
+    public static SalePlan AtLowestSell(IEnumerable<SaleSelection> selections)
+    {
+        var rows=selections.ToArray();
+        if(rows.Length==0||rows.Select(x=>x.Asset.Key).Distinct().Count()!=rows.Length||rows.Any(x=>x.Quantity<1||x.Quantity>x.Asset.Quantity||!x.Asset.Marketable||x.Asset.Locked||!x.Price.OwnSellExcluded||x.Price.Asks.IsEmpty))throw new ArgumentException("SellOrdersUnavailable");
+        foreach(var group in rows.GroupBy(x=>(x.Asset.Key.AppId,x.Asset.MarketHashName,x.Price.Currency)))
+            if(group.Select(x=>x.Price.Asks[0].BuyerPays).Distinct().Count()!=1)throw new ArgumentException("ConflictingSellOrders");
+        return new(rows.Select(x=>new PlannedSale(x,new(x.Price.Asks[0].BuyerPays,x.Quantity))).ToImmutableArray(),0);
+    }
     public static SalePlan Build(IEnumerable<SaleSelection> selections, bool immediate)=>Build(selections,immediate?PriceBasis.Immediate:PriceBasis.ExactAverage);
     public static SalePlan Build(IEnumerable<SaleSelection> selections,PriceBasis basis)
     {

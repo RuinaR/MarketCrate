@@ -15,7 +15,7 @@ public sealed partial class SteamWorkspaceViewModel
         var asset=new MarketCrate.Core.InventoryAsset(listing.Asset,"Steam",listing.HashName,listing.HashName,listing.Quantity,listing.Quantity>1,true,false);
         var price=workspace!.Prices.Get(asset);
         if(price.Currency!=listing.Currency||DateTimeOffset.UtcNow-price.CapturedAt>TimeSpan.FromMinutes(5))throw new SteamException(SteamFailure.StaleReview);
-        return MarketCrate.Core.OrderbookFingerprint.Of(price);
+        return UseLowestSell?MarketCrate.Core.OrderbookFingerprint.OfAsk(price):MarketCrate.Core.OrderbookFingerprint.Of(price);
     }
     public AsyncCommand PrepareTrading {get;private set;}=null!;
     public AsyncCommand PrepareCancellation{get;private set;}=null!;

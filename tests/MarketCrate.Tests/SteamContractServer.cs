@@ -25,6 +25,7 @@ public sealed class SteamContractServer : HttpMessageHandler
     public string? MarketHistoryOverride;public int MarketHistoryReads;public int MarketHistoryStatus=200;
     public TaskCompletionSource? InventoryStarted,InventoryRelease;
     public TaskCompletionSource? ListingsStarted,ListingsRelease;
+    public bool IncludeOwnSellDepth;
     public long KrwIncrement=100;
     public SteamFeeSchedule Schedule=>new(Currency,Currency=="KRW"?KrwIncrement:1,Currency=="KRW"?KrwIncrement:1,new(50000),new(100000));
     public static string HistoryJson(int gap=1)=>JsonSerializer.Serialize(new{success=true,prices=new object[][]{[DateTimeOffset.UtcNow.AddHours(-3).ToString("MMM dd yyyy HH: '+0'",System.Globalization.CultureInfo.InvariantCulture),115,"2"],[DateTimeOffset.UtcNow.AddHours(-3+gap).ToString("MMM dd yyyy HH: '+0'",System.Globalization.CultureInfo.InvariantCulture),115,"1"]}});
@@ -55,7 +56,17 @@ public sealed class SteamContractServer : HttpMessageHandler
         else if(path=="/market/")json="<script>var g_rgWalletInfo = "+JsonSerializer.Serialize(new{wallet_currency=Currency=="KRW"?16:1,wallet_market_minimum=Schedule.MinimumWire,wallet_currency_increment=Schedule.IncrementWire})+";</script>";
         else if(path=="/profiles/76561198000000001/inventory/")json="<script>g_bLoggedIn=true;g_steamID='76561198000000001';</script><div data-featuretarget='marketselldialog' data-props='"+System.Net.WebUtility.HtmlEncode(JsonSerializer.Serialize(new{newFeeRates=true,walletInfo=new{wallet_currency=Currency=="KRW"?16:1,wallet_market_minimum=Schedule.MinimumWire,wallet_currency_increment=Schedule.IncrementWire}}))+"'></div>";
         else if(path=="/market/ajaxfeestructure/")json="{\"steam_fee\":{\"fee_rate\":\"0.05\",\"fee_cap\":\"0\"},\"publisher_fee\":{\"fee_rate\":\"0.1\",\"fee_cap\":\"0\"}}";
-        else if(path=="/market/orderbook")json=OrderbookOverride??JsonSerializer.Serialize(new{data=new{success=true,data=new{eCurrency=Currency=="KRW"?16:1,rgCompactBuyOrders=new long[]{new Money(115,Currency).Wire,3,new Money(Currency=="KRW"?113:112,Currency).Wire,4,new Money(110,Currency).Wire,3}}}});
+        else if(path=="/market/orderbook")
+        {
+            json=OrderbookOverride??JsonSerializer.Serialize(new{data=new{success=true,data=new{eCurrency=Currency=="KRW"?16:1,rgCompactBuyOrders=new long[]{new Money(115,Currency).Wire,3,new Money(Currency=="KRW"?113:112,Currency).Wire,4,new Money(110,Currency).Wire,3}}}});
+            if(IncludeOwnSellDepth&&Publish)
+            {
+                var node=System.Text.Json.Nodes.JsonNode.Parse(json)!;var data=node["data"]!["data"]!;
+                var flat=data["rgCompactSellOrders"]?.AsArray();var levels=new SortedDictionary<long,long>();if(flat is not null)for(int i=0;i<flat.Count;i+=2)levels.Add(flat[i]!.GetValue<long>(),flat[i+1]!.GetValue<long>());
+                foreach(var row in Rows){var amount=new Money(Schedule.FromSeller(row.Seller).BuyerPays,Currency).Wire;levels[amount]=levels.GetValueOrDefault(amount)+row.Quantity;}
+                data["rgCompactSellOrders"]=new System.Text.Json.Nodes.JsonArray(levels.SelectMany(x=>new[]{x.Key,x.Value}).Select(x=>(System.Text.Json.Nodes.JsonNode?)System.Text.Json.Nodes.JsonValue.Create(x)).ToArray());json=node.ToJsonString();
+            }
+        }
         else if(path=="/market/pricehistory/"){HistoryStarted?.TrySetResult();if(HistoryRelease is not null)await HistoryRelease.Task.WaitAsync(token);json=HistoryOverride??HistoryJson();}
         else if(path=="/market/myhistory/render/"){MarketHistoryReads++;if(MarketHistoryStatus!=200)return new((HttpStatusCode)MarketHistoryStatus){Content=new StringContent("{}")};json=MarketHistoryOverride??"{\"success\":true,\"start\":0,\"pagesize\":100,\"total_count\":0,\"events\":[],\"listings\":{},\"purchases\":{}}";}
         else if(path=="/market/mylistings/render/")

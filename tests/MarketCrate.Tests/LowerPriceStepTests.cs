@@ -23,7 +23,19 @@ public static class LowerPriceStepTests
             ("Changed asset state rejects discounted approval without submission",ChangedBook),
             ("Lower option survives neither logout nor restored connection",Reset),
             ("Listing batch lower proposals are compared before any cancellation",Listing),
-            ("KRW30 minimum lower reprice preserves current listing without cancellation",MinimumReprice)
+            ("KRW30 minimum lower reprice preserves current listing without cancellation",MinimumReprice),
+            ("Sell side validates ascending integer levels best price and malformed fields",()=>Sync(SellParser)),
+            ("Lowest sell fee minimum clamps and USD fee gaps use one reachable lower price",()=>Sync(SellMoney)),
+            ("Inventory lowest sell supports all assets without consuming buy quantity",()=>SellInventory(false)),
+            ("Inventory lowest sell lower option sends exact approved prices once",()=>SellInventory(true)),
+            ("Lowest sell change before approval sends neither sell nor cancellation",SellChanged),
+            ("Missing sell side is not replaced by buy price or zero",SellMissing),
+            ("Listing lowest sell uses ask reference through cancel return and replacement",SellReprice),
+            ("Lowest sell at KRW30 retains the current minimum without cancellation",SellMinimum),
+            ("Lowest ask change before reprice approval prevents every cancellation",SellRepriceChanged),
+            ("Same best ask with changed quantities preserves an explicit price approval",SellQuantityChanged),
+            ("Own sell quantities are subtracted by product price and state before choosing the lowest ask",()=>Sync(OwnSellExcluded)),
+            ("Inventory lowest reference skips an existing own cheaper listing",InventoryOwnSell)
         };
         int passed=0,failed=0;foreach(var(name,test)in tests)try{await test();passed++;Console.WriteLine("PASS "+name);}catch(Exception error){failed++;Console.WriteLine("FAIL "+name+": "+error);}return(passed,failed);
     }
@@ -80,6 +92,58 @@ public static class LowerPriceStepTests
     private static async Task MinimumReprice()
     {
         using var f=new FifthStageTests.Fixture();f.Server.KrwIncrement=1000;f.Server.Free=1;f.Server.OrderbookOverride=Book("3000,1");await f.Login();await f.Prepare(1);f.EnableTrading();await f.Vm.Submit.ExecuteAsync();f.Server.Publish=true;await f.Vm.LoadListingsAsync();f.Vm.SelectAllListings.Execute(null);f.Vm.LowerPriceOneStep=true;await f.Vm.PrepareListingRepriceAsync();Check(f.Vm.Listings.Single().Listing.SellerReceives==10&&f.Vm.Listings.Single().Listing.Fees==20&&f.Vm.ListingPriceStatus.Contains("이미 제안 가격")&&!f.Vm.ManagementOpen&&f.Server.Cancels==0&&f.Server.Sends==1&&f.Vm.Connected);
+    }
+    private static string SellBook(string asks="57500,1",string bids="11500,1")=>"{\"data\":{\"success\":true,\"data\":{\"eCurrency\":16,\"rgCompactBuyOrders\":["+bids+"],\"rgCompactSellOrders\":["+asks+"]}}}";
+    private static void SellParser()
+    {
+        var book=MarketCrate.Infrastructure.Steam.SteamContract.OrderBook(SellBook("3000,1,4000,2"));Check(book.Asks.Length==2&&book.Asks[0].BuyerPays==30);
+        foreach(var asks in new[]{"3000","4000,1,3000,2","3000,0","3000,1,3000,2","3001,1"}){try{MarketCrate.Infrastructure.Steam.SteamContract.OrderBook(SellBook(asks));throw new Exception("Invalid sell depth accepted");}catch(MarketCrate.Infrastructure.Steam.SteamException){}}
+        try{MarketCrate.Infrastructure.Steam.SteamContract.OrderBook(SellBook().Replace("\"eCurrency\":16","\"amtMinSellOrder\":100,\"eCurrency\":16"));throw new Exception("Best ask mismatch accepted");}catch(MarketCrate.Infrastructure.Steam.SteamException){}
+    }
+    private static void SellMoney()
+    {
+        var krw=new SteamFeeSchedule("KRW",1000,1000,new(50000),new(100000));Check(krw.LowestSellQuote(30,true)==new FeeQuote(30,10,10,10)&&krw.LowestSellQuote(20,false).BuyerPays==30&&krw.LowestSellQuote(70,true).BuyerPays==60);Reject(()=>krw.LowestSellQuote(0,true));
+        var usd=new SteamFeeSchedule("USD",1,1,new(50000),new(100000));Check(usd.LowestSellQuote(23,true).BuyerPays==21&&usd.LowestSellQuote(22,true).BuyerPays==21);Reject(()=>usd.LowestSellQuote(22,false));var a=new InventoryAsset(new(730,"2","999"),"Steam","Synthetic","Synthetic",1,false,true,true);var row=new SteamReviewRow(a,1,22,new("USD",DateTimeOffset.UtcNow,"Synthetic",TimeSpan.Zero,[],[]){Asks=[new(22,1)],OwnSellExcluded=true},usd,()=>{},lowerOneStep:true,lowestSell:true);Check(row.Valid&&row.Quote.BuyerPays==21&&row.PriceBasis.Contains("수수료 유효 가격 환산"));
+    }
+    private static async Task SellInventory(bool lower)
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.Free=2;f.Server.ManyAssets=2;f.Server.OrderbookOverride=SellBook(bids:"");await f.Login();await f.Vm.LoadAsync();f.Vm.SelectAll.Execute(null);f.Vm.PriceTarget=1;f.Vm.LowerPriceOneStep=lower;await f.Vm.RefreshPricesAsync();f.Vm.BuildReview();f.EnableTrading();Check(f.Vm.ReviewRows.Count==2&&f.Vm.ReviewRows.All(x=>x.Valid&&x.Quote.BuyerPays==f.Server.Schedule.LowestSellQuote(575,lower).BuyerPays)&&f.Vm.ReviewLiquidityText.Contains("최저"));await f.Vm.Submit.ExecuteAsync();await f.Vm.Submit.ExecuteAsync();Check(f.Server.Sends==2&&f.Vm.Results.All(x=>x.State==SaleState.AwaitingSteamGuard));var saved=(await f.Workspace!.Store.LoadAsync(default))!;Check(saved.Snapshot.Lines.All(x=>OrderbookFingerprint.IsSell(x.OrderbookDigest)));f.Vm.Logout.Execute(null);await f.Login();Check(f.Vm.PriceTarget==0&&f.Server.Sends==2);
+    }
+    private static async Task SellChanged()
+    {
+        using var f=new FifthStageTests.Fixture();await f.Login();f.Server.OrderbookOverride=SellBook();f.Vm.PriceTarget=1;await f.Prepare(1);f.EnableTrading();f.Server.OrderbookOverride=SellBook("60000,1");await f.Vm.Submit.ExecuteAsync();Check(f.Server.Sends==0&&f.Server.Cancels==0&&!f.Vm.ReviewOpen&&f.Workspace!.Store.Commands().Count==0);
+    }
+    private static async Task SellMissing(){using var f=new FifthStageTests.Fixture();await f.Login();f.Vm.PriceTarget=1;await f.Prepare(1);Check(!f.Vm.ReviewOpen&&f.Server.Sends==0&&f.Vm.Status.Contains("최저 판매호가"));}
+    private static async Task SellReprice()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.IncludeOwnSellDepth=true;f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();await f.Vm.Submit.ExecuteAsync();f.Server.Publish=true;await f.Vm.LoadListingsAsync();f.Vm.SelectAllListings.Execute(null);f.Vm.PriceTarget=1;f.Vm.LowerPriceOneStep=true;f.Server.OrderbookOverride=SellBook();await f.Vm.PrepareListingRepriceAsync();Check(f.Vm.ManagementOpen&&f.Vm.ListingPriceStatus.Contains("최저 판매호가"));await f.Vm.ConfirmManagement.ExecuteAsync();Check(f.Server.Cancels==1&&f.Server.Sends==2&&f.Server.SellFields.Last()["price"]==new Money(f.Server.Schedule.LowestSellQuote(575,true).SellerReceives,"KRW").Wire.ToString());
+    }
+    private static async Task SellRepriceChanged()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.IncludeOwnSellDepth=true;f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();await f.Vm.Submit.ExecuteAsync();f.Server.Publish=true;await f.Vm.LoadListingsAsync();f.Vm.SelectAllListings.Execute(null);f.Vm.PriceTarget=1;f.Server.OrderbookOverride=SellBook();await f.Vm.PrepareListingRepriceAsync();Check(f.Vm.ManagementOpen);f.Server.OrderbookOverride=SellBook("60000,1");await f.Vm.ConfirmManagement.ExecuteAsync();Check(f.Server.Cancels==0&&f.Server.Sends==1&&!f.Vm.ManagementOpen);
+    }
+    private static async Task SellQuantityChanged()
+    {
+        using var f=new FifthStageTests.Fixture();await f.Login();f.Server.OrderbookOverride=SellBook();f.Vm.PriceTarget=1;await f.Prepare(1);f.EnableTrading();f.Server.OrderbookOverride=SellBook("57500,10");await f.Vm.Submit.ExecuteAsync();Check(f.Server.Sends==1&&f.Vm.Results.Single().State==SaleState.AwaitingSteamGuard);
+    }
+    private static void OwnSellExcluded()
+    {
+        var asset=new InventoryAsset(new(730,"2","100"),"Steam","Synthetic","Synthetic",1,false,true,true);
+        var price=new PriceSnapshot("KRW",DateTimeOffset.UtcNow,"Synthetic",TimeSpan.Zero,[],[]){Asks=[new(30,2),new(40,5),new(50,2)]};
+        var own=new[]{new MarketCrate.Infrastructure.Steam.SteamListing("1",asset.Key,"Synthetic",2,"KRW",10,20,SaleState.Listed),new("2",asset.Key,"Synthetic",1,"KRW",20,20,SaleState.Listed),new("3",asset.Key,"Synthetic",9,"KRW",10,20,SaleState.AwaitingSteamGuard)};
+        var excluded=MarketCrate.Infrastructure.Steam.SteamMarketDataProvider.ExcludeOwnSell(price,asset,own);Check(excluded.OwnSellExcluded&&excluded.Asks[0]==new BidLevel(40,4));
+        var after=MarketCrate.Infrastructure.Steam.SteamMarketDataProvider.ExcludeOwnSell(price with{Asks=[new(40,5),new(50,2)]},asset,own.Skip(1).ToArray());Check(OrderbookFingerprint.OfAsk(excluded)==OrderbookFingerprint.OfAsk(after));
+        var partial=MarketCrate.Infrastructure.Steam.SteamMarketDataProvider.ExcludeOwnSell(price,asset,[own[0] with{Quantity=1}]);Check(partial.Asks[0]==new BidLevel(30,1));
+        var empty=MarketCrate.Infrastructure.Steam.SteamMarketDataProvider.ExcludeOwnSell(price with{Asks=[new(30,2)]},asset,[own[0]]);Check(empty.Asks.IsEmpty);Reject(()=>OrderbookFingerprint.OfAsk(empty));
+        try{MarketCrate.Infrastructure.Steam.SteamMarketDataProvider.ExcludeOwnSell(price,asset,[own[0] with{Quantity=3}]);throw new Exception("Own quantity mismatch accepted");}catch(MarketCrate.Infrastructure.Steam.SteamException){}
+    }
+    private static async Task InventoryOwnSell()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.Free=2;f.Server.ManyAssets=2;f.Server.IncludeOwnSellDepth=true;f.Server.Publish=true;f.Server.Rows.Add(("999",1,100));f.Server.OrderbookOverride=SellBook();await f.Login();await f.Vm.LoadAsync();f.Vm.Assets.Single(x=>x.Asset.Key.AssetId=="102").Selected=true;f.Vm.PriceTarget=1;await f.Vm.RefreshPricesAsync();f.Vm.BuildReview();Check(f.Vm.ReviewRows.Single().Quote.BuyerPays==575&&f.Vm.ReviewRows.Single().PriceBasis.Contains("본인 판매등록 제외")&&f.Server.Sends==0&&f.Server.Cancels==0);
+    }
+    private static async Task SellMinimum()
+    {
+        using var f=new FifthStageTests.Fixture();f.Server.KrwIncrement=1000;f.Server.IncludeOwnSellDepth=true;f.Server.Free=1;f.Server.OrderbookOverride=SellBook("","3000,1");await f.Login();await f.Prepare(1);f.EnableTrading();await f.Vm.Submit.ExecuteAsync();f.Server.Publish=true;await f.Vm.LoadListingsAsync();f.Vm.SelectAllListings.Execute(null);f.Vm.PriceTarget=1;f.Vm.LowerPriceOneStep=true;await f.Vm.PrepareListingRepriceAsync();Check(!f.Vm.ManagementOpen&&f.Vm.ListingPriceStatus.Contains("이미 제안 가격")&&f.Server.Cancels==0&&f.Server.Sends==1);
     }
     private static async Task Listing()
     {

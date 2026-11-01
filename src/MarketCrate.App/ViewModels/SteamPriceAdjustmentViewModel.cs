@@ -4,6 +4,12 @@ namespace MarketCrate.App.ViewModels;
 public sealed partial class SteamWorkspaceViewModel
 {
     private bool lowerPriceOneStep;
+    private int priceTarget;
+    public string[] PriceTargets{get;}=[PriceDisplay.Immediate,PriceDisplay.LowestSell];
+    public int PriceTarget{get=>priceTarget;set{if(value is <0 or >1||!CanChoosePriceAdjustment||!Set(ref priceTarget,value))return;priceRevision++;listingPlanRevision++;foreach(var row in Listings)row.ClearPriceComparison();ListingPriceStatus="가격 기준 변경 · 시세를 조회하고 새로 검토하세요.";Raise(nameof(UseLowestSell));Raise(nameof(PriceTargetExplanation));Raise(nameof(LowerPriceLabel));Changed();}}
+    public bool UseLowestSell=>PriceTarget==1;
+    public string LowerPriceLabel=>UseLowestSell?"최저 판매호가보다 한 단계 낮게":"즉시거래가능가보다 한 단계 낮게";
+    public string PriceTargetExplanation=>UseLowestSell?"본인 판매등록 수량을 제외하고 남은 최저 판매호가에 맞춥니다. 즉시 체결을 보장하지 않습니다.":PriceDisplay.ImmediateExplanation;
     public bool CanChoosePriceAdjustment=>Connected&&!Busy&&!AnyReview;
     public bool LowerPriceOneStep
     {
@@ -38,7 +44,7 @@ public sealed partial class SteamWorkspaceViewModel
             catch(OverflowException){return "하향 비교 합계가 지원 범위를 초과합니다. 수량·가격을 줄여 새로 검토하세요.";}
         }
     }
-    private void ResetPriceAdjustment(){lowerPriceOneStep=false;Raise(nameof(LowerPriceOneStep));Raise(nameof(PriceAdjustmentHint));}
+    private void ResetPriceAdjustment(){priceTarget=0;Raise(nameof(PriceTarget));Raise(nameof(UseLowestSell));Raise(nameof(PriceTargetExplanation));Raise(nameof(LowerPriceLabel));lowerPriceOneStep=false;Raise(nameof(LowerPriceOneStep));Raise(nameof(PriceAdjustmentHint));}
 }
 
 internal static class PriceComparisonText

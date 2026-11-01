@@ -50,22 +50,28 @@ public sealed partial class SteamWorkspaceViewModel
         {
             OperationLabel=$"재등록 호가 조회 {books.Count+1}/{groups.Length}";
             var item=group.First().Listing;var asset=ListingAsset(item);
-            var price=await workspace!.Prices.RefreshAsync(asset,token);token.ThrowIfCancellationRequested();
+            var price=UseLowestSell?await workspace!.Prices.RefreshLowestSellAsync(asset,workspace.Orders.ForLowestSell(asset),token):await workspace!.Prices.RefreshAsync(asset,token);token.ThrowIfCancellationRequested();
             if(price.Currency!=item.Currency||price.Currency!=schedules[item.Asset.AppId].Currency)throw new SteamException(SteamFailure.Restricted);
             books.Add(group.Key,price);
         }
         if(revision!=listingPlanRevision)return;
         if(!rows.Select(x=>x.Listing.ListingId).ToHashSet(StringComparer.Ordinal).SetEquals(Listings.Where(x=>x.Selected).Select(x=>x.Listing.ListingId)))
         {ListingPriceStatus="조회 중 선택이 변경되었습니다. 다시 계산하세요. 취소/등록하지 않았습니다.";return;}
-        var plan=SalePlanner.Build(rows.Select(x=>new SaleSelection(ListingAsset(x.Listing),books[(x.Listing.Asset.AppId,x.Listing.HashName)],1)),PriceBasis.Immediate);
+        if(UseLowestSell&&books.Values.Any(x=>x.Asks.IsEmpty))
+        {
+            var atMinimum=rows.All(x=>{var schedule=schedules[x.Listing.Asset.AppId];var minimum=schedule.FromSeller(Money.FromWire(schedule.MinimumWire,schedule.Currency).Minor);return x.Listing.SellerReceives==minimum.SellerReceives&&x.Listing.Fees==minimum.Fees;});
+            ListingPriceStatus=atMinimum?"본인 등록을 제외한 판매호가가 없고 선택 전체가 이미 제안 가격의 최저 유효 가격입니다. 기존 등록을 유지하며 취소·재등록하지 않습니다.":"본인 등록을 제외한 최저 판매호가가 없어 전체 재등록 검토를 만들 수 없습니다. 기존 등록은 유지합니다.";return;
+        }
+        var selections=rows.Select(x=>new SaleSelection(ListingAsset(x.Listing),books[(x.Listing.Asset.AppId,x.Listing.HashName)],1));
+        var plan=UseLowestSell?SalePlanner.AtLowestSell(selections):SalePlanner.Build(selections,PriceBasis.Immediate);
         if(plan.UnpricedQuantity>0){ListingPriceStatus=$"구매주문 잔량 부족 {plan.UnpricedQuantity}개 · 전체 검토를 만들지 않았습니다. 수량/선택 범위를 줄이거나 최신 호가를 확인하세요.";return;}
         (SteamListingRow Row,long Price,SteamFeeSchedule Fees,FeeQuote? Baseline)[] proposals;
         try
         {
             proposals=plan.Lines.Select(x=>
             {
-                var schedule=schedules[x.Selection.Asset.Key.AppId];var baseline=schedule.FromBuyer(x.Allocation.BuyerPays,!LowerPriceOneStep);
-                return(Row:rows.Single(r=>r.Listing.Asset==x.Selection.Asset.Key),Price:LowerPriceOneStep?schedule.LowerOrMinimumBuyerPrice(baseline.BuyerPays).BuyerPays:baseline.BuyerPays,Fees:schedule,Baseline:LowerPriceOneStep?(FeeQuote?)baseline:null);
+                var schedule=schedules[x.Selection.Asset.Key.AppId];var baseline=UseLowestSell?schedule.LowestSellBaseline(x.Allocation.BuyerPays):schedule.FromBuyer(x.Allocation.BuyerPays,!LowerPriceOneStep);
+                return(Row:rows.Single(r=>r.Listing.Asset==x.Selection.Asset.Key),Price:UseLowestSell?schedule.LowestSellQuote(x.Allocation.BuyerPays,LowerPriceOneStep).BuyerPays:LowerPriceOneStep?schedule.LowerOrMinimumBuyerPrice(baseline.BuyerPays).BuyerPays:baseline.BuyerPays,Fees:schedule,Baseline:LowerPriceOneStep?(FeeQuote?)baseline:null);
             }).ToArray();
         }
         catch(ArgumentException){ListingPriceStatus=LowerPriceOneStep?"한 단계 낮은 유효 가격을 계산할 수 없는 항목이 있습니다. 최저 가격·수수료를 확인하고 옵션이나 선택을 변경하세요. 취소·등록하지 않았습니다.":"호가와 유효 가격 증분·수수료가 일치하지 않습니다. 최신 자료를 확인하세요. 취소·등록하지 않았습니다.";return;}
@@ -79,8 +85,8 @@ public sealed partial class SteamWorkspaceViewModel
         foreach(var schedule in schedules)gameFees[schedule.Key]=schedule.Value;
         fees=schedules.GetValueOrDefault(Game.AppId)??schedules.Values.First();Raise(nameof(CurrencyText));
         Bulk(()=>{foreach(var proposal in proposals)proposal.Row.SetProposedPrice(proposal.Price,proposal.Fees,proposal.Baseline);});
-        BuildManagement(true);ListingPriceStatus=$"{rows.Length}건 가격별 분배 완료 · 현재 구매주문 기준이며 체결 보장 없음 · 검토 전체를 한 번 승인하면 취소/반환 확인 후 직렬 재등록합니다.";
-        DiagnosticHub.Emit(DiagnosticEvent.PricePlan,DiagnosticArea.Management,requirement:"B10",count:rows.Length,reason:"Immediate");
+        BuildManagement(true);ListingPriceStatus=$"{rows.Length}건 가격별 분배 완료 · {(UseLowestSell?"최저 판매호가 기준 · 본인 판매등록 제외":"현재 구매주문 기준")} · 체결 보장 없음 · 검토 전체를 한 번 승인하면 취소/반환 확인 후 직렬 재등록합니다.";
+        DiagnosticHub.Emit(DiagnosticEvent.PricePlan,DiagnosticArea.Management,requirement:"B10",count:rows.Length,reason:UseLowestSell?"LowestSell":"Immediate");
     });
     private async Task<bool> RefreshRepriceSelectionAsync(SteamListingRow[] rows,CancellationToken token)
     {

@@ -12,6 +12,27 @@ internal static class LowerPriceStepUiTests
 {
     public static void Run(Action<string,Action> test,Action<FrameworkElement,int,int,double,string> render)
     {
+        test("판매 중 최저 판매호가 재등록 모달·단일 승인·반환 검증 연결",()=>
+        {
+            var root=Path.Combine(Directory.GetCurrentDirectory(),"runtime","ask-reprice-ui-"+Guid.NewGuid().ToString("N"));using var server=new SteamContractServer();server.Free=1;server.IncludeOwnSellDepth=true;
+            using(var vm=new SteamWorkspaceViewModel(scope=>new(root,scope.AppId,scope.ContextId,scope.Name,new(true,"synthetic",true),server.Connection(),server.Clock),true){RiskAccepted=true,CredentialsAccepted=true})
+            {
+                Complete(vm.BeginAsync());server.Clock.Advance();Complete(vm.CheckAsync());Complete(vm.LoadAsync());vm.SelectAll.Execute(null);Complete(vm.RefreshPrices.ExecuteAsync());vm.Review.Execute(null);vm.TradeAccepted=true;vm.EnableTrading.Execute(null);Complete(vm.Submit.ExecuteAsync());server.Publish=true;Complete(vm.LoadListingsAsync());vm.SelectAllListings.Execute(null);vm.PriceTarget=1;vm.LowerPriceOneStep=true;server.OrderbookOverride="{\"data\":{\"success\":true,\"data\":{\"eCurrency\":16,\"rgCompactBuyOrders\":[],\"rgCompactSellOrders\":[57500,1]}}}";Complete(vm.PrepareListingReprice.ExecuteAsync());Check(vm.ManagementOpen&&vm.ManagementSummary.Contains("최저 판매호가 기준")&&vm.ManagementSummary.Contains("실수령 감소"),"Reprice modal omits its basis/fees");
+                var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,780,1.25,"lowest-sell-reprice-125.png");render(view,1100,780,2,"lowest-sell-reprice-200.png");Complete(vm.ConfirmManagement.ExecuteAsync());Check(server.Cancels==1&&server.Sends==2,"Reprice command chain incomplete");Check(Application.Current.Windows.Count==0&&PresentationSource.FromVisual(view)==null,"Visible GUI created");
+            }
+            Directory.Delete(root,true);
+        });
+        test("보관함·판매 중 최저 판매호가 선택기·하향·전체 검토 바인딩",()=>
+        {
+            var root=Path.Combine(Directory.GetCurrentDirectory(),"runtime","ask-ui-"+Guid.NewGuid().ToString("N"));using var server=new SteamContractServer();server.Free=2;server.ManyAssets=2;server.OrderbookOverride="{\"data\":{\"success\":true,\"data\":{\"eCurrency\":16,\"rgCompactBuyOrders\":[],\"rgCompactSellOrders\":[57500,1]}}}";
+            using(var vm=new SteamWorkspaceViewModel(scope=>new(root,scope.AppId,scope.ContextId,scope.Name,new(true,"synthetic",true),server.Connection(),server.Clock),true){RiskAccepted=true,CredentialsAccepted=true})
+            {
+                Complete(vm.BeginAsync());server.Clock.Advance();Complete(vm.CheckAsync());Complete(vm.LoadAsync());vm.SelectAll.Execute(null);vm.WorkPage=1;var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,780,1.25,"lowest-sell-inventory.png");
+                var selector=Find<ComboBox>(view).First(x=>ReferenceEquals(x.ItemsSource,vm.PriceTargets));selector.SelectedIndex=1;Check(vm.UseLowestSell,"Price selector disconnected");var lower=Find<CheckBox>(view).First(x=>Equals(x.Content,"최저 판매호가보다 한 단계 낮게"));lower.IsChecked=true;Complete(vm.RefreshPrices.ExecuteAsync());Check(vm.SelectionEstimate.Contains("₩1,148"),"Estimate uses wrong price side");vm.Review.Execute(null);vm.TradeAccepted=true;vm.EnableTrading.Execute(null);Check(vm.ReviewRows.Count==2&&vm.ReviewRows.All(x=>x.Valid&&x.Quote.BuyerPays==574&&x.PriceBasis.Contains("최저 판매호가")),"Ask review failed");render(view,1100,780,1.25,"lowest-sell-review-125.png");render(view,1100,780,2,"lowest-sell-review-200.png");Complete(vm.Submit.ExecuteAsync());Check(server.Sends==2,"Not one whole batch");
+                vm.WorkPage=2;render(view,1100,780,1.25,"lowest-sell-listings.png");Check(Find<ComboBox>(view).Any(x=>ReferenceEquals(x.ItemsSource,vm.PriceTargets)&&x.SelectedIndex==1),"Listing target not bound");Check(Application.Current.Windows.Count==0&&PresentationSource.FromVisual(view)==null,"Visible GUI created");
+            }
+            Directory.Delete(root,true);
+        });
         test("30원 최저가의 한 단계 하향 재등록은 기존 등록 유지 안내",()=>
         {
             var root=Path.Combine(Directory.GetCurrentDirectory(),"runtime","minimum-reprice-ui-"+Guid.NewGuid().ToString("N"));using var server=new SteamContractServer();server.KrwIncrement=1000;server.Free=1;server.Publish=true;server.Rows.Add(("900",1,10));server.OrderbookOverride="{\"data\":{\"success\":true,\"data\":{\"eCurrency\":16,\"rgCompactBuyOrders\":[3000,1]}}}";

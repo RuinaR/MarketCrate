@@ -11,7 +11,7 @@ public sealed record SteamListing(string ListingId, AssetKey Asset, string HashN
 public sealed record SteamListingsPage(ImmutableArray<SteamListing> Listings, int TotalActive, ImmutableDictionary<string,ItemImageReference>? Images=null)
 {public ImmutableArray<SteamListingPresence> Presence{get;init;}=[];}
 public sealed record SteamHistoryPoint(DateTimeOffset At, decimal MedianMajor, int Volume);
-public sealed record SteamOrderBook(string Currency, ImmutableArray<BidLevel> Bids);
+public sealed record SteamOrderBook(string Currency, ImmutableArray<BidLevel> Bids) {public ImmutableArray<BidLevel> Asks{get;init;}=[];}
 public enum SteamApprovalChannel { None, Mobile, Email, Unspecified, Either }
 public sealed record SteamSellResponse(SaleState State,string? ListingId,SteamApprovalChannel Approval=SteamApprovalChannel.None);
 
@@ -116,7 +116,14 @@ public static class SteamContract
             if (price <= 0 || count <= 0 || price >= previous) throw new SteamException(SteamFailure.ContractChanged);
             previous = price; bids.Add(new(price, count));
         }
-        return new(currency, bids.ToImmutable());
+        var asks=ImmutableArray.CreateBuilder<BidLevel>();
+        if(data.TryGetProperty("rgCompactSellOrders",out var rawAsks))
+        {
+            var sell=rawAsks.EnumerateArray().ToArray();if(sell.Length%2!=0||sell.Length>20000)throw new SteamException(SteamFailure.ContractChanged);
+            long last=0;for(int i=0;i<sell.Length;i+=2){var amount=FromWire(Integer(sell[i]),currency);var quantity=checked((int)Integer(sell[i+1]));if(amount<=last||quantity<=0)throw new SteamException(SteamFailure.ContractChanged);last=amount;asks.Add(new(amount,quantity));}
+            if(data.TryGetProperty("amtMinSellOrder",out var best)&&best.ValueKind!=JsonValueKind.Null&&FromWire(Integer(best),currency)!=(asks.Count==0?0:asks[0].BuyerPays))throw new SteamException(SteamFailure.ContractChanged);
+        }
+        return new(currency, bids.ToImmutable()){Asks=asks.ToImmutable()};
     });
     public static ImmutableArray<SteamHistoryPoint> History(string json) => Parse(json, root =>
     {

@@ -67,12 +67,34 @@ public sealed class SteamMarketDataProvider(SteamHttp http, SteamQrAuthenticatio
         {
             var book = SteamContract.OrderBook(body);
             // History is median buckets, NOT individual trades: keep Trades empty.
-            var snapshot = new PriceSnapshot(book.Currency, DateTimeOffset.UtcNow, "Steam unofficial orderbook; historical VWAP unavailable", TimeSpan.Zero, [], book.Bids);
+            var snapshot = new PriceSnapshot(book.Currency, DateTimeOffset.UtcNow, "Steam unofficial orderbook; historical VWAP unavailable", TimeSpan.Zero, [], book.Bids){Asks=book.Asks};
             if (cache.Count >= 256) cache.Clear();
             cache[(asset.Key.AppId, asset.MarketHashName)] = snapshot;
             return snapshot;
         }
         catch (SteamException error) { error.Endpoint??="Orderbook";throw; }
+    }
+    public async Task<PriceSnapshot> RefreshLowestSellAsync(InventoryAsset asset,IReadOnlyList<SteamListing> own,CancellationToken token=default)
+    {
+        var raw=await RefreshAsync(asset,token);var result=ExcludeOwnSell(raw,asset,own);
+        cache[(asset.Key.AppId,asset.MarketHashName)]=result;return result;
+    }
+    public static PriceSnapshot ExcludeOwnSell(PriceSnapshot price,InventoryAsset asset,IReadOnlyList<SteamListing> own)
+    {
+        if(price.OwnSellExcluded)throw new SteamException(SteamFailure.ContractChanged);
+        var rows=own.Where(x=>x.State==SaleState.Listed&&x.Asset.AppId==asset.Key.AppId&&x.HashName==asset.MarketHashName).ToArray();
+        if(rows.Any(x=>x.Currency!=price.Currency||x.Quantity<=0))throw new SteamException(SteamFailure.Restricted);
+        var quantities=rows.GroupBy(x=>checked(x.SellerReceives+x.Fees)).ToDictionary(x=>x.Key,x=>x.Sum(y=>(long)y.Quantity));
+        var levels=ImmutableArray.CreateBuilder<BidLevel>();
+        foreach(var level in price.Asks)
+        {
+            var excluded=quantities.GetValueOrDefault(level.BuyerPays);
+            if(excluded>level.Quantity)throw new SteamException(SteamFailure.StaleReview);
+            if(level.Quantity>excluded)levels.Add(level with{Quantity=checked((int)(level.Quantity-excluded))});
+        }
+        if(price.Asks.Length>0&&quantities.Keys.Any(x=>x<=price.Asks[^1].BuyerPays&&!price.Asks.Any(y=>y.BuyerPays==x)))throw new SteamException(SteamFailure.StaleReview);
+        DiagnosticHub.Emit(DiagnosticEvent.PricePlan,DiagnosticArea.Pricing,reason:"OwnSellExcluded",count:rows.Length,requirement:"B10");
+        return price with{Asks=levels.ToImmutable(),OwnSellExcluded=true};
     }
     public async Task<PriceSnapshot> RefreshEstimateAsync(InventoryAsset asset,TimeSpan window,CancellationToken token=default)
     {
@@ -130,6 +152,11 @@ public sealed class SteamOrdersProvider(SteamHttp http, SteamQrAuthentication au
             if (page.Presence.Count(x => x.State == SaleState.Listed) == 0) break;
         }
         throw new SteamException(SteamFailure.ContractChanged);
+    }
+    public IReadOnlyList<SteamListing> ForLowestSell(InventoryAsset asset)
+    {
+        if(Presence.Any(x=>x.Asset.AppId==asset.Key.AppId&&x.State==SaleState.Listed&&(x.ListingId is null||!cache.Any(y=>y.ListingId==x.ListingId))))throw new SteamException(SteamFailure.Unsupported){Endpoint="Listings"};
+        return cache;
     }
     public Task<SteamListingsPage> ProbeAsync(CancellationToken token=default)=>PageAsync(0,token);
     private async Task<SteamListingsPage> PageAsync(int start,CancellationToken token)

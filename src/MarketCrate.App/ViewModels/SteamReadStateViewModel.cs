@@ -51,8 +51,8 @@ public sealed partial class SteamWorkspaceViewModel
             try
             {
                 var basis=PricingMode switch{1=>PriceBasis.ExactAverage,2=>PriceBasis.MedianEstimate,_=>PriceBasis.Immediate};
-                var plan=SalePlanner.Build(rows.Select(x=>new SaleSelection(x.Asset,x.Price!,x.Quantity)),basis);
-                long buyer=0,fee=0,seller=0;foreach(var line in plan.Lines){var schedule=FeeFor(line.Selection.Asset);if(schedule.Currency!=fees.Currency)throw new SteamException(SteamFailure.Restricted);var quote=schedule.FromBuyer(line.Allocation.BuyerPays,false);buyer=checked(buyer+checked(quote.BuyerPays*line.Allocation.Quantity));fee=checked(fee+checked(quote.Fees*line.Allocation.Quantity));seller=checked(seller+checked(quote.SellerReceives*line.Allocation.Quantity));}
+                var plan=UseLowestSell?SalePlanner.AtLowestSell(rows.Select(x=>new SaleSelection(x.Asset,x.Price!,x.Quantity))):SalePlanner.Build(rows.Select(x=>new SaleSelection(x.Asset,x.Price!,x.Quantity)),basis);
+                long buyer=0,fee=0,seller=0;foreach(var line in plan.Lines){var schedule=FeeFor(line.Selection.Asset);if(schedule.Currency!=fees.Currency)throw new SteamException(SteamFailure.Restricted);var quote=UseLowestSell?schedule.LowestSellQuote(line.Allocation.BuyerPays,LowerPriceOneStep):LowerPriceOneStep?schedule.LowerOrMinimumBuyerPrice(schedule.FromBuyer(line.Allocation.BuyerPays,false).BuyerPays):schedule.FromBuyer(line.Allocation.BuyerPays,false);buyer=checked(buyer+checked(quote.BuyerPays*line.Allocation.Quantity));fee=checked(fee+checked(quote.Fees*line.Allocation.Quantity));seller=checked(seller+checked(quote.SellerReceives*line.Allocation.Quantity));}
                 return $"예상 결제액 {new Money(buyer,fees.Currency)}\n예상 수수료 {new Money(fee,fees.Currency)}\n예상 실수령 {new Money(seller,fees.Currency)}\n가격 미정 {plan.UnpricedQuantity}개 · 최종 검토에서 확정";
             }
             catch(Exception error)when(error is ArgumentException or InvalidOperationException or OverflowException or SteamException){return "시세·수수료 자료가 부족합니다. 갱신 후 검토하세요.";}
