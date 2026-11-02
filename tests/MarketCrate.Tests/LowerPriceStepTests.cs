@@ -12,6 +12,7 @@ public static class LowerPriceStepTests
             ("USD fee gap23 to21 is one reachable buyer step",()=>Sync(()=>{var s=new SteamFeeSchedule("USD",1,1,new(50000),new(100000));Check(s.PreviousValidBuyerPrice(23).BuyerPays==21);Reject(()=>s.PreviousValidBuyerPrice(22));Reject(()=>s.PreviousValidBuyerPrice(3));})),
             ("Nearest lower valid price property across KRW USD zero and game fees",()=>Sync(Properties)),
             ("Review displays per-unit fees and quantity reduction and unavailable minimum",()=>Sync(Comparison)),
+            ("Both price modes show exact buyer reduction and zero reduction at minimum",()=>Sync(ReductionLabels)),
             ("Opt-in default OFF price allocation preserved and one approval sends all changed prices",Batch),
             ("Minimum is retained visibly while below-minimum manual input remains rejected",()=>Sync(Minimum)),
             ("Last shortage row accepts a verified manual price and joins the same batch",ManualShortage),
@@ -52,6 +53,17 @@ public static class LowerPriceStepTests
     private static SteamReviewRow Row(long bid,int quantity=3)
     {var s=new SteamFeeSchedule("KRW",1000,1000,new(50000),new(100000));var a=new InventoryAsset(new(753,"6","101"),"Steam","Synthetic","Synthetic",10,true,true,true);return new(a,quantity,bid,new("KRW",DateTimeOffset.UtcNow,"synthetic",TimeSpan.Zero,[],[new(bid,10)]),s,()=>{},lowerOneStep:true);}
     private static void Comparison(){var row=Row(70);Check(row.Valid&&row.Quote.BuyerPays==60&&row.AdjustmentComparison.Contains("20%")&&row.AdjustmentComparison.Contains("₩30")&&row.AdjustmentComparison.Contains("Steam")&&row.AdjustmentComparison.Contains("게임"));}
+    private static void ReductionLabels()
+    {
+        var s=new SteamFeeSchedule("KRW",1000,1000,new(50000),new(100000));var a=new InventoryAsset(new(3678970,"2","101"),"TBH","Synthetic","Synthetic",3,true,true,true);
+        foreach(var lowest in new[]{false,true})
+        {
+            var row=new SteamReviewRow(a,3,70,new("KRW",DateTimeOffset.UtcNow,"synthetic",TimeSpan.Zero,[],[new(70,3)]){Asks=[new(70,3)],OwnSellExcluded=true},s,()=>{},lowerOneStep:true,lowestSell:lowest);
+            Check(row.AdjustmentComparison.Contains("기준 대비 인하 ₩10 / 개")&&row.AdjustmentComparison.Contains("실수령 감소 ₩30"));row.PriceText="50";Check(row.AdjustmentComparison.Contains("기준 대비 인하 ₩20 / 개"));
+            var minimum=new SteamReviewRow(a,1,30,new("KRW",DateTimeOffset.UtcNow,"synthetic",TimeSpan.Zero,[],[new(30,3)]){Asks=[new(30,3)],OwnSellExcluded=true},s,()=>{},lowerOneStep:true,lowestSell:lowest);
+            Check(minimum.AdjustmentComparison.Contains("기준 대비 인하 ₩0 / 개")&&minimum.AdjustmentComparison.Contains("최저 유효 가격 유지"));
+        }
+    }
     private static void Minimum(){var row=Row(30);Check(row.Valid&&row.Quote==new FeeQuote(30,10,10,10)&&row.AdjustmentComparison.Contains("최저 유효 가격 유지")&&row.AdjustmentComparison.Contains("0%"));row.PriceText="20";Check(!row.Valid);row.PriceText="30";Check(row.Valid);}
     private static async Task MinimumBatch()
     {

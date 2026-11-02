@@ -7,8 +7,8 @@ public static class UsabilityTests
 {
     public static async Task<(int Passed,int Failed)> RunAsync()
     {
-        var tests=new(string,Func<Task>)[]{("Normal product does not invent owned CS2 Dota or TF2",Default),
-            ("Old unverified presets hidden without deleting saved scopes; observed 753 named correctly",Catalog),
+        var tests=new(string,Func<Task>)[]{("Normal product exposes only TBH without inventing ownership",Default),
+            ("TBH product hides other saved scopes and listings without deleting legacy data",Catalog),
             ("Game scope state count and image notifications reach bindings",Notifications),
             ("Ten external listings share book depth 3/4/3; preview sends no cancellation",Depth),
             ("Insufficient buy depth does not silently omit selected listings",Shortage),
@@ -36,12 +36,17 @@ public static class UsabilityTests
             ("Evicting eight-game view cache never omits selected assets from batch targets",SelectionEviction),
             ("Archive command cannot move a different account active journal",ArchiveOwnership),
             ("Ten thousand selected item prices publish bounded summary updates per product",PriceNotifications),
-            ("User-requested TBH scope added once and explicit removal preserved after restart",Tbh),
+            ("TBH single scope cannot be removed and remains after restart",Tbh),
             ("Diagnostics preserves failed operation after a later successful read and resets on logout",FailedOperation)};
         int passed=0,failed=0;foreach(var(name,run)in tests)try{await run();passed++;Console.WriteLine("PASS "+name);}catch(Exception e){failed++;Console.WriteLine("FAIL "+name+": "+e);}return(passed,failed);
     }
-    private static Task Default(){using var vm=new SteamWorkspaceViewModel();Check(vm.Games.Count==1&&vm.Game.AppId==753&&vm.Game.ContextId=="6"&&vm.Game.Name=="Steam 커뮤니티");return Task.CompletedTask;}
-    private static async Task Catalog(){using var f=new Fixture(false);await f.Login();f.Workspace!.Store.SaveCatalog(f.Workspace.Authentication.SteamId!,[new(730,"2","Counter-Strike 2"),new(570,"2","Dota 2"),new(440,"2","Team Fortress 2"),new(753,"6","App 753 (판매목록 관측)")]);f.Vm.Logout.Execute(null);await f.Login();Check(f.Vm.Games.Count==1&&f.Vm.Game.Name=="Steam 커뮤니티"&&f.Workspace!.Store.ReadCatalog(f.Workspace.Authentication.SteamId!).Count==4&&f.Vm.CatalogNotice.Contains("3개"));f.Server.External(1);await f.Vm.LoadListingsAsync();Check(f.Vm.Games.Any(x=>x.AppId==730)&&!f.Vm.Games.Any(x=>x.AppId==570));f.Vm.AppInput="570";f.Vm.ContextInput="2";f.Vm.NameInput="Dota 2";f.Vm.AddScope.Execute(null);f.Vm.Logout.Execute(null);await f.Login();Check(f.Vm.Games.Any(x=>x.AppId==570)&&f.Workspace!.Store.ReadCatalog(f.Workspace.Authentication.SteamId!).Single(x=>x.AppId==570).Pinned);}
+    private static Task Default(){using var vm=new SteamWorkspaceViewModel();Check(vm.Games.Count==1&&vm.Game.AppId==TbhScope.AppId&&vm.Game.ContextId=="2"&&vm.Game.Name==TbhScope.Name);return Task.CompletedTask;}
+    private static async Task Catalog()
+    {
+        using var f=new Fixture(false);await f.Login();var legacy=new InventoryScope[]{new(730,"2","Counter-Strike 2"),new(570,"2","Dota 2"),new(440,"2","Team Fortress 2"),new(753,"6","Steam community")};f.Workspace!.Store.SaveCatalog(f.Workspace.Authentication.SteamId!,legacy);f.Vm.Logout.Execute(null);await f.Login();
+        Check(f.Vm.Games.Count==1&&f.Vm.Game.AppId==TbhScope.AppId&&f.Workspace!.Store.ReadCatalog(f.Workspace.Authentication.SteamId!).Count==4);f.Server.External(1);await f.Vm.LoadListingsAsync();Check(f.Vm.Listings.Count==0&&!f.Vm.HasServerListings&&f.Vm.Games.All(x=>x.AppId==TbhScope.AppId));f.Vm.AppInput="570";f.Vm.ContextInput="2";f.Vm.NameInput="Dota 2";f.Vm.AddScope.Execute(null);Check(f.Vm.Games.Count==1&&f.Workspace.Store.ReadCatalog(f.Workspace.Authentication.SteamId!).Count==4);
+    }
+
     private static Task Notifications(){var scope=new SteamGameScope(753,"6","Steam 커뮤니티");var names=new HashSet<string?>();scope.PropertyChanged+=(_,e)=>names.Add(e.PropertyName);scope.Update(InventoryScopeState.Loaded,8);Check(names.Contains(nameof(scope.StateText))&&names.Contains(nameof(scope.MarketableItems))&&scope.StateText=="조회 완료");return Task.CompletedTask;}
     private static async Task Depth(){using var f=new Fixture();await f.Login();f.Server.External(10);await f.Load();await f.Vm.PrepareListingRepriceAsync();Check(f.Vm.ManagementOpen&&f.Vm.Listings.Count(x=>x.NewPriceText=="115")==3&&f.Vm.Listings.Count(x=>x.NewPriceText=="113")==4&&f.Vm.Listings.Count(x=>x.NewPriceText=="110")==3&&f.Server.Cancels==0);}
     private static async Task Shortage(){using var f=new Fixture();await f.Login();f.Server.External(11);await f.Load();await f.Vm.PrepareListingRepriceAsync();Check(!f.Vm.ManagementOpen&&f.Vm.ListingPriceStatus.Contains("부족 1개")&&f.Server.Cancels==0);}
@@ -83,7 +88,7 @@ public static class UsabilityTests
     }
     private static async Task CancellationOnly()
     {
-        using var f=new Fixture(false);await f.Login();f.Server.External(1);await f.Vm.LoadListingsAsync();f.Vm.Game=f.Vm.Games.Single(x=>x.AppId==730);f.Vm.SelectAllListings.Execute(null);
+        using var f=new Fixture(false);f.Server.AppId=TbhScope.AppId;await f.Login();f.Server.External(1);await f.Vm.LoadListingsAsync();f.Vm.SelectAllListings.Execute(null);
         f.Arm();var old=f.Workspace!.Executor;Check(old.CanExecute);f.Server.RequestPaths.Clear();f.Vm.TradingConfirmation="실제 취소";await f.Vm.PrepareCancellationAsync();
         Check(f.Vm.CanCancel&&!f.Vm.CanTrade&&!old.CanExecute&&f.Workspace.Policy.CancellationOnly&&f.Workspace.Access.CancellationOnly);f.Vm.ReviewCancel.Execute(null);Check(f.Vm.ConfirmManagement.CanExecute(null));await f.Confirm();
         Check(f.Server.Cancels==1&&f.Server.Sells==0&&!f.Server.RequestPaths.Any(x=>x=="/market/"||x.Contains("feestructure")||x.StartsWith("/inventory/"))&&f.Workspace.Store.Commands().Single(x=>x.Kind=="cancel").AvailableBefore==-1);
@@ -98,7 +103,7 @@ public static class UsabilityTests
     }
     private static Task SelectionEviction()
     {
-        using var vm=new SteamWorkspaceViewModel();var original=vm.Game;var row=new SteamAssetRow(new(new(original.AppId,original.ContextId,"10001"),original.Name,"Synthetic selected","Synthetic selected",3,true,true,false),3,()=>{}){Selected=true,Quantity=2};vm.Assets.Add(row);
+        using var vm=new SteamWorkspaceViewModel(contractTest:true);var original=vm.Game;var row=new SteamAssetRow(new(new(original.AppId,original.ContextId,"10001"),original.Name,"Synthetic selected","Synthetic selected",3,true,true,false),3,()=>{}){Selected=true,Quantity=2};vm.Assets.Add(row);
         for(var i=0;i<10;i++){var scope=new SteamGameScope(1000+i,"2","Synthetic scope "+i);vm.Games.Add(scope);vm.Game=scope;vm.Assets.Add(new(new(new(scope.AppId,"2","20001"),scope.Name,"Unselected","Unselected",1,false,true,false),1,()=>{}));}
         Check(vm.SelectionSummary.Contains("1종")&&vm.SelectionSummary.Contains("2개"));vm.Game=original;Check(vm.Assets.Count==0&&vm.SelectionSummary.Contains("2개"));vm.ClearSelection.Execute(null);Check(vm.SelectionSummary.Contains("0종"));return Task.CompletedTask;
     }
@@ -112,7 +117,8 @@ public static class UsabilityTests
     {
         using var f=new Fixture();await f.Login();f.Server.Available.Clear();foreach(var index in Enumerable.Range(1,10000))f.Server.Available.Add((100000+index).ToString());await f.Vm.LoadAsync();f.Vm.SelectAll.Execute(null);var notifications=0;f.Vm.PropertyChanged+=(_,e)=>{if(e.PropertyName==nameof(f.Vm.SelectionSummary))notifications++;};await f.Vm.RefreshPricesAsync();Check(f.Vm.Assets.Count==10000&&f.Vm.Assets.All(x=>x.Price is not null)&&notifications is >0 and <10&&f.Server.Sells==0&&f.Server.Cancels==0);
     }
-    private static async Task Tbh(){using var f=new Fixture(false);await f.Login();var scope=f.Vm.Games.Single(x=>x.AppId==3678970);Check(scope.ContextId=="2"&&scope.Name=="TBH: Task Bar Hero"&&scope.State==InventoryScopeState.NotQueried&&!f.Server.RequestPaths.Any(x=>x.Contains("3678970")));f.Vm.Game=scope;f.Vm.RemoveScope.Execute(null);f.Vm.Logout.Execute(null);await f.Login();Check(!f.Vm.Games.Any(x=>x.AppId==3678970)&&f.Server.Sells==0&&f.Server.Cancels==0);}
+    private static async Task Tbh(){using var f=new Fixture(false);await f.Login();Check(f.Vm.Games.Count==1&&f.Vm.Game.AppId==TbhScope.AppId&&!f.Vm.RemoveScope.CanExecute(null));f.Vm.RemoveScope.Execute(null);f.Vm.Logout.Execute(null);await f.Login();Check(f.Vm.Games.Count==1&&f.Vm.Game.AppId==TbhScope.AppId&&f.Server.Sells==0&&f.Server.Cancels==0);}
+
     private static async Task PlanImmutable(){using var f=new Fixture();await PrepareNewTargets(f);var plan=f.Workspace!.Store.RelistPlans(f.Workspace.Authentication.SteamId!).Single();try{f.Workspace.Store.SaveRelistPlan(plan with{Account="76561198000000002"});throw new Exception("mutated plan accepted");}catch(InvalidDataException){}Check(f.Workspace.Store.RelistPlans(plan.Account).Single().SubmissionBatch is null);}
     private sealed class Fixture:IDisposable
     {

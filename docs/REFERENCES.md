@@ -1,3 +1,17 @@
+## 0.21.0 TBH 파일 포맷·메타데이터 (2026-11-02 KST)
+
+- https://tbhindex.com/ko 및 공개 배포 JS: 사이트 사용 흐름/ES3 포맷/공개 품목 키·명칭·등급을 읽었다. 웹 도구 `/ko` cache miss였으나 승인된 HTTP 다운로드로 공개 배포 파일을 확인했다. JS는 실행하지 않았다. 사이트 코드 라이선스 미확인: JS 구현·이미지·가격 DB·UI 자산은 직접 복사하지 않고 최소 사실 메타데이터만 정규화했다. 다운로드 통계/외부 전송 기능은 채택하지 않았다.
+- https://github.com/lezards/giba-steam-market/blob/c4089e6f33bae60f38e95b73e2a572622878e4a1/tbh-save.mjs : MIT, Copyright2026 EuSouOGiba. ES3 읽기 포맷/슬롯·공개 이름 대조를 활용해 제한된 C# 분석기를 작성했다. 라이선스 원문을 저장/출하한다. 해당 프로젝트의 게임 바이너리 탐색/키 추출·모드·프로세스 접근은 채택하지 않았다. Node 런타임/새 NuGet 추가 없음.
+- 신규 materialStashSaveDatas의 필드 구조는 사용자가 명시적으로 지정한 로컬 파일에서 **스키마만** 확인했다. 외부로 전달하지 않았다. TBHIndex에 없는 재료창고를 독립적으로 구현하고 합성 fixture로 회귀한다.
+
+다운로드 원본 SHA256 (runtime에만 보관한 공개 자료; 사용자 세이브 아님):
+
+- `saveDecrypt.js`: `1617546442A559373B9C960CE1DEDC45B3ABDD49892B4A30431BB557BBBBE9A8`
+- `game-data.js`: `FD495E93C76A5B140F037816734BD33E38D5D017670E833B04EBEB9D82D6F2C1`
+- `tbhNames.js`: `D82CBB655EA6F1D29266F0882CCE86A7B4405F100C8830EB72D47B043B950937`
+- `relicData.js`: `13672F5EE1AAE40991B59DCB709A0C748FF7CAA882258B81DB9C48D0EF8FC78A`
+- `tbh-save-reference.mjs`: `B2D095D63CD767B544320FD5C1B6C964BD12A360276656AA0ACBC6754BBA4D23`
+
 ## 2026-11-02 KST — 판매 주문장
 
 [assetpaygg/steam-mobile](https://github.com/assetpaygg/steam-mobile)의 공개 getOrderbook/summarizeOrderbook 계약에서 rgCompactSellOrders(가격·수량 쌍), amtMinSellOrder, 지갑 통화와 오름차순/최저 일치 검증을 대조했다. MIT 표기 확인. 구현 디렉터리는 웹 도구 접근 실패여서 소스 전체/고정 SHA를 검토했다고 주장하지 않는다. 직접 복사/런타임/종속성 도입0, C#으로 독립 계약 구현. 그 프로젝트의 모바일 모사/비밀키/자동 승인 기능은 도입하지 않는다. 공식 허가 또는 우리 실계정 성공의 근거가 아니다. 실제 계정의 매도 주문장 응답은 이번 작업에서 조회하지 않았다.

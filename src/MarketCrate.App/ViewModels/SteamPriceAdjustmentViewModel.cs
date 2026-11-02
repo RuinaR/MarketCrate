@@ -54,6 +54,8 @@ internal static class PriceComparisonText
         var difference=checked((baseline.SellerReceives-actual.SellerReceives)*quantity);
         var percent=baseline.SellerReceives==0?0:(baseline.SellerReceives-actual.SellerReceives)*100m/baseline.SellerReceives;
         var change=difference>=0?$"실수령 감소 {new Money(difference,currency)} ({percent:0.##}%)":$"실수령 증가 {new Money(-difference,currency)} ({-percent:0.##}%)";
-        return $"구매자 {new Money(baseline.BuyerPays,currency)} → {new Money(actual.BuyerPays,currency)} · 수수료 {new Money(baseline.Fees,currency)} → {new Money(actual.Fees,currency)}\nSteam {new Money(baseline.SteamFee,currency)} → {new Money(actual.SteamFee,currency)} / 게임 {new Money(baseline.GameFee,currency)} → {new Money(actual.GameFee,currency)}\n실수령 {new Money(baseline.SellerReceives,currency)} → {new Money(actual.SellerReceives,currency)} · {(totals?"전체":quantity+"개")} {change}";
+        var buyerDifference=checked(baseline.BuyerPays-actual.BuyerPays);
+        var reduction=buyerDifference>=0?$"기준 대비 인하 {new Money(buyerDifference,currency)}":$"기준 대비 인상 {new Money(-buyerDifference,currency)}";
+        return $"구매자 {new Money(baseline.BuyerPays,currency)} → {new Money(actual.BuyerPays,currency)} · {reduction}{(totals?" (전체)":" / 개")} · 수수료 {new Money(baseline.Fees,currency)} → {new Money(actual.Fees,currency)}\nSteam {new Money(baseline.SteamFee,currency)} → {new Money(actual.SteamFee,currency)} / 게임 {new Money(baseline.GameFee,currency)} → {new Money(actual.GameFee,currency)}\n실수령 {new Money(baseline.SellerReceives,currency)} → {new Money(actual.SellerReceives,currency)} · {(totals?"전체":quantity+"개")} {change}";
     }
 }

@@ -27,7 +27,7 @@ public static class FifteenthStageTests
             ("Default and synthetic activation UI remain separate",DefaultBlocked),
             ("Activation failure reports exact read-only gate without enabling or sending",ActivationGates),
             ("Live default review validates contracts and never submits without final approval",DefaultReview),
-            ("Adding another game after activation still validates its contract before whole review",AdditionalGame)
+            ("TBH-only real composition rejects another game before any activation or submission",AdditionalGame)
         };
         int passed=0,failed=0;foreach(var(name,test)in tests)try{await test();passed++;Console.WriteLine("PASS "+name);}catch(Exception e){failed++;Console.WriteLine("FAIL "+name+": "+e);}return(passed,failed);
     }
@@ -66,7 +66,7 @@ public static class FifteenthStageTests
     private sealed class GateLog:IDiagnosticLog{public Guid SessionId{get;}=Guid.NewGuid();public List<DiagnosticRecord> Events{get;}=[];public void Write(DiagnosticRecord record)=>Events.Add(record);}
     private static async Task DefaultReview()
     {
-        using var f=new Harness();using var vm=new MarketCrate.App.ViewModels.SteamWorkspaceViewModel(_=>f.Workspace,false){RiskAccepted=true,CredentialsAccepted=true};
+        using var f=new Harness();f.Server.DynamicInventory=true;using var vm=new MarketCrate.App.ViewModels.SteamWorkspaceViewModel(_=>f.Workspace,false){RiskAccepted=true,CredentialsAccepted=true};
         Check(vm.TradeAccepted&&vm.ImagesEnabled&&!vm.CanTrade&&vm.TradingConfirmation=="실제 거래","live/image defaults or unverified capability");
         await vm.BeginAsync();f.Server.Clock.Advance();await vm.CheckAsync();
         var game=new MarketCrate.App.ViewModels.SteamGameScope(730,"2","Counter-Strike 2");vm.Games.Add(game);vm.Game=game;
@@ -91,17 +91,9 @@ public static class FifteenthStageTests
     }
     private static async Task AdditionalGame()
     {
-        using var f=new Harness();f.Server.DynamicInventory=true;
-        using var vm=new MarketCrate.App.ViewModels.SteamWorkspaceViewModel(_=>f.Workspace,false){RiskAccepted=true,CredentialsAccepted=true};
-        await vm.BeginAsync();f.Server.Clock.Advance();await vm.CheckAsync();
-        foreach(var app in new[]{730,440})
-        {
-            var game=new MarketCrate.App.ViewModels.SteamGameScope(app,"2",app==730?"Counter-Strike 2":"Team Fortress 2");vm.Games.Add(game);vm.Game=game;
-            await vm.LoadAsync();vm.Assets[0].Selected=true;await vm.RefreshPricesAsync();await vm.OpenTradingReviewAsync();
-            Check(vm.ReviewOpen&&vm.CanTrade&&f.Workspace.Policy.VerifiedApps.Contains(app)&&f.Server.Sends==0&&f.Server.Cancels==0,"new game's readiness skipped or preview sent trade");
-            vm.CloseReview.Execute(null);
-        }
-        Check(vm.SelectionSummary.Contains("2")&&f.Workspace.Policy.VerifiedApps.Contains(730),"prior selection/verified game lost");
+        using var f=new Harness();f.Server.DynamicInventory=true;using var vm=new MarketCrate.App.ViewModels.SteamWorkspaceViewModel(_=>f.Workspace,false){RiskAccepted=true,CredentialsAccepted=true};await vm.BeginAsync();f.Server.Clock.Advance();await vm.CheckAsync();
+        foreach(var app in new[]{730,440}){vm.Game=new(app,"2","Other game");Check(vm.Game.AppId==TbhScope.AppId,"non-TBH scope selected");}
+        await vm.LoadAsync();vm.Assets[0].Selected=true;await vm.RefreshPricesAsync();await vm.OpenTradingReviewAsync();Check(vm.ReviewOpen&&vm.CanTrade&&f.Workspace.Policy.VerifiedApps.Contains(TbhScope.AppId)&&!f.Workspace.Policy.VerifiedApps.Contains(730)&&!f.Workspace.Policy.VerifiedApps.Contains(440)&&f.Server.Sends==0&&f.Server.Cancels==0,"TBH readiness or approval bypass");
     }
     private static async Task WrongAccount(){using var f=new Harness();await f.Login();f.Route.Account="76561198000000002";await Fails(f.Arm);Check(!f.Workspace.Access.Trading&&f.Server.Sends==0,"account mismatch armed");}
     private static async Task MissingEvidence()

@@ -53,3 +53,6 @@ session-*.jsonl
 **/Auth/
 *.authbin
 *.authlock
+
+# Private game saves: read-only at runtime, never source or release assets
+*.es3

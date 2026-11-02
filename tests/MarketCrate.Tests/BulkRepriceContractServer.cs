@@ -8,7 +8,7 @@ public sealed class BulkRepriceContractServer:IDisposable
     private sealed record Row(string Id,string Asset,long Seller,SaleState State);
     private readonly SteamContractServer common=new();private readonly List<Row> rows=[];
     public HashSet<string> Available{get;}=["101","102"];
-    public int Sells,Cancels,TopQuantity=3;public bool CancelTimeout,ChangedReturn;
+    public int AppId=730;public int Sells,Cancels,TopQuantity=3;public bool CancelTimeout,ChangedReturn;
     public List<string> RequestPaths{get;}=[];
     public TaskCompletionSource? BookStarted,BookRelease;
     public TaskCompletionSource? SellStarted,SaleRelease;
@@ -25,7 +25,7 @@ public sealed class BulkRepriceContractServer:IDisposable
         {
             var path=request.RequestUri!.AbsolutePath;owner.RequestPaths.Add(path);string body;
             if(path=="/market/mylistings/render/")body=owner.Listings();
-            else if(path.StartsWith("/inventory/"))body=JsonSerializer.Serialize(new{success=1,total_inventory_count=owner.Available.Count,assets=owner.Available.Select(id=>new{appid=730,contextid="2",assetid=id,classid="1",instanceid="0",amount="1"}),descriptions=new[]{new{appid=730,classid="1",instanceid="0",name="Synthetic stack",market_hash_name="Synthetic stack",marketable=1,tradable=1,market_fee="0.1"}}});
+            else if(path.StartsWith("/inventory/"))body=JsonSerializer.Serialize(new{success=1,total_inventory_count=owner.Available.Count,assets=owner.Available.Select(id=>new{appid=owner.AppId,contextid="2",assetid=id,classid="1",instanceid="0",amount="1"}),descriptions=new[]{new{appid=owner.AppId,classid="1",instanceid="0",name="Synthetic stack",market_hash_name="Synthetic stack",marketable=1,tradable=1,market_fee="0.1"}}});
             else if(path=="/market/orderbook")
             {owner.BookStarted?.TrySetResult();if(owner.BookRelease is not null)await owner.BookRelease.Task.WaitAsync(token);body=JsonSerializer.Serialize(new{data=new{success=true,data=new{eCurrency=16,rgCompactBuyOrders=new long[]{11500,owner.TopQuantity,11300,4,11000,3}}}});}
             else if(path=="/market/sellitem/")
@@ -49,9 +49,9 @@ public sealed class BulkRepriceContractServer:IDisposable
     }
     private string Listings()
     {
-        object Convert(Row x)=>new{listingid=x.Id,price=new Money(x.Seller,"KRW").Wire,fee=new Money(Schedule.FromSeller(x.Seller).Fees,"KRW").Wire,currencyid=2016,time_created=1700000000,asset=new{appid=730,contextid="2",id=x.Asset,amount="1"}};
-        var assets=rows.Select(x=>x.Asset).Distinct().ToDictionary(x=>x,_=>(object)new{appid=730,market_hash_name="Synthetic stack"});
-        return JsonSerializer.Serialize(new{success=true,total_count=rows.Count(x=>x.State==SaleState.Listed),listings=rows.Where(x=>x.State==SaleState.Listed).Select(Convert),listings_to_confirm=rows.Where(x=>x.State!=SaleState.Listed).Select(Convert),listings_on_hold=Array.Empty<object>(),assets=new Dictionary<string,object>{["730"]=new Dictionary<string,object>{["2"]=assets}}});
+        object Convert(Row x)=>new{listingid=x.Id,price=new Money(x.Seller,"KRW").Wire,fee=new Money(Schedule.FromSeller(x.Seller).Fees,"KRW").Wire,currencyid=2016,time_created=1700000000,asset=new{appid=AppId,contextid="2",id=x.Asset,amount="1"}};
+        var assets=rows.Select(x=>x.Asset).Distinct().ToDictionary(x=>x,_=>(object)new{appid=AppId,market_hash_name="Synthetic stack"});
+        return JsonSerializer.Serialize(new{success=true,total_count=rows.Count(x=>x.State==SaleState.Listed),listings=rows.Where(x=>x.State==SaleState.Listed).Select(Convert),listings_to_confirm=rows.Where(x=>x.State!=SaleState.Listed).Select(Convert),listings_on_hold=Array.Empty<object>(),assets=new Dictionary<string,object>{[AppId.ToString(System.Globalization.CultureInfo.InvariantCulture)]=new Dictionary<string,object>{["2"]=assets}}});
     }
     public void Dispose()=>common.Dispose();
 }

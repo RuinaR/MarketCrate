@@ -19,7 +19,7 @@ internal static class SessionPersistenceUiTests
     {
         test("로그인 유지 기본OFF·사용자 선택 바인딩·저장/서버요청 없음",()=>WithRoot(root=>
         {
-            using var vm=new SteamWorkspaceViewModel(authDirectory:Path.Combine(root,"Auth"));var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,780,1,"session-optin-small.png");
+            using var vm=new SteamWorkspaceViewModel(authDirectory:Path.Combine(root,"Auth"));vm.WorkPage=0;var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,780,1,"session-optin-small.png");
             var toggle=Find<CheckBox>(view).Single(x=>x.GetBindingExpression(ToggleButton.IsCheckedProperty)?.ParentBinding.Path?.Path=="RememberLogin");
             Check(toggle.IsChecked==false&&toggle.IsEnabled&&!Directory.Exists(Path.Combine(root,"Auth")),"implicit storage");toggle.IsChecked=true;Check(vm.RememberLogin&&!Directory.Exists(Path.Combine(root,"Auth")),"checkbox saved without authentication");
             Check(Find<Button>(view).Any(x=>ReferenceEquals(x.Command,vm.DeleteSavedLogin)),"delete disconnected");

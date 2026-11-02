@@ -17,8 +17,8 @@ internal static class UsabilityUiTests
     {
         test("일반 보관함은 미확인3게임을 표시하지 않고 상태 알림을 반영",()=>
         {
-            using var vm=new SteamWorkspaceViewModel();var view=new SteamWorkspaceView{DataContext=vm};vm.WorkPage=1;
-            render(view,1100,780,1,"usability-product-inventory.png");Check(vm.Games.Count==1&&vm.Game.Name=="Steam 커뮤니티","invented owned games");vm.Game.Update(InventoryScopeState.Empty,0);render(view,1100,780,1.25,"usability-product-empty.png");Check(Find<TextBlock>(view).Any(x=>x.Text=="빈 보관함"),"scope notification absent");
+            using var vm=new SteamWorkspaceViewModel();vm.WorkPage=1;var view=new SteamWorkspaceView{DataContext=vm};vm.WorkPage=1;
+            render(view,1100,780,1,"usability-product-inventory.png");Check(vm.Games.Count==1&&vm.Game.AppId==TbhScope.AppId,"invented owned games");vm.Game.Update(InventoryScopeState.Empty,0);render(view,1100,780,1.25,"usability-product-empty.png");Check(Find<TextBlock>(view).Any(x=>x.Text.Contains("빈 보관함")),"scope notification absent");
         });
         test("드롭다운 선택 텍스트와 화살표 높이 정렬·포커스 링 보존",()=>
         {
@@ -40,10 +40,10 @@ internal static class UsabilityUiTests
         });
         test("판매 중 가격 기준·일괄 검토·수수료 표시 자체 렌더",()=>
         {
-            var root=Path.Combine(Directory.GetCurrentDirectory(),"runtime","bulk-ui-"+Guid.NewGuid().ToString("N"));using var server=new BulkRepriceContractServer();server.External(3);
+            var root=Path.Combine(Directory.GetCurrentDirectory(),"runtime","bulk-ui-"+Guid.NewGuid().ToString("N"));using var server=new BulkRepriceContractServer{AppId=TbhScope.AppId};server.External(3);
             using(var vm=new SteamWorkspaceViewModel(scope=>new(root,scope.AppId,scope.ContextId,scope.Name,contractHandler:server.Connection(),clock:server.Clock)){RiskAccepted=true,CredentialsAccepted=true})
             {
-                Complete(vm.BeginAsync());server.Clock.Advance();Complete(vm.CheckAsync());Complete(vm.LoadListingsAsync());vm.Game=vm.Games.Single(x=>x.AppId==730);vm.WorkPage=2;vm.SelectAllListings.Execute(null);
+                Complete(vm.BeginAsync());server.Clock.Advance();Complete(vm.CheckAsync());Complete(vm.LoadListingsAsync());vm.Game=vm.Games.Single(x=>x.AppId==TbhScope.AppId);vm.WorkPage=2;vm.SelectAllListings.Execute(null);
                 var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,800,1.25,"usability-sales-pricing.png");Check(Find<Button>(view).Any(x=>ReferenceEquals(x.Command,vm.PrepareListingReprice)),"batch proposal disconnected");
                 Complete(vm.PrepareListingRepriceAsync());render(view,1100,800,1,"usability-bulk-review-small.png");render(view,1380,900,2,"usability-bulk-review-200.png");
                 Check(vm.ManagementOpen&&vm.ManagementSummary.Contains("Steam")&&vm.ManagementSummary.Contains("실수령")&&server.Cancels==0&&server.Sells==0,"review missing or wrote trade");Check(Application.Current.Windows.Count==0&&PresentationSource.FromVisual(view)is null,"native window created");

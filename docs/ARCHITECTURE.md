@@ -1,3 +1,9 @@
+## 0.21.0 로컬 TBH 평가 경계
+
+ReadTbhSave → TbhSaveReader(고정 사용자 경로/읽기 전용 공유/연속 복사 검증/최대20MiB) → AES/PBKDF2/선택 gzip → PlayerSaveData의 필요한 필드만 파싱 → TbhSaveSnapshot → 잠금/장착/검색 → TbhSaveRows. AccountSaveData는 파싱 대상에서 제외한다. materialStashSaveDatas는 ItemUniqueId와 ItemKey를 소유 itemSaveDatas와 교차 검증하며 중복 위치 참조는 평가 제외한다.
+
+가격은 명시적 RefreshTbhPrices → 기존 SteamPrices.RefreshNameAsync → 기존 HTTP 요청 제한/통화/호가 파서 → 메모리 캐시 → 동일 상품 공유 매수 잔량 분배 또는 최저 판매호가 평가로 연결한다. 세이브 ID를 Steam asset ID로 만들지 않으며 판매·SQLite intent 작성 경로와 분리한다. 로그아웃은 가격 캐시를 지우고 로컬 읽기 목록은 보존한다. 정상 앱의 Games/SetListings는 TBH만 표시하고 과거 DB는 보존한다.
+
 ## 0.20.23 가격 기준 연결
 
 PriceTargets/PriceTarget→보관함·판매 중 기존 ComboBox→SalePlanner.AtLowestSell/SteamReviewRow→OrderbookFingerprint.ASK→SaleBatchSnapshot/SteamRepriceIntent→SQLite→SteamListingExecutor 최종 재조회 경로를 추가했다. PriceSnapshot.Asks는 기본 빈 배열로 확장하고 rgCompactSellOrders의 양의 정수·오름차순·최저 필드 일치를 검증한다. 가격 기준은 UI 한글 문자열로 분기하지 않는다. 원문 HTTP·인증정보 보관/새 네트워크 경로/라이브러리 도입0.

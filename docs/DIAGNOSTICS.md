@@ -1,3 +1,7 @@
+## 0.21.0 로컬 평가 이벤트
+
+4300 TbhSaveRead(Data/LocalSnapshot), 4301 TbhSavePrices(Pricing/LocalValuation). 기존 Run/Operation 문맥을 사용하며 명시적 시세 HTTP는 같은 OperationId로 추적한다. 허용한 요약은 성공/실패·건수·단계뿐이다. 파일 경로/복호화 내용/AccountSaveData/게임 UniqueId는 기록하지 않는다. 실패는 기존 중앙 예외 정제를 사용하며 원문 세이브나 가격 응답을 진단 ZIP에 넣지 않는다. 새로운 TBH-SAVE 확장 ID는 현재 로그의 요구사항 whitelist에서 SYS-01로 정규화되고 이벤트 ID로 구별한다. 기존 75개 ID는 유지한다.
+
 PricePlan/Pricing/B10/OwnSellExcluded는 현재 상품에서 제외한 본인 등록 행 수만 기록한다. 계정·자산·등록ID·원문 응답은 기록하지 않는다. 조회/전송 OperationId 문맥을 재사용하며 서버 목록과 깊이의 모순은 기존 StaleReview로 중단한다.
 
 ## 0.20.23 최저 판매호가

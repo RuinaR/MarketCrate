@@ -1,3 +1,9 @@
+## TBH 읽기 전용 포맷 참고 (0.21.0)
+
+MIT · Copyright (c)2026 EuSouOGiba · https://github.com/lezards/giba-steam-market · tbh-save.mjs 참조 버전 c4089e6f33bae60f38e95b73e2a572622878e4a1. 제한된 ES3/슬롯 분석을 C#으로 구현했다. 원문 라이선스는 src/MarketCrate.Infrastructure/ThirdParty/tbh-save/LICENSE 및 배포 licenses/TBH-save-MIT-LICENSE.txt에 보존한다. 게임/Steam 프로세스·바이너리 탐색 기능은 도입하지 않았다.
+
+TBHIndex 공개 이름/등급·키는 사실 메타데이터 조회에 참고했으며 해당 사이트 JS·아트·아이콘을 재배포하지 않는다. 게임 명칭/아이템 명칭의 권리는 각 권리자에게 있다. 출처/파일 해시는 docs/REFERENCES.md를 참조한다.
+
 # 외부 의존성 고지
 
 이 파일은 의존성 고지이며 MarketCrate 자체의 배포 라이선스를 선정하지 않습니다. 패키지 바이너리는 커밋하지 않습니다. 아래 QR 순수 계산 소스는 MIT 허가와 고지를 유지해 저장소에 포함합니다. 배포 시 각 의존성의 라이선스/NOTICE 원문을 함께 제공해야 합니다.

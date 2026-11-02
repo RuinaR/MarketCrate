@@ -37,10 +37,10 @@ internal static class ProductAuditUiTests
         test("제품 내비게이션 순서·양방향 매핑·게임 관리 직접 진입",()=>
         {
             using var vm=new SteamWorkspaceViewModel();var view=new SteamWorkspaceView{DataContext=vm};var pages=(TabControl)view.FindName("SteamPages");
-            var headers=pages.Items.Cast<TabItem>().Take(5).Select(x=>x.Header?.ToString()).ToArray();Check(headers.SequenceEqual(new[]{"보관함","판매 중","판매 결과","계정 및 설정","게임 · 판매 설정"}),"navigation order");
-            foreach(var logical in new[]{1,2,3,0,4}){vm.WorkPage=logical;render(view,1100,780,1,$"audit20-page-{logical}.png");Check(pages.SelectedIndex==vm.NavigationIndex,"navigation mapping");}
-            pages.SetCurrentValue(System.Windows.Controls.Primitives.Selector.SelectedIndexProperty,0);render(view,1100,780,1.25,"audit20-inventory-small.png");Check(vm.WorkPage==1,"UI navigation not two-way");
-            var button=Find<Button>(view).Single(x=>ReferenceEquals(x.Command,vm.OpenGameSettings));button.Command.Execute(null);Check(vm.WorkPage==4,"game manager unreachable");
+            render(view,1100,780,1,"audit21-navigation.png");var headers=pages.Items.Cast<TabItem>().Take(6).Select(x=>x.Header?.ToString()).ToArray();Check(headers.SequenceEqual(new[]{"게임 아이템","Steam 보관함","판매 중","작업 기록","계정 연결","설정"}),"navigation order");
+            foreach(var logical in new[]{6,1,2,3,0,4}){vm.WorkPage=logical;render(view,1100,780,1,$"audit20-page-{logical}.png");Check(pages.SelectedIndex==vm.NavigationIndex,"navigation mapping");}
+            pages.SetCurrentValue(System.Windows.Controls.Primitives.Selector.SelectedIndexProperty,0);render(view,1100,780,1.25,"audit20-inventory-small.png");Check(vm.WorkPage==6,"UI navigation not two-way");
+            vm.OpenGameSettings.Execute(null);render(view,1100,780,1,"audit21-settings.png");Check(vm.WorkPage==4&&!Find<TextBox>(view).Any(x=>x.IsVisible&&x.GetBindingExpression(TextBox.TextProperty)?.ParentBinding.Path?.Path=="AppInput"),"TBH product exposes other game management");
         });
         test("실제 셸의 중첩 탭 제거·진단 복귀 시 선택과 뷰 보존",()=>
         {

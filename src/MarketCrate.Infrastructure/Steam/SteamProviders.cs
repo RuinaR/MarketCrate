@@ -56,10 +56,12 @@ public sealed class SteamMarketDataProvider(SteamHttp http, SteamQrAuthenticatio
         if(!cache.TryGetValue((asset.Key.AppId,asset.MarketHashName),out var value)){DiagnosticHub.Emit(DiagnosticEvent.CacheRead,DiagnosticArea.Data,DiagnosticOutcome.CacheExpired);throw new SteamException(SteamFailure.Restricted);}
         DiagnosticHub.Emit(DiagnosticEvent.CacheRead,DiagnosticArea.Data,DateTimeOffset.UtcNow-value.CapturedAt>TimeSpan.FromMinutes(5)?DiagnosticOutcome.CacheExpired:DiagnosticOutcome.CacheHit,level:LogLevel.Debug);return value;
     }
-    public async Task<PriceSnapshot> RefreshAsync(InventoryAsset asset, CancellationToken token = default)
+    public Task<PriceSnapshot> RefreshAsync(InventoryAsset asset, CancellationToken token = default)=>RefreshNameAsync(asset.Key.AppId,asset.MarketHashName,token);
+    public async Task<PriceSnapshot> RefreshNameAsync(int appId,string marketHashName,CancellationToken token=default)
     {
+        if(appId<=0||string.IsNullOrWhiteSpace(marketHashName)||marketHashName.Length>512||marketHashName.Any(char.IsControl))throw new ArgumentException("MarketNameInvalid");
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.PriceLoaded,DiagnosticArea.Data,"D07");
-        var query = Uri.EscapeDataString(JsonSerializer.Serialize(new object[] { asset.Key.AppId, asset.MarketHashName }));
+        var query = Uri.EscapeDataString(JsonSerializer.Serialize(new object[] { appId, marketHashName }));
         using var correlation=DiagnosticHub.Scope(correlation:true);
         using var request = new HttpRequestMessage(HttpMethod.Get, "https://steamcommunity.com/market/orderbook?q=Load&qp=" + query);
         var body = await http.SendAsync(request, token);
@@ -69,7 +71,7 @@ public sealed class SteamMarketDataProvider(SteamHttp http, SteamQrAuthenticatio
             // History is median buckets, NOT individual trades: keep Trades empty.
             var snapshot = new PriceSnapshot(book.Currency, DateTimeOffset.UtcNow, "Steam unofficial orderbook; historical VWAP unavailable", TimeSpan.Zero, [], book.Bids){Asks=book.Asks};
             if (cache.Count >= 256) cache.Clear();
-            cache[(asset.Key.AppId, asset.MarketHashName)] = snapshot;
+            cache[(appId, marketHashName)] = snapshot;
             return snapshot;
         }
         catch (SteamException error) { error.Endpoint??="Orderbook";throw; }
@@ -79,10 +81,11 @@ public sealed class SteamMarketDataProvider(SteamHttp http, SteamQrAuthenticatio
         var raw=await RefreshAsync(asset,token);var result=ExcludeOwnSell(raw,asset,own);
         cache[(asset.Key.AppId,asset.MarketHashName)]=result;return result;
     }
-    public static PriceSnapshot ExcludeOwnSell(PriceSnapshot price,InventoryAsset asset,IReadOnlyList<SteamListing> own)
+    public static PriceSnapshot ExcludeOwnSell(PriceSnapshot price,InventoryAsset asset,IReadOnlyList<SteamListing> own)=>ExcludeOwnSell(price,asset.Key.AppId,asset.MarketHashName,own);
+    public static PriceSnapshot ExcludeOwnSell(PriceSnapshot price,int appId,string hash,IReadOnlyList<SteamListing> own)
     {
         if(price.OwnSellExcluded)throw new SteamException(SteamFailure.ContractChanged);
-        var rows=own.Where(x=>x.State==SaleState.Listed&&x.Asset.AppId==asset.Key.AppId&&x.HashName==asset.MarketHashName).ToArray();
+        var rows=own.Where(x=>x.State==SaleState.Listed&&x.Asset.AppId==appId&&x.HashName==hash).ToArray();
         if(rows.Any(x=>x.Currency!=price.Currency||x.Quantity<=0))throw new SteamException(SteamFailure.Restricted);
         var quantities=rows.GroupBy(x=>checked(x.SellerReceives+x.Fees)).ToDictionary(x=>x.Key,x=>x.Sum(y=>(long)y.Quantity));
         var levels=ImmutableArray.CreateBuilder<BidLevel>();
@@ -153,9 +156,10 @@ public sealed class SteamOrdersProvider(SteamHttp http, SteamQrAuthentication au
         }
         throw new SteamException(SteamFailure.ContractChanged);
     }
-    public IReadOnlyList<SteamListing> ForLowestSell(InventoryAsset asset)
+    public IReadOnlyList<SteamListing> ForLowestSell(InventoryAsset asset)=>ForLowestSell(asset.Key.AppId);
+    public IReadOnlyList<SteamListing> ForLowestSell(int appId)
     {
-        if(Presence.Any(x=>x.Asset.AppId==asset.Key.AppId&&x.State==SaleState.Listed&&(x.ListingId is null||!cache.Any(y=>y.ListingId==x.ListingId))))throw new SteamException(SteamFailure.Unsupported){Endpoint="Listings"};
+        if(Presence.Any(x=>x.Asset.AppId==appId&&x.State==SaleState.Listed&&(x.ListingId is null||!cache.Any(y=>y.ListingId==x.ListingId))))throw new SteamException(SteamFailure.Unsupported){Endpoint="Listings"};
         return cache;
     }
     public Task<SteamListingsPage> ProbeAsync(CancellationToken token=default)=>PageAsync(0,token);

@@ -36,7 +36,7 @@ Test-Case 'Missing runtime license rejected' {
     $license=Join-Path $folder 'licenses/NETCore-LICENSE.txt'; [System.IO.File]::Delete($license); Reject { Assert-Distribution $folder SelfContained };Set-Content -LiteralPath $license -Value 'synthetic notice'
 }
 Test-Case 'Auth directory cannot be shipped even when empty' { $auth = Join-Path $folder 'Auth'; New-Item -ItemType Directory -Path $auth | Out-Null; try { Reject { Assert-Distribution $folder SelfContained } } finally { Remove-Item -LiteralPath $auth } }
-foreach($forbiddenFile in @('sample.db','sample.sqlite3-wal','sample.db-shm','auth-session.json','trace.jsonl','.env.local','private.key','MarketCrate.App.pdb','refresh.authbin','store.authlock','refresh.pending','restore.blocked')) {
+foreach($forbiddenFile in @('SaveFile_Live.es3','sample.db','sample.sqlite3-wal','sample.db-shm','auth-session.json','trace.jsonl','.env.local','private.key','MarketCrate.App.pdb','refresh.authbin','store.authlock','refresh.pending','restore.blocked')) {
     Test-Case ('Forbidden file '+$forbiddenFile) { $path=Join-Path $folder $forbiddenFile;Set-Content -LiteralPath $path -Value 'synthetic';Reject { Assert-Distribution $folder SelfContained };[System.IO.File]::Delete($path) }
 }
 Write-Output "DISTRIBUTION RESULT $passed PASS / $failed FAIL; file inspection only; app/guest NOT executed"

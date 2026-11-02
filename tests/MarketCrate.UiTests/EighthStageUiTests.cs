@@ -56,7 +56,7 @@ internal static class EighthStageUiTests
         });
         test("격리 QA 오프라인 UI와100/125/150/200 출력 밀도 (물리 DPI 아님)",()=>
         {
-            using var vm=new SteamWorkspaceViewModel(offlineOnly:true){RiskAccepted=true,CredentialsAccepted=true};var view=new SteamWorkspaceView{DataContext=vm};
+            using var vm=new SteamWorkspaceViewModel(offlineOnly:true){RiskAccepted=true,CredentialsAccepted=true};vm.WorkPage=0;var view=new SteamWorkspaceView{DataContext=vm};
             foreach(var scale in new[]{1d,1.25,1.5,2})render(view,1100,700,scale,$"stage8-offline-{scale*100:0}.png");
             var login=Find<Button>(view).Single(x=>ReferenceEquals(x.Command,vm.BeginLogin));Check(!login.IsEnabled);
             Check(Find<TextBlock>(view).Any(x=>x.Text.Contains("Steam 네트워크 차단"))&&Application.Current.Windows.Count==0);

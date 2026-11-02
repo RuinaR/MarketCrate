@@ -14,7 +14,7 @@ internal static class ThirteenthStageUiTests
         test("자가검증 범위 기본OFF·진입 명령·승인·비활성 안내 바인딩",()=>
         {
             using var vm=new SteamWorkspaceViewModel(offlineOnly:true);var view=new SteamWorkspaceView{DataContext=vm};vm.ShowSelfCheck.Execute(null);render(view,1100,800,1,"stage13-selfcheck-offline.png");
-            Check(((TabControl)view.FindName("SteamPages")).SelectedIndex==5,"entry disconnected");Check(!vm.CheckApproved&&!vm.CheckListings&&!vm.CheckInventory&&!vm.CheckWallet&&!vm.CheckOrders&&!vm.CheckImage,"implicit read consent");Check(Find<Button>(view).Any(x=>ReferenceEquals(x.Command,vm.SelfCheck)&&!x.IsEnabled),"unapproved command enabled");Check(Find<CheckBox>(view).Any(x=>x.GetBindingExpression(System.Windows.Controls.Primitives.ToggleButton.IsCheckedProperty)?.ParentBinding.Path?.Path=="CheckApproved"),"consent missing");
+            Check(((TabControl)view.FindName("SteamPages")).SelectedIndex==6,"entry disconnected");Check(!vm.CheckApproved&&!vm.CheckListings&&!vm.CheckInventory&&!vm.CheckWallet&&!vm.CheckOrders&&!vm.CheckImage,"implicit read consent");Check(Find<Button>(view).Any(x=>ReferenceEquals(x.Command,vm.SelfCheck)&&!x.IsEnabled),"unapproved command enabled");Check(Find<CheckBox>(view).Any(x=>x.GetBindingExpression(System.Windows.Controls.Primitives.ToggleButton.IsCheckedProperty)?.ParentBinding.Path?.Path=="CheckApproved"),"consent missing");
         });
         test("자가검증 실제 어댑터 합성 성공·차단 결과와 작업 ID 자체 렌더",()=>
         {
@@ -30,7 +30,7 @@ internal static class ThirteenthStageUiTests
         });
         test("페이지 탐색 명령과 Selector 양방향 바인딩 상태 보존",()=>
         {
-            using var vm=new SteamWorkspaceViewModel(offlineOnly:true);var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,800,1,"stage13-navigation-start.png");var pages=(TabControl)view.FindName("SteamPages");vm.ShowSelfCheck.Execute(null);render(view,1100,800,1,"stage13-navigation-check.png");Check(pages.SelectedIndex==5,"command navigation failed");pages.SetCurrentValue(System.Windows.Controls.Primitives.Selector.SelectedIndexProperty,0);render(view,1100,800,1,"stage13-navigation-inventory.png");Check(vm.WorkPage==1,"UI selection not reflected in VM");vm.WorkPage=4;render(view,1100,800,1,"stage13-navigation-advanced.png");Check(pages.SelectedIndex==4,"VM selection not reflected in UI");
+            using var vm=new SteamWorkspaceViewModel(offlineOnly:true);var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,800,1,"stage13-navigation-start.png");var pages=(TabControl)view.FindName("SteamPages");vm.ShowSelfCheck.Execute(null);render(view,1100,800,1,"stage13-navigation-check.png");Check(pages.SelectedIndex==6,"command navigation failed");pages.SetCurrentValue(System.Windows.Controls.Primitives.Selector.SelectedIndexProperty,0);render(view,1100,800,1,"stage13-navigation-inventory.png");Check(vm.WorkPage==6,"UI selection not reflected in VM");vm.WorkPage=4;render(view,1100,800,1,"stage13-navigation-advanced.png");Check(pages.SelectedIndex==5,"VM selection not reflected in UI");
         });
     }
     private static void Complete(Task task){var watch=Stopwatch.StartNew();while(!task.IsCompleted){if(watch.Elapsed>TimeSpan.FromSeconds(20))throw new TimeoutException();var frame=new DispatcherFrame();Dispatcher.CurrentDispatcher.BeginInvoke(DispatcherPriority.Background,new Action(()=>frame.Continue=false));Dispatcher.PushFrame(frame);Thread.Sleep(1);}task.GetAwaiter().GetResult();}

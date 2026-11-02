@@ -137,7 +137,7 @@ internal static class Program
             ThirteenthStageUiTests.Run((name,test)=>Test(name,test),Render);
             TwelfthStageUiTests.Run((name,test)=>Test(name,test),Render);
             UserInputUiTests.Run(Test,Render);
-            LowerPriceStepUiTests.Run(Test,Render);
+            LowerPriceStepUiTests.Run(Test,Render);TbhSaveUiTests.Run(Test,Render);
             InstantSaleRefreshUiTests.Run(Test,Render);
             EleventhStageUiTests.Run((name,test)=>Test(name,test),Render);
             Test("바인딩 오류 없음 (의도적 invalid 가격 변환 제외)", () =>

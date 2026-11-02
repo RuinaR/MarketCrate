@@ -1,3 +1,7 @@
+## 0.21.0 TBH 전용 사용자 범위 변경 및 로컬 평가 확장
+
+75개 기존 ID와 판정47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED는 보존한다. 게임 범용 UI(C02)의 제품 범위는 사용자 요청으로 TBH 단일 scope로 제한되며 내부 다중 게임 회귀는 남긴다. B04/C03/C04/E05 관련 UI→명령→Provider 경로는 TBH 전용으로 연결했다. 추가 TBH-SAVE는 원75개의 삭제/병합이 아닌 확장 요구다: 지정 저장본 읽기·잠금/장착 필터·재료창고·시세·위치·별도 화면을 TbhSaveReader/TbhSaveViewModel/TbhSaveTests/TbhSaveUiTests로 검증한다. 실제 저장본 읽기와 합성 Steam 가격 검증을 실계정 가격·판매 검증으로 승격하지 않는다. E05 하향 인하액 표시는 두 가격 기준에 공통 적용한다.
+
 ## 0.20.23 B10/D04/E05/F02 가격 기준 확장
 
 사용자 명시 요청으로 PriceTarget→보관함/판매 중 기존 UI→최신 전체 판매목록/rgCompactSellOrders→본인 수량 제외→최저 판매호가/직전 유효가→최종 검토→한 번 승인→Executor/SQLite/반환 검증을 연결했다. 기존 PriceBasis enum/과거 저널/평균 UI 제거는 유지한다. 정상·최저·빈 호가·자기 등록 소멸·실제 경쟁가 변경·중복 승인·통화/수수료 검사를 합성으로 검증했다. 실제 계정/거래/물리 입력 미검증으로75개47/16/0/3/9 및 ID 유지, 승격0. 최종 수치는 CURRENT-STATUS 참조.

@@ -17,11 +17,20 @@ public sealed class SteamGameScope(int appId,string contextId,string name):Obser
 }
 public sealed partial class SteamWorkspaceViewModel
 {
+    public bool TbhOnly=>!syntheticConnection;
+    public bool MultiGameEnabled=>!TbhOnly;
+    public string GameSidebarWidth=>TbhOnly?"0":"184";
+    public string GameSidebarGap=>TbhOnly?"0":"16";
+    public string InventoryHeader=>TbhOnly?"Steam 보관함":"보관함";
+    public string ResultsHeader=>TbhOnly?"작업 기록":"판매 결과";
+    public string AccountHeader=>TbhOnly?"계정 연결":"계정 및 설정";
+    public string SettingsHeader=>TbhOnly?"설정":"게임 · 판매 설정";
+    public string SettingsTitle=>TbhOnly?"TBH 판매 설정":"게임 및 보관함 경로 관리";
     private readonly List<InventoryScope> hiddenSuggestions=[];
     private readonly bool catalogTestDefaults=false;
     private static bool OldSuggestion(InventoryScope x)=>x.ContextId=="2"&&(x.AppId==730&&x.Name=="Counter-Strike 2"||x.AppId==570&&x.Name=="Dota 2"||x.AppId==440&&x.Name=="Team Fortress 2");
     private static string CatalogName(int appId,string fallback)=>appId switch{753=>"Steam 커뮤니티",730=>"Counter-Strike 2",570=>"Dota 2",440=>"Team Fortress 2",3678970=>"TBH: Task Bar Hero",_=>fallback};
-    public string CatalogNotice=>"보관함/판매목록에서 확인되거나 직접 추가한 경로입니다. 게임 구매·보유 여부를 뜻하지 않습니다."+(hiddenSuggestions.Count>0?$" 이전 미확인 추천 {hiddenSuggestions.Count}개는 숨겼으며 저장 자료는 보존했습니다. 필요하면 직접 추가하세요.":"");
+    public string CatalogNotice=>TbhOnly?"TBH 전용 · AppID 3678970/context 2 · 이전 게임 설정과 거래 기록은 삭제하지 않습니다.":"보관함/판매목록에서 확인되거나 직접 추가한 경로입니다. 게임 구매·보유 여부를 뜻하지 않습니다."+(hiddenSuggestions.Count>0?$" 이전 미확인 추천 {hiddenSuggestions.Count}개는 숨겼으며 저장 자료는 보존했습니다. 필요하면 직접 추가하세요.":"");
     private string appInput="",contextInput="",nameInput="";
     public string AppInput{get=>appInput;set=>Set(ref appInput,value);}
     public string ContextInput{get=>contextInput;set=>Set(ref contextInput,value);}
@@ -34,11 +43,12 @@ public sealed partial class SteamWorkspaceViewModel
         ListingMetrics=new(ListingMetricsAsync,Error,()=>CanRead&&!Busy&&!AnyReview&&Listings.Any(x=>x.Selected));
         AddScope=new(()=>{try
         {
+            if(TbhOnly)throw new InvalidOperationException("TbhOnly");
             var scope=new InventoryScope(int.Parse(AppInput,System.Globalization.CultureInfo.InvariantCulture),ContextInput,NameInput);scope.Validate();
             if(Games.Count>=100||Games.Any(x=>x.AppId==scope.AppId&&x.ContextId==scope.ContextId))throw new ArgumentException("CatalogDuplicate");
             var next=new SteamGameScope(scope.AppId,scope.ContextId,scope.Name);Games.Add(next);try{SaveCatalog();}catch{Games.Remove(next);throw;}hiddenSuggestions.RemoveAll(x=>x.AppId==scope.AppId&&x.ContextId==scope.ContextId);Raise(nameof(CatalogNotice));Game=next;Status="게임/context 추가 완료 · 직접 갱신할 때만 조회합니다.";
-        }catch(Exception error){Error(error);}},()=>CanRead&&!Busy&&!AnyReview);
-        RemoveScope=new(RemoveScopeNow,()=>CanRead&&!Busy&&!AnyReview&&Games.Count>1);
+        }catch(Exception error){Error(error);}},()=>!TbhOnly&&CanRead&&!Busy&&!AnyReview);
+        RemoveScope=new(RemoveScopeNow,()=>!TbhOnly&&CanRead&&!Busy&&!AnyReview&&Games.Count>1);
     }
     private void RemoveScopeNow()
     {
@@ -83,6 +93,7 @@ public sealed partial class SteamWorkspaceViewModel
     private void SaveCatalog()=>workspace!.Store.SaveCatalog(workspace.Authentication.SteamId!,Games.Select(x=>new InventoryScope(x.AppId,x.ContextId,x.Name){Pinned=true}).Concat(hiddenSuggestions).DistinctBy(x=>(x.AppId,x.ContextId)).ToArray());
     private void RestoreCatalog()
     {
+        if(TbhOnly){ResetCatalog();return;}
         if(!catalogTestDefaults)
         {
             try{workspace!.Store.AddRequestedTbhOnce(workspace.Authentication.SteamId!,Games.Select(x=>new InventoryScope(x.AppId,x.ContextId,x.Name){Pinned=true}).ToArray());}
@@ -94,7 +105,7 @@ public sealed partial class SteamWorkspaceViewModel
     }
     private void ObserveCatalog(IEnumerable<SteamListing> listings)
     {
-        if(!Connected)return;var added=false;
+        if(!Connected||TbhOnly)return;var added=false;
         foreach(var group in listings.Select(x=>x.Asset).DistinctBy(x=>(x.AppId,x.ContextId)))
         {
             if(Games.Any(x=>x.AppId==group.AppId&&x.ContextId==group.ContextId)||Games.Count>=100)continue;
@@ -110,7 +121,7 @@ public sealed partial class SteamWorkspaceViewModel
         if(catalogTestDefaults){Games.Add(new(730,"2","Counter-Strike 2"));Games.Add(new(570,"2","Dota 2"));Games.Add(new(440,"2","Team Fortress 2"));}
         else
 #endif
-        Games.Add(new(753,"6","Steam 커뮤니티"));
+        Games.Add(TbhOnly?new(TbhScope.AppId,TbhScope.Context,TbhScope.Name):new(753,"6","Steam 커뮤니티"));
         game=Games[0];Raise(nameof(Game));Raise(nameof(CatalogNotice));
     }
 }
