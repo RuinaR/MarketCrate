@@ -1,3 +1,7 @@
+## 0.22.0 화면 정리
+
+계정 연결/시세 갱신/검토/취소/진단 ZIP 명령과 기존 OperationId/JSONL 경로는 동일하다. 상세 도구를 접어도 명령이나 오류 로그를 제거하지 않는다. 조회/거래 준비 배지는 현재 CanTrade/CanCancel을 요약하며 승인/저널 상태를 추측하지 않는다. 폰트·아이콘은 로컬 리소스여서 새 텔레메트리·웹 폰트 요청이 없다. 실질 위험 검토는 SECURITY-AND-STEAM에 공개 근거/현 코드 경로로 기록했으며 운영 로그·개인 세이브를 외부로 보내지 않았다.
+
 ## 0.21.0 로컬 평가 이벤트
 
 4300 TbhSaveRead(Data/LocalSnapshot), 4301 TbhSavePrices(Pricing/LocalValuation). 기존 Run/Operation 문맥을 사용하며 명시적 시세 HTTP는 같은 OperationId로 추적한다. 허용한 요약은 성공/실패·건수·단계뿐이다. 파일 경로/복호화 내용/AccountSaveData/게임 UniqueId는 기록하지 않는다. 실패는 기존 중앙 예외 정제를 사용하며 원문 세이브나 가격 응답을 진단 ZIP에 넣지 않는다. 새로운 TBH-SAVE 확장 ID는 현재 로그의 요구사항 whitelist에서 SYS-01로 정규화되고 이벤트 ID로 구별한다. 기존 75개 ID는 유지한다.

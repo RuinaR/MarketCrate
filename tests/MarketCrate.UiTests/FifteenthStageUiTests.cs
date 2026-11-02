@@ -15,7 +15,7 @@ internal static class FifteenthStageUiTests
         test("실거래·이미지 기본선택과 검증 전 전송권한 차단 렌더",()=>
         {
             using var vm=new SteamWorkspaceViewModel();vm.WorkPage=4;
-            var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,800,1,"stage15-trading-off.png");
+            var view=new SteamWorkspaceView{DataContext=vm};((Expander)view.FindName("TradingDetails")).IsExpanded=true;render(view,1100,800,1,"stage15-trading-off.png");
             Check(!vm.ContractToolsVisible&&!vm.PrepareTrading.CanExecute(null)&&!vm.EnableTrading.CanExecute(null),"unsafe default");
             Check(vm.TradeAccepted&&vm.ImagesEnabled&&!vm.CanTrade&&vm.TradingConfirmation=="실제 거래","mode/image default or permission bypass");
             Check(Find<TextBox>(view).Any(x=>x.GetBindingExpression(TextBox.TextProperty)?.ParentBinding.Path?.Path=="TradingConfirmation"),"confirmation UI disconnected");

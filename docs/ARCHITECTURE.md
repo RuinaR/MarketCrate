@@ -1,3 +1,9 @@
+## 0.22.0 표시 계층 변경
+
+도메인/HTTP/수수료/SQLite/인증 저장소/거래 상태 머신은 재작성하지 않았다. NavigationIndex/WorkPage를 유지한 채 WorkspaceTabs/WorkspaceNavigationTab 템플릿으로 좌측 탐색을 구현한다. 실제 UIElement Content 인스턴스를 유지하므로 이동 시 선택·입력·스크롤 보존 경로는 동일하다. 새 Expander는 WPF IsExpanded/ToggleButton 바인딩·기존 입력/접근성을 사용한다.
+
+TbhCountText/TbhValuationText/TradingModeLabel은 표시용 요약이며 가격 전략/동의 상태를 변경하지 않는다. 상세 기능은 제거하지 않고 펼침 영역으로 옮겼다. 폰트는 앱 .g.resources에 포함, 아이콘은 WPF DrawingImage로 포함해 웹 다운로드/시스템 설치가 없다. 라이선스 출하 누락 검사를 추가했다.
+
 ## 0.21.0 로컬 TBH 평가 경계
 
 ReadTbhSave → TbhSaveReader(고정 사용자 경로/읽기 전용 공유/연속 복사 검증/최대20MiB) → AES/PBKDF2/선택 gzip → PlayerSaveData의 필요한 필드만 파싱 → TbhSaveSnapshot → 잠금/장착/검색 → TbhSaveRows. AccountSaveData는 파싱 대상에서 제외한다. materialStashSaveDatas는 ItemUniqueId와 ItemKey를 소유 itemSaveDatas와 교차 검증하며 중복 위치 참조는 평가 제외한다.

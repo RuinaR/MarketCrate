@@ -28,7 +28,7 @@ internal static class FeeResponseUiTests
         test("공식 수수료 입력 비교 UI 연결·금액 반영·거래 권한 불변",()=>WithVm(false,(vm,server)=>
         {
             Complete(vm.LoadAsync());vm.WorkPage=4;vm.OfficialSeller="100";vm.OfficialBuyer="115";
-            var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,780,1,"fee-comparison-small.png");
+            var view=new SteamWorkspaceView{DataContext=vm};((Expander)view.FindName("FeeComparisonDetails")).IsExpanded=true;render(view,1100,780,1,"fee-comparison-small.png");
             var button=Find<Button>(view).Single(x=>Equals(x.Content,"입력값 비교"));Check(ReferenceEquals(button.Command,vm.CompareOfficialFees)&&button.IsEnabled,"comparison button disconnected");
             button.Command.Execute(null);Check(vm.FeeComparison.Contains("계산 일치")&&server.Sends==0&&server.Cancels==0,"comparison wrote transaction");render(view,1380,900,1.5,"fee-comparison-large.png");
             vm.OfficialBuyer="100";button.Command.Execute(null);Check(vm.FeeComparison.Contains("불일치"),"mismatch hidden");
@@ -36,7 +36,7 @@ internal static class FeeResponseUiTests
         test("제품 수수료 3구간 네 금액 바인딩·DPI 자체 렌더·권한 불변",()=>WithVm(false,(vm,server)=>
         {
             Complete(vm.LoadFeesAsync());vm.WorkPage=4;
-            var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,850,1,"product-fees-empty.png");
+            var view=new SteamWorkspaceView{DataContext=vm};((Expander)view.FindName("FeeComparisonDetails")).IsExpanded=true;render(view,1100,850,1,"product-fees-empty.png");
             var inputs=new[]{new[]{"1","3","1","1"},new[]{"100","115","5","10"},new[]{"1000","1150","50","100"}};
             for(var i=0;i<3;i++){var row=vm.OfficialCases[i];row.Seller=inputs[i][0];row.Buyer=inputs[i][1];row.Steam=inputs[i][2];row.Publisher=inputs[i][3];}
             vm.CompareOfficialFees.Execute(null);Check(vm.OfficialCases.All(x=>x.Result.Contains("4금액 일치")),"component comparison disconnected");

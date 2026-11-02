@@ -1,3 +1,13 @@
+## 0.22.0 UI 단순화·실질 위험 검토
+
+- Playnite/CSlytics 공개 화면을 직접 비교해 좌측6개 내비게이션·중앙 목록·우측 선택 작업으로 정리했다. 게임 평가 요약을 줄이고 검색/필터/갱신/목록을 분리했다. 판매목록의 직접 단가 편집은 선택한 행만 표시한다.
+- 자료/수수료 비교/거래 권한 상세/취소·재가격 복구는 펼침 영역으로 이동했다. 모든 기존 명령·최종 승인·중복/Unknown/수수료 보호는 유지한다. 기본 WPF 외형으로 되돌리지 않았다.
+- Pretendard Regular/SemiBold(OFL) 앱 내장,8개 Lucide 아이콘(ISC 및 Feather 고지) WPF 벡터 포함. 별도 설치/웹 폰트/새 렌더러 없음. Kenney CC0 및 Galmuri 픽셀 글꼴도 검토했으나 관리 화면 가독성/DPI를 위해 미채택.
+- 일반 개인 판매 보조에 높은 빈도의 제재가 발생한다는 직접 근거는 찾지 못했다. 도박 봇/포럼 스팸/치트/과다 요청 사례와 현재 기능을 구분했다. 무위험·Valve 허가·정량 저위험의 증명도 없으므로 반복 제재 문구를 줄이고 비공식 연동 사실/상세 근거를 유지한다. [실제 코드·사례 비교](SECURITY-AND-STEAM.md)
+- 최종 Verify: **기능457/457·비표시WPF87/87·배포23/23·의존성 감사6/6 PASS**, 정리8PASS/0FAIL/1NOT VERIFIED. 빌드 경고0/오류0. 폰트 실제 한글 glyph/굵기·Header Hover/선택/키보드 포커스/원상복귀·명령 연결·10000항목 가상화 회귀 유지. runtime/clean22-release-candidate.txt.
+- 실제 계정/거래·창 실행·물리 입력·열린 Popup·모니터 DPI는 실행하지 않았다. RTB100–200% 출력밀도와1100/1380/1600 화면 폭을 기존 검사 및 신규 화면으로 확인하고 이미지를 직접 검토했다. 과거 사용자 GUI 검증을 새 버전 전체 PASS로 확대하지 않는다.
+- 기존75개 ID·47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED 유지. 사용자 Auth/설정/SQLite/저널/진단/과거 ZIP 보존. 새 ZIP/해시는 배포 마감 후 추가한다.
+
 ## 0.21.0 최종 portable 배포 (2026-11-02)
 
 소스 커밋 **0091919**. `artifacts/releases/MarketCrate-0.21.0-tbh-helper-0091919-win-x64.zip` **66,803,958바이트/419파일**. SHA256 **A3250B4F9B457A0CD3267CA986FDAD942ED2DF79B5ED7CBB58804D4258331410**. x64 self-contained .NET/WPF/SQLite/DPAPI·MIT 고지·실제 전용 PE/BAML·사용자 DB/Auth/로그/ES3/개발 파일 제외를 정적 검사했다. ZIP419개 항목 모두 출력 파일과 SHA256 일치. 앱/설치/실계정 거래는 실행하지 않았다. `artifacts/releases.json`의 Latest는0.21.0, Rollback은0.20.23이며 과거 배포본/사용자 자료 삭제0.

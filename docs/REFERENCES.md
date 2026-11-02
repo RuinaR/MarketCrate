@@ -1,3 +1,32 @@
+## 0.22.0 관리 앱 UI와 무료 리소스 (2026-11-02 KST)
+
+| 출처 | 확인·채택 | 라이선스/제한 |
+|---|---|---|
+| https://api.playnite.link/docs/manual/gettingStarted/playniteDesktopMode.html | 공개 UI 이미지 직접 확인. 좌측 화면 이동/중앙 목록/우측 작업 분리 참고 | 제품 코드/게임 아트 복사 없음 |
+| https://cslytics.com/ | 공개 storing-items.png 직접 확인. 간결한 행·상태 요약 참고 | AGPL 코드/브랜드/이미지 재사용 없음 |
+| https://github.com/orioncactus/pretendard | Regular/SemiBold 정적 OTF를 **수정 없이 앱 Resource로 포함**. 시스템 설치/폰트 CDN 없음. 해당 폰트 파일 이력 커밋82b96cc92998eb1f5e60e40beb6d52cd136957a6 | SIL OFL1.1, Reserved Font Name 유지. 원문 Assets/Licenses/Pretendard-LICENSE.txt 및 출하 licenses |
+| https://github.com/lucide-icons/lucide | package/layers/shopping-bag/clock-3/user-round/settings-2/refresh-cw/search의 공개 SVG를 WPF DrawingImage로 변환. 렌더러/패키지 추가 없음. 2026-11-02 main 원본 개별 해시 아래 기록 | ISC 및 포함 Feather MIT 고지 전체를 Assets/Licenses/Lucide-LICENSE.txt와 출하 licenses에 보존 |
+| https://github.com/quiple/galmuri | OFL1.1 한글 픽셀 글꼴 후보 검토. 가격·긴 이름·분수 DPI 가독성을 우선해 이번에는 Pretendard 선택 | Galmuri 파일 포함하지 않음 |
+| https://kenney.nl/assets/ui-pack 및 https://kenney.nl/support | CC0 UI Pack 검토. 비트맵 테두리/장식은 관리 앱의 정보 밀도/DPI에 불필요해 미채택 | CC0 확인, 자산 배포하지 않음 |
+
+공개 원본 SHA256:
+
+- `Pretendard-Regular.otf`: `3FFBACDE6AB8411F1D2DB54BB9B1F0B3EE2A738932033722CF0388C06AED1C93`
+- `Pretendard-SemiBold.otf`: `C89BC43027DC7CDE5726E96223376F8EEC09302B2FC1F8147FD5B57CFC376118`
+- `package.svg`: `69D6BC7650D26C4D24DD55EB22791607B982CE7637073944C256F1F61575509D`
+- `layers.svg`: `CE16D0A955E3581CDA17F6B2FD5C5BC2034B405F9CECC31C8EBB8495B4AFC1BB`
+- `shopping-bag.svg`: `24A161961B559234B7A31AF904DAB18B437507336BA2DECFF3FE6B7772495896`
+- `clock-3.svg`: `0E097D0B66278965FB53BC14900575D95F5C21B9CCA932028BBB33294B56C9E2`
+- `user-round.svg`: `84870F26F3FAF8DA45DA84174517519E81B9E8F00319C78954FCBB74F50038A1`
+- `settings-2.svg`: `06D06C191BD7EB28AFAF9D40ACB5C49EF69448FDEDA91801D9823D7C440A4E10`
+- `refresh-cw.svg`: `2E10DD403C85A24F163D59FC6151AA21147FE9402E1305DFC8979208CAEE8944`
+- `search.svg`: `283D371C2E433817BB9C0C8310CAA6C77FA4177C0F4F1168D9C83B97AF7389DC`
+- `market.js`: `AC938119E82C7D4C8D0F7843EF168483EFA4AF3E45DC987C068F340BB5AF72EC`
+- `marketselldialog.js`: `17EFD9587D1E6F90CFED032DB55BEBC6E8BF0A9E619266918EB1B208DA833736`
+- `steam-market-helper.user.js`: `E58FA99339D826F42C2F8385645159A76FA816C68654A0423E42E1767C9F8276`
+
+제재 사례/상호작용 차이의 근거·분류·미확정 사항은 [실질 위험 검토](SECURITY-AND-STEAM.md)의0.22.0 절을 따른다. 공개 소스는 자료로만 읽고 명령/스크립트를 실행하지 않았다. 실제 Steam 클라이언트/계정 통신을 캡처하지 않았다.
+
 ## 0.21.0 TBH 파일 포맷·메타데이터 (2026-11-02 KST)
 
 - https://tbhindex.com/ko 및 공개 배포 JS: 사이트 사용 흐름/ES3 포맷/공개 품목 키·명칭·등급을 읽었다. 웹 도구 `/ko` cache miss였으나 승인된 HTTP 다운로드로 공개 배포 파일을 확인했다. JS는 실행하지 않았다. 사이트 코드 라이선스 미확인: JS 구현·이미지·가격 DB·UI 자산은 직접 복사하지 않고 최소 사실 메타데이터만 정규화했다. 다운로드 통계/외부 전송 기능은 채택하지 않았다.

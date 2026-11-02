@@ -1,3 +1,7 @@
+## 0.22.0 UI·경고 표현 정리
+
+기존75개 ID 및47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED 판정은 유지한다. G01–G 요구의 표시/재사용 스타일/접근성/명령 도달 경로를 WorkspaceTabs·WorkspaceNavigationTab·Expander·내장 글꼴로 보완했고 기존 UI→ViewModel→Provider/Executor 경로는 유지했다. CleanWorkspaceUiTests 및 기존 사용자 입력/모달/가상화/수수료/하향/재등록 회귀를 연결한다. 기술/수수료/복구 도구는 접힌 영역을 직접 펼쳐 도달 가능성을 검사하며 테스트 기준을 명령 존재만으로 낮추지 않는다. 물리 GUI·실거래 검증 승격 없음.
+
 ## 0.21.0 TBH 전용 사용자 범위 변경 및 로컬 평가 확장
 
 75개 기존 ID와 판정47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED는 보존한다. 게임 범용 UI(C02)의 제품 범위는 사용자 요청으로 TBH 단일 scope로 제한되며 내부 다중 게임 회귀는 남긴다. B04/C03/C04/E05 관련 UI→명령→Provider 경로는 TBH 전용으로 연결했다. 추가 TBH-SAVE는 원75개의 삭제/병합이 아닌 확장 요구다: 지정 저장본 읽기·잠금/장착 필터·재료창고·시세·위치·별도 화면을 TbhSaveReader/TbhSaveViewModel/TbhSaveTests/TbhSaveUiTests로 검증한다. 실제 저장본 읽기와 합성 Steam 가격 검증을 실계정 가격·판매 검증으로 승격하지 않는다. E05 하향 인하액 표시는 두 가격 기준에 공통 적용한다.

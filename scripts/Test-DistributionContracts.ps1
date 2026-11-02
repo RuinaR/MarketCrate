@@ -15,7 +15,7 @@ function Pe([string]$Path,[uint16]$Machine=0x8664) {
 }
 New-Item -ItemType Directory -Path (Join-Path $folder 'licenses') | Out-Null
 foreach ($name in @('MarketCrate.App.exe','MarketCrate.App.dll','MarketCrate.Core.dll','MarketCrate.Infrastructure.dll','PresentationFramework.dll','PresentationCore.dll','WindowsBase.dll','System.Private.CoreLib.dll','coreclr.dll','clrjit.dll','hostfxr.dll','hostpolicy.dll','PresentationNative_cor3.dll','wpfgfx_cor3.dll','e_sqlite3.dll','System.Security.Cryptography.ProtectedData.dll')) { Pe (Join-Path $folder $name) }
-foreach ($name in @('THIRD-PARTY-NOTICES.md','licenses/EFCore-MIT-LICENSE.txt','licenses/SQLitePCLRaw-LICENSE.txt','licenses/SQLitePCLRaw-NOTICE.txt','licenses/QrCodeGenerator-LICENSE.txt','licenses/steam-session-LICENSE.txt','licenses/NETCore-LICENSE.txt','licenses/NETCore-THIRD-PARTY-NOTICES.txt','licenses/WindowsDesktop-LICENSE.txt')) { Set-Content -LiteralPath (Join-Path $folder $name) -Value 'synthetic notice' }
+foreach ($name in @('THIRD-PARTY-NOTICES.md','licenses/Pretendard-LICENSE.txt','licenses/Lucide-LICENSE.txt','licenses/EFCore-MIT-LICENSE.txt','licenses/SQLitePCLRaw-LICENSE.txt','licenses/SQLitePCLRaw-NOTICE.txt','licenses/QrCodeGenerator-LICENSE.txt','licenses/steam-session-LICENSE.txt','licenses/NETCore-LICENSE.txt','licenses/NETCore-THIRD-PARTY-NOTICES.txt','licenses/WindowsDesktop-LICENSE.txt')) { Set-Content -LiteralPath (Join-Path $folder $name) -Value 'synthetic notice' }
 $config=Join-Path $folder 'MarketCrate.App.runtimeconfig.json'
 $selfConfig='{"runtimeOptions":{"includedFrameworks":[{"name":"Microsoft.NETCore.App","version":"10.0.14"},{"name":"Microsoft.WindowsDesktop.App","version":"10.0.14"}]}}'
 Set-Content -LiteralPath $config -Value $selfConfig
@@ -24,6 +24,9 @@ Test-Case 'Self-contained file contract (not an executable compatibility test)' 
 Test-Case 'Old bundled runtime below reviewed security minimum rejected' {
     Set-Content -LiteralPath $config -Value $selfConfig.Replace('10.0.14','10.0.9')
     try { Reject { Assert-Distribution $folder SelfContained } } finally { Set-Content -LiteralPath $config -Value $selfConfig }
+}
+foreach($notice in @('Pretendard-LICENSE.txt','Lucide-LICENSE.txt')) {
+    Test-Case ('Missing UI redistribution notice '+$notice) { $path=Join-Path $folder ('licenses/'+$notice);$content=[IO.File]::ReadAllText($path);[IO.File]::Delete($path);try{Reject { Assert-Distribution $folder SelfContained }}finally{[IO.File]::WriteAllText($path,$content)} }
 }
 Test-Case 'Wrong apphost architecture rejected' { Pe (Join-Path $folder 'MarketCrate.App.exe') 0x14c; Reject { Assert-Distribution $folder SelfContained }; Pe (Join-Path $folder 'MarketCrate.App.exe') }
 Test-Case 'Wrong WPF native architecture rejected' { Pe (Join-Path $folder 'wpfgfx_cor3.dll') 0x14c; Reject { Assert-Distribution $folder SelfContained }; Pe (Join-Path $folder 'wpfgfx_cor3.dll') }

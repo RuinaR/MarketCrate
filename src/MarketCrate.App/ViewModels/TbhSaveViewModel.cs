@@ -29,6 +29,19 @@ public sealed partial class SteamWorkspaceViewModel
     public string TbhSearch{get=>tbhSearch;set{if(Set(ref tbhSearch,value))RebuildTbhRows();}}
     public bool TbhEmpty=>TbhSaveRows.Count==0;
     public string TbhSnapshotText=>tbhSnapshot is {} s?$"파일 저장 {s.FileWrittenAt.ToLocalTime():MM-dd HH:mm:ss} · 복사 확인 {s.CapturedAt.ToLocalTime():HH:mm:ss} · 원본 읽기 전용 · 현재 게임 상태와 시차가 있을 수 있음":"세이브 미조회 · 파일 읽기는 로그인 없이 가능 · 시세 조회는 Steam 연결 필요";
+    public string TbhCountText=>$"{TbhSaveRows.Count:N0}개 항목 · 단가 높은순 · 위치는 마우스를 올려 확인";
+    public string TbhValuationText
+    {
+        get
+        {
+            try
+            {
+                var totals=TbhSaveRows.Where(x=>x.PricedTotal is not null&&x.Currency is not null).GroupBy(x=>x.Currency).Select(g=>new Money(g.Sum(x=>x.PricedTotal!.Value),g.Key!).ToString());
+                return string.Join(" / ",totals) is {Length:>0} text?text:"시세 미조회";
+            }
+            catch(OverflowException){return "합계 범위 확인 필요";}
+        }
+    }
     public string TbhSaveSummary
     {
         get
@@ -118,6 +131,6 @@ public sealed partial class SteamWorkspaceViewModel
             rows.Add(new(item,message,unit,total,currency,missing,icon));
         }
         TbhSaveRows.ReplaceAll(rows.OrderByDescending(x=>x.UnitPrice??-1).ThenByDescending(x=>x.PricedTotal??-1).ThenBy(x=>x.Name,StringComparer.Ordinal));
-        Raise(nameof(TbhSaveSummary));Raise(nameof(TbhEmpty));Raise(nameof(TbhNextAction));
+        Raise(nameof(TbhSaveSummary));Raise(nameof(TbhCountText));Raise(nameof(TbhValuationText));Raise(nameof(TbhEmpty));Raise(nameof(TbhNextAction));
     }
 }

@@ -52,6 +52,7 @@ internal static class UserInputUiTests
             foreach(var page in new[]{0,1,2,3,4})
             {
                 vm.WorkPage=page;render(view,1100,780,1,$"journey-command-page-{page}.png");
+                foreach(var details in Find<Expander>(view).ToArray())details.IsExpanded=true;render(view,1100,780,1,$"journey-command-details-{page}.png");
                 foreach(var button in Find<ButtonBase>(view))if(button.GetBindingExpression(ButtonBase.CommandProperty)is {} binding)
                 {Check(button.Command is not null,"Unresolved command: "+binding.ParentBinding.Path.Path);commands.Add(binding.ParentBinding.Path.Path);}
             }

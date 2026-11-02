@@ -1,3 +1,9 @@
+## 0.22.0 폰트·아이콘
+
+- Pretendard Regular/SemiBold: Copyright2021 Kil Hyung-jin 및 Adobe/Inter 원고지, SIL Open Font License1.1. 정적 OTF를 수정/이름 변경 없이 앱 Resource로 포함한다. 원문: src/MarketCrate.App/Assets/Licenses/Pretendard-LICENSE.txt, 배포 licenses/Pretendard-LICENSE.txt. 폰트 단독 판매/시스템 설치 없음.
+- Lucide Icons: Copyright2026 Lucide Icons and Contributors, ISC License 및 원문에 포함된 Feather MIT 고지. 8개의 SVG geometry를 Themes/Controls/Controls.xaml의 WPF DrawingImage로 변환했다. 원문: src/MarketCrate.App/Assets/Licenses/Lucide-LICENSE.txt, 배포 licenses/Lucide-LICENSE.txt.
+- Playnite/CSlytics 공개 화면은 정보 구조만 참고하고 해당 코드/아트/브랜드는 포함하지 않는다. Kenney CC0 UI Pack은 검토만 했으며 자산은 포함하지 않는다. 원본 버전·해시는 docs/REFERENCES.md에 기록한다.
+
 ## TBH 읽기 전용 포맷 참고 (0.21.0)
 
 MIT · Copyright (c)2026 EuSouOGiba · https://github.com/lezards/giba-steam-market · tbh-save.mjs 참조 버전 c4089e6f33bae60f38e95b73e2a572622878e4a1. 제한된 ES3/슬롯 분석을 C#으로 구현했다. 원문 라이선스는 src/MarketCrate.Infrastructure/ThirdParty/tbh-save/LICENSE 및 배포 licenses/TBH-save-MIT-LICENSE.txt에 보존한다. 게임/Steam 프로세스·바이너리 탐색 기능은 도입하지 않았다.

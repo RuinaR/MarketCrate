@@ -1,3 +1,17 @@
+## 0.22.0 UI 단순화 회귀
+
+| 검사 | 결과 |
+|---|---|
+| Verify.ps1 최종 소스 | 기능457/457·WPF87/87·배포23/23·의존성6/6 PASS · runtime/clean22-release-candidate.txt |
+| 내장 폰트 | Regular/SemiBold의 실제 앱 pack URI·정상 굵기·한글 glyph 확인, OS 설치 없음 |
+| 좌측 Header | Header 외부/하위 컨트롤 Hover 영향 없음·정상 복귀·Selected/Focus/Disabled 분리·부모 TabControl의 SelectionItem 접근성 확인 |
+| 접힌 상세 | ToggleButton↔IsExpanded 연결. 수수료 비교·거래/복구 상세를 실제 펼친 뒤 TextBox/Command 연결 검사 |
+| 레이아웃 | 새 게임/판매/계정 화면1100/1380 폭 및100/125/200 출력밀도 RTB 직접 검토. 기존150%/1600 폭·10000항목 가상화·수량·시세·하향·취소·재등록 회귀 유지 |
+| 보안·배포 | Pretendard/Lucide 고지 없으면 거부. Auth/DB/ES3/로그 제외 유지. 정리8PASS/0FAIL/1NOT VERIFIED(junction 환경) |
+| 미검증 | 실제 창/물리 입력/Popup/모니터 DPI/실계정 거래/제재 확률·장시간 안정성 |
+
+초기 단독 TabItem wrapper에서 SelectionItem 패턴을 검사한 잘못된 fixture는 부모 TabControl의 실제 항목 peer로 수정했다. 고급 기능을 접은 뒤의3개 구 UI 검사는 해당 영역을 먼저 펼쳐 도달성/바인딩을 검사하도록 갱신했다. 배포 fixture 정리 allowlist에도 새 라이선스 파일의 **정확한 합성 내용**만 허용했다. 실패를 숨기거나 거래 검증 조건을 낮추지 않았다. 최종 위 결과는0FAIL이다.
+
 ## 0.21.0 Release 정적 무결성
 
 419파일/66,803,958바이트 self-contained ZIP 각 항목과 출력 SHA256 일치. 실제 전용 PE/BAML·x64 CLR/WPF/SQLite·DPAPI·라이선스 검사 PASS, 사용자 DB/Auth/세이브/로그/개발 파일 출하 없음. 실행/설치/새 버전 실계정 가격·거래는 NOT VERIFIED. 소스0091919, ZIP·해시는 CURRENT-STATUS 참조.
