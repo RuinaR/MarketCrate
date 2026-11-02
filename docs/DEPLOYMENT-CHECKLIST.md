@@ -1,3 +1,9 @@
+## 0.22.0 최종 portable (2026-11-02)
+
+소스 **1c3008014a2d2c097f6260bc70bc790e170e9252**. `artifacts/releases/MarketCrate-0.22.0-clean-ui-1c30080-win-x64.zip` **68,940,890바이트/421파일**. SHA256 **F235B8A062541A6295D9CF4F754D57DCB7A9AC546BD7678D13E3AE2B23D66D10**. ZIP421개 항목/원본 출력 해시 일치. x64 CLR/WPF/SQLite·실제 전용 PE/BAML·Mock/사용자 DB/Auth/ES3/로그/개발 파일 제외·Pretendard/Lucide 고지 검사 PASS. 고지 파일은 소스와 배포의 해시도 일치한다. 폰트는 내장되며 추가 설치가 없다.
+
+롤백0.21.0 및 이전0.20.23과 모든 기존 사용자 자료를 보존했다. 앱/설치/실계정 거래는 실행하지 않았다. 최소 사용자 확인: 좌측 화면 이동→세이브 읽기/필터/가격→Steam 보관함 선택/수량/검토→판매 중 선택/재등록 검토→설정의 상세 영역 펼치기→문제 해결/진단 ZIP. 기존 로그인 유지는 그대로이며 자동 복원으로 판매가 시작되지 않는다.
+
 ## 0.21.0 최종 portable 배포 (2026-11-02)
 
 소스 커밋 **0091919**. `artifacts/releases/MarketCrate-0.21.0-tbh-helper-0091919-win-x64.zip` **66,803,958바이트/419파일**. SHA256 **A3250B4F9B457A0CD3267CA986FDAD942ED2DF79B5ED7CBB58804D4258331410**. x64 self-contained .NET/WPF/SQLite/DPAPI·MIT 고지·실제 전용 PE/BAML·사용자 DB/Auth/로그/ES3/개발 파일 제외를 정적 검사했다. ZIP419개 항목 모두 출력 파일과 SHA256 일치. 앱/설치/실계정 거래는 실행하지 않았다. `artifacts/releases.json`의 Latest는0.21.0, Rollback은0.20.23이며 과거 배포본/사용자 자료 삭제0.
