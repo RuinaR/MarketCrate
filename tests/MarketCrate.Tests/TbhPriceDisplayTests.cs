@@ -27,8 +27,69 @@ public static class TbhPriceDisplayTests
             ("Three schema failures stop a batch without fabricated success",RepeatedSchema),
             ("Wallet balance is a separate timestamped UI amount and clears on logout",Balance),
             ("Image metadata failure is cached until explicit retry without hammering",ImageFailureCache),
-            ("Balance cookies and catalogue query text are excluded from structured diagnostics",Privacy)
+            ("Balance cookies and catalogue query text are excluded from structured diagnostics",Privacy),
+            ("Ambiguous local items never consume shared bids or enter either price total",()=>Sync(AmbiguousPrices)),
+            ("Oversized row arithmetic excludes only the invalid row and keeps usable items",()=>Sync(RowOverflow)),
+            ("Aggregate arithmetic overflow is safe in all bound summary getters",()=>Sync(TotalOverflow)),
+            ("Bounded refresh reaches unseen items before stale previously queried items",RefreshProgress),
+            ("All type lock equipped mode and search partitions preserve shared quantity and totals",()=>Sync(FilterMatrix)),
+            ("Cancel double click and logout during late price failure cannot restore stale results",CancelPricePaths)
         };int pass=0,fail=0;foreach(var(name,test)in tests)try{await test();pass++;Console.WriteLine("PASS "+name);}catch(Exception e){fail++;Console.WriteLine("FAIL "+name+": "+e);}return(pass,fail);
+    }
+
+    private static Dictionary<string,PriceSnapshot> Quotes(SteamWorkspaceViewModel vm)=>(Dictionary<string,PriceSnapshot>)typeof(SteamWorkspaceViewModel).GetField("tbhQuotes",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(vm)!;
+    private static PriceSnapshot Book(long amount,int count=10)=>new("KRW",DateTimeOffset.UtcNow,"synthetic",TimeSpan.Zero,[],[new(amount,count)]){Asks=[new(amount,count)]};
+    private static void AmbiguousPrices()
+    {
+        using var vm=new SteamWorkspaceViewModel();Quotes(vm)["Shared"]=Book(100,1);
+        vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,[new("a","Ambiguous","Shared",1,false,"unknown",Ambiguous:true),new("b","Valid","Shared",1,false,"stash")],0));
+        foreach(var mode in new[]{0,1}){vm.TbhPriceMode=mode;Check(vm.TbhSaveRows.Single(x=>x.Item.Ambiguous).PricedTotal is null&&vm.TbhSaveRows.Single(x=>!x.Item.Ambiguous).PricedTotal==100&&vm.TbhValuationCoverage.Contains("1개 항목 금액만"));}
+    }
+    private static void RowOverflow()
+    {
+        using var vm=new SteamWorkspaceViewModel();Quotes(vm)["Huge"]=Book(long.MaxValue/2,10);Quotes(vm)["Good"]=Book(100,10);
+        vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,[new("a","Huge","Huge",10,false,"stash"),new("b","Good","Good",1,false,"stash")],0));
+        foreach(var mode in new[]{0,1}){vm.TbhPriceMode=mode;Check(vm.TbhSaveRows.Count==2&&vm.TbhSaveRows.Single(x=>x.Item.ItemKey=="a").PricedTotal is null&&vm.TbhSaveRows.Single(x=>x.Item.ItemKey=="b").PricedTotal==100&&vm.TbhSaveRows.Any(x=>x.PriceText.Contains("범위")));_=vm.TbhSaveSummary;_=vm.TbhValuationText;}
+    }
+    private static void TotalOverflow()
+    {
+        using var vm=new SteamWorkspaceViewModel();Quotes(vm)["Huge"]=Book(long.MaxValue/2+1,10);
+        vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,[new("a","A","Huge",1,false,"stash"),new("b","B","Huge",1,false,"stash")],0));
+        Check(vm.TbhValuationText.Contains("범위")&&vm.TbhSaveSummary.Contains("범위")&&vm.TbhSaveRows.All(x=>x.PricedTotal is not null));
+    }
+    private static async Task RefreshProgress()
+    {
+        using var f=new Fixture();await f.Login();var quotes=Quotes(f.Vm);for(int i=0;i<200;i++)quotes["Old"+i]=Book(100) with{CapturedAt=DateTimeOffset.UtcNow.AddMinutes(-6)};
+        f.Vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,Enumerable.Range(0,201).Select(i=>new TbhOwnedItem(i.ToString(),i<200?"Old"+i:"Unseen",i<200?"Old"+i:"Unseen",1,false,"stash")).ToArray(),0));
+        await f.Vm.RefreshTbhPrices.ExecuteAsync();Check(quotes.ContainsKey("Unseen")&&f.Route.PriceCalls==200&&f.Server.Sends==0);
+    }
+
+    private static void FilterMatrix()
+    {
+        using var vm=new SteamWorkspaceViewModel();Quotes(vm)["Shared"]=Book(100,5) with{Asks=[new(150,9)]};
+        TbhOwnedItem[] items=[new("a","Gear","Shared",3,false,"stash",Kind:TbhItemKind.Equipment),new("b","Locked","Shared",4,true,"stash",Kind:TbhItemKind.Equipment),new("c","Material","Shared",2,false,"materials",Equipped:true,Kind:TbhItemKind.Material),new("d","Uncertain","Shared",100,false,"unknown",Ambiguous:true,Kind:TbhItemKind.Other),new("e","Unmapped",null,4,false,"stash")];
+        vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,items,0));
+        foreach(var locked in new[]{false,true})foreach(var equipped in new[]{false,true})foreach(var kind in Enumerable.Range(0,4))foreach(var mode in new[]{0,1})foreach(var search in new[]{"","Gear","Shared","no match","재료","%_[]","\t","Unmapped"})
+        {
+            vm.TbhIncludeLocked=locked;vm.TbhIncludeEquipped=equipped;vm.TbhKindFilter=kind;vm.TbhPriceMode=mode;vm.TbhSearch=search;
+            var selected=items.Where(x=>(locked||!x.Locked)&&(equipped||!x.Equipped)&&(kind==0||kind==1&&x.Kind==TbhItemKind.Equipment||kind==2&&x.Kind==TbhItemKind.Material||kind==3&&x.Kind is TbhItemKind.Unknown or TbhItemKind.Other)&&(search.Length==0||x.Name.Contains(search)||x.MarketHash?.Contains(search)==true)).ToArray();
+            var count=selected.Where(x=>!x.Ambiguous&&x.MarketHash is not null).Sum(x=>x.Quantity);long expected=mode==0?Math.Min(count,5)*100:count*150;
+            Check(vm.TbhSaveRows.Count==selected.Length&&vm.TbhSaveRows.Sum(x=>x.PricedTotal??0)==expected&&vm.TbhSaveRows.Where(x=>x.Item.Ambiguous||x.Item.MarketHash is null).All(x=>x.PricedTotal is null));
+            _=vm.TbhSaveSummary;_=vm.TbhValuationText;_=vm.TbhValuationCoverage;
+        }
+        var prior=vm.TbhKindFilter;vm.TbhKindFilter=-1;Check(vm.TbhKindFilter==prior);prior=vm.TbhPriceMode;vm.TbhPriceMode=99;Check(vm.TbhPriceMode==prior);
+    }
+    private static async Task CancelPricePaths()
+    {
+        foreach(var logout in new[]{false,true})
+        {
+            using var f=new Fixture();await f.Login();f.Vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,[new("a","Good","Good",1,false,"stash")],0));
+            var entered=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);var release=new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            f.Route.PriceGate=async _=>{entered.TrySetResult();await release.Task;throw new HttpRequestException("synthetic late failure");};
+            var pending=f.Vm.RefreshTbhPrices.ExecuteAsync();await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));Check(f.Vm.Busy&&!f.Vm.RefreshTbhPrices.CanExecute(null));await f.Vm.RefreshTbhPrices.ExecuteAsync();Check(f.Route.PriceCalls==1);
+            if(logout)f.Vm.Logout.Execute(null);else f.Vm.CancelOperation.Execute(null);release.SetResult();await pending.WaitAsync(TimeSpan.FromSeconds(5));
+            Check(!f.Vm.Busy&&f.Vm.Connected!=logout&&f.Route.PriceCalls==1&&Quotes(f.Vm).Count==0&&f.Vm.TbhSaveRows.All(x=>!x.PriceText.Contains("조회 실패"))&&f.Server.Sends==0);
+        }
     }
     private static void Filters()
     {
@@ -52,13 +113,14 @@ public static class TbhPriceDisplayTests
     private static void ImageParser(){Check(SteamMarketImages.Parse(ImageJson(),"Synthetic stack")?.Token=="synthetic_image");Check(SteamMarketImages.Parse(ImageJson("Different"),"Synthetic stack")is null);foreach(var json in new[]{ImageJson(app:730),ImageJson(icon:"https://evil.example/icon"),"{\"success\":true}"}){bool rejected=false;try{SteamMarketImages.Parse(json,"Synthetic stack");}catch(SteamException){rejected=true;}Check(rejected);}}
     public sealed class Router(HttpMessageHandler inner):DelegatingHandler(inner)
     {
+        public Func<CancellationToken,Task<HttpResponseMessage>>? PriceGate;
         public int ImageCalls,PriceCalls;public HttpStatusCode ImageStatus=HttpStatusCode.OK;public bool BadPrice;public bool AllBad;public long BalanceWire=135000;
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,CancellationToken token)
         {
             var path=request.RequestUri!.AbsolutePath;
             if(path=="/market/search/render/"){ImageCalls++;Check(!request.Headers.Contains("Cookie")&&request.Headers.Authorization is null);var response=new HttpResponseMessage(ImageStatus){Content=new StringContent(ImageJson())};response.Headers.Add("Set-Cookie","sessionid=public-cookie-must-not-be-imported; Path=/; Secure");return Task.FromResult(response);}
             if(path=="/market/")return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK){Content=new StringContent("<script>g_bLoggedIn=true;g_rgWalletInfo={\"wallet_currency\":16,\"wallet_market_minimum\":100,\"wallet_currency_increment\":100,\"wallet_balance\":"+BalanceWire+"};</script>")});
-            if(path=="/market/orderbook"){PriceCalls++;if(BadPrice&&(AllBad||Uri.UnescapeDataString(request.RequestUri.Query).Contains("Bad",StringComparison.Ordinal)))return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK){Content=new StringContent("{\"data\":{\"success\":true,\"data\":{\"eCurrency\":16,\"cBuyOrders\":1,\"rgCompactBuyOrders\":[],\"rgCompactSellOrders\":[]}}}")});}
+            if(path=="/market/orderbook"){PriceCalls++;if(PriceGate is {} gate)return gate(token);if(BadPrice&&(AllBad||Uri.UnescapeDataString(request.RequestUri.Query).Contains("Bad",StringComparison.Ordinal)))return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK){Content=new StringContent("{\"data\":{\"success\":true,\"data\":{\"eCurrency\":16,\"cBuyOrders\":1,\"rgCompactBuyOrders\":[],\"rgCompactSellOrders\":[]}}}")});}
             return base.SendAsync(request,token);
         }
     }

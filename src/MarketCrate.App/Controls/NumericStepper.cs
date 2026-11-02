@@ -1,3 +1,4 @@
+using MarketCrate.Core;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -39,7 +40,7 @@ public sealed class NumericStepper : Control
     private void SyncText(){if(!editingText&&!System.Windows.Data.BindingOperations.IsDataBound(this,InputTextProperty))SetCurrentValue(InputTextProperty,Value.ToString(System.Globalization.CultureInfo.InvariantCulture));}
     private void ValidateText()
     {
-        var valid=int.TryParse(InputText,System.Globalization.NumberStyles.None,System.Globalization.CultureInfo.InvariantCulture,out var value)&&value>=1&&value<=Maximum;
+        var valid=UserNumericInput.TryQuantity(InputText,out var value)&&value>=1&&value<=Maximum;
         SetValue(IsInputValidPropertyKey,valid);
         if(!valid)return;
         editingText=true;try{SetCurrentValue(ValueProperty,value);}finally{editingText=false;}

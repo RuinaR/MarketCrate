@@ -49,14 +49,14 @@ public static class UserJourneyTests
     private static async Task QuantityInputs()
     {
         using var f=new Fixture();await f.Login();await f.Prepare();f.Vm.CloseReview.Execute(null);var row=f.Vm.Assets[0];
-        foreach(var text in new[]{"","0","-1","11","2147483648","1.5","1e1","1,000"," 1","１","NaN","abc"}){row.QuantityText=text;Check(!row.QuantityInputValid&&f.Vm.HasQuantityInputErrors&&!f.Vm.Review.CanExecute(null));f.Vm.Review.Execute(null);Check(!f.Vm.AnyReview&&f.Server.Sends==0&&f.Vm.SelectionEstimate.Contains("수량"));}
+        foreach(var text in new[]{"","0","-1","11","2147483648","1.5","1e1","1,000"," 1","１","NaN","abc","1\0","1\n","+1",new string('0',10000)+"1"}){row.QuantityText=text;Check(!row.QuantityInputValid&&f.Vm.HasQuantityInputErrors&&!f.Vm.Review.CanExecute(null),"Rejected quantity "+System.Text.Json.JsonSerializer.Serialize(text));f.Vm.Review.Execute(null);Check(!f.Vm.AnyReview&&f.Server.Sends==0&&f.Vm.SelectionEstimate.Contains("수량"));}
         row.QuantityText="7";Check(row.Quantity==7&&!f.Vm.HasQuantityInputErrors&&f.Vm.Review.CanExecute(null));f.Vm.Review.Execute(null);Check(f.Vm.ReviewRows.Sum(x=>x.Quantity)==7);f.Vm.CloseReview.Execute(null);
         row.Quantity=int.MaxValue;Check(row.Quantity==10&&row.QuantityText=="10");row.Quantity=int.MinValue;Check(row.Quantity==1&&row.QuantityText=="1");
     }
     private static async Task PriceInputs()
     {
         using var f=new Fixture();await f.Login();await f.Prepare();var row=f.Vm.ReviewRows.Single();
-        foreach(var text in new[]{"","0","-1","1.5","1e2","1,000","₩115"," 115","NaN","999999999999999999999999999999","1","57","231"}){row.PriceText=text;Check(!row.Valid&&!f.Vm.Submit.CanExecute(null));await f.Vm.Submit.ExecuteAsync();_=row.Amounts;_=f.Vm.Totals;Check(f.Server.Sends==0&&f.Vm.ReviewOpen);}
+        foreach(var text in new[]{"","0","-1","1.5","1e2","1,000","₩115"," 115","NaN","999999999999999999999999999999","1","57","231","１１５","115\0","115\n","\t115","+115","∞","115원",new string('9',10000)}){row.PriceText=text;Check(!row.Valid&&!f.Vm.Submit.CanExecute(null),"Rejected price "+System.Text.Json.JsonSerializer.Serialize(text));await f.Vm.Submit.ExecuteAsync();_=row.Amounts;_=f.Vm.Totals;Check(f.Server.Sends==0&&f.Vm.ReviewOpen);}
         row.PriceText="115";Check(row.Valid&&f.Vm.Submit.CanExecute(null));await f.Vm.Submit.ExecuteAsync();Check(f.Server.Sends==1);
     }
     private static async Task Overflow()

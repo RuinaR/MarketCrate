@@ -1,3 +1,7 @@
+## 0.23.1 입력 경계
+
+Core.UserNumericInput은 화면 원문을 수정하지 않고 수량 ASCII 정수/길이, 가격 허용 문자를 검사한다. NumericStepper와 SteamAssetRow가 같은 수량 검증을 사용하고, SteamReviewRow.ParsePrice를 사용하는 판매·재가격은 같은 가격 검증을 거친다. 숫자 파서의 trailing NUL 허용에 의존하지 않는다. 게임 세이브 표시 계산은 행별 overflow/위치 미확인을 격리하고 전체 합계 getter에서도 범위를 검사한다. Steam 거래 스냅샷/저널 계약과는 별도이며 DB 마이그레이션은 없다.
+
 ## 0.23.0 가격 표시와 공개 이미지 경계
 
 TbhOwnedItem에 독립 Kind/Grade/ImageMarketHash를 추가했다. 번들 facts의 장비·재료 타입과 같은 sprite/name을 대조하며 사용자 저장본에는 쓰지 않는다. UI의 종류 필터·CollectionViewSource 그룹은 기존 가상화/선택 모델과 분리된 조회 전용 표시다. 공통 가격 엔진·수수료·판매/취소 저널은 재작성하지 않았다.

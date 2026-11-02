@@ -1,3 +1,7 @@
+## 0.23.1 감사 보완
+
+기존75개 ID와47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED 유지. C07/E05 입력 검증, D07/로컬 게임 합계/필터 오류의 수정 전 재현과 후속 검사를 추가했다. USER-JOURNEY-QA의 AJ01–05는 기존 요구사항의 검사 증거 ID이며 원 요구사항 삭제/병합/실계정 검증 승격이 아니다.
+
 ## 0.23.0 B04/D04/D07/G 표시·읽기 보완
 
 75개 기존 ID/판정47 COMPLETE·16 PARTIAL·0 MISSING·3 BLOCKED·9 UNVERIFIED 유지. TBH 확장 요구는 Kind/Grade/ImageMarketHash→필터/그룹/합계, SteamMarketImages→cookie-less/shared-queue→검증 CDN→ItemThumbnail, wallet_balance→정수 검증→상단 독립 잔액 버튼으로 연결했다. TbhPriceDisplayTests/UiTests로 오류·부분 갱신·이미지 실제 PNG 디코딩·10000그룹 가상화·잔액 보안을 검사한다. 공개 주문장 fixture는 실제 공개 읽기 계약 근거이며 새 실계정 가격·수수료·거래 성공 검증으로 승격하지 않는다.

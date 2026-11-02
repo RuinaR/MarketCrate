@@ -1,3 +1,7 @@
+## 0.23.1 입력 감사와 오류 재현
+
+수량/가격 원문 사전 검증을 추가했다. 기존 UiSelection/InputRejected·PriceEdited/InputRejected 이벤트와 OperationId 경로를 유지하며 잘못된 숫자 원문/NUL 문자열을 로그에 넣지 않는다. 게임 금액 overflow는 화면의 행/합계 오류로 분리하며 getter에서 반복 로그를 생성하지 않는다. 기존 UiCommand/HTTP/저널 실패와 취소 상관관계 검사를 유지한다. 합성 재현 증거는 USER-JOURNEY-QA의 AJ01–05 참조. 사용자 운영 로그/DB/세이브는 이번 검증 입력으로 사용하지 않았다.
+
 ## 0.23.0 품목 가격 실패·이미지 메타데이터·잔액
 
 TbhSavePrices의 각 상품에 내부 해시 OperationItemId와 CorrelationId를 부여하고 기존 OperationId를 공유한다. ItemQuoteFailed/Orderbook는 실패 분류와 요청 순번만 기록한다. 상품명·게임 UniqueId·원문 가격 응답은 기록하지 않는다. 시장에 주문이 존재한다고 알리면서 배열이 비었으면 Parsing/Schema 오류로 추적되며 정상 빈 주문으로 표시하지 않는다.

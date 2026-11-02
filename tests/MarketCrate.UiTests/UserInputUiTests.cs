@@ -27,6 +27,17 @@ internal static class UserInputUiTests
             var input=Find<TextBox>(stepper).Single();input.Text="7";
             if(row.Quantity!=7)throw new Exception("Visible quantity differs from selected quantity before focus loss");
         });
+        test("수량 원문 NUL·줄바꿈·초대형 문자열은 모델과 Stepper 모두 거절 후 정상 복구",()=>
+        {
+            var row=new SteamAssetRow(new(new(730,"2","101"),"Synthetic","Synthetic","Synthetic",10,true,true,true),10,()=>{});
+            var stepper=new NumericStepper{Maximum=10,Style=(Style)Application.Current.FindResource(typeof(NumericStepper)),DataContext=row};
+            stepper.SetBinding(NumericStepper.ValueProperty,new Binding(nameof(SteamAssetRow.Quantity)){Mode=BindingMode.OneWay});
+            stepper.SetBinding(NumericStepper.InputTextProperty,new Binding(nameof(SteamAssetRow.QuantityText)){Mode=BindingMode.TwoWay,UpdateSourceTrigger=UpdateSourceTrigger.PropertyChanged});
+            foreach(var text in new[]{"1\0","1\n","+1",new string('0',10000)+"1"})
+            {stepper.SetCurrentValue(NumericStepper.InputTextProperty,text);Check(!stepper.IsInputValid&&!row.QuantityInputValid&&row.QuantityText==text,"Invalid raw quantity accepted or silently normalized");}
+            stepper.SetCurrentValue(NumericStepper.InputTextProperty,"7");Check(stepper.IsInputValid&&row.QuantityInputValid&&row.Quantity==7,"Valid correction not restored");
+            render(stepper,140,44,2,"audit24-numeric-recovered.png");
+        });
         test("실제 보관함 템플릿의 잘못된 수량·게임 전환·수정·검토 버튼 연결",()=>
         {
             var root=Path.Combine(Directory.GetCurrentDirectory(),"runtime","input-ui-"+Guid.NewGuid().ToString("N"));using var server=new SteamContractServer();

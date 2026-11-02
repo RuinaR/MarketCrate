@@ -21,6 +21,19 @@ internal static class TbhPriceDisplayUiTests
             Check(Find<TextBlock>(view).Any(x=>x.Text.Contains("가격 미확인 · 순위 없음"))&&vm.TbhValuationCoverage.Contains("1개 항목 금액만")&&vm.WalletBalanceLabel.Contains("1,350"),"scope totals/group/balance unclear");var button=Find<Button>(view).Single(x=>ReferenceEquals(x.Command,vm.LoadWallet));Check(button.Content!.ToString()!.Contains("Steam 지갑"),"wallet command disconnected");var kinds=Find<ComboBox>(view).Single(x=>ReferenceEquals(x.ItemsSource,vm.TbhKinds));kinds.SelectedIndex=2;render(view,1100,780,2,"tbh23-material-filter.png");Check(vm.TbhSaveRows.Count==1&&vm.TbhSaveRows[0].Item.Kind==TbhItemKind.Material,"material filter not connected");kinds.SelectedIndex=1;Check(vm.TbhSaveRows.Count==2,"equipment filter not connected");
             vm.TbhKindFilter=0;vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,Enumerable.Range(0,10000).Select(i=>new TbhOwnedItem(i.ToString(),"Synthetic "+i,null,1,false,"창고")).ToArray(),0));render(view,1100,780,1,"tbh23-10000-grouped.png");Check(Find<ListBoxItem>(view).Count() is >0 and <64,"grouped list lost virtualization");Check(server.Sends==0&&server.Cancels==0&&Application.Current.Windows.Count==0,"trade/window occurred");
         });
+        test("불확실 위치·범위 초과 행은 별도 제외하고 정상 항목·필터 UI를 보존",()=>
+        {
+            using var vm=new SteamWorkspaceViewModel();
+            var quotes=(Dictionary<string,PriceSnapshot>)typeof(SteamWorkspaceViewModel).GetField("tbhQuotes",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance)!.GetValue(vm)!;
+            quotes["Shared"]=new("KRW",DateTimeOffset.UtcNow,"synthetic",TimeSpan.Zero,[],[new(100,1)]){Asks=[new(150,1)]};
+            quotes["Huge"]=new("KRW",DateTimeOffset.UtcNow,"synthetic",TimeSpan.Zero,[],[new(long.MaxValue/2,10)]){Asks=[new(long.MaxValue/2,10)]};
+            vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,[new("a","위치 미확인","Shared",1,false,"위치 미확인",Ambiguous:true),new("b","정상 아이템","Shared",1,false,"1번 창고",Kind:TbhItemKind.Material),new("c","금액 초과","Huge",10,false,"2번 창고",Kind:TbhItemKind.Equipment)],0));
+            vm.WorkPage=6;var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,780,1.25,"audit24-row-errors.png");
+            Check(vm.TbhSaveRows.Count(x=>x.PricedTotal is not null)==1&&vm.TbhValuationCoverage.Contains("미확인 2"),"unsafe row entered total");
+            var kinds=Find<ComboBox>(view).Single(x=>ReferenceEquals(x.ItemsSource,vm.TbhKinds));kinds.SelectedIndex=2;render(view,1380,900,2,"audit24-material-recovery.png");
+            Check(vm.TbhSaveRows.Single().Item.Kind==TbhItemKind.Material&&vm.TbhSaveRows.Single().PricedTotal==100,"error blocked independent filter");
+            Check(Application.Current.Windows.Count==0,"top-level window occurred");
+        });
         test("가시 썸네일의 공개 상품 메타데이터→Steam CDN 실제 PNG 디코딩",()=>
         {
             var root=Path.Combine(Directory.GetCurrentDirectory(),"runtime","icon23-"+Guid.NewGuid().ToString("N"));using var server=new SteamContractServer();using var route=new TbhPriceDisplayTests.Router(server.Connection());using var pixels=new ImageContractServer();SteamExperimentalWorkspace? workspace=null;using var vm=new SteamWorkspaceViewModel(scope=>workspace=new(root,scope.AppId,scope.ContextId,scope.Name,contractHandler:route,clock:server.Clock,imageHandler:pixels),true){RiskAccepted=true,CredentialsAccepted=true};Complete(vm.BeginAsync());server.Clock.Advance();Complete(vm.CheckAsync());var image=new ItemThumbnail{MarketName="Synthetic stack",MetadataLoader=workspace!.MarketImages,Loader=workspace.Images};render(image,76,84,1,"tbh23-image-loading.png");Complete(image.RefreshAsync());Check(image.ImageState=="Ready"&&image.HasPixels&&route.ImageCalls==1,"market metadata did not reach pixels");render(image,76,84,2,"tbh23-image-ready.png");image.Release();Check(!image.HasPixels,"recycled pixels retained");

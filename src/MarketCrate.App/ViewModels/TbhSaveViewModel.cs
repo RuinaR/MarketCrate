@@ -58,9 +58,13 @@ public sealed partial class SteamWorkspaceViewModel
     {
         get
         {
+            try
+            {
             var groups=TbhSaveRows.Where(x=>x.PricedTotal is not null&&x.Currency is not null).GroupBy(x=>x.Currency);
             var totals=string.Join(" / ",groups.Select(x=>new Money(x.Sum(y=>y.PricedTotal!.Value),x.Key!)+" (조회된 수량만)"));
             return $"표시 {TbhSaveRows.Count:N0}행 · 가격 미확인/부족 {TbhSaveRows.Count(x=>x.UnitPrice is null||x.Missing>0):N0}행 · 단가 높은순\n가격 확인된 수량의 주문금액 합계: {(totals.Length==0?"미조회":totals)} · 수수료 차감 전 · 체결/판매 가능 보장 아님";
+            }
+            catch(OverflowException){return "합계 금액 범위 초과 · 각 항목은 유지하며 전체 금액을 확정하지 않습니다.";}
         }
     }
     private void InitializeTbhSave()
@@ -93,7 +97,9 @@ public sealed partial class SteamWorkspaceViewModel
         var hashes=tbhSnapshot.Items.Where(x=>!x.Ambiguous&&x.MarketHash is not null&&(TbhIncludeLocked||!x.Locked)&&(TbhIncludeEquipped||!x.Equipped)&&TbhKindMatches(x)&&(x.Name.Contains(tbhSearch,StringComparison.OrdinalIgnoreCase)||x.MarketHash?.Contains(tbhSearch,StringComparison.OrdinalIgnoreCase)==true)).Select(x=>x.MarketHash!).Distinct(StringComparer.Ordinal).ToArray();
         // Explicit, bounded user action; serialized and rate limited by the existing SteamHttp.
         var pending=hashes.Where(x=>!tbhQuotes.TryGetValue(x,out var q)||DateTimeOffset.UtcNow-q.CapturedAt>TimeSpan.FromMinutes(5)).ToArray();
-        var targets=hashes.Where(x=>tbhQuoteErrors.ContainsKey(x)).Concat(pending).Concat(hashes).Distinct(StringComparer.Ordinal).Take(200).ToArray();
+        // Never-queried products must progress even when earlier pages have become stale.
+        var unseen=hashes.Where(x=>!tbhQuotes.ContainsKey(x)&&!tbhQuoteErrors.ContainsKey(x));
+        var targets=unseen.Concat(hashes.Where(x=>tbhQuoteErrors.ContainsKey(x))).Concat(pending).Concat(hashes).Distinct(StringComparer.Ordinal).Take(200).ToArray();
         int completed=0,failed=0,consecutiveSchema=0;
         for(int i=0;i<targets.Length;i++)
         {
@@ -127,7 +133,9 @@ public sealed partial class SteamWorkspaceViewModel
         {
             long? unit=null,total=null;string? currency=null;int missing=item.Quantity;var message=item.Ambiguous?"위치/이동 상태 미확인 · 합계 제외":item.MarketHash is null?"Steam 상품 연결 미확인 · 합계 제외":"가격 미조회 · 합계 제외";
             if(item.MarketHash is {} failedHash&&tbhQuoteErrors.TryGetValue(failedHash,out var failure))message=failure switch{SteamFailure.ContractChanged=>"가격 응답 불완전/형식 오류 · 주문 없음이 아님 · 다시 갱신",SteamFailure.Unsupported=>"상품 조회 경로 미지원 · 상품 연결 확인 필요",_=>"가격 조회 실패 · 주문 없음이 아님 · 다시 갱신"};
-            if(item.MarketHash is {} hash&&tbhQuotes.TryGetValue(hash,out var price))
+            try
+            {
+            if(!item.Ambiguous&&item.MarketHash is {} hash&&tbhQuotes.TryGetValue(hash,out var price))
             {
                 currency=price.Currency;var stale=DateTimeOffset.UtcNow-price.CapturedAt>TimeSpan.FromMinutes(5)?" · 오래된 자료":"";
                 if(tbhPriceMode==1)
@@ -149,6 +157,9 @@ public sealed partial class SteamWorkspaceViewModel
                 }
                 message+=$" · 수집 {price.CapturedAt.ToLocalTime():HH:mm:ss}{stale}";
             }
+            }
+            catch(OverflowException)
+            {unit=total=null;currency=null;missing=item.Quantity;message="수량·가격 금액 범위 초과 · 합계 제외 · 원본 수량은 변경하지 않았습니다.";}
             var icon=AllSteamRows().FirstOrDefault(x=>x.Asset.Key.AppId==TbhScope.AppId&&x.Asset.MarketHashName==item.MarketHash)?.Image
                 ??Listings.FirstOrDefault(x=>x.Listing.Asset.AppId==TbhScope.AppId&&x.Listing.HashName==item.MarketHash)?.Image;
             rows.Add(new(item,message,unit,total,currency,missing,icon));
