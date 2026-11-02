@@ -1,3 +1,9 @@
+## 0.23.2 portable 마감 (2026-11-02)
+
+소스 **f6615b42c59e5755527bc81edb6c7155106a2d18**. `artifacts/releases/MarketCrate-0.23.2-value-read-f6615b4-win-x64.zip` **68,971,338바이트/421파일**. SHA256 **FB32EF500F6CD6C85BB02EA132FF003144EA99EB509A43356135F432A29AE149**. ZIP 모든 항목의 원본 출력 해시 일치. x64 self-contained CLR/WPF/SQLite·실제 전용 PE/BAML·라이선스 및 Auth/DB/ES3/진단/테스트 파일 제외 정적 검사 PASS. runtime/publish-0.23.2.txt. 앱/설치/실계정 실행 없음.
+
+Latest0.23.2/Rollback0.23.1, 이전 모든 배포본/사용자 자료 보존(삭제0). 최소 재확인: 세이브 읽기→유물함 이름·등급→가격 갱신→행 가격 툴팁/자료·조회 상세. 미확인 가격이 남으면 새 버전에서 문제 해결의 진단 ZIP을 내보내면 읽기 단계와 오류 분류를 대조할 수 있다. 사전 식별 성공을 전체 Steam 가격 연결 성공으로 해석하지 않는다. 물리 GUI·새 버전 실계정/실거래는 NOT VERIFIED.
+
 ## 0.23.2 최종 진단 전달 회귀
 
 통화 오류가 상위UiFailure에서 일반Validation으로 덮이던 분류를 SteamDiagnostics.Classify(SteamException) 공통 경로로 수정했다. 품목 안에서 처리된 실패(TbhSavePrices)와 전체 작업 중단(UiFailure)은 서로 다른 이벤트다. 중간 추가 검사(value-read-release-regression.txt,487/488)는 이 두 경우를 같은UiFailure로 기대해 실패했고, 시나리오를 나눠 원인 보존을 각각 확인했다.
