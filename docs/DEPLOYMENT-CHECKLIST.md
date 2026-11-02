@@ -1,3 +1,9 @@
+## 0.23.0 최종 portable (2026-11-02)
+
+소스 **1344fd47ff99b7e723a6803ca36855173f601349**. `artifacts/releases/MarketCrate-0.23.0-price-wallet-1344fd4-win-x64.zip` **68,965,765바이트/421파일**. SHA256 **B05867779954CEA475731FBDF55D0B1E9A5A6E4037E9383599A1063E57657B14**. ZIP421개 항목의 원본 출력 해시 일치. x64 self-contained CLR/WPF/SQLite·실제 전용 PE/BAML·사용자 DB/Auth/ES3/JSONL/공개 테스트 fixture/개발 파일 제외와 라이선스 보존 정적 검사 PASS. runtime/publish-0.23.0.txt. 앱/설치/실계정은 실행하지 않았다.
+
+Latest=0.23.0, Rollback=0.22.0. 기존 ZIP/사용자 자료 삭제0. 사용자 최소 재검증: 로그인 복원→상단 Steam 지갑 클릭→게임 세이브 읽기→장비/재료 필터→가격 갱신→가격 미확인 그룹/정확한 등급/아이콘 툴팁 확인. 실패가 남으면 문제 해결에서 진단 ZIP을 내보내되 인증정보를 별도로 제공하지 않는다. 공개 가격 확인은 실계정 판매/모든 품목 가격 존재를 보증하지 않는다.
+
 ## 0.22.0 최종 portable (2026-11-02)
 
 소스 **1c3008014a2d2c097f6260bc70bc790e170e9252**. `artifacts/releases/MarketCrate-0.22.0-clean-ui-1c30080-win-x64.zip` **68,940,890바이트/421파일**. SHA256 **F235B8A062541A6295D9CF4F754D57DCB7A9AC546BD7678D13E3AE2B23D66D10**. ZIP421개 항목/원본 출력 해시 일치. x64 CLR/WPF/SQLite·실제 전용 PE/BAML·Mock/사용자 DB/Auth/ES3/로그/개발 파일 제외·Pretendard/Lucide 고지 검사 PASS. 고지 파일은 소스와 배포의 해시도 일치한다. 폰트는 내장되며 추가 설치가 없다.
