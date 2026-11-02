@@ -13,5 +13,5 @@
   <PropertyGroup>
     <MarketCrateProduction>false</MarketCrateProduction>
   </PropertyGroup>
-  <ItemGroup><Compile Include="../MarketCrate.Tests/TbhPriceDisplayTests.cs" Link="TbhPriceDisplayFixtures.cs" /></ItemGroup>
+  <ItemGroup><Compile Include="../MarketCrate.Tests/SteamHoldInfoTests.cs" Link="SteamHoldInfoFixtures.cs" /><Compile Include="../MarketCrate.Tests/TbhPriceDisplayTests.cs" Link="TbhPriceDisplayFixtures.cs" /></ItemGroup>
 </Project>

@@ -40,7 +40,11 @@ public static class TbhPriceDisplayTests
             ("Failed value read stage reaches UI and correlated sanitized diagnostics",ValueReadTrace),
             ("Observed empty sell book remains different from an omitted sell field",()=>Sync(ObservedEmptySell)),
             ("Out-of-range currency IDs cannot wrap into KRW",()=>Sync(CurrencyWrap)),
-            ("Known nonmarketable items are normal exclusions and never consume prices or requests",NonMarketable)
+            ("Known nonmarketable items are normal exclusions and never consume prices or requests",NonMarketable),
+            ("Warm valuation cache avoids repeated Steam requests",WarmPrices),
+            ("Updating one quote preserves unrelated rows without collection reset",()=>Sync(StableRows)),
+            ("Price batch defers image metadata without bypassing the shared HTTP queue",PriorityBatch),
+            ("Deferred image cancellation is bounded and server429 still stops further reads",PriorityCancellation)
         };int pass=0,fail=0;foreach(var(name,test)in tests)try{await test();pass++;Console.WriteLine("PASS "+name);}catch(Exception e){fail++;Console.WriteLine("FAIL "+name+": "+e);}return(pass,fail);
     }
 
@@ -142,10 +146,30 @@ public static class TbhPriceDisplayTests
         Quotes(f.Vm)["Good"]=Book(100,1);
         f.Vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,[new("1","Known relic","Good",1,false,"stash",CanExchangeMarketable:false,TradeEvidence:TbhTradeEvidence.UserConfirmedCategory),new("2","Definition false","Good",1,false,"stash",CanExchangeMarketable:false,TradeEvidence:TbhTradeEvidence.ItemDefinition),new("3","Ordinary","Good",1,false,"stash"),new("4","Event name alone",null,1,false,"stash")],0));
         Check(f.Vm.TbhSaveRows.Count(x=>x.PricedTotal is not null)==1&&f.Vm.TbhSaveRows.Count(x=>x.ReadState==TbhValueReadState.NonMarketableItem)==2&&f.Vm.TbhSaveRows.Single(x=>x.Item.ItemKey=="4").ReadState==TbhValueReadState.MarketMappingMissing);
-        await f.Vm.RefreshTbhPrices.ExecuteAsync();Check(f.Route.PriceCalls==1&&f.Vm.TbhValuationCoverage.Contains("거래불가 2개 정상 제외")&&f.Vm.TbhValuationCoverage.Contains("미확인 1"));
+        await f.Vm.ForceTbhPrices.ExecuteAsync();Check(f.Route.PriceCalls==1&&f.Vm.TbhValuationCoverage.Contains("거래불가 2개 정상 제외")&&f.Vm.TbhValuationCoverage.Contains("미확인 1"));
         f.Vm.TbhPriceMode=1;Check(f.Vm.TbhSaveRows.Where(x=>x.Item.CanExchangeMarketable==false).All(x=>x.PricedTotal is null&&x.PriceGroup.Contains("거래불가")&&x.ReadDetails.Contains("거래불가로 조회하지 않음"))&&log.Rows.Any(x=>x.Reason=="NonMarketableItem"&&x.Outcome==DiagnosticOutcome.Completed));
         f.Vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,[new("1","Known relic","Good",1,false,"stash",CanExchangeMarketable:false)],0));var before=f.Route.PriceCalls;await f.Vm.RefreshTbhPrices.ExecuteAsync();Check(f.Route.PriceCalls==before&&f.Server.Sends==0);
     }
+
+    private static async Task WarmPrices()
+    {
+        using var f=new Fixture();await f.Login();f.Vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,Enumerable.Range(0,100).Select(i=>new TbhOwnedItem(i.ToString(),"P"+i,"P"+i,1,false,"stash")).ToArray(),0));
+        var timer=System.Diagnostics.Stopwatch.StartNew();await f.Vm.RefreshTbhPrices.ExecuteAsync();var coldMs=timer.ElapsedMilliseconds;var calls=f.Route.PriceCalls;timer.Restart();await f.Vm.RefreshTbhPrices.ExecuteAsync();var warmMs=timer.ElapsedMilliseconds;
+        Check(calls==100&&f.Route.PriceCalls==calls);await f.Vm.ForceTbhPrices.ExecuteAsync();Check(f.Route.PriceCalls==calls+100);Console.WriteLine($"PERF SAMPLE synthetic100 products: cold={calls} requests/{coldMs}ms; warm=0 requests/{warmMs}ms; forced=100 requests; real network latency NOT measured");
+    }
+    private static void StableRows()
+    {using var vm=new SteamWorkspaceViewModel();var snapshot=new TbhSaveSnapshot(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,[new("a","A","A",1,false,"stash"),new("b","B","B",1,false,"stash")],0);vm.ApplyTbhSnapshot(snapshot);var row=vm.TbhSaveRows.Single(x=>x.Item.ItemKey=="b");int resets=0;vm.TbhSaveRows.CollectionChanged+=(_,e)=>{if(e.Action==System.Collections.Specialized.NotifyCollectionChangedAction.Reset)resets++;};Quotes(vm)["A"]=Book(100);vm.ApplyTbhSnapshot(snapshot);Check(resets==0&&ReferenceEquals(row,vm.TbhSaveRows.Single(x=>x.Item.ItemKey=="b")));vm.ApplyTbhSnapshot(snapshot with{Items=snapshot.Items.Select(x=>x with{}).ToArray()});Check(resets==0&&ReferenceEquals(row,vm.TbhSaveRows.Single(x=>x.Item.ItemKey=="b")));vm.ApplyTbhSnapshot(snapshot with{Items=[new("z","New","New",1,false,"stash")]});Check(resets==1);}
+
+    private static async Task PriorityBatch()
+    {
+        using var f=new Fixture();await f.Login();using var first=f.Workspace!.PrioritizePriceReads();var second=f.Workspace.PrioritizePriceReads();
+        var icon=f.Workspace.MarketImages.GetAsync("Synthetic stack");await Task.Yield();Check(f.Route.ImageCalls==0&&!icon.IsCompleted);await f.Workspace.Prices.RefreshNameAsync(TbhScope.AppId,"Good");Check(f.Route.PriceCalls==1&&f.Route.ImageCalls==0);second.Dispose();second.Dispose();Check(!icon.IsCompleted);first.Dispose();Check((await icon.WaitAsync(TimeSpan.FromSeconds(5)))?.Token=="synthetic_image"&&f.Route.ImageCalls==1);
+    }
+    private static async Task PriorityCancellation()
+    {
+        using var f=new Fixture();await f.Login();var lease=f.Workspace!.PrioritizePriceReads();using var cancel=new CancellationTokenSource();var icon=f.Workspace.MarketImages.GetAsync("Synthetic stack",cancel.Token);cancel.Cancel();bool cancelled=false;try{await icon;}catch(OperationCanceledException){cancelled=true;}Check(cancelled&&f.Route.ImageCalls==0);lease.Dispose();f.Route.ImageStatus=HttpStatusCode.TooManyRequests;try{await f.Workspace.MarketImages.GetAsync("Synthetic stack");}catch(SteamException e){Check(e.Code==SteamFailure.RateLimited);}var before=f.Route.PriceCalls;try{await f.Workspace.Prices.RefreshNameAsync(TbhScope.AppId,"Good");}catch(SteamException){}Check(f.Route.ImageCalls==1&&f.Route.PriceCalls==before&&f.Vm.RequestsBlocked);
+    }
+
     private static void Filters()
     {
         using var vm=new SteamWorkspaceViewModel();vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,[new("1","Gear","Gear (Arcana) C",1,false,"창고",Kind:TbhItemKind.Equipment),new("2","Material","Mat",2,false,"재료창고",Kind:TbhItemKind.Material),new("3","Other",null,1,false,"가방",Kind:TbhItemKind.Other)],0));

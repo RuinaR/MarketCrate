@@ -21,7 +21,7 @@ public sealed partial class SteamWorkspaceViewModel
     private void InitializeListingReprice()=>PrepareListingReprice=new(PrepareListingRepriceAsync,Error,()=>CanRead&&!Busy&&!AnyReview&&ListingPricingMode==0&&Listings.Any(x=>x.Selected));
     public Task PrepareListingRepriceAsync()=>Run(async token=>
     {
-        RequireConnection();var revision=listingPlanRevision;var rows=Listings.Where(x=>x.Selected).ToArray();
+        RequireConnection();using var priority=workspace!.PrioritizePriceReads();var revision=listingPlanRevision;var rows=Listings.Where(x=>x.Selected).ToArray();
         if(ListingPricingMode!=0)throw new ArgumentException("ExactAverageUnavailable");
         if(rows.Length==0||rows.Length>100||rows.Any(x=>x.Listing.State!=SaleState.Listed||x.Listing.Quantity!=1)||rows.Select(x=>x.Listing.Asset).Distinct().Count()!=rows.Length)
         {ListingPriceStatus="게시 확인된 개별 수량1 항목만 지원합니다. 스택/동일 자산 분할·승인 대기·불명 항목은 취소하지 않았습니다.";return;}

@@ -71,7 +71,7 @@ public sealed partial class SteamWorkspaceViewModel
     }
     private Task ListingMetricsAsync()=>Run(async token=>
     {
-        RequireConnection();var revision=priceRevision;var mode=PricingMode;var window=IndicatorWindow;var groups=Listings.Where(x=>x.Selected).GroupBy(x=>(x.Listing.Asset.AppId,x.Listing.HashName)).ToArray();
+        RequireConnection();using var priority=workspace!.PrioritizePriceReads();var revision=priceRevision;var mode=PricingMode;var window=IndicatorWindow;var groups=Listings.Where(x=>x.Selected).GroupBy(x=>(x.Listing.Asset.AppId,x.Listing.HashName)).ToArray();
         if(groups.Length>10)throw new ArgumentException("MetricLimit");
         foreach(var group in groups)
         {

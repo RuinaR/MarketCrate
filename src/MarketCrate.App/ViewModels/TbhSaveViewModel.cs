@@ -35,6 +35,7 @@ public sealed partial class SteamWorkspaceViewModel
     public RangeObservableCollection<TbhSaveRow> TbhSaveRows{get;}=[];
     public AsyncCommand ReadTbhSave{get;private set;}=null!;
     public AsyncCommand RefreshTbhPrices{get;private set;}=null!;
+    public AsyncCommand ForceTbhPrices{get;private set;}=null!;
     public string[] TbhPriceModes{get;}=[PriceDisplay.Immediate,"최저 판매주문호가"];
     public string TbhSaveStatus{get=>tbhSaveStatus;private set=>Set(ref tbhSaveStatus,value);}
     public bool TbhIncludeLocked{get=>includeLocked;set{if(Set(ref includeLocked,value))RebuildTbhRows();}}
@@ -77,6 +78,7 @@ public sealed partial class SteamWorkspaceViewModel
     {
         ReadTbhSave=new(ReadTbhSaveAsync,Error,()=>!Busy&&!AnyReview);
         RefreshTbhPrices=new(RefreshTbhPricesAsync,Error,()=>CanRead&&!Busy&&!AnyReview&&tbhSnapshot is not null);
+        ForceTbhPrices=new(()=>RefreshTbhPricesCoreAsync(true),Error,()=>CanRead&&!Busy&&!AnyReview&&tbhSnapshot is not null);
     }
     public Task ReadTbhSaveAsync()=>Run(async token=>
     {
@@ -96,16 +98,20 @@ public sealed partial class SteamWorkspaceViewModel
     });
     public void ApplyTbhSnapshot(TbhSaveSnapshot snapshot)
     {tbhSnapshot=snapshot;RebuildTbhRows();TraceTbhReadStates();Raise(nameof(TbhSnapshotText));Changed();}
-    public Task RefreshTbhPricesAsync()=>Run(async token=>
+    public Task RefreshTbhPricesAsync()=>RefreshTbhPricesCoreAsync(false);
+    private Task RefreshTbhPricesCoreAsync(bool force)=>Run(async token=>
     {
         RequireConnection();if(tbhSnapshot is null)return;
+        using var priority=workspace!.PrioritizePriceReads();
         using var diagnostics=DiagnosticHub.Operation(DiagnosticEvent.TbhSavePrices,DiagnosticArea.Pricing,"TBH-SAVE");
         var hashes=tbhSnapshot.Items.Where(x=>x.CanExchangeMarketable!=false&&!x.Ambiguous&&x.MarketHash is not null&&(TbhIncludeLocked||!x.Locked)&&(TbhIncludeEquipped||!x.Equipped)&&TbhKindMatches(x)&&(x.Name.Contains(tbhSearch,StringComparison.OrdinalIgnoreCase)||x.MarketHash?.Contains(tbhSearch,StringComparison.OrdinalIgnoreCase)==true)).Select(x=>x.MarketHash!).Distinct(StringComparer.Ordinal).ToArray();
         // Explicit, bounded user action; serialized and rate limited by the existing SteamHttp.
         var pending=hashes.Where(x=>!tbhQuotes.TryGetValue(x,out var q)||DateTimeOffset.UtcNow-q.CapturedAt>TimeSpan.FromMinutes(5)).ToArray();
         // Never-queried products must progress even when earlier pages have become stale.
         var unseen=hashes.Where(x=>!tbhQuotes.ContainsKey(x)&&!tbhQuoteErrors.ContainsKey(x));
-        var targets=unseen.Concat(hashes.Where(x=>tbhQuoteErrors.ContainsKey(x))).Concat(pending).Concat(hashes).Distinct(StringComparer.Ordinal).Take(200).ToArray();
+        var targets=unseen.Concat(hashes.Where(x=>tbhQuoteErrors.ContainsKey(x))).Concat(pending).Concat(force?hashes:[]).Distinct(StringComparer.Ordinal).Take(200).ToArray();
+        var cached=hashes.Count(x=>tbhQuotes.TryGetValue(x,out var quote)&&DateTimeOffset.UtcNow-quote.CapturedAt<=TimeSpan.FromMinutes(5)&&!tbhQuoteErrors.ContainsKey(x));
+        DiagnosticHub.Emit(DiagnosticEvent.CacheRead,DiagnosticArea.Pricing,DiagnosticOutcome.CacheHit,reason:"PriceCacheReused",count:force?0:cached);
         int completed=0,failed=0,consecutiveSchema=0;
         try
         {
@@ -129,17 +135,34 @@ public sealed partial class SteamWorkspaceViewModel
         }
         finally{TraceTbhReadStates();}
         while(tbhQuotes.Count>512)tbhQuotes.Remove(tbhQuotes.Keys.First());
-        TbhSaveStatus=$"가격 조회 {completed}종 완료 · 실패 {failed}종 · 대상 {hashes.Length}종 · 최대200종/회. 실패/미조회는 주문 없음과 다르며 다시 갱신할 수 있습니다.";
+        TbhSaveStatus=$"가격 조회 {completed}종 완료 · 최근5분 자료 {(force?0:cached)}종 재사용 · 실패 {failed}종 · 대상 {hashes.Length}종 · 최대200종/회. 실패/미조회는 주문 없음과 다르며 다시 갱신할 수 있습니다.";
         Status=TbhSaveStatus;DiagnosticHub.Emit(DiagnosticEvent.TbhSavePrices,DiagnosticArea.Pricing,DiagnosticOutcome.Completed,reason:"LocalValuation",count:targets.Length,requirement:"TBH-SAVE");
     });
     private void ResetTbhSessionPrices(){tbhQuotes.Clear();tbhQuoteErrors.Clear();if(tbhSnapshot is not null){RebuildTbhRows();TbhSaveStatus="Steam 연결 변경 · 이전 시세 해제 · 게임 파일 목록은 보존했습니다.";}}
-    public string TbhNextAction=>tbhSnapshot is null?"① 세이브 복사·읽기 → ② Steam 연결 → ③ 장터 가격 갱신":!Connected?"게임 파일을 읽었습니다. 가격 조회는 계정 연결에서 Steam 로그인 후 이용하세요.":"장터 가격 갱신을 누르세요. 가격은 수수료 차감 전이며 조회 불가 품목을0원으로 처리하지 않습니다.";
+    public string TbhNextAction=>tbhSnapshot is null?"① 세이브 복사·읽기 → ② Steam 연결 → ③ 장터 가격 갱신":!Connected?"게임 파일을 읽었습니다. 가격 조회는 계정 연결에서 Steam 로그인 후 이용하세요.":"장터 가격 갱신을 누르세요. 최근5분 자료는 재사용합니다. 최신 서버 시세가 꼭 필요하면 자료·조회 상세의 전체 재조회를 이용하세요. 가격은 수수료 차감 전이며 실제 판매 전 별도 재검증합니다.";
     private static string TradeEvidenceLabel(TbhOwnedItem item)=>item.TradeEvidence switch{TbhTradeEvidence.ItemDefinition=>item.CanExchangeMarketable==true?"공개 아이템 정의상 전환 가능 · 개별 이벤트/Steam 판매 자산 여부는 별도 확인":"공개 아이템 정의상 전환 불가",TbhTradeEvidence.UserConfirmedCategory=>"사용자가 확인한 유물·유물함 거래불가 규칙",_=>"현재 저장본에 직접 판정할 속성 없음 · 거래불가로 추정하지 않음"};
+    private void UpdateTbhRows(TbhSaveRow[] next)
+    {
+        if(TbhSaveRows.Count+next.Length>2048||TbhSaveRows.Count==0){TbhSaveRows.ReplaceAll(next);return;}
+        var priorItems=TbhSaveRows.Select(x=>x.Item).ToHashSet();
+        if(next.Length>0&&!next.Any(x=>priorItems.Contains(x.Item))){TbhSaveRows.ReplaceAll(next);return;}
+        for(int i=0;i<next.Length;i++)
+        {
+            if(i>=TbhSaveRows.Count){TbhSaveRows.Add(next[i]);continue;}
+            if(TbhSaveRows[i].Item!=next[i].Item)
+            {var found=-1;for(int j=i+1;j<TbhSaveRows.Count;j++)if(TbhSaveRows[j].Item==next[i].Item){found=j;break;}if(found>=0)TbhSaveRows.Move(found,i);else{TbhSaveRows.Insert(i,next[i]);continue;}}
+            if(TbhSaveRows[i]!=next[i])TbhSaveRows[i]=next[i];
+        }
+        while(TbhSaveRows.Count>next.Length)TbhSaveRows.RemoveAt(TbhSaveRows.Count-1);
+    }
     private void RebuildTbhRows()
     {
         if(tbhSnapshot is null)return;
         var items=tbhSnapshot.Items.Where(x=>(includeLocked||!x.Locked)&&(includeEquipped||!x.Equipped)&&TbhKindMatches(x)&&(x.Name.Contains(tbhSearch,StringComparison.OrdinalIgnoreCase)||x.MarketHash?.Contains(tbhSearch,StringComparison.OrdinalIgnoreCase)==true)).ToArray();
         var remaining=new Dictionary<string,List<BidLevel>>(StringComparer.Ordinal);var rows=new List<TbhSaveRow>();
+        var imageLookup=new Dictionary<string,ItemImageReference>(StringComparer.Ordinal);
+        foreach(var asset in AllSteamRows())if(asset.Asset.Key.AppId==TbhScope.AppId&&asset.Image is {} img)imageLookup.TryAdd(asset.Asset.MarketHashName,img);
+        foreach(var listing in Listings)if(listing.Listing.Asset.AppId==TbhScope.AppId&&listing.Image is {} img)imageLookup.TryAdd(listing.Listing.HashName,img);
         foreach(var item in items)
         {
             long? unit=null,total=null;string? currency=null;int missing=item.Quantity;
@@ -174,11 +197,10 @@ public sealed partial class SteamWorkspaceViewModel
             }
             catch(OverflowException)
             {readState=TbhValueReadState.AmountRange;unit=total=null;currency=null;missing=item.Quantity;message="수량·가격 금액 범위 초과 · 합계 제외 · 원본 수량은 변경하지 않았습니다.";}
-            var icon=AllSteamRows().FirstOrDefault(x=>x.Asset.Key.AppId==TbhScope.AppId&&x.Asset.MarketHashName==item.MarketHash)?.Image
-                ??Listings.FirstOrDefault(x=>x.Listing.Asset.AppId==TbhScope.AppId&&x.Listing.HashName==item.MarketHash)?.Image;
+            var icon=item.MarketHash is {} iconHash?imageLookup.GetValueOrDefault(iconHash):null;
             rows.Add(new(item,message,unit,total,currency,missing,icon){ReadState=readState,ReadDetails=$"{TbhSaveRow.ReasonLabel(readState)}\n게임 아이템 사전: {(item.CatalogKnown?"해당 키 확인":"해당 키 미등록")}\n장터 전환 속성: {TradeEvidenceLabel(item)}\nSteam 조회 상품: {(item.CanExchangeMarketable==false?"거래불가로 조회하지 않음":item.MarketHash??"정확한 연결 미확인 · 비슷한 이름의 가격으로 대체하지 않음")}\n{message}"});
         }
-        TbhSaveRows.ReplaceAll(rows.OrderBy(x=>x.ReadState==TbhValueReadState.NonMarketableItem?2:x.PricedTotal is not null?0:1).ThenByDescending(x=>x.UnitPrice??-1).ThenByDescending(x=>x.PricedTotal??-1).ThenBy(x=>x.Name,StringComparer.Ordinal));
+        UpdateTbhRows(rows.OrderBy(x=>x.ReadState==TbhValueReadState.NonMarketableItem?2:x.PricedTotal is not null?0:1).ThenByDescending(x=>x.UnitPrice??-1).ThenByDescending(x=>x.PricedTotal??-1).ThenBy(x=>x.Name,StringComparer.Ordinal).ToArray());
         Raise(nameof(TbhReadSummary));Raise(nameof(TbhSaveSummary));Raise(nameof(TbhCountText));Raise(nameof(TbhValuationText));Raise(nameof(TbhValuationCoverage));Raise(nameof(TbhEmpty));Raise(nameof(TbhNextAction));
     }
 }

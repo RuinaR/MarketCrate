@@ -1,3 +1,13 @@
+## 0.24.0 요청 간격 판정
+
+사용자 추가 요청으로 연속 주문장 가격GET의 최소 시작 간격을1.5→1.2초로 줄였다. 다른 읽기는1.5초, 쓰기는3초이며 혼합 경계는 앞/뒤 요청의 긴 읽기 간격과 쓰기 제한을 함께 적용한다. 직렬/단일 연결 큐를 유지하고0간격 병렬 요청·자동429 재시도·요청 위장·프록시를 도입하지 않았다. 공개 helper의1.2초 기본값은 응답 뒤 추가 대기라 우리 시작 간격과 처리량이 같지 않으며 공식Steam 한도/실계정 성공 근거도 아니다. 새 간격에서 서버 제한이 안 생긴다고 보장하지 않는다.
+
+## 0.24.0 조회 최적화·제한 표시 진단
+
+ImageDeferred(Debug CacheRead)는 가격 배치 때문에 이미지 metadata가 후순위인 상태다. 공유 HTTP 요청 간격과 기존 QueueWait/응답 시간은 유지되므로 실제 전송 지연과 캐시/대기를 구분한다. PriceCacheReused는 현재 작업에서 재사용한 평가 시세 종류 수이며 최신 서버 조회 성공으로 표시하지 않는다. 강제 재조회는 같은 제한 아래 새 사용자 작업으로 실행한다.
+
+InventoryContract의 HoldTimeObserved/HoldTimeUnverified는 명시적 시각 관측/표시 형식 불확실의 항목 수만 기록한다. 원문 owner_descriptions, 실제 해제 시각, 사용자 세이브 값/ID/구매기록을 로그에 저장하지 않는다. UI 잔여 시간 타이머는 로그를 생성하지 않는다. 기존OperationId/CorrelationId와 요청 중단/Unknown 보호 유지.
+
 ## 0.23.3 거래불가의 정상 분류
 
 TbhValueReadState.NonMarketableItem은 기존 enum 끝에 추가한 화면용 읽기 사유다. TbhReadContract4302의 Completed/NonMarketableItem은 오류가 아니라 알려진 거래불가 정상 제외 건수다. 미확인/실패 그룹에 합치지 않는다. 공개 정의의 nullable CanExchangeMarketable과 ItemDefinition/UserConfirmedCategory 출처를 구분하며 플레이어 원본 필드값은 로그에 저장하지 않는다. IsBlocked와 미검증 출처 숫자는 marketable로 재해석하지 않는다. SQLite 거래 상태/저널 enum은 변경하지 않았다.

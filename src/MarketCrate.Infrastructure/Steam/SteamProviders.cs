@@ -11,6 +11,7 @@ public sealed class SteamInventoryProvider(SteamHttp http, SteamQrAuthentication
     internal string ContextId=>contextId;
     internal string GameName=>game;
     public Dictionary<AssetKey,ItemImageReference> Images{get;}=[];
+    public Dictionary<AssetKey,SteamItemHoldInfo> Holds{get;}=[];
     internal Dictionary<AssetKey, int> PublisherFees { get; } = [];
     public int? PublisherFeeBasisPoints(AssetKey key)=>PublisherFees.TryGetValue(key,out var value)?value:null;
     public Capability Capability => auth.Connected && http.Halted is null ? Capability.Experimental : Capability.IntegrationBlocked;
@@ -18,7 +19,7 @@ public sealed class SteamInventoryProvider(SteamHttp http, SteamQrAuthentication
     {
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.InventoryLoaded,DiagnosticArea.Data,"C01");
         if (!auth.Connected || appId < 1 || !ulong.TryParse(contextId, out var context) || context == 0) throw new SteamException(SteamFailure.Authentication);
-        var images=new Dictionary<AssetKey,ItemImageReference>();
+        var images=new Dictionary<AssetKey,ItemImageReference>();var holds=new Dictionary<AssetKey,SteamItemHoldInfo>();
         var all = new List<InventoryAsset>(); var fees = new Dictionary<AssetKey, int>(); var keys = new HashSet<AssetKey>(); var cursors = new HashSet<string>(); string? next = null;
         for (var page = 0; page < 100; page++)
         {
@@ -27,9 +28,10 @@ public sealed class SteamInventoryProvider(SteamHttp http, SteamQrAuthentication
                 if (!keys.Add(asset.Key)) { http.Stop(SteamFailure.ContractChanged); throw new SteamException(SteamFailure.ContractChanged); } else all.Add(asset);
             DiagnosticHub.Emit(DiagnosticEvent.InventoryPage,DiagnosticArea.Data,count:result.Assets.Length,requirement:"C01");
             if(result.Images is {} pageImages)foreach(var image in pageImages)images.Add(image.Key,image.Value);
+            foreach(var hold in result.Holds)holds.Add(hold.Key,hold.Value);
             next = result.Next;
             if (result.PublisherFees is { } pageFees) foreach (var fee in pageFees) fees.Add(fee.Key, fee.Value);
-            if (next is null) { Images.Clear();foreach(var image in images)Images.Add(image.Key,image.Value);PublisherFees.Clear(); foreach (var fee in fees) PublisherFees.Add(fee.Key, fee.Value); return all; }
+            if (next is null) { Holds.Clear();foreach(var hold in holds)Holds.Add(hold.Key,hold.Value);Images.Clear();foreach(var image in images)Images.Add(image.Key,image.Value);PublisherFees.Clear(); foreach (var fee in fees) PublisherFees.Add(fee.Key, fee.Value); return all; }
             if (!cursors.Add(next)) break;
         }
         http.Stop(SteamFailure.ContractChanged); throw new SteamException(SteamFailure.ContractChanged);
@@ -60,6 +62,7 @@ public sealed class SteamMarketDataProvider(SteamHttp http, SteamQrAuthenticatio
     public async Task<PriceSnapshot> RefreshNameAsync(int appId,string marketHashName,CancellationToken token=default)
     {
         if(appId<=0||string.IsNullOrWhiteSpace(marketHashName)||marketHashName.Length>512||marketHashName.Any(char.IsControl))throw new ArgumentException("MarketNameInvalid");
+        using var priority=http.PrioritizePriceReads();
         using var diagnosticOperation=DiagnosticHub.Operation(DiagnosticEvent.PriceLoaded,DiagnosticArea.Data,"D07");
         var query = Uri.EscapeDataString(JsonSerializer.Serialize(new object[] { appId, marketHashName }));
         using var correlation=DiagnosticHub.Scope(correlation:true);

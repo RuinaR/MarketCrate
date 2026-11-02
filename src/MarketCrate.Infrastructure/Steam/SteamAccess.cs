@@ -70,8 +70,12 @@ public sealed partial class SteamHttp : IDisposable
     private DateTimeOffset last;
     private DateTimeOffset lastMutation;
     private readonly TimeSpan gap;
+    private readonly TimeSpan priceGap;
+    private TimeSpan priorGap;
     private readonly TimeSpan mutationGap;
     internal static readonly TimeSpan ReadGap=TimeSpan.FromMilliseconds(1500);
+    internal static readonly TimeSpan PriceReadGap=TimeSpan.FromMilliseconds(1200);
+    internal static TimeSpan MixedReadGap(TimeSpan previous,TimeSpan current)=>previous>current?previous:current;
     internal static readonly TimeSpan WriteGap=TimeSpan.FromSeconds(3);
     internal static DateTimeOffset NextRequestAt(DateTimeOffset previous,DateTimeOffset previousWrite,bool write,TimeSpan readGap,TimeSpan writeGap)
         =>write&&previousWrite+writeGap>previous+readGap?previousWrite+writeGap:previous+readGap;
@@ -83,7 +87,7 @@ public sealed partial class SteamHttp : IDisposable
     internal void BlockFeature(string endpoint,SteamFailure failure=SteamFailure.Authorization)=>featureBlocks[endpoint]=failure;
     public SteamHttp(SteamAccess access, HttpMessageHandler? testHandler = null, TimeSpan? testGap = null)
     {
-        Access = access; gap = testHandler is null ? ReadGap : testGap ?? TimeSpan.Zero;mutationGap=testHandler is null?WriteGap:testGap??TimeSpan.Zero;
+        Access = access; gap = testHandler is null ? ReadGap : testGap ?? TimeSpan.Zero;priceGap=testHandler is null?PriceReadGap:testGap??TimeSpan.Zero;mutationGap=testHandler is null?WriteGap:testGap??TimeSpan.Zero;
         client = new(testHandler ?? new HttpClientHandler { AllowAutoRedirect = false, UseCookies = true, CookieContainer = Cookies, UseProxy = false, AutomaticDecompression=DecompressionMethods.All });
         publicImages=new(testHandler??new HttpClientHandler{AllowAutoRedirect=false,UseCookies=false,UseProxy=false,AutomaticDecompression=DecompressionMethods.All},disposeHandler:testHandler is null);
         publicImages.Timeout=TimeSpan.FromSeconds(15);
@@ -124,16 +128,17 @@ public sealed partial class SteamHttp : IDisposable
         if (request.Method != (mustPost ? HttpMethod.Post : HttpMethod.Get)) throw new SteamException(SteamFailure.ContractChanged);
         if (!Access.ResearchRiskAccepted) throw new SteamException(SteamFailure.Disabled);
         var phase="QueueWait";
-        try{await queue.WaitAsync(token);}catch(OperationCanceledException error){DiagnosticHub.Emit(DiagnosticEvent.HttpFailure,DiagnosticArea.HTTP,DiagnosticOutcome.Cancelled,LogLevel.Warning,DiagnosticError.Cancelled,endpoint:endpoint,reason:phase,exception:error);throw;}
+        try{await EnterReadQueueAsync(anonymousImage,token);}catch(OperationCanceledException error){DiagnosticHub.Emit(DiagnosticEvent.HttpFailure,DiagnosticArea.HTTP,DiagnosticOutcome.Cancelled,LogLevel.Warning,DiagnosticError.Cancelled,endpoint:endpoint,reason:phase,exception:error);throw;}
         try
         {
             if (Halted is { } halted) throw new SteamException(halted);
             if(FeatureFailure(endpoint) is {} feature)throw new SteamException(feature){Endpoint=endpoint};
             var mutation=request.Method==HttpMethod.Post&&endpoint is "Sell" or "Cancel";
-            var wait = NextRequestAt(last,lastMutation,mutation,gap,mutationGap) - DateTimeOffset.UtcNow;
+            var currentGap=endpoint=="Orderbook"?priceGap:gap;
+            var wait = NextRequestAt(last,lastMutation,mutation,MixedReadGap(priorGap,currentGap),mutationGap) - DateTimeOffset.UtcNow;
             if (wait > TimeSpan.Zero) await Task.Delay(wait, token);
             if (!Access.ResearchRiskAccepted) throw new SteamException(SteamFailure.Disabled);
-            last = DateTimeOffset.UtcNow;
+            last = DateTimeOffset.UtcNow;priorGap=currentGap;
             if(mutation)lastMutation=last;
             phase="ConnectOrHeaders";
             using var response = anonymousImage?await publicImages.SendAsync(request,HttpCompletionOption.ResponseHeadersRead,token):await SendWalletHeadersAsync(request, token, allowWalletHtml);
@@ -228,5 +233,5 @@ public sealed partial class SteamHttp : IDisposable
         try { return JsonDocument.Parse(body, new JsonDocumentOptions { MaxDepth = 32 }); }
         catch (JsonException error) { DiagnosticHub.Emit(DiagnosticEvent.ResponseParsed,DiagnosticArea.HTTP,DiagnosticOutcome.Failed,LogLevel.Error,DiagnosticError.Parsing,exception:error); throw new SteamException(SteamFailure.ContractChanged){Diagnostic=DiagnosticError.Parsing}; }
     }
-    public void Dispose() { Access.Revoke(); client.Dispose(); publicImages.Dispose(); queue.Dispose(); }
+    public void Dispose() { CloseReadPriority(); Access.Revoke(); client.Dispose(); publicImages.Dispose(); queue.Dispose(); }
 }

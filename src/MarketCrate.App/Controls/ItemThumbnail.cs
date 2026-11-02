@@ -30,9 +30,11 @@ public sealed class ItemThumbnail:UserControl
     private int revision;
     public string ImageState{get;private set;}="Missing";
     public bool HasPixels=>image.Source is not null;
+    static ItemThumbnail()
+    {WidthProperty.OverrideMetadata(typeof(ItemThumbnail),new FrameworkPropertyMetadata(76d));HeightProperty.OverrideMetadata(typeof(ItemThumbnail),new FrameworkPropertyMetadata(84d));}
     public ItemThumbnail()
     {
-        Width=76;Height=84;Focusable=false;var grid=new Grid();grid.Children.Add(image);grid.Children.Add(label);retry.VerticalAlignment=VerticalAlignment.Bottom;grid.Children.Add(retry);var frame=new Border{Child=grid,CornerRadius=new CornerRadius(6),Padding=new Thickness(4),BorderThickness=new Thickness(1)};frame.SetResourceReference(Border.BackgroundProperty,"Surface");frame.SetResourceReference(Border.BorderBrushProperty,"Edge");Content=frame;
+        Focusable=false;HorizontalContentAlignment=HorizontalAlignment.Stretch;VerticalContentAlignment=VerticalAlignment.Stretch;var grid=new Grid();grid.Children.Add(new Viewbox{Child=image,Stretch=Stretch.Uniform,StretchDirection=StretchDirection.DownOnly});grid.Children.Add(label);retry.VerticalAlignment=VerticalAlignment.Bottom;grid.Children.Add(retry);var frame=new Border{Child=grid,CornerRadius=new CornerRadius(6),Padding=new Thickness(4),BorderThickness=new Thickness(1)};frame.SetResourceReference(Border.BackgroundProperty,"Surface");frame.SetResourceReference(Border.BorderBrushProperty,"Edge");Content=frame;
         Loaded+=async(_,_)=>await RefreshAsync();Unloaded+=(_,_)=>Release();retry.Click+=async(_,_)=>{if(MarketName is {} hash)MetadataLoader?.Invalidate(hash);await RefreshAsync();};
         System.Windows.Automation.AutomationProperties.SetName(this,"아이템 이미지와 로딩 상태");
     }

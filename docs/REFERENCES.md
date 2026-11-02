@@ -1,3 +1,17 @@
+## 0.24.0 요청 간격 추가 검토 (2026-11-02)
+
+https://github.com/federicogiorgi/SteamMarketHelper 의 실제 기본 requestDelayMs1200/Queue.enqueue(응답 후 추가 대기)를 재확인했다. 우리 시작 간격과 동일한 처리량 보증이 아니며 공식Steam 제한표도 아니다. 사용자 요청으로 가격 연속 GET에만 최소1.2초, 다른 읽기1.5초, 쓰기3초를 사용하고 혼합 경계에는 두 요청의 긴 읽기 간격을 적용했다. 실제 인증된 서버에서 간격 변경을 시험하지 않았다. 원본의 무작위 jitter/429 자동재시도는 채택하지 않았다. 공개 보관 JS의 기본값/코드는 대조만 했으며 새 소스 복사/종속성 도입0.
+
+SSIM FEATURES의600ms는 CSFloat per-key limiter 설명이라 Steam 주문장 제한으로 사용하지 않았다. 공개 유지보수자 포럼 https://dev.doctormckay.com/topic/5946-new-request-limits-429-error/ 의429 관측도 읽었으나 모든 endpoint/계정의 보장값으로 일반화하지 않았다. 제한이 발생하면 즉시 중단하며 프록시/계정 분산/요청 위장은 도입하지 않는다.
+
+## 0.24.0 공개 제한 메타데이터 대조 (2026-11-02 KST)
+
+- https://raw.githubusercontent.com/DoctorMcKay/node-steamcommunity/master/classes/CEconItem.js : 실제 class/instance 결합, marketable/tradable, market_tradable_restriction/market_marketable_restriction, owner_descriptions 소비를 대조했다. 이 프로젝트의 CS2 전용cache_expiration 추정/현재 연도·다음 연도 보정은 TBH에 적용하지 않았다. MIT 기존 고지 유지, 신규 소스 복사/Node 의존성0, C# 표시 파서 독립 구현.
+- https://dev.doctormckay.com/topic/4590-how-do-i-get-tradable-after-time/ : 공개 소유 응답 예시의 영문 Tradable After+명시적 연도/GMT 형식을 확인했다. TBH 실제 계정 형식 증거가 아니다.
+- https://github.com/somespecialone/aiosteampy/issues/146 :2026 형식 변경 사례의 연도/시간대 없는 문구와 파싱이 전체 inventory를 깨뜨리는 문제를 확인했다. 제안된 연도/시간대 추정은 채택하지 않고 optional 표시 미확인으로 처리했다. 해당 소스/의존성 도입 없음.
+
+이번 네트워크 조사는 공개 문서/코드뿐이며 Steam 인증/거래 응답을 가져오지 않았다. 지정된 게임 세이브의 스키마만 로컬 메모리에서 점검하고 사용자 원문을 자료로 업로드하지 않았다.
+
 ## 0.23.2 공개 사실 대조 (2026-11-02 KST)
 
 기존에 내려받은 TBHIndex 공개 relicData.js(SHA25613672F5EE1AAE40991B59DCB709A0C748FF7CAA882258B81DB9C48D0EF8FC78A)의 RELIQUARIES382종 key/영문name/grade를 정규식으로 추출해 누락을 보완했다. JS 실행/구현 코드·이미지 복사/의존성 추가 없음. 사이트 코드는 라이선스 미확인이므로 최소 사실만 정규화했다. 새 공개 자료인 것처럼 다운로드 시점을 바꾸지 않는다. 이번 web 도구의 https://tbhindex.com/ko 접근은cache miss였다.

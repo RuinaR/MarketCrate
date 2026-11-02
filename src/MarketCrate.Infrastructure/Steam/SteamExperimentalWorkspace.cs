@@ -14,6 +14,7 @@ public sealed class SteamExperimentalWorkspace : IDisposable
     public SteamQrAuthentication Authentication { get; }
     public SteamInventoryProvider Inventory { get; private set; }
     public SteamMarketDataProvider Prices { get; }
+    public IDisposable PrioritizePriceReads()=>http.PrioritizePriceReads();
     public SteamOrdersProvider Orders { get; }
     public SteamListingExecutor Executor { get; private set; }
     public SaleBatchCoordinator Batches { get; private set; }

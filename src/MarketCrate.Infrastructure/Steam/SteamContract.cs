@@ -6,7 +6,7 @@ using MarketCrate.Core;
 namespace MarketCrate.Infrastructure.Steam;
 
 public sealed record SteamInventoryPage(ImmutableArray<InventoryAsset> Assets, string? Next, ImmutableDictionary<AssetKey, int>? PublisherFees = null, ImmutableDictionary<AssetKey,ItemImageReference>? Images=null)
-{public bool VerifiedEmpty{get;init;}public int? ReportedTotal{get;init;}}
+{public ImmutableDictionary<AssetKey,SteamItemHoldInfo> Holds{get;init;}=ImmutableDictionary<AssetKey,SteamItemHoldInfo>.Empty;public bool VerifiedEmpty{get;init;}public int? ReportedTotal{get;init;}}
 public sealed record SteamListing(string ListingId, AssetKey Asset, string HashName, int Quantity, string Currency, long SellerReceives, long Fees, SaleState State, DateTimeOffset? CreatedAt = null);
 public sealed record SteamListingsPage(ImmutableArray<SteamListing> Listings, int TotalActive, ImmutableDictionary<string,ItemImageReference>? Images=null)
 {public ImmutableArray<SteamListingPresence> Presence{get;init;}=[];}
@@ -65,6 +65,7 @@ public static class SteamContract
         var result = ImmutableArray.CreateBuilder<InventoryAsset>();
         var fees = ImmutableDictionary.CreateBuilder<AssetKey, int>();
         var images=ImmutableDictionary.CreateBuilder<AssetKey,ItemImageReference>();
+        var holds=ImmutableDictionary.CreateBuilder<AssetKey,SteamItemHoldInfo>();
         foreach (var a in root.GetProperty("assets").EnumerateArray())
         {
             if (a.GetProperty("appid").GetInt32() != appId || a.GetProperty("contextid").GetString() != context) throw new SteamException(SteamFailure.ContractChanged);
@@ -78,7 +79,7 @@ public static class SteamContract
             var name=d.TryGetProperty("name",out var nameValue)&&nameValue.ValueKind!=JsonValueKind.Null?nameValue.GetString():hash;
             result.Add(new(new(appId,context,Id(a.GetProperty("assetid"))),game,string.IsNullOrWhiteSpace(name)?"이름 미확인":name,
                 hash,count,count>1,marketable,tradable));
-            images.Add(result[^1].Key,Image(d));
+            images.Add(result[^1].Key,Image(d));holds.Add(result[^1].Key,SteamItemHoldInfo.Parse(a,d));
             if (d.TryGetProperty("market_fee", out var fee))
             {
                 var rate = decimal.Parse(fee.ValueKind == JsonValueKind.String ? fee.GetString()! : fee.GetRawText(), CultureInfo.InvariantCulture) * 10000;
@@ -87,8 +88,10 @@ public static class SteamContract
             }
         }
         if (result.Select(x => x.Key).Distinct().Count() != result.Count) throw new SteamException(SteamFailure.ContractChanged);
+        DiagnosticHub.Emit(DiagnosticEvent.InventoryContract,DiagnosticArea.Data,endpoint:"Inventory",reason:"HoldTimeObserved",count:holds.Values.Count(x=>x.TradeAfter is not null||x.MarketAfter is not null));
+        DiagnosticHub.Emit(DiagnosticEvent.InventoryContract,DiagnosticArea.Data,DiagnosticOutcome.Unknown,endpoint:"Inventory",reason:"HoldTimeUnverified",count:holds.Values.Count(x=>x.TimeUnverified));
         DiagnosticHub.Emit(DiagnosticEvent.InventoryContract,DiagnosticArea.Data,endpoint:"Inventory",reason:more?"InventoryPagePartial":"InventoryPage",count:result.Count);
-        return new(result.ToImmutable(), more ? Id(root.GetProperty("last_assetid")) : null, fees.ToImmutable(),images.ToImmutable()){ReportedTotal=reported};
+        return new(result.ToImmutable(), more ? Id(root.GetProperty("last_assetid")) : null, fees.ToImmutable(),images.ToImmutable()){ReportedTotal=reported,Holds=holds.ToImmutable()};
     });
     private static ItemImageReference Image(JsonElement data)
     {

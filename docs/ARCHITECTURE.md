@@ -1,3 +1,11 @@
+## 0.24.0 표시/읽기 스케줄 분리
+
+SteamReadPriority는 동일 SteamHttp 큐의 metadata 입장을 가격 배치 종료까지 지연한다. 이미 진행 중인 요청은 강제로 끊지 않고 queued metadata는 우선권을 양보한다. 중첩 lease·취소·dispose를 지원하며 별도 무제한 HTTP/간격 단축/서버 제한 우회를 도입하지 않는다. TbhQuotes 최근5분 캐시는 평가 전용이고 ForceTbhPrices 명령은 명시적 재조회다.
+
+UpdateTbhRows는 불변 Item 값 동등성과 행 record 비교로 유지/교체/이동/삽입·제거한다. 먼저 동일 상품 공유 잔량과 모든 파생 표시를 다시 계산하므로 개별 셀 갱신이 다른 행의 배분을 누락시키지 않는다.2048행 합계 상한 밖은 기존 Reset을 사용해 최악 탐색 비용을 제한한다.
+
+SteamItemHoldInfo는 InventoryPage→InventoryProvider.Holds→SteamAssetRow.HoldText의 표시 메타데이터다. 거래 저널/InventoryAsset boolean을 바꾸지 않는다. 날짜 파싱 실패는 optional 표시 미확인이고 정상 보관함을 실패시키지 않는다. 페이지 성공 시에만 전체 이미지/수수료/제한 metadata cache를 함께 교체한다. 자체 view Loaded/Unloaded의1분 UI 타이머는 네트워크를 호출하지 않는다.
+
 ## 0.23.3 게임 정의의 장터 전환 속성
 
 TbhOwnedItem.CanExchangeMarketable은 nullable 게임 정의/사용자 확인 규칙이며 Steam InventoryAsset.Marketable과 다른 범위다. TbhTradeEvidence는 Unknown/ItemDefinition/UserConfirmedCategory 출처를 보존한다. 명시적 false만 게임 가격 요청/배분에서 제외하고 true가 실제 Steam 자산 판매 가능을 보증하지 않도록 툴팁에 명시한다. 빈 정의/알 수 없는 이벤트 출처는 nullable로 유지한다. TbhValueReadState.NonMarketableItem은 정상 제외이며 DB/거래 저널 스키마 변경 없음.

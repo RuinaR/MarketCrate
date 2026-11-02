@@ -243,7 +243,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         foreach(var key in assetPublisherFees.Keys.Where(x=>x.AppId==Game.AppId&&x.ContextId==Game.ContextId).ToArray())assetPublisherFees.Remove(key);
         foreach(var asset in assets)if(workspace.Inventory.PublisherFeeBasisPoints(asset.Key) is {} rate)assetPublisherFees[asset.Key]=rate;
         RememberSelection();
-        Bulk(()=>Assets.ReplaceAll(assets.Select(asset=>{var row=new SteamAssetRow(asset,asset.Quantity,Changed){Image=workspace.Inventory.Images.GetValueOrDefault(asset.Key),ImageOperation=DiagnosticHub.Context?.OperationId};if(selections.TryGetValue(asset.Key,out var saved)){row.Quantity=saved.Quantity;row.Selected=saved.Selected;}return row;})));RetainSelection(true);Filter();
+        Bulk(()=>Assets.ReplaceAll(assets.Select(asset=>{var row=new SteamAssetRow(asset,asset.Quantity,Changed){Image=workspace.Inventory.Images.GetValueOrDefault(asset.Key),HoldInfo=workspace.Inventory.Holds.GetValueOrDefault(asset.Key),ImageOperation=DiagnosticHub.Context?.OperationId};if(selections.TryGetValue(asset.Key,out var saved)){row.Quantity=saved.Quantity;row.Selected=saved.Selected;}return row;})));RetainSelection(true);Filter();
         DiagnosticHub.Emit(DiagnosticEvent.InventoryLoaded,DiagnosticArea.Data,count:assets.Count,requirement:"C13",reason:"SelectionRestored");
         Game.Update(assets.Count==0?InventoryScopeState.Empty:InventoryScopeState.Loaded,assets.Count(x=>x.Marketable),workspace.Inventory.Images.Values.FirstOrDefault(x=>x.Token is not null));
         RecordCheck("Inventory",assets.Count);
@@ -253,10 +253,11 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     });
     public Task RefreshPricesAsync() => Run(async token =>
     {
-        RequireConnection();var revision=priceRevision;var mode=PricingMode;var window=IndicatorWindow;var selected=SelectedSteamRows();var groups=selected.GroupBy(x=>(x.Asset.Key.AppId,x.Asset.MarketHashName)).ToArray();
+        RequireConnection();using var priority=workspace!.PrioritizePriceReads();var revision=priceRevision;var mode=PricingMode;var window=IndicatorWindow;var selected=SelectedSteamRows();var groups=selected.GroupBy(x=>(x.Asset.Key.AppId,x.Asset.MarketHashName)).ToArray();
         if(groups.Length>50)throw new SteamException(SteamFailure.Restricted);
         if(UseLowestSell)await workspace!.Orders.RefreshAsync(token);
-        foreach(var group in groups){var quote=UseLowestSell?await workspace!.Prices.RefreshLowestSellAsync(group.First().Asset,workspace.Orders.ForLowestSell(group.First().Asset),token):mode==2?await workspace!.Prices.RefreshEstimateAsync(group.First().Asset,window,token):await workspace!.Prices.RefreshAsync(group.First().Asset,token);token.ThrowIfCancellationRequested();if(revision!=priceRevision)return;if(fees is not null&&quote.Currency!=fees.Currency)throw new SteamException(SteamFailure.Restricted);Bulk(()=>{foreach(var row in group)row.SetPrice(quote);});RecordCheck("Orderbook",quote.Bids.Length,quote.Currency);if(quote.Estimate is {} observed)RecordCheck("History",observed.Buckets,observed.Currency);}
+        int progress=0;
+        foreach(var group in groups){OperationLabel=$"선택 시세 {++progress}/{groups.Length}상품 조회 중";var quote=UseLowestSell?await workspace!.Prices.RefreshLowestSellAsync(group.First().Asset,workspace.Orders.ForLowestSell(group.First().Asset),token):mode==2?await workspace!.Prices.RefreshEstimateAsync(group.First().Asset,window,token):await workspace!.Prices.RefreshAsync(group.First().Asset,token);token.ThrowIfCancellationRequested();if(revision!=priceRevision)return;if(fees is not null&&quote.Currency!=fees.Currency)throw new SteamException(SteamFailure.Restricted);Bulk(()=>{foreach(var row in group)row.SetPrice(quote);});RecordCheck("Orderbook",quote.Bids.Length,quote.Currency);if(quote.Estimate is {} observed)RecordCheck("History",observed.Buckets,observed.Currency);}
         Status="Steam 호가 갱신 완료 · 매수 잔량은 동일 상품 전체가 공유 · 체결 보장 없음";
     });
     public void BuildReview()
@@ -461,7 +462,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         Raise(nameof(Connected));Raise(nameof(SessionPresent));Raise(nameof(CanRead));Raise(nameof(RequestsBlocked));Raise(nameof(AuthenticationText));Raise(nameof(ConnectionSummary));Raise(nameof(RequestAccessText));Raise(nameof(SelectionSummary));Raise(nameof(SelectionEstimate));Raise(nameof(AnyReview));LoadListings?.Refresh();ShowCurrentListings?.Refresh();LoadFees?.Refresh();LoadWallet?.Refresh();OpenOfficialMarket?.Refresh();
         PrepareTrading?.Refresh();PrepareCancellation?.Refresh();Raise(nameof(CanCancel));Raise(nameof(Totals));Raise(nameof(TradingText));Raise(nameof(TradingModeLabel));Raise(nameof(WalletBalanceLabel));Raise(nameof(WalletBalanceHint));Raise(nameof(CanTrade));Raise(nameof(CanTradeReview));Raise(nameof(PricingContractText));Raise(nameof(SubmissionAvailability));
         BeginLogin?.Refresh();CheckLogin?.Refresh();Load?.Refresh();RefreshPrices?.Refresh();SelectAll?.Refresh();Review?.Refresh();CloseReview?.Refresh();Submit?.Refresh();EnableTrading?.Refresh();Recover?.Refresh();Inspect?.Refresh();MedianHistory?.Refresh();ReviewCancel?.Refresh();ReviewReprice?.Refresh();ConfirmManagement?.Refresh();
-        Raise(nameof(TbhNextAction));ReadTbhSave?.Refresh();RefreshTbhPrices?.Refresh();ResumeReprice?.Refresh();ReviewStoredReprice?.Refresh();RefreshReviewStatus?.Refresh();ListingMetrics?.Refresh();PrepareListingReprice?.Refresh();
+        Raise(nameof(TbhNextAction));ReadTbhSave?.Refresh();RefreshTbhPrices?.Refresh();ForceTbhPrices?.Refresh();ResumeReprice?.Refresh();ReviewStoredReprice?.Refresh();RefreshReviewStatus?.Refresh();ListingMetrics?.Refresh();PrepareListingReprice?.Refresh();
         CancelForNewReview?.Refresh();ReviewCancelledTargets?.Refresh();OpenInventory?.Refresh();OpenGameSettings?.Refresh();RefreshSelectedRequest?.Refresh();
         ClearSelection?.Refresh();ClearListings?.Refresh();
         SelectAllListings?.Refresh();ArchiveBatch?.Refresh();
@@ -474,6 +475,9 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
 public sealed class SteamAssetRow(InventoryAsset asset,int available,Action changed):Observable
 {
     public ItemImageReference? Image{get;init;}public Guid? ImageOperation{get;init;}
+    public SteamItemHoldInfo? HoldInfo{get;init;}
+    public string HoldText=>HoldInfo?.Describe(Asset.Tradable,Asset.Marketable,DateTimeOffset.UtcNow)??(!Asset.Tradable||!Asset.Marketable?"제한 해제 시각: 서버 미제공":"");
+    public void RefreshHoldTime()=>Raise(nameof(HoldText));
     public InventoryAsset Asset {get;}=asset;public string Name=>Asset.Name;public int Owned=>Asset.Quantity;public int Available {get;private set;}=available;public int Maximum=>Math.Max(1,Available);
     public bool CanSelect=>Asset.Marketable&&!Asset.Locked&&Available>0;public string Flags=>$"보유 {Owned} · 서버 수량 {Available} · {(Asset.Marketable?"장터 판매 가능":"장터 판매 불가")} · {(Asset.Tradable?"거래 가능":"거래 제한")}";
     public int PendingSubmissionQuantity{get;private set;}

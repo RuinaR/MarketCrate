@@ -14,6 +14,22 @@ internal static class TbhPriceDisplayUiTests
 {
     public static void Run(Action<string,Action> test,Action<FrameworkElement,int,int,double,string> render)
     {
+        test("48px 아이콘은 원본 네 모서리를 모두 표시하고 프레임 안에 맞춤",()=>
+        {
+            using var server=new ImageContractServer();var data=new byte[128*128*4];for(int y=0;y<128;y++)for(int x=0;x<128;x++){var i=(y*128+x)*4;data[i]=(byte)(y>=64?255:0);data[i+1]=(byte)(x>=64?255:0);data[i+2]=(byte)(x<64&&y<64?255:0);data[i+3]=255;}
+            var source=System.Windows.Media.Imaging.BitmapSource.Create(128,128,96,96,PixelFormats.Bgra32,null,data,512);var encoder=new System.Windows.Media.Imaging.PngBitmapEncoder();encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(source));using var stream=new MemoryStream();encoder.Save(stream);server.Bytes=stream.ToArray();
+            using var cache=new SteamImageCache(server);var thumb=new ItemThumbnail{Width=48,Height=48,Reference=new("quad"),Loader=cache};Complete(thumb.RefreshAsync());render(thumb,48,48,2,"thumbnail48-quad.png");var image=Find<Image>(thumb).Single();var bounds=image.TransformToAncestor(thumb).TransformBounds(new Rect(0,0,image.ActualWidth,image.ActualHeight));Check(bounds.Left>=0&&bounds.Top>=0&&bounds.Right<=48.01&&bounds.Bottom<=48.01,"image escapes the48px frame: "+bounds);
+        });
+        test("실제 게임 행 BAML의 아이콘 프레임이56px 열을 벗어나지 않음",()=>
+        {
+            using var vm=new SteamWorkspaceViewModel();vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,[new("a","Quad","Quad",1,false,"stash")],0));vm.WorkPage=6;var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,780,1,"thumbnail-real-row.png");var thumb=Find<ItemThumbnail>(view).Single();Check(thumb.ActualWidth<=56&&thumb.ActualHeight<=56,"BAML thumbnail size "+thumb.ActualWidth+"x"+thumb.ActualHeight+" requested "+thumb.Width+"x"+thumb.Height);
+        });
+        test("Steam 제한 시각·잔여 시간 바인딩과 비네트워크 UI 타이머 수명",()=>
+        {
+            var page=SteamHoldInfoTests.Page(["Tradable/Marketable After Nov 9, 2026 (3:00:00) GMT"]);using var vm=new SteamWorkspaceViewModel();var row=new SteamAssetRow(page.Assets.Single(),1,()=>{}){HoldInfo=page.Holds.Single().Value};vm.Assets.Add(row);vm.MarketableOnly=false;vm.WorkPage=1;
+            var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,780,1.25,"steam-hold-countdown.png");Check(Find<TextBlock>(view).Any(x=>x.Text.Contains("아이템 교환 제한")&&x.Text.Contains("KST")),"hold countdown binding missing");Check(!row.CanSelect,"countdown changed server marketability");
+            var timer=(DispatcherTimer)typeof(SteamWorkspaceView).GetField("holdTimer",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance)!.GetValue(view)!;view.RaiseEvent(new RoutedEventArgs(FrameworkElement.LoadedEvent));Check(timer.IsEnabled,"UI clock not started");view.RaiseEvent(new RoutedEventArgs(FrameworkElement.UnloadedEvent));Check(!timer.IsEnabled&&Application.Current.Windows.Count==0,"UI clock retained after unload/window occurred");
+        });
         test("게임 금액의 부분 합계·미확인 그룹·장비 재료 필터·지갑 독립 바인딩",()=>
         {
             var root=Path.Combine(Directory.GetCurrentDirectory(),"runtime","display23-"+Guid.NewGuid().ToString("N"));using var server=new SteamContractServer();using var route=new TbhPriceDisplayTests.Router(server.Connection()){BadPrice=true};using var vm=new SteamWorkspaceViewModel(scope=>new(root,scope.AppId,scope.ContextId,scope.Name,contractHandler:route,clock:server.Clock),true){RiskAccepted=true,CredentialsAccepted=true};

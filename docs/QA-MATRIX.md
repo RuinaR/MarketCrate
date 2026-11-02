@@ -1,3 +1,24 @@
+## 0.24.0 최종 검증·측정 범위
+
+runtime/speed-hold-paced-final-regression.txt: **기능503/503·비표시WPF96/96·배포23/23·의존성6/6 PASS**, 빌드 경고0/오류0. 정리8PASS/0FAIL/1NOT VERIFIED(junction 생성 불가). 간격 검사는 기존SubmissionTransport.Pacing에1.2/1.5 혼합 경계·쓰기3초를 추가했다. 중간 공유 fixture의 internal API 접근 빌드 오류는 검사를 적절한 기능 테스트로 이동해 수정했고 최종 빌드는 정상이다.
+
+전체 검사 뒤 불변 Item값이 같은 세이브 재읽기도 행을 유지하고 완전히 새 목록은1회 Reset하도록 정리했다. 기능 집중31/31·관련WPF8/8을 다시 확인했다(runtime/speed-stable-final.txt, speed-stable-ui-final.txt).100상품 합성 검사에서 최초가격100요청/최근자료0요청/명시적강제100요청, 한 가격 갱신 시 무관한 행 유지·Reset0, 완전 새 목록Reset1을 확인했다. 실제 Steam 응답 시간/초당 처리량/체감 배수는 측정하지 않았다.
+
+| 사용자 경로 | 검증 |
+|---|---|
+| 실제 BAML48px 행·원본4모서리·64/88px 화면 회귀 | PASS, 직접 RTB 이미지 검토. 물리 DPI와 구분 |
+| 최근5분 시세·강제재조회·200종 진행·거래불가 정상 제외 | PASS, 대상/취소/403·429 보호 유지 |
+| 가격 우선metadata 지연·중첩/이중dispose·취소·429 이후 미전송 | PASS, 병렬/우회/자동재시도 없음 |
+| 동일 상품 공유 잔량·정렬·합계·무관 행 유지·10000행 가상화 | PASS |
+| 세이브의 개별 구매/해제 시각 | 필드/타입 점검에서 발견 못함. 식별자/수정시각으로 추정하지 않음 |
+| Steam 명시적연도/GMT·UTC·요일/월전체·KST·잔여 시간 | PASS 합성. 거래/판매 각각 구분 |
+| 기간만7일·연도/시간대 부재·충돌·긴 optional 안내 | PASS, 시각 미확인/정상 inventory 유지 |
+| 시각 경과·tradable false/marketable true | PASS, bool 임의변경/자동 해제0 |
+| UI 로드/언로드 카운트다운 타이머 | PASS 비표시 내부 이벤트, 네트워크0·언로드 후 중지 |
+| 실제 TBH 제한 안내 응답·1.2초 실제 계정 간격·물리 입력 | NOT VERIFIED, Codex 계정/GUI 실행 없음 |
+
+기존 세이브/Auth/Preferences/SQLite/저널/진단/이전 배포본 보존.75개 요구사항 ID/판정 수는47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED 유지한다. 합성 검사 성공을 실계정·LIVE_READY로 승격하지 않는다.
+
 ## 0.23.3 검증 마감
 
 runtime/marketability-regression.txt: **기능490/490·비표시WPF93/93·배포23/23·의존성6/6 PASS**, 빌드 경고0/오류0. 안전 정리8PASS/0FAIL/1NOT VERIFIED. 거래불가품은 캐시에 가격/후보hash가 있어도 두 기준 모두 가격/공유 잔량 소비0, 해당 품목 HTTP0이며 일반 품목만 조회되는 것을 확인했다. 공개 정의True/빈값Unknown·잠금·미검증 출처 숫자·유물 규칙을 구분했다.
