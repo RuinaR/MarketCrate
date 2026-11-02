@@ -1,3 +1,9 @@
+## 0.21.0 최종 portable 배포 (2026-11-02)
+
+소스 커밋 **0091919**. `artifacts/releases/MarketCrate-0.21.0-tbh-helper-0091919-win-x64.zip` **66,803,958바이트/419파일**. SHA256 **A3250B4F9B457A0CD3267CA986FDAD942ED2DF79B5ED7CBB58804D4258331410**. x64 self-contained .NET/WPF/SQLite/DPAPI·MIT 고지·실제 전용 PE/BAML·사용자 DB/Auth/로그/ES3/개발 파일 제외를 정적 검사했다. ZIP419개 항목 모두 출력 파일과 SHA256 일치. 앱/설치/실계정 거래는 실행하지 않았다. `artifacts/releases.json`의 Latest는0.21.0, Rollback은0.20.23이며 과거 배포본/사용자 자료 삭제0.
+
+최소 사용자 확인: 게임 아이템에서 세이브 읽기 → 재료창고/창고 위치와 잠금·장착 필터 → 직접 Steam 로그인/가격 갱신 → 두 평가 기준·부족 수량 → Steam 보관함/판매 중이 TBH만 표시되는지 → 두 가격 기준의 하향 검토에서 인하액/수수료/실수령 감소·최저가 인하0 확인. 실제 판매는 가격을 직접 검토하고 기존 최종 승인으로만 실행한다. 세이브 목록에서 판매를 시작하지 않는다. 미확인 아이템 이름/아이콘/시세는 실제 자료 확보가 필요한 제한이다.
+
 ## 최신 배포 — 0.20.20 최저 유효 가격 유지
 
 소스 **426b6ee0146b0ff37611790265f76f7df9f2a370**. `artifacts/releases/MarketCrate-0.20.20-minimum-price-426b6ee-win-x64.zip` **66,751,408바이트 /418파일**. SHA256 **918C46D9D4CCB597DF74E5721AE11D33AB0C3FCEF4E179ED5DEF3808E1EEF04B**. ZIP 전체 entry/출하 파일 해시·SourceCommit/버전·x64 CLR/WPF10.0.14·SQLite/DPAPI·라이선스·실제 전용 PE/BAML·Mock/개발UI/Auth/DB/로그/PDB 제외 정적 검사 PASS. Release 경고/오류0. 앱/설치/실계정은 미실행이다.

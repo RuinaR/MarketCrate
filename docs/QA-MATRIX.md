@@ -1,3 +1,7 @@
+## 0.21.0 Release 정적 무결성
+
+419파일/66,803,958바이트 self-contained ZIP 각 항목과 출력 SHA256 일치. 실제 전용 PE/BAML·x64 CLR/WPF/SQLite·DPAPI·라이선스 검사 PASS, 사용자 DB/Auth/세이브/로그/개발 파일 출하 없음. 실행/설치/새 버전 실계정 가격·거래는 NOT VERIFIED. 소스0091919, ZIP·해시는 CURRENT-STATUS 참조.
+
 ## 0.21.0 TBH 전용·세이브 평가·하향 인하액 (2026-11-02)
 
 | 범위 | 결과/증거 |
