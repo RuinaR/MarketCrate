@@ -1,3 +1,9 @@
+## 0.23.3 portable 마감 (2026-11-02)
+
+소스 **949c57aab2c5398e46ebeb98cd9043d5f6461825**. `artifacts/releases/MarketCrate-0.23.3-marketability-949c57a-win-x64.zip` **68,974,864바이트/421파일**. SHA256 **A07719189C4FF90C6B91CBF4967C701B9ED0275A35E1EB27F0D6D960A7DA2BF2**. ZIP 모든 항목 원본 출력 해시 일치, x64 CLR/WPF/SQLite·실제 전용 PE/BAML·라이선스·사용자 Auth/DB/ES3/로그/테스트 출하 제외 정적 검사 PASS. runtime/publish-0.23.3.txt. 앱/계정/거래 실행 없음.
+
+Latest0.23.3/Rollback0.23.2, 기존 배포본/사용자 자료 보존(삭제0). 확인 절차: 세이브 읽기→거래불가 그룹/정상 제외 건수→거래불가 행 툴팁 출처 확인. 이벤트 전체가 거래불가로 분류된 것으로 해석하지 않는다. 잠금은 별도 필터이며 실제 Steam 자산의 장터 가능 여부는 서버marketable을 따른다.
+
 ## 0.23.3 검증 마감
 
 runtime/marketability-regression.txt: **기능490/490·비표시WPF93/93·배포23/23·의존성6/6 PASS**, 빌드 경고0/오류0. 안전 정리8PASS/0FAIL/1NOT VERIFIED. 거래불가품은 캐시에 가격/후보hash가 있어도 두 기준 모두 가격/공유 잔량 소비0, 해당 품목 HTTP0이며 일반 품목만 조회되는 것을 확인했다. 공개 정의True/빈값Unknown·잠금·미검증 출처 숫자·유물 규칙을 구분했다.

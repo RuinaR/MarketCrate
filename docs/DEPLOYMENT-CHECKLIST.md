@@ -1,3 +1,9 @@
+## 0.23.3 portable 마감 (2026-11-02)
+
+소스 **949c57aab2c5398e46ebeb98cd9043d5f6461825**. `artifacts/releases/MarketCrate-0.23.3-marketability-949c57a-win-x64.zip` **68,974,864바이트/421파일**. SHA256 **A07719189C4FF90C6B91CBF4967C701B9ED0275A35E1EB27F0D6D960A7DA2BF2**. ZIP 모든 항목 원본 출력 해시 일치, x64 CLR/WPF/SQLite·실제 전용 PE/BAML·라이선스·사용자 Auth/DB/ES3/로그/테스트 출하 제외 정적 검사 PASS. runtime/publish-0.23.3.txt. 앱/계정/거래 실행 없음.
+
+Latest0.23.3/Rollback0.23.2, 기존 배포본/사용자 자료 보존(삭제0). 확인 절차: 세이브 읽기→거래불가 그룹/정상 제외 건수→거래불가 행 툴팁 출처 확인. 이벤트 전체가 거래불가로 분류된 것으로 해석하지 않는다. 잠금은 별도 필터이며 실제 Steam 자산의 장터 가능 여부는 서버marketable을 따른다.
+
 ## 0.23.2 portable 마감 (2026-11-02)
 
 소스 **f6615b42c59e5755527bc81edb6c7155106a2d18**. `artifacts/releases/MarketCrate-0.23.2-value-read-f6615b4-win-x64.zip` **68,971,338바이트/421파일**. SHA256 **FB32EF500F6CD6C85BB02EA132FF003144EA99EB509A43356135F432A29AE149**. ZIP 모든 항목의 원본 출력 해시 일치. x64 self-contained CLR/WPF/SQLite·실제 전용 PE/BAML·라이선스 및 Auth/DB/ES3/진단/테스트 파일 제외 정적 검사 PASS. runtime/publish-0.23.2.txt. 앱/설치/실계정 실행 없음.
