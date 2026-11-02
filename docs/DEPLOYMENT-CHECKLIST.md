@@ -1,3 +1,9 @@
+## 0.23.1 portable 마감 (2026-11-02)
+
+소스 **4c46af354ef6a673c35f19e9d2dbf023523be8bf**. `artifacts/releases/MarketCrate-0.23.1-input-audit-4c46af3-win-x64.zip` **68,966,403바이트/421파일**. SHA256 **20CDFAC36A20016E9390D042E7A740865A0117822535ABE83D1C71452C199650**. ZIP 모든 항목이 원본 출력과 해시 일치. x64 self-contained CLR/WPF/SQLite·라이선스·실제 전용 PE/BAML 및 Auth/DB/ES3/로그/테스트/개발 파일 제외 정적 검사 PASS. runtime/publish-0.23.1.txt. 앱/설치/실계정은 실행하지 않았다.
+
+Latest0.23.1/Rollback0.23.0, 기존0.22.0 이하 ZIP과 사용자 자료는 보존(삭제0).0.23.0을 사용자 검증 완료로 새로 판정하지 않는다. 사용자는 새 폴더에 풀어 로그인 복원→게임 아이템 필터/가격→보관함 수량 입력 수정→최종 검토 단가 수정/돌아가기·재검토를 확인하면 된다. 판매/취소/모바일 승인 시험은 사용자 직접 단계이며, 새 버전을 실판매 검증 완료로 표시하지 않는다.
+
 ## 0.23.0 최종 portable (2026-11-02)
 
 소스 **1344fd47ff99b7e723a6803ca36855173f601349**. `artifacts/releases/MarketCrate-0.23.0-price-wallet-1344fd4-win-x64.zip` **68,965,765바이트/421파일**. SHA256 **B05867779954CEA475731FBDF55D0B1E9A5A6E4037E9383599A1063E57657B14**. ZIP421개 항목의 원본 출력 해시 일치. x64 self-contained CLR/WPF/SQLite·실제 전용 PE/BAML·사용자 DB/Auth/ES3/JSONL/공개 테스트 fixture/개발 파일 제외와 라이선스 보존 정적 검사 PASS. runtime/publish-0.23.0.txt. 앱/설치/실계정은 실행하지 않았다.
