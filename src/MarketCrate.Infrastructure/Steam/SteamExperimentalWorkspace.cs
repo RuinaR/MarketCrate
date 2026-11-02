@@ -9,6 +9,7 @@ public sealed class SteamExperimentalWorkspace : IDisposable
     private readonly SteamStateStore store;
     private readonly SteamHttp http;
     public SteamImageCache Images{get;}
+    public SteamMarketImages MarketImages{get;}
     public SteamAccess Access { get; } = new();
     public SteamQrAuthentication Authentication { get; }
     public SteamInventoryProvider Inventory { get; private set; }
@@ -38,7 +39,7 @@ public sealed class SteamExperimentalWorkspace : IDisposable
         if(policy?.Enabled==true&&!synthetic)throw new SteamException(SteamFailure.Disabled);
         store = new(isolatedDataDirectory);Images=new(imageHandler);
         Policy = policy ?? SteamTradingPolicy.Blocked;
-        http = new(Access, contractHandler); Authentication = new(http, clock);
+        http = new(Access, contractHandler); MarketImages=new(http); Authentication = new(http, clock);
         Inventory = new(http, Authentication, appId, contextId, game);
         Prices = new(http, Authentication); Orders = new(http, Authentication);
         Executor = new(http, Authentication, store, Inventory, Prices, Orders, Policy);

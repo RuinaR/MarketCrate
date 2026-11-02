@@ -11,4 +11,5 @@
   <PropertyGroup>
     <MarketCrateProduction>false</MarketCrateProduction>
   </PropertyGroup>
+  <ItemGroup><None Update="Fixtures/TbhPublicOrderbook-20261102.json" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
 </Project>

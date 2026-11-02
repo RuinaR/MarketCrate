@@ -11,6 +11,8 @@ public sealed record SteamLegacyFeeObservation(int Fields,bool Invalid,long? Ste
 public sealed record SteamWalletObservation(string? Currency,long? MinimumWire,long? IncrementWire,bool? LoggedIn,string Shape)
 {
     public SteamLegacyFeeObservation? LegacyFees{get;init;}
+    public long? BalanceWire{get;init;} public bool BalanceInvalid{get;init;}
+    public override string ToString()=>"SteamWalletObservation (redacted)";
     public bool PricingMetadataAvailable=>Currency is not null&&MinimumWire is >0&&IncrementWire is >0;
     public SteamWallet PricingWallet()=>PricingMetadataAvailable?new(Currency!,MinimumWire!.Value,IncrementWire!.Value):throw new SteamException(SteamFailure.Unsupported);
 }
@@ -36,7 +38,13 @@ public static class SteamFees
             var minimum=Optional("wallet_market_minimum");var increment=Optional("wallet_currency_increment");Fact("WalletObject",currency);if(currency is null)Fact("WalletCurrencyMissing");if(minimum is null)Fact("WalletMinimumMissing");if(increment is null)Fact("WalletIncrementMissing");
             var legacy=ObserveLegacyFields(root);
             DiagnosticHub.Emit(DiagnosticEvent.WalletContract,DiagnosticArea.Data,endpoint:"Wallet",requirement:"D10",count:legacy.Fields,reason:legacy.Invalid?"WalletLegacyInvalid":legacy.Complete?"WalletLegacyComplete":"WalletLegacyPartial");
-            return new(currency,minimum,increment,loggedIn,"WalletObject"){LegacyFees=legacy};
+            long? balance=null;bool invalidBalance=false;
+            if(root.TryGetProperty("wallet_balance",out var rawBalance))
+            {
+                try{var wire=SteamContract.Integer(rawBalance);if(currency is null||wire<0)throw new ArgumentException();_=Money.FromWire(wire,currency);balance=wire;}
+                catch(Exception e)when(e is ArgumentException or OverflowException or InvalidOperationException or FormatException or SteamException){invalidBalance=true;}
+            }
+            return new(currency,minimum,increment,loggedIn,"WalletObject"){LegacyFees=legacy,BalanceWire=balance,BalanceInvalid=invalidBalance};
         }
         catch(JsonException){throw new SteamException(SteamFailure.ContractChanged){Diagnostic=DiagnosticError.Parsing};}
         catch(Exception error)when(error is InvalidOperationException or KeyNotFoundException or ArgumentException or OverflowException){throw new SteamException(SteamFailure.ContractChanged);}

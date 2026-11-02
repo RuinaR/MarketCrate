@@ -64,6 +64,7 @@ internal sealed class UnsentSteamCancellation(OperationCanceledException cause,C
 public sealed partial class SteamHttp : IDisposable
 {
     private readonly HttpClient client;
+    private readonly HttpClient publicImages;
     private readonly SemaphoreSlim queue = new(1, 1);
     private DateTimeOffset last;
     private DateTimeOffset lastMutation;
@@ -83,6 +84,9 @@ public sealed partial class SteamHttp : IDisposable
     {
         Access = access; gap = testHandler is null ? ReadGap : testGap ?? TimeSpan.Zero;mutationGap=testHandler is null?WriteGap:testGap??TimeSpan.Zero;
         client = new(testHandler ?? new HttpClientHandler { AllowAutoRedirect = false, UseCookies = true, CookieContainer = Cookies, UseProxy = false, AutomaticDecompression=DecompressionMethods.All });
+        publicImages=new(testHandler??new HttpClientHandler{AllowAutoRedirect=false,UseCookies=false,UseProxy=false,AutomaticDecompression=DecompressionMethods.All},disposeHandler:testHandler is null);
+        publicImages.Timeout=TimeSpan.FromSeconds(15);
+        publicImages.DefaultRequestHeaders.UserAgent.ParseAdd($"MarketCrate/{typeof(SteamHttp).Assembly.GetName().Version} (public-image-metadata)");
         client.Timeout = TimeSpan.FromSeconds(25);
         client.DefaultRequestHeaders.UserAgent.ParseAdd($"MarketCrate/{typeof(SteamHttp).Assembly.GetName().Version} (user-initiated)");
     }
@@ -96,22 +100,23 @@ public sealed partial class SteamHttp : IDisposable
         {
             "api.steampowered.com" => path is "/IAuthenticationService/BeginAuthSessionViaQR/v1/" or "/IAuthenticationService/PollAuthSessionStatus/v1/",
             "login.steampowered.com" => path == "/jwt/finalizelogin",
-            "steamcommunity.com" => path is "/login/settoken" or "/market/" or "/market/ajaxfeestructure/" or "/market/orderbook" or "/market/pricehistory/" or "/market/myhistory/render/" or "/market/mylistings/render/" or "/market/sellitem/" ||
+            "steamcommunity.com" => path is "/login/settoken" or "/market/" or "/market/ajaxfeestructure/" or "/market/search/render/" or "/market/orderbook" or "/market/pricehistory/" or "/market/myhistory/render/" or "/market/mylistings/render/" or "/market/sellitem/" ||
                 path.StartsWith("/inventory/", StringComparison.Ordinal) || path.StartsWith("/market/removelisting/", StringComparison.Ordinal) || IsFeeContext(uri),
             _ => false
         };
         if (!valid) throw new SteamException(SteamFailure.ContractChanged);
     }
-    internal async Task<string> SendAsync(HttpRequestMessage request, CancellationToken token, bool allowWalletHtml = false)
+    internal async Task<string> SendAsync(HttpRequestMessage request, CancellationToken token, bool allowWalletHtml = false,bool anonymousImage=false)
     {
         using var scope=DiagnosticHub.Scope(correlation:DiagnosticHub.Context?.CorrelationId is null);
         var started=DateTimeOffset.UtcNow;var watch=Stopwatch.StartNew();
         ValidateUri(request.RequestUri!);
         var path = request.RequestUri!.AbsolutePath;
+        if((path=="/market/search/render/")!=anonymousImage||anonymousImage&&(request.Headers.Contains("Cookie")||request.Headers.Authorization is not null))throw new SteamException(SteamFailure.ContractChanged);
         var endpoint=path switch {
             "/IAuthenticationService/BeginAuthSessionViaQR/v1/"=>"AuthBegin", "/IAuthenticationService/PollAuthSessionStatus/v1/"=>"AuthPoll",
             "/jwt/finalizelogin"=>"AuthFinalize", "/login/settoken"=>"AuthTransfer", "/market/"=>"Wallet", "/market/ajaxfeestructure/"=>"Fees",
-            "/market/orderbook"=>"Orderbook", "/market/pricehistory/"=>"History", "/market/myhistory/render/"=>"MarketHistory", "/market/mylistings/render/"=>"Listings", "/market/sellitem/"=>"Sell",
+            "/market/search/render/"=>"MarketImage", "/market/orderbook"=>"Orderbook", "/market/pricehistory/"=>"History", "/market/myhistory/render/"=>"MarketHistory", "/market/mylistings/render/"=>"Listings", "/market/sellitem/"=>"Sell",
             _=>IsFeeContext(request.RequestUri!)?"FeeContext":path.StartsWith("/inventory/",StringComparison.Ordinal)?"Inventory":"Cancel"};
         DiagnosticHub.Emit(DiagnosticEvent.HttpRequest,DiagnosticArea.HTTP,DiagnosticOutcome.Started,endpoint:endpoint,method:request.Method.Method);
         var mustPost = path.Contains("AuthSession", StringComparison.Ordinal) || path is "/jwt/finalizelogin" or "/login/settoken" or "/market/sellitem/" || path.StartsWith("/market/removelisting/", StringComparison.Ordinal);
@@ -130,8 +135,8 @@ public sealed partial class SteamHttp : IDisposable
             last = DateTimeOffset.UtcNow;
             if(mutation)lastMutation=last;
             phase="ConnectOrHeaders";
-            using var response = await SendWalletHeadersAsync(request, token, allowWalletHtml);
-            if (response.Headers.TryGetValues("Set-Cookie", out var cookies))
+            using var response = anonymousImage?await publicImages.SendAsync(request,HttpCompletionOption.ResponseHeadersRead,token):await SendWalletHeadersAsync(request, token, allowWalletHtml);
+            if (!anonymousImage&&response.Headers.TryGetValues("Set-Cookie", out var cookies))
             {
                 try { foreach (var cookie in cookies) Cookies.SetCookies(request.RequestUri!,cookie); }
                 catch (CookieException) { Stop(SteamFailure.ContractChanged); throw new SteamException(SteamFailure.ContractChanged); }
@@ -152,6 +157,7 @@ public sealed partial class SteamHttp : IDisposable
                 if(official)throw new SteamException(SteamFailure.Unsupported){Endpoint=endpoint,Redirected=true};
                 Stop(SteamFailure.Challenge);throw new SteamException(SteamFailure.Challenge){Endpoint=endpoint};
             }
+            if(anonymousImage&&status==401){BlockFeature(endpoint);throw new SteamException(SteamFailure.Authorization){Endpoint=endpoint,HttpStatus=status};}
             if (status != 200)
             {
                 if(status is >=400 and <500 and not(401 or 403 or 429)&&request.Method==HttpMethod.Post&&endpoint is "Sell" or "Cancel")
@@ -160,6 +166,7 @@ public sealed partial class SteamHttp : IDisposable
                     >= 300 and < 400 => SteamFailure.Authentication, _ => SteamFailure.Transport };
                 if(failure!=SteamFailure.Unsupported && !(request.Method==HttpMethod.Get && failure==SteamFailure.Transport))Stop(failure); throw new SteamException(failure){HttpStatus=status};
             }
+            if(anonymousImage&&steamCode is not(null or 1)){BlockFeature(endpoint,SteamFailure.Authorization);throw new SteamException(SteamFailure.Authorization){Endpoint=endpoint};}
             if (response.Headers.TryGetValues("x-eresult", out var results) && results.FirstOrDefault() is { } result && result != "1")
             { var failure=request.Method==HttpMethod.Get?(result=="15"?SteamFailure.Authorization:result=="27"?SteamFailure.Expired:SteamFailure.Restricted):(result=="15"?SteamFailure.Denied:result=="27"?SteamFailure.Expired:SteamFailure.Authentication);if(failure==SteamFailure.Authorization)BlockFeature(endpoint);else Stop(failure);throw new SteamException(failure,steamCode){Diagnostic=apiError}; }
             // Bounded reads prevent unexpected HTML/large payloads from consuming unbounded memory.
@@ -189,7 +196,7 @@ public sealed partial class SteamHttp : IDisposable
             if(bodyKind is (SteamBodyKind.HtmlMarket or SteamBodyKind.HtmlUnknown) && !(allowWalletHtml && (request.RequestUri!.AbsoluteUri == "https://steamcommunity.com/market/"||IsFeeContext(request.RequestUri!))))
             {
                 // Unknown HTML still stops further traffic; it is not evidence of CAPTCHA or logout.
-                if(bodyKind==SteamBodyKind.HtmlUnknown)Stop(SteamFailure.ContractChanged);else BlockFeature(endpoint,SteamFailure.ContractChanged);
+                if(bodyKind==SteamBodyKind.HtmlUnknown&&!anonymousImage)Stop(SteamFailure.ContractChanged);else BlockFeature(endpoint,SteamFailure.ContractChanged);
                 throw new SteamException(SteamFailure.ContractChanged){BodyKind=bodyKind};
             }
             DiagnosticHub.Emit(DiagnosticEvent.ResponseBody,DiagnosticArea.HTTP,DiagnosticOutcome.Completed,endpoint:endpoint,method:request.Method.Method,started:started,elapsed:watch.ElapsedMilliseconds);
@@ -220,5 +227,5 @@ public sealed partial class SteamHttp : IDisposable
         try { return JsonDocument.Parse(body, new JsonDocumentOptions { MaxDepth = 32 }); }
         catch (JsonException error) { DiagnosticHub.Emit(DiagnosticEvent.ResponseParsed,DiagnosticArea.HTTP,DiagnosticOutcome.Failed,LogLevel.Error,DiagnosticError.Parsing,exception:error); throw new SteamException(SteamFailure.ContractChanged){Diagnostic=DiagnosticError.Parsing}; }
     }
-    public void Dispose() { Access.Revoke(); client.Dispose(); queue.Dispose(); }
+    public void Dispose() { Access.Revoke(); client.Dispose(); publicImages.Dispose(); queue.Dispose(); }
 }

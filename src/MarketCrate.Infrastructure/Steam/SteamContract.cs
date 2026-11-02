@@ -116,6 +116,8 @@ public static class SteamContract
             if (price <= 0 || count <= 0 || price >= previous) throw new SteamException(SteamFailure.ContractChanged);
             previous = price; bids.Add(new(price, count));
         }
+        if(data.TryGetProperty("amtMaxBuyOrder",out var maxBuy)&&maxBuy.ValueKind!=JsonValueKind.Null&&FromWire(Integer(maxBuy),currency)!=(bids.Count==0?0:bids[0].BuyerPays))throw new SteamException(SteamFailure.ContractChanged);
+        if(data.TryGetProperty("cBuyOrders",out var buyCount)&&(Integer(buyCount)<0||(Integer(buyCount)==0)!=(bids.Count==0)))throw new SteamException(SteamFailure.ContractChanged);
         var asks=ImmutableArray.CreateBuilder<BidLevel>();
         if(data.TryGetProperty("rgCompactSellOrders",out var rawAsks))
         {
@@ -123,6 +125,7 @@ public static class SteamContract
             long last=0;for(int i=0;i<sell.Length;i+=2){var amount=FromWire(Integer(sell[i]),currency);var quantity=checked((int)Integer(sell[i+1]));if(amount<=last||quantity<=0)throw new SteamException(SteamFailure.ContractChanged);last=amount;asks.Add(new(amount,quantity));}
             if(data.TryGetProperty("amtMinSellOrder",out var best)&&best.ValueKind!=JsonValueKind.Null&&FromWire(Integer(best),currency)!=(asks.Count==0?0:asks[0].BuyerPays))throw new SteamException(SteamFailure.ContractChanged);
         }
+        if(data.TryGetProperty("cSellOrders",out var sellCount)&&data.TryGetProperty("rgCompactSellOrders",out _)&&(Integer(sellCount)<0||(Integer(sellCount)==0)!=(asks.Count==0)))throw new SteamException(SteamFailure.ContractChanged);
         return new(currency, bids.ToImmutable()){Asks=asks.ToImmutable()};
     });
     public static ImmutableArray<SteamHistoryPoint> History(string json) => Parse(json, root =>

@@ -1,3 +1,17 @@
+## 0.23.0 공개 Steam 이미지·주문장 근거 (2026-11-02 KST)
+
+- Steam 공개 `market/search/render/?appid=3678970&norender=1&count=100&start=0&query=Abyss%20Amulet&search_descriptions=0`: 인증/쿠키 없이 exact hash_name/asset_description.appid/market_hash_name/icon_url 확인. 노출된6개 상품을 소유 계정 자료로 취급하지 않았다. 코드는 exact match만 사용하며 검색 가격은 무시한다.
+- https://github.com/lezards/giba-steam-market/blob/main/server.mjs : 기존 MIT 프로젝트의 실제 공개 검색/asset_description/icon_url 소비와 비교했다. 전체 시장 스크래핑·USD 강제 통화·재시도 코드는 채택하지 않았다. 새 metadata/parsing 코드는 기존 C# 어댑터에 독립 구현했다.
+- https://github.com/SnaBe/node-steam-market-fetcher/blob/master/index.d.ts : 공개 상품 이미지의 시장 이름→asset description 구조와 비교. 의존성/소스 도입 없음.
+- 공식 `https://community.fastly.steamstatic.com/public/javascript/market.js`는 g_rgWalletInfo.wallet_balance를 v_currencyformat에 전달한다. 기존 검증된 Money wire 규칙(KRW100wire=1원, USD1wire=1cent)을 재사용하고 미확인/다른 형식은0으로 추정하지 않는다. 인증된 지갑 응답은 이번에 확보하지 않았다.
+- 공개 orderbook `q=Load&qp=[3678970,"Abyss Amulet (Celestial) C"]` 및 Arcana C를 확인했다. Arcana C 공개 응답의 amtMaxBuyOrder/amtMinSellOrder/eCurrency/cBuyOrders/cSellOrders/compact arrays만 화이트리스트 정제해 tests/MarketCrate.Tests/Fixtures/TbhPublicOrderbook-20261102.json에 보존했다. 개인 계정/자산/인증/서버 원문 HTML 없음. 해당 시점의 공개 자료이며 현재 가격을 고정하는 데이터가 아니다.
+- 공개 검색의 Arcana C icon_url을 검증된 `community.fastly.steamstatic.com/economy/image/<token>/128fx128f`에서 확인: PNG9347바이트. 원본 아트는 번들에 포함하지 않고 런타임 CDN에서만 읽는다. TBHIndex facts의 동일 sprite/name을 가진2206개 비거래 매핑 항목은 대표 이미지 경로만 보완했으며 가격 매핑을 생성하지 않았다.
+
+- 공개 검사 자료 SHA256 `public-search.json`: `511FADB85BDA490A6810DFF4087FCCDE464D3B1F865BB01806EC47F3287D6CF6`
+- 공개 검사 자료 SHA256 `public-book.json`: `9A9AC319E54B4B171B61B94E1BC5618EA205C8CBEED63037F603BC5E10F22EDE`
+- 공개 검사 자료 SHA256 `public-arcana.json`: `D6B95B1DBD65FE48DC3D71EE4C1851C24099E80D7EE5989A7FDA405521E33E86`
+- 공개 검사 자료 SHA256 `public-arcana-icon.png`: `EE20560B70D3C1FC70AB503DABF0F81228E7082EEDA1E7FFE6EF26D04E0DEBA2`
+
 ## 0.22.0 관리 앱 UI와 무료 리소스 (2026-11-02 KST)
 
 | 출처 | 확인·채택 | 라이선스/제한 |

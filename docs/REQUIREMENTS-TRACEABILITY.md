@@ -1,3 +1,7 @@
+## 0.23.0 B04/D04/D07/G 표시·읽기 보완
+
+75개 기존 ID/판정47 COMPLETE·16 PARTIAL·0 MISSING·3 BLOCKED·9 UNVERIFIED 유지. TBH 확장 요구는 Kind/Grade/ImageMarketHash→필터/그룹/합계, SteamMarketImages→cookie-less/shared-queue→검증 CDN→ItemThumbnail, wallet_balance→정수 검증→상단 독립 잔액 버튼으로 연결했다. TbhPriceDisplayTests/UiTests로 오류·부분 갱신·이미지 실제 PNG 디코딩·10000그룹 가상화·잔액 보안을 검사한다. 공개 주문장 fixture는 실제 공개 읽기 계약 근거이며 새 실계정 가격·수수료·거래 성공 검증으로 승격하지 않는다.
+
 ## 0.22.0 UI·경고 표현 정리
 
 기존75개 ID 및47 COMPLETE/16 PARTIAL/0 MISSING/3 BLOCKED/9 UNVERIFIED 판정은 유지한다. G01–G 요구의 표시/재사용 스타일/접근성/명령 도달 경로를 WorkspaceTabs·WorkspaceNavigationTab·Expander·내장 글꼴로 보완했고 기존 UI→ViewModel→Provider/Executor 경로는 유지했다. CleanWorkspaceUiTests 및 기존 사용자 입력/모달/가상화/수수료/하향/재등록 회귀를 연결한다. 기술/수수료/복구 도구는 접힌 영역을 직접 펼쳐 도달 가능성을 검사하며 테스트 기준을 명령 존재만으로 낮추지 않는다. 물리 GUI·실거래 검증 승격 없음.

@@ -1,3 +1,11 @@
+## 0.23.0 품목 가격 실패·이미지 메타데이터·잔액
+
+TbhSavePrices의 각 상품에 내부 해시 OperationItemId와 CorrelationId를 부여하고 기존 OperationId를 공유한다. ItemQuoteFailed/Orderbook는 실패 분류와 요청 순번만 기록한다. 상품명·게임 UniqueId·원문 가격 응답은 기록하지 않는다. 시장에 주문이 존재한다고 알리면서 배열이 비었으면 Parsing/Schema 오류로 추적되며 정상 빈 주문으로 표시하지 않는다.
+
+MarketImage는 새 허용 endpoint 식별자다. 기존 HttpRequest/Response/ReadContract와 ImageMetadata/ImageLoad 이벤트를 사용한다. URL query/hash_name/아이콘 token/Set-Cookie/원문 검색 결과를 로그에 기록하지 않는다. 공개 metadata401은 해당 이미지 기능의 권한 문제이며 인증된 세션 만료로 오인하지 않는다.403/429/Challenge는 기존 중단 규칙을 공유한다. 이미지 공개 HTML 계약 실패는 이미지 기능만 차단한다.
+
+잔액은 UI에만 표시한다. WalletBalanceLabel은 서버 잔액과 미조회/정보 없음/오류를 구분하고 마지막 조회 시각을 툴팁에 표시한다. WalletObservation.ToString은 redacted이며 기존 로그 화이트리스트에 금액 필드를 추가하지 않았다. 합성 보안 검사에서 잔액·쿠키·QR token·검색 상품명이 JSONL 레코드에 없음을 확인했다.
+
 ## 0.22.0 화면 정리
 
 계정 연결/시세 갱신/검토/취소/진단 ZIP 명령과 기존 OperationId/JSONL 경로는 동일하다. 상세 도구를 접어도 명령이나 오류 로그를 제거하지 않는다. 조회/거래 준비 배지는 현재 CanTrade/CanCancel을 요약하며 승인/저널 상태를 추측하지 않는다. 폰트·아이콘은 로컬 리소스여서 새 텔레메트리·웹 폰트 요청이 없다. 실질 위험 검토는 SECURITY-AND-STEAM에 공개 근거/현 코드 경로로 기록했으며 운영 로그·개인 세이브를 외부로 보내지 않았다.

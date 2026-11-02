@@ -41,7 +41,7 @@ public static class TbhSaveTests
         var dir=Path.Combine(Directory.GetCurrentDirectory(),"runtime","save-contract-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(dir);var file=Path.Combine(dir,"SaveFile_Live.es3");var bytes=Encrypt(Plain());await File.WriteAllBytesAsync(file,bytes);
         try{await using var open=new FileStream(file,FileMode.Open,FileAccess.ReadWrite,FileShare.ReadWrite|FileShare.Delete);var result=await TbhSaveReader.ReadAsync(file);await open.DisposeAsync();Check(result.Items.Count==3&&File.ReadAllBytes(file).SequenceEqual(bytes));}finally{File.Delete(file);Directory.Delete(dir);}
     }
-    private static void Parse(){var s=Snapshot();Check(s.Items.Count==3&&s.Items[0].Location.Contains("3번 창고 · 3열 1행")&&s.Items[1].Locked&&s.Items[2].Equipped&&!s.Items[2].Locked&&s.UnknownKeys==0&&s.Items[0].MarketHash=="Minor Ruby");Check(!JsonSerializer.Serialize(s).Contains("private-account-marker"));}
+    private static void Parse(){var s=Snapshot();Check(s.Items.Count==3&&s.Items[0].Location.Contains("3번 창고 · 3열 1행")&&s.Items[1].Locked&&s.Items[2].Equipped&&!s.Items[2].Locked&&s.UnknownKeys==0&&s.Items[0].MarketHash=="Minor Ruby"&&s.Items[0].Kind==TbhItemKind.Material);Check(!JsonSerializer.Serialize(s).Contains("private-account-marker"));}
     private static void Duplicate(){var s=TbhSaveReader.ParseEncrypted(Encrypt(Plain(true)),DateTimeOffset.UtcNow);Check(s.Items.Count==4&&s.Items.Count(x=>x.Ambiguous)==2&&s.Items.Where(x=>x.Ambiguous).All(x=>x.MarketHash is null));}
     private static void Materials()
     {
@@ -50,7 +50,7 @@ public static class TbhSaveTests
             stashSaveDatas=duplicate?new[]{new{Index=0,ItemUniqueId=77,Quantity=13,IsBlocked=false}}:[],inventorySaveDatas=Array.Empty<object>(),
             materialStashSaveDatas=new[]{new{ItemKey=key,ItemUniqueId=77,Quantity=13},new{ItemKey=110002,ItemUniqueId=0,Quantity=0}}
         })}});
-        var s=TbhSaveReader.ParsePlain(Data(),DateTimeOffset.UtcNow);Check(s.Items.Count==1&&s.Items[0].Location=="재료창고"&&s.Items[0].Quantity==13&&s.Items[0].Locked&&s.Items[0].MarketHash=="Minor Ruby");
+        var s=TbhSaveReader.ParsePlain(Data(),DateTimeOffset.UtcNow);Check(s.Items.Count==1&&s.Items[0].Location=="재료창고"&&s.Items[0].Quantity==13&&s.Items[0].Locked&&s.Items[0].MarketHash=="Minor Ruby"&&s.Items[0].Kind==TbhItemKind.Material);
         var overlap=TbhSaveReader.ParsePlain(Data(duplicate:true),DateTimeOffset.UtcNow);Check(overlap.Items.Count==2&&overlap.Items.All(x=>x.Ambiguous&&x.MarketHash is null));
         bool rejected=false;try{TbhSaveReader.ParsePlain(Data(110002),DateTimeOffset.UtcNow);}catch(InvalidDataException){rejected=true;}Check(rejected);
     }

@@ -1,3 +1,13 @@
+## 0.23.0 가격 표시와 공개 이미지 경계
+
+TbhOwnedItem에 독립 Kind/Grade/ImageMarketHash를 추가했다. 번들 facts의 장비·재료 타입과 같은 sprite/name을 대조하며 사용자 저장본에는 쓰지 않는다. UI의 종류 필터·CollectionViewSource 그룹은 기존 가상화/선택 모델과 분리된 조회 전용 표시다. 공통 가격 엔진·수수료·판매/취소 저널은 재작성하지 않았다.
+
+SteamMarketImages는 고정 TBH search/render에서 exact hash_name/asset_description.appid/market_hash_name을 교차 검증해 icon_url token만 추출한다. SteamHttp의 같은 직렬 큐·1.5초 제한을 쓰되 별도 UseCookies=false/redirect=false HttpClient로 보내고 Set-Cookie를 기존 세션에 반영하지 않는다. public 검색 가격은 전혀 사용하지 않는다. 32개 고정 key stripe·최대256 metadata/failure cache·15분 성공 캐시/5분 오류 캐시를 사용한다. 명시적 이미지 재시도는 캐시만 무효화하며 서버 차단은 해제하지 않는다. ItemThumbnail Loaded/Unloaded/재활용/이미지OFF의 기존 취소를 연결했다.
+
+SteamContract.OrderBook은 amtMaxBuyOrder/cBuyOrders/cSellOrders가 있는 경우 depth와 모순되지 않는지 추가 검사한다. VM은 품목 오류를 별도 dictionary에 두고0원/빈 주문으로 꾸미지 않는다. 서버 제약은 즉시 중단, 품목별404/통신·파싱 오류는 다음 다른 품목으로 진행하며 연속 schema3회에서는 중단한다.
+
+SteamWalletObservation.BalanceWire는 지갑 통화의 정확한 Money.FromWire로 검증한다. 잔액 필드 오류는 balance unavailable로 분리해 수수료 정보를 임의 폐기하지 않는다. 지갑 record.ToString은 redacted이며 잔액을 진단 레코드에 기록하지 않는다. 새 DB 스키마/운영 데이터 초기화 없음.
+
 ## 0.22.0 표시 계층 변경
 
 도메인/HTTP/수수료/SQLite/인증 저장소/거래 상태 머신은 재작성하지 않았다. NavigationIndex/WorkPage를 유지한 채 WorkspaceTabs/WorkspaceNavigationTab 템플릿으로 좌측 탐색을 구현한다. 실제 UIElement Content 인스턴스를 유지하므로 이동 시 선택·입력·스크롤 보존 경로는 동일하다. 새 Expander는 WPF IsExpanded/ToggleButton 바인딩·기존 입력/접근성을 사용한다.

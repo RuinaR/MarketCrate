@@ -12,7 +12,7 @@ public static class TbhSaveReader
 {
     public const int MaximumBytes=20*1024*1024;
     public static string DefaultPath=>Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"AppData","LocalLow","TesseractStudio","TaskbarHero","SaveFile_Live.es3");
-    private sealed record CatalogRow(string Key,string Name,string? MarketHash);
+    private sealed record CatalogRow(string Key,string Name,string? MarketHash,string Kind="Unknown",string Grade="",string? ImageHash=null);
     private static readonly Lazy<Dictionary<string,CatalogRow>> Catalog=new(()=>
     {
         using var stream=typeof(TbhSaveReader).Assembly.GetManifestResourceStream("MarketCrate.Tbh.items.json")!;
@@ -112,7 +112,7 @@ public static class TbhSaveReader
             Catalog.Value.TryGetValue(lookup,out var definition);if(definition is null)unknown++;
             var quantity=row.Slot.ValueKind==JsonValueKind.Object?row.Slot.GetProperty("Quantity").GetInt32():1;if(quantity is <1 or >1000000000)throw new InvalidDataException("SaveQuantity");
             var ambiguous=duplicate.Contains(row.Id)||transferred||row.Location.StartsWith("거래 선적",StringComparison.Ordinal);
-            result.Add(new(key,definition?.Name??"알 수 없는 아이템 "+key,ambiguous?null:definition?.MarketHash,quantity,row.Blocked||Flag(item,"IsBlocked"),row.Location,ambiguous,row.Location.StartsWith("영웅",StringComparison.Ordinal)));
+            result.Add(new(key,definition?.Name??"알 수 없는 아이템 "+key,ambiguous?null:definition?.MarketHash,quantity,row.Blocked||Flag(item,"IsBlocked"),row.Location,ambiguous,row.Location.StartsWith("영웅",StringComparison.Ordinal),Enum.TryParse<TbhItemKind>(definition?.Kind,out var kind)?kind:TbhItemKind.Unknown,definition?.Grade??"",definition?.ImageHash));
         }
         return new(DateTimeOffset.UtcNow,written,result,unknown);
     }
