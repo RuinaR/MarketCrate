@@ -1,3 +1,9 @@
+## 0.23.3 검증 마감
+
+runtime/marketability-regression.txt: **기능490/490·비표시WPF93/93·배포23/23·의존성6/6 PASS**, 빌드 경고0/오류0. 안전 정리8PASS/0FAIL/1NOT VERIFIED. 거래불가품은 캐시에 가격/후보hash가 있어도 두 기준 모두 가격/공유 잔량 소비0, 해당 품목 HTTP0이며 일반 품목만 조회되는 것을 확인했다. 공개 정의True/빈값Unknown·잠금·미검증 출처 숫자·유물 규칙을 구분했다.
+
+전체 회귀 후 거래불가 행 툴팁의 ‘연결 미확인’을 ‘거래불가로 조회하지 않음’으로 정리했고 기능 집중27/27·해당WPF5/5를 재확인했다. nonmarketable-normal-exclusion.png 직접 검토. 실제 Steam 계정/거래·물리 GUI 미실행, 사용자 자료 삭제0. 개별 이벤트 제한의 직접 속성은 현재 저장본에서 확인하지 못했으므로 확인된 것으로 표시하지 않는다.
+
 ## 0.23.2 최종 진단 전달 회귀
 
 통화 오류가 상위UiFailure에서 일반Validation으로 덮이던 분류를 SteamDiagnostics.Classify(SteamException) 공통 경로로 수정했다. 품목 안에서 처리된 실패(TbhSavePrices)와 전체 작업 중단(UiFailure)은 서로 다른 이벤트다. 중간 추가 검사(value-read-release-regression.txt,487/488)는 이 두 경우를 같은UiFailure로 기대해 실패했고, 시나리오를 나눠 원인 보존을 각각 확인했다.

@@ -8,13 +8,13 @@ public sealed record TbhSaveRow(TbhOwnedItem Item,string PriceText,long? UnitPri
 {
     public TbhValueReadState ReadState{get;init;}
     public string ReadDetails{get;init;}="";
-    public static string ReasonLabel(TbhValueReadState state)=>state switch{TbhValueReadState.UnknownItemKey=>"아이템 사전 미등록",TbhValueReadState.MarketMappingMissing=>"Steam 상품 연결 미확인",TbhValueReadState.SourceAmbiguous=>"위치·이동 상태 미확인",TbhValueReadState.PartialDepth=>"일부 수량만 가격 확인",TbhValueReadState.NoBuyOrders=>"조회한 매수주문 없음",TbhValueReadState.SharedDepthExhausted=>"다른 항목에 매수 잔량 배분됨",TbhValueReadState.NoSellOrders=>"조회한 판매주문 없음",TbhValueReadState.SellDepthMissing=>"판매호가 필드 미수신",TbhValueReadState.RequestFailed=>"요청·응답 검증 실패",TbhValueReadState.AmountRange=>"계산 금액 범위 초과",TbhValueReadState.Ready=>"가격 확인",_=>"아직 조회하지 않음"};
+    public static string ReasonLabel(TbhValueReadState state)=>state switch{TbhValueReadState.NonMarketableItem=>"거래불가 · 정상 제외",TbhValueReadState.UnknownItemKey=>"아이템 사전 미등록",TbhValueReadState.MarketMappingMissing=>"Steam 상품 연결 미확인",TbhValueReadState.SourceAmbiguous=>"위치·이동 상태 미확인",TbhValueReadState.PartialDepth=>"일부 수량만 가격 확인",TbhValueReadState.NoBuyOrders=>"조회한 매수주문 없음",TbhValueReadState.SharedDepthExhausted=>"다른 항목에 매수 잔량 배분됨",TbhValueReadState.NoSellOrders=>"조회한 판매주문 없음",TbhValueReadState.SellDepthMissing=>"판매호가 필드 미수신",TbhValueReadState.RequestFailed=>"요청·응답 검증 실패",TbhValueReadState.AmountRange=>"계산 금액 범위 초과",TbhValueReadState.Ready=>"가격 확인",_=>"아직 조회하지 않음"};
     public string Name=>Item.MarketHash??Item.Name+(Item.Grade.Length>0?" · "+Item.Grade:"");
-    public string PriceGroup=>PricedTotal is not null?"가격 확인 · 단가 높은순":"가격 미확인 · 순위 없음";
+    public string PriceGroup=>ReadState==TbhValueReadState.NonMarketableItem?"거래불가 · 가격 조회 제외":PricedTotal is not null?"가격 확인 · 단가 높은순":"가격 미확인 · 순위 없음";
     public string Location=>Item.Location;
     public string? IconHash=>Item.ImageMarketHash??Item.MarketHash;
     public string ImageDescription=>Item.ImageMarketHash is {} hash&&hash!=Item.MarketHash?"같은 이름·스프라이트의 대표 아이콘 · 등급/변형은 표시명을 확인하세요":"Steam 상품 아이콘";
-    public string Description=>$"{Item.Quantity:N0}개 · {KindLabel(Item.Kind)} · {(Item.Locked?"잠금":"잠금 해제")}{(Item.Equipped?" · 장착 중":"")}";
+    public string Description=>$"{Item.Quantity:N0}개 · {KindLabel(Item.Kind)}{(Item.CanExchangeMarketable==false?" · 장터 거래불가":"")} · {(Item.Locked?"잠금":"잠금 해제")}{(Item.Equipped?" · 장착 중":"")}";
     public static string KindLabel(TbhItemKind kind)=>kind switch{TbhItemKind.Equipment=>"장비",TbhItemKind.Material=>"재료",TbhItemKind.Other=>"기타",_=>"종류 미확인"};
 }
 
@@ -44,7 +44,7 @@ public sealed partial class SteamWorkspaceViewModel
     public bool TbhEmpty=>TbhSaveRows.Count==0;
     public string TbhSnapshotText=>tbhSnapshot is {} s?$"파일 저장 {s.FileWrittenAt.ToLocalTime():MM-dd HH:mm:ss} · 복사 확인 {s.CapturedAt.ToLocalTime():HH:mm:ss} · 원본 읽기 전용 · 현재 게임 상태와 시차가 있을 수 있음":"세이브 미조회 · 파일 읽기는 로그인 없이 가능 · 시세 조회는 Steam 연결 필요";
     public string TbhCountText=>$"{TbhSaveRows.Count:N0}개 항목 · 가격 확인 항목만 단가순 · 미확인 항목은 순위 없음";
-    public string TbhValuationCoverage=>$"{TbhSaveRows.Count(x=>x.PricedTotal is not null):N0}개 항목 금액만 포함 · 미확인 {TbhSaveRows.Count(x=>x.PricedTotal is null):N0}개 항목 제외";
+    public string TbhValuationCoverage=>$"{TbhSaveRows.Count(x=>x.PricedTotal is not null):N0}개 항목 금액만 포함 · 거래불가 {TbhSaveRows.Count(x=>x.ReadState==TbhValueReadState.NonMarketableItem):N0}개 정상 제외 · 미확인 {TbhSaveRows.Count(x=>x.PricedTotal is null&&x.ReadState!=TbhValueReadState.NonMarketableItem):N0}개 항목 제외";
     public string TbhValuationText
     {
         get
@@ -58,7 +58,7 @@ public sealed partial class SteamWorkspaceViewModel
         }
     }
     public string TbhReadSummary=>string.Join(" · ",TbhSaveRows.GroupBy(x=>x.ReadState).Select(x=>TbhSaveRow.ReasonLabel(x.Key)+$" {x.Count():N0}행"));
-    private void TraceTbhReadStates(){foreach(var group in TbhSaveRows.GroupBy(x=>x.ReadState))DiagnosticHub.Emit(DiagnosticEvent.TbhReadContract,DiagnosticArea.Data,group.Key==TbhValueReadState.Ready?DiagnosticOutcome.Succeeded:DiagnosticOutcome.Unknown,reason:group.Key.ToString(),count:group.Count());}
+    private void TraceTbhReadStates(){foreach(var group in TbhSaveRows.GroupBy(x=>x.ReadState))DiagnosticHub.Emit(DiagnosticEvent.TbhReadContract,DiagnosticArea.Data,group.Key==TbhValueReadState.Ready?DiagnosticOutcome.Succeeded:group.Key==TbhValueReadState.NonMarketableItem?DiagnosticOutcome.Completed:DiagnosticOutcome.Unknown,reason:group.Key.ToString(),count:group.Count());}
     private static string PriceReadStageLabel(string stage)=>stage switch{"BookEnvelope"=>"주문장 응답 구조","BookCurrency"=>"통화","BookBuyDepth"=>"매수 가격·수량","BookBuyAmount"=>"매수 금액·통화 단위 변환","BookBuyQuantity"=>"매수 수량","BookBuyConsistency"=>"매수 잔량 정합성","BookSellDepth"=>"판매 가격·수량","BookSellAmount"=>"판매 금액·통화 단위 변환","BookSellQuantity"=>"판매 수량","BookSellConsistency"=>"판매 잔량 정합성",_=>"HTTP·요청"};
     public string TbhSaveSummary
     {
@@ -68,7 +68,7 @@ public sealed partial class SteamWorkspaceViewModel
             {
             var groups=TbhSaveRows.Where(x=>x.PricedTotal is not null&&x.Currency is not null).GroupBy(x=>x.Currency);
             var totals=string.Join(" / ",groups.Select(x=>new Money(x.Sum(y=>y.PricedTotal!.Value),x.Key!)+" (조회된 수량만)"));
-            return $"표시 {TbhSaveRows.Count:N0}행 · 가격 미확인/부족 {TbhSaveRows.Count(x=>x.UnitPrice is null||x.Missing>0):N0}행 · 단가 높은순\n가격 확인된 수량의 주문금액 합계: {(totals.Length==0?"미조회":totals)} · 수수료 차감 전 · 체결/판매 가능 보장 아님\n{TbhReadSummary}";
+            return $"표시 {TbhSaveRows.Count:N0}행 · 가격 미확인/부족 {TbhSaveRows.Count(x=>x.ReadState!=TbhValueReadState.NonMarketableItem&&(x.UnitPrice is null||x.Missing>0)):N0}행 · 단가 높은순\n가격 확인된 수량의 주문금액 합계: {(totals.Length==0?"미조회":totals)} · 수수료 차감 전 · 체결/판매 가능 보장 아님\n{TbhReadSummary}";
             }
             catch(OverflowException){return "합계 금액 범위 초과 · 각 항목은 유지하며 전체 금액을 확정하지 않습니다.";}
         }
@@ -100,7 +100,7 @@ public sealed partial class SteamWorkspaceViewModel
     {
         RequireConnection();if(tbhSnapshot is null)return;
         using var diagnostics=DiagnosticHub.Operation(DiagnosticEvent.TbhSavePrices,DiagnosticArea.Pricing,"TBH-SAVE");
-        var hashes=tbhSnapshot.Items.Where(x=>!x.Ambiguous&&x.MarketHash is not null&&(TbhIncludeLocked||!x.Locked)&&(TbhIncludeEquipped||!x.Equipped)&&TbhKindMatches(x)&&(x.Name.Contains(tbhSearch,StringComparison.OrdinalIgnoreCase)||x.MarketHash?.Contains(tbhSearch,StringComparison.OrdinalIgnoreCase)==true)).Select(x=>x.MarketHash!).Distinct(StringComparer.Ordinal).ToArray();
+        var hashes=tbhSnapshot.Items.Where(x=>x.CanExchangeMarketable!=false&&!x.Ambiguous&&x.MarketHash is not null&&(TbhIncludeLocked||!x.Locked)&&(TbhIncludeEquipped||!x.Equipped)&&TbhKindMatches(x)&&(x.Name.Contains(tbhSearch,StringComparison.OrdinalIgnoreCase)||x.MarketHash?.Contains(tbhSearch,StringComparison.OrdinalIgnoreCase)==true)).Select(x=>x.MarketHash!).Distinct(StringComparer.Ordinal).ToArray();
         // Explicit, bounded user action; serialized and rate limited by the existing SteamHttp.
         var pending=hashes.Where(x=>!tbhQuotes.TryGetValue(x,out var q)||DateTimeOffset.UtcNow-q.CapturedAt>TimeSpan.FromMinutes(5)).ToArray();
         // Never-queried products must progress even when earlier pages have become stale.
@@ -134,6 +134,7 @@ public sealed partial class SteamWorkspaceViewModel
     });
     private void ResetTbhSessionPrices(){tbhQuotes.Clear();tbhQuoteErrors.Clear();if(tbhSnapshot is not null){RebuildTbhRows();TbhSaveStatus="Steam 연결 변경 · 이전 시세 해제 · 게임 파일 목록은 보존했습니다.";}}
     public string TbhNextAction=>tbhSnapshot is null?"① 세이브 복사·읽기 → ② Steam 연결 → ③ 장터 가격 갱신":!Connected?"게임 파일을 읽었습니다. 가격 조회는 계정 연결에서 Steam 로그인 후 이용하세요.":"장터 가격 갱신을 누르세요. 가격은 수수료 차감 전이며 조회 불가 품목을0원으로 처리하지 않습니다.";
+    private static string TradeEvidenceLabel(TbhOwnedItem item)=>item.TradeEvidence switch{TbhTradeEvidence.ItemDefinition=>item.CanExchangeMarketable==true?"공개 아이템 정의상 전환 가능 · 개별 이벤트/Steam 판매 자산 여부는 별도 확인":"공개 아이템 정의상 전환 불가",TbhTradeEvidence.UserConfirmedCategory=>"사용자가 확인한 유물·유물함 거래불가 규칙",_=>"현재 저장본에 직접 판정할 속성 없음 · 거래불가로 추정하지 않음"};
     private void RebuildTbhRows()
     {
         if(tbhSnapshot is null)return;
@@ -142,13 +143,13 @@ public sealed partial class SteamWorkspaceViewModel
         foreach(var item in items)
         {
             long? unit=null,total=null;string? currency=null;int missing=item.Quantity;
-            var readState=item.Ambiguous?TbhValueReadState.SourceAmbiguous:!item.CatalogKnown?TbhValueReadState.UnknownItemKey:item.MarketHash is null?TbhValueReadState.MarketMappingMissing:TbhValueReadState.NotQueried;
-            var message=item.Ambiguous?"위치/이동 상태 미확인 · 합계 제외":item.MarketHash is null?"Steam 상품 연결 미확인 · 합계 제외":"가격 미조회 · 합계 제외";
-            if(!item.Ambiguous&&item.MarketHash is {} failedHash&&tbhQuoteErrors.TryGetValue(failedHash,out var failure))
+            var readState=item.CanExchangeMarketable==false?TbhValueReadState.NonMarketableItem:item.Ambiguous?TbhValueReadState.SourceAmbiguous:!item.CatalogKnown?TbhValueReadState.UnknownItemKey:item.MarketHash is null?TbhValueReadState.MarketMappingMissing:TbhValueReadState.NotQueried;
+            var message=item.CanExchangeMarketable==false?"장터 거래불가 · 정상적으로 가격 조회·합계에서 제외":item.Ambiguous?"위치/이동 상태 미확인 · 합계 제외":item.MarketHash is null?"Steam 상품 연결 미확인 · 합계 제외":"가격 미조회 · 합계 제외";
+            if(item.CanExchangeMarketable!=false&&!item.Ambiguous&&item.MarketHash is {} failedHash&&tbhQuoteErrors.TryGetValue(failedHash,out var failure))
             {readState=TbhValueReadState.RequestFailed;message=failure.Code switch{SteamFailure.ContractChanged=>"가격 응답 불완전/형식 오류 · 주문 없음이 아님 · 다시 갱신",SteamFailure.Unsupported=>"상품 조회 경로 미지원 · 상품 연결 확인 필요",_=>"가격 조회 실패 · 주문 없음이 아님 · 다시 갱신"};if(failure.Stage is {} stage)message+=" · 확인 단계: "+PriceReadStageLabel(stage);}
             try
             {
-            if(!item.Ambiguous&&item.MarketHash is {} hash&&tbhQuotes.TryGetValue(hash,out var price))
+            if(item.CanExchangeMarketable!=false&&!item.Ambiguous&&item.MarketHash is {} hash&&tbhQuotes.TryGetValue(hash,out var price))
             {
                 currency=price.Currency;var stale=DateTimeOffset.UtcNow-price.CapturedAt>TimeSpan.FromMinutes(5)?" · 오래된 자료":"";
                 if(tbhPriceMode==1)
@@ -175,9 +176,9 @@ public sealed partial class SteamWorkspaceViewModel
             {readState=TbhValueReadState.AmountRange;unit=total=null;currency=null;missing=item.Quantity;message="수량·가격 금액 범위 초과 · 합계 제외 · 원본 수량은 변경하지 않았습니다.";}
             var icon=AllSteamRows().FirstOrDefault(x=>x.Asset.Key.AppId==TbhScope.AppId&&x.Asset.MarketHashName==item.MarketHash)?.Image
                 ??Listings.FirstOrDefault(x=>x.Listing.Asset.AppId==TbhScope.AppId&&x.Listing.HashName==item.MarketHash)?.Image;
-            rows.Add(new(item,message,unit,total,currency,missing,icon){ReadState=readState,ReadDetails=$"{TbhSaveRow.ReasonLabel(readState)}\n게임 아이템 사전: {(item.CatalogKnown?"해당 키 확인":"해당 키 미등록")}\nSteam 조회 상품: {item.MarketHash??"정확한 연결 미확인 · 비슷한 이름의 가격으로 대체하지 않음"}\n{message}"});
+            rows.Add(new(item,message,unit,total,currency,missing,icon){ReadState=readState,ReadDetails=$"{TbhSaveRow.ReasonLabel(readState)}\n게임 아이템 사전: {(item.CatalogKnown?"해당 키 확인":"해당 키 미등록")}\n장터 전환 속성: {TradeEvidenceLabel(item)}\nSteam 조회 상품: {(item.CanExchangeMarketable==false?"거래불가로 조회하지 않음":item.MarketHash??"정확한 연결 미확인 · 비슷한 이름의 가격으로 대체하지 않음")}\n{message}"});
         }
-        TbhSaveRows.ReplaceAll(rows.OrderByDescending(x=>x.UnitPrice??-1).ThenByDescending(x=>x.PricedTotal??-1).ThenBy(x=>x.Name,StringComparer.Ordinal));
+        TbhSaveRows.ReplaceAll(rows.OrderBy(x=>x.ReadState==TbhValueReadState.NonMarketableItem?2:x.PricedTotal is not null?0:1).ThenByDescending(x=>x.UnitPrice??-1).ThenByDescending(x=>x.PricedTotal??-1).ThenBy(x=>x.Name,StringComparer.Ordinal));
         Raise(nameof(TbhReadSummary));Raise(nameof(TbhSaveSummary));Raise(nameof(TbhCountText));Raise(nameof(TbhValuationText));Raise(nameof(TbhValuationCoverage));Raise(nameof(TbhEmpty));Raise(nameof(TbhNextAction));
     }
 }

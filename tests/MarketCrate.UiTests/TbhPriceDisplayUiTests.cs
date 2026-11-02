@@ -45,6 +45,11 @@ internal static class TbhPriceDisplayUiTests
             Check(Find<TextBlock>(view).Any(x=>x.DataContext is TbhSaveRow row&&row.ReadState==TbhValueReadState.SellDepthMissing&&x.ToolTip is string detail&&detail.Contains("필드 미수신")),"read evidence tooltip binding missing");
             Check(vm.TbhReadSummary.Contains("판매호가 필드 미수신")&&vm.TbhReadSummary.Contains("조회한 판매주문 없음"),"read status summary lost reason");
         });
+        test("거래불가 정상 제외는 미확인 오류와 별도 그룹·집계로 표시",()=>
+        {
+            using var vm=new SteamWorkspaceViewModel();vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,[new("1","Reliquary",null,1,false,"stash",CanExchangeMarketable:false,TradeEvidence:TbhTradeEvidence.UserConfirmedCategory),new("2","Event unknown",null,1,false,"stash")],0));vm.WorkPage=6;var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,780,1.25,"nonmarketable-normal-exclusion.png");
+            Check(vm.TbhValuationCoverage.Contains("거래불가 1개 정상 제외")&&vm.TbhValuationCoverage.Contains("미확인 1개")&&Find<TextBlock>(view).Any(x=>x.Text=="거래불가 · 가격 조회 제외"),"nonmarketable mixed into errors");
+        });
         test("가시 썸네일의 공개 상품 메타데이터→Steam CDN 실제 PNG 디코딩",()=>
         {
             var root=Path.Combine(Directory.GetCurrentDirectory(),"runtime","icon23-"+Guid.NewGuid().ToString("N"));using var server=new SteamContractServer();using var route=new TbhPriceDisplayTests.Router(server.Connection());using var pixels=new ImageContractServer();SteamExperimentalWorkspace? workspace=null;using var vm=new SteamWorkspaceViewModel(scope=>workspace=new(root,scope.AppId,scope.ContextId,scope.Name,contractHandler:route,clock:server.Clock,imageHandler:pixels),true){RiskAccepted=true,CredentialsAccepted=true};Complete(vm.BeginAsync());server.Clock.Advance();Complete(vm.CheckAsync());var image=new ItemThumbnail{MarketName="Synthetic stack",MetadataLoader=workspace!.MarketImages,Loader=workspace.Images};render(image,76,84,1,"tbh23-image-loading.png");Complete(image.RefreshAsync());Check(image.ImageState=="Ready"&&image.HasPixels&&route.ImageCalls==1,"market metadata did not reach pixels");render(image,76,84,2,"tbh23-image-ready.png");image.Release();Check(!image.HasPixels,"recycled pixels retained");

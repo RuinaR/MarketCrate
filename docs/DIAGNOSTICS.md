@@ -1,3 +1,7 @@
+## 0.23.3 거래불가의 정상 분류
+
+TbhValueReadState.NonMarketableItem은 기존 enum 끝에 추가한 화면용 읽기 사유다. TbhReadContract4302의 Completed/NonMarketableItem은 오류가 아니라 알려진 거래불가 정상 제외 건수다. 미확인/실패 그룹에 합치지 않는다. 공개 정의의 nullable CanExchangeMarketable과 ItemDefinition/UserConfirmedCategory 출처를 구분하며 플레이어 원본 필드값은 로그에 저장하지 않는다. IsBlocked와 미검증 출처 숫자는 marketable로 재해석하지 않는다. SQLite 거래 상태/저널 enum은 변경하지 않았다.
+
 ## 0.23.2 값 읽기 진단
 
 TbhReadContract(EventId4302)은 저장본의 복호화/압축/PlayerData/OwnedItems/StorageSlots/Equipment/MaterialStorage/CatalogMapping 단계별 실패와 CatalogUnknown/Unmapped/Matched 건수를 기록한다. 주문장 실패는 기존ReadContract4202에 BookEnvelope/BookCurrency/BookBuy·SellDepth/Amount/Quantity/Consistency를 남긴다. SteamException.ReadStage가 VM의 원인 안내까지 전달되며 통화 ID overflow도 KRW로 변환하지 않고 Currency 오류다.

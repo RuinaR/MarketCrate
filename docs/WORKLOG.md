@@ -1,3 +1,15 @@
+## 0.23.3 검증 마감
+
+runtime/marketability-regression.txt: **기능490/490·비표시WPF93/93·배포23/23·의존성6/6 PASS**, 빌드 경고0/오류0. 안전 정리8PASS/0FAIL/1NOT VERIFIED. 거래불가품은 캐시에 가격/후보hash가 있어도 두 기준 모두 가격/공유 잔량 소비0, 해당 품목 HTTP0이며 일반 품목만 조회되는 것을 확인했다. 공개 정의True/빈값Unknown·잠금·미검증 출처 숫자·유물 규칙을 구분했다.
+
+전체 회귀 후 거래불가 행 툴팁의 ‘연결 미확인’을 ‘거래불가로 조회하지 않음’으로 정리했고 기능 집중27/27·해당WPF5/5를 재확인했다. nonmarketable-normal-exclusion.png 직접 검토. 실제 Steam 계정/거래·물리 GUI 미실행, 사용자 자료 삭제0. 개별 이벤트 제한의 직접 속성은 현재 저장본에서 확인하지 못했으므로 확인된 것으로 표시하지 않는다.
+
+## 0.23.3 사용자 정정 — 거래불가 정상 제외
+
+유물함 사전 누락은 이름 식별 문제였고 가격 미표시는 정상이라는 사용자 정정을 반영했다. 현재 게임 세이브의 아이템 스키마만 점검했으며 direct marketable 속성은 없었다. 잠금/출처 숫자를 임의 거래불가 flag로 사용하지 않았다. 공개 정의의 IsCanExchangeMarketable 명시True945개/빈값Unknown을 별도 로드하고 사용자 확인의 유물/유물함742개 규칙은 출처를 구분했다. 기타/이벤트 전체를 false로 추정하지 않았다.
+
+거래불가 그룹/집계/정상Completed 진단, 가격 요청 및 공유 호가 소비 차단을 연결했다. 기존이름6885개·로그인·설정·저널·실제 Steam marketable/tradable 경계를 유지한다. 원본/사용자 데이터 수정·업로드·타 프로세스 조작 없음. 테스트와 portable 마감 결과는 후속 기록한다.
+
 ## 0.23.2 portable 마감 (2026-11-02)
 
 소스 **f6615b42c59e5755527bc81edb6c7155106a2d18**. `artifacts/releases/MarketCrate-0.23.2-value-read-f6615b4-win-x64.zip` **68,971,338바이트/421파일**. SHA256 **FB32EF500F6CD6C85BB02EA132FF003144EA99EB509A43356135F432A29AE149**. ZIP 모든 항목의 원본 출력 해시 일치. x64 self-contained CLR/WPF/SQLite·실제 전용 PE/BAML·라이선스 및 Auth/DB/ES3/진단/테스트 파일 제외 정적 검사 PASS. runtime/publish-0.23.2.txt. 앱/설치/실계정 실행 없음.

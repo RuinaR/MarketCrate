@@ -8,8 +8,10 @@ public static class TbhScope
 }
 public enum TbhItemKind { Unknown, Equipment, Material, Other }
 // Game IDs are local lookup keys only. They are never Steam asset IDs or sale commands.
-public sealed record TbhOwnedItem(string ItemKey,string Name,string? MarketHash,int Quantity,bool Locked,string Location,bool Ambiguous=false,bool Equipped=false,TbhItemKind Kind=TbhItemKind.Unknown,string Grade="",string? ImageMarketHash=null,bool CatalogKnown=true);
+public sealed record TbhOwnedItem(string ItemKey,string Name,string? MarketHash,int Quantity,bool Locked,string Location,bool Ambiguous=false,bool Equipped=false,TbhItemKind Kind=TbhItemKind.Unknown,string Grade="",string? ImageMarketHash=null,bool CatalogKnown=true,bool? CanExchangeMarketable=null,TbhTradeEvidence TradeEvidence=TbhTradeEvidence.Unknown);
 public sealed record TbhSaveSnapshot(DateTimeOffset CapturedAt,DateTimeOffset FileWrittenAt,IReadOnlyList<TbhOwnedItem> Items,int UnknownKeys);
 
 // Read evidence states, not transaction/journal states.
-public enum TbhValueReadState { NotQueried, UnknownItemKey, MarketMappingMissing, SourceAmbiguous, Ready, PartialDepth, NoBuyOrders, SharedDepthExhausted, NoSellOrders, SellDepthMissing, RequestFailed, AmountRange }
+public enum TbhValueReadState { NotQueried, UnknownItemKey, MarketMappingMissing, SourceAmbiguous, Ready, PartialDepth, NoBuyOrders, SharedDepthExhausted, NoSellOrders, SellDepthMissing, RequestFailed, AmountRange, NonMarketableItem }
+
+public enum TbhTradeEvidence { Unknown, ItemDefinition, UserConfirmedCategory }

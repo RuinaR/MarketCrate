@@ -1,3 +1,7 @@
+## 0.23.3 게임 정의의 장터 전환 속성
+
+TbhOwnedItem.CanExchangeMarketable은 nullable 게임 정의/사용자 확인 규칙이며 Steam InventoryAsset.Marketable과 다른 범위다. TbhTradeEvidence는 Unknown/ItemDefinition/UserConfirmedCategory 출처를 보존한다. 명시적 false만 게임 가격 요청/배분에서 제외하고 true가 실제 Steam 자산 판매 가능을 보증하지 않도록 툴팁에 명시한다. 빈 정의/알 수 없는 이벤트 출처는 nullable로 유지한다. TbhValueReadState.NonMarketableItem은 정상 제외이며 DB/거래 저널 스키마 변경 없음.
+
 ## 0.23.2 읽기 증거 보존
 
 SteamOrderBook→PriceSnapshot은 SellDepthObserved를 전달한다. HasSellDepth는 명시적 빈 배열 관측 또는 실제 비어 있지 않은 depth를 나타내며 필드 누락을 정상 빈 시장으로 바꾸지 않는다. TbhValueReadState는 화면용 읽기 사유이며 판매 상태/SQLite 저널 enum과 별개다. TbhOwnedItem.CatalogKnown은 공개 사전 매칭 여부이며 Steam 상품/보유 자산 검증이 아니다. 저장 파싱은 단계별 안전 이벤트만 남기고 실패를 합성 데이터로 대체하지 않는다. DB 마이그레이션 없음.

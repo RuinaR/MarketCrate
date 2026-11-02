@@ -35,7 +35,8 @@ public static class TbhSaveTests
             ("Save read failures classify player items materials and flags without exposing contents",()=>Sync(ReadStages)),
             ("Unknown catalogue keys remain visible with distinct unmapped evidence",()=>Sync(UnknownCatalog)),
             ("Public Reliquary catalogue facts restore names and grades without invented Steam prices",()=>Sync(ReliquaryCatalog)),
-            ("Absent optional storage field remains different from an observed empty array in diagnostics",()=>Sync(StorageFieldEvidence))
+            ("Absent optional storage field remains different from an observed empty array in diagnostics",()=>Sync(StorageFieldEvidence)),
+            ("Explicit game definition eligibility and lock state remain separate while blank stays unknown",()=>Sync(TradeAttributes))
         };
         int pass=0,fail=0;foreach(var(name,test)in tests)try{await test();pass++;Console.WriteLine("PASS "+name);}catch(Exception e){fail++;Console.WriteLine("FAIL "+name+": "+e);}return(pass,fail);
     }
@@ -82,7 +83,7 @@ public static class TbhSaveTests
         var player=new{itemSaveDatas=new[]{new{UniqueId=1,ItemKey=790001},new{UniqueId=2,ItemKey=799061}},stashSaveDatas=new[]{new{Index=0,ItemUniqueId=1,Quantity=1},new{Index=1,ItemUniqueId=2,Quantity=1}},inventorySaveDatas=Array.Empty<object>()};
         var data=JsonSerializer.SerializeToUtf8Bytes(new{PlayerSaveData=new{value=JsonSerializer.Serialize(player)}});var snapshot=TbhSaveReader.ParsePlain(data,DateTimeOffset.UtcNow);
         Check(snapshot.UnknownKeys==0&&snapshot.Items.All(x=>x.CatalogKnown&&x.Kind==TbhItemKind.Other&&x.Grade.Length>0&&x.MarketHash is null)&&snapshot.Items[0].Name=="Relentless Unfinished Reliquary");
-        using var vm=new SteamWorkspaceViewModel();vm.ApplyTbhSnapshot(snapshot);Check(vm.TbhSaveRows.All(x=>x.ReadState==TbhValueReadState.MarketMappingMissing&&x.PricedTotal is null));
+        using var vm=new SteamWorkspaceViewModel();vm.ApplyTbhSnapshot(snapshot);Check(vm.TbhSaveRows.All(x=>x.ReadState==TbhValueReadState.NonMarketableItem&&x.PricedTotal is null));
     }
 
     private static void StorageFieldEvidence()
@@ -93,6 +94,13 @@ public static class TbhSaveTests
             var log=new ReadLog();using var trace=DiagnosticHub.Use(log);TbhSaveReader.ParsePlain(JsonSerializer.SerializeToUtf8Bytes(new{PlayerSaveData=new{value=JsonSerializer.Serialize(player)}}),DateTimeOffset.UtcNow);
             var row=log.Rows.Single(x=>x.Reason=="SaveMaterialStorage");Check(present?row.Count==0&&row.Outcome==DiagnosticOutcome.Succeeded:row.Count is null&&row.Outcome==DiagnosticOutcome.Unknown);
         }
+    }
+
+    private static void TradeAttributes()
+    {
+        var player=new{itemSaveDatas=new[]{new{UniqueId=1,ItemKey=110001,IsBlocked=true,ItemGetSourceType=999},new{UniqueId=2,ItemKey=601191,IsBlocked=false,ItemGetSourceType=999},new{UniqueId=3,ItemKey=790001,IsBlocked=false,ItemGetSourceType=999}},stashSaveDatas=new[]{new{Index=0,ItemUniqueId=1,Quantity=1},new{Index=1,ItemUniqueId=2,Quantity=1},new{Index=2,ItemUniqueId=3,Quantity=1}},inventorySaveDatas=Array.Empty<object>()};
+        var result=TbhSaveReader.ParsePlain(JsonSerializer.SerializeToUtf8Bytes(new{PlayerSaveData=new{value=JsonSerializer.Serialize(player)}}),DateTimeOffset.UtcNow);var material=result.Items[0];var blank=result.Items[1];var relic=result.Items[2];
+        Check(material.Locked&&material.CanExchangeMarketable==true&&material.TradeEvidence==TbhTradeEvidence.ItemDefinition);Check(!blank.Locked&&blank.CanExchangeMarketable is null&&blank.TradeEvidence==TbhTradeEvidence.Unknown);Check(relic.CanExchangeMarketable==false&&relic.TradeEvidence==TbhTradeEvidence.UserConfirmedCategory);
     }
     private static void Parse(){var s=Snapshot();Check(s.Items.Count==3&&s.Items[0].Location.Contains("3번 창고 · 3열 1행")&&s.Items[1].Locked&&s.Items[2].Equipped&&!s.Items[2].Locked&&s.UnknownKeys==0&&s.Items[0].MarketHash=="Minor Ruby"&&s.Items[0].Kind==TbhItemKind.Material);Check(!JsonSerializer.Serialize(s).Contains("private-account-marker"));}
     private static void Duplicate(){var s=TbhSaveReader.ParseEncrypted(Encrypt(Plain(true)),DateTimeOffset.UtcNow);Check(s.Items.Count==4&&s.Items.Count(x=>x.Ambiguous)==2&&s.Items.Where(x=>x.Ambiguous).All(x=>x.MarketHash is null));}
