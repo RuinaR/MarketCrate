@@ -33,7 +33,13 @@ public static class TbhPriceDisplayTests
             ("Aggregate arithmetic overflow is safe in all bound summary getters",()=>Sync(TotalOverflow)),
             ("Bounded refresh reaches unseen items before stale previously queried items",RefreshProgress),
             ("All type lock equipped mode and search partitions preserve shared quantity and totals",()=>Sync(FilterMatrix)),
-            ("Cancel double click and logout during late price failure cannot restore stale results",CancelPricePaths)
+            ("Cancel double click and logout during late price failure cannot restore stale results",CancelPricePaths),
+            ("Missing sell depth is unavailable rather than an observed empty market",MissingSellDepth),
+            ("Shared bid exhaustion is distinct from an actually empty buy orderbook",()=>Sync(SharedDepthReason)),
+            ("Orderbook field currency depth and consistency failures retain a safe read stage",()=>Sync(BookStages)),
+            ("Failed value read stage reaches UI and correlated sanitized diagnostics",ValueReadTrace),
+            ("Observed empty sell book remains different from an omitted sell field",()=>Sync(ObservedEmptySell)),
+            ("Out-of-range currency IDs cannot wrap into KRW",()=>Sync(CurrencyWrap))
         };int pass=0,fail=0;foreach(var(name,test)in tests)try{await test();pass++;Console.WriteLine("PASS "+name);}catch(Exception e){fail++;Console.WriteLine("FAIL "+name+": "+e);}return(pass,fail);
     }
 
@@ -90,6 +96,43 @@ public static class TbhPriceDisplayTests
             if(logout)f.Vm.Logout.Execute(null);else f.Vm.CancelOperation.Execute(null);release.SetResult();await pending.WaitAsync(TimeSpan.FromSeconds(5));
             Check(!f.Vm.Busy&&f.Vm.Connected!=logout&&f.Route.PriceCalls==1&&Quotes(f.Vm).Count==0&&f.Vm.TbhSaveRows.All(x=>!x.PriceText.Contains("조회 실패"))&&f.Server.Sends==0);
         }
+    }
+
+    private static async Task MissingSellDepth()
+    {
+        using var f=new Fixture();await f.Login();f.Server.OrderbookOverride="{\"data\":{\"success\":true,\"data\":{\"eCurrency\":16,\"rgCompactBuyOrders\":[10000,1],\"cSellOrders\":3,\"amtMinSellOrder\":15000}}}";
+        f.Vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,[new("1","Good","Good",1,false,"stash")],0));await f.Vm.RefreshTbhPrices.ExecuteAsync();Check(f.Vm.TbhSaveRows.Single().PricedTotal==100);f.Vm.TbhPriceMode=1;
+        Check(f.Vm.TbhSaveRows.Single().PricedTotal is null&&f.Vm.TbhSaveRows.Single().PriceText.Contains("필드")&&!f.Vm.TbhSaveRows.Single().PriceText.Contains("판매주문 없음"));
+    }
+    private static void SharedDepthReason()
+    {
+        using var vm=new SteamWorkspaceViewModel();Quotes(vm)["Shared"]=Book(100,1);vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,[new("1","A","Shared",1,false,"stash"),new("2","B","Shared",1,false,"stash")],0));
+        var exhausted=vm.TbhSaveRows.Single(x=>x.PricedTotal is null);Check(exhausted.PriceText.Contains("다른 항목")&&!exhausted.PriceText.Contains("현재 매수주문 잔량 없음"));
+    }
+
+    private static void CurrencyWrap()
+    {bool rejected=false;try{SteamContract.OrderBook("{\"data\":{\"success\":true,\"data\":{\"eCurrency\":4294967312,\"rgCompactBuyOrders\":[]}}}");}catch(SteamException error){rejected=error.ReadStage=="BookCurrency";}Check(rejected);}
+    private static void BookStages()
+    {
+        foreach(var (body,expected) in new[]{("{}","BookEnvelope"),("{\"data\":{\"success\":true,\"data\":{\"eCurrency\":16,\"rgCompactBuyOrders\":[10001,1]}}}","BookBuyAmount"),("{\"data\":{\"success\":true,\"data\":{\"eCurrency\":16,\"rgCompactBuyOrders\":[10000,0]}}}","BookBuyQuantity"),("{\"data\":{\"success\":true,\"data\":{\"eCurrency\":16,\"rgCompactBuyOrders\":[],\"rgCompactSellOrders\":[10001,1]}}}","BookSellAmount"),("{\"data\":{\"success\":true,\"data\":{\"eCurrency\":16,\"rgCompactBuyOrders\":[],\"rgCompactSellOrders\":[10000,-1]}}}","BookSellQuantity"),("{\"data\":{\"success\":true,\"data\":{\"eCurrency\":999}}}","BookCurrency"),("{\"data\":{\"success\":true,\"data\":{\"eCurrency\":16,\"rgCompactBuyOrders\":[10000]}}}","BookBuyDepth"),("{\"data\":{\"success\":true,\"data\":{\"eCurrency\":16,\"rgCompactBuyOrders\":[],\"cBuyOrders\":1}}}","BookBuyConsistency"),("{\"data\":{\"success\":true,\"data\":{\"eCurrency\":16,\"rgCompactBuyOrders\":[],\"rgCompactSellOrders\":[10000]}}}","BookSellDepth"),("{\"data\":{\"success\":true,\"data\":{\"eCurrency\":16,\"rgCompactBuyOrders\":[],\"rgCompactSellOrders\":[],\"amtMinSellOrder\":10000}}}","BookSellConsistency")})
+        {SteamException? failure=null;try{SteamContract.OrderBook(body);}catch(SteamException e){failure=e;}Check(failure?.ReadStage==expected&&DiagnosticHub.AllowedToken(expected)==expected);}
+    }
+    private static async Task ValueReadTrace()
+    {
+        var log=new Capture();using var trace=DiagnosticHub.Use(log);using var f=new Fixture();await f.Login();f.Route.BadPrice=true;
+        f.Vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,[new("private-id-marker","Bad","Bad",1,false,"private-location-marker")],0));await f.Vm.RefreshTbhPrices.ExecuteAsync();
+        var row=f.Vm.TbhSaveRows.Single();Check(row.ReadState==TbhValueReadState.RequestFailed&&row.ReadDetails.Contains("매수 잔량 정합성")&&f.Vm.TbhReadSummary.Contains("응답 검증 실패"));
+        Check(log.Rows.Any(x=>x.Context.OperationId==f.Vm.LastOperationId&&x.Context.OperationItemId is not null&&x.Reason=="BookBuyConsistency")&&log.Rows.Any(x=>x.EventId==(int)DiagnosticEvent.TbhReadContract&&x.Reason=="RequestFailed"&&x.Count==1));
+        var json=JsonSerializer.Serialize(log.Rows);Check(!json.Contains("private-id-marker")&&!json.Contains("private-location-marker")&&!json.Contains("synthetic-refresh-not-a-token"));
+        f.Route.BadPrice=false;f.Server.OrderbookOverride="{\"data\":{\"success\":true,\"data\":{\"eCurrency\":4294967312,\"rgCompactBuyOrders\":[]}}}";await f.Vm.RefreshTbhPrices.ExecuteAsync();
+        Check(log.Rows.Any(x=>x.Context.OperationId==f.Vm.LastOperationId&&x.EventId==(int)DiagnosticEvent.TbhSavePrices&&x.Error==DiagnosticError.Currency&&x.Reason=="BookCurrency"));
+        f.Server.OrderbookOverride="{\"data\":{\"success\":true,\"data\":{\"eCurrency\":999,\"rgCompactBuyOrders\":[]}}}";await f.Vm.RefreshTbhPrices.ExecuteAsync();
+        Check(log.Rows.Any(x=>x.Context.OperationId==f.Vm.LastOperationId&&x.EventId==(int)DiagnosticEvent.UiFailure&&x.Error==DiagnosticError.Currency&&x.Reason=="BookCurrency"));
+    }
+    private static void ObservedEmptySell()
+    {
+        var book=SteamContract.OrderBook("{\"data\":{\"success\":true,\"data\":{\"eCurrency\":16,\"rgCompactBuyOrders\":[],\"rgCompactSellOrders\":[],\"cSellOrders\":0}}}");Check(book.SellDepthObserved&&book.Asks.IsEmpty);
+        using var vm=new SteamWorkspaceViewModel();Quotes(vm)["Empty"]=new("KRW",DateTimeOffset.UtcNow,"synthetic",TimeSpan.Zero,[],book.Bids){Asks=book.Asks,SellDepthObserved=book.SellDepthObserved};vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,[new("a","Empty","Empty",1,false,"stash")],0));vm.TbhPriceMode=1;Check(vm.TbhSaveRows.Single().ReadState==TbhValueReadState.NoSellOrders);
     }
     private static void Filters()
     {

@@ -11,7 +11,7 @@ public sealed record SteamListing(string ListingId, AssetKey Asset, string HashN
 public sealed record SteamListingsPage(ImmutableArray<SteamListing> Listings, int TotalActive, ImmutableDictionary<string,ItemImageReference>? Images=null)
 {public ImmutableArray<SteamListingPresence> Presence{get;init;}=[];}
 public sealed record SteamHistoryPoint(DateTimeOffset At, decimal MedianMajor, int Volume);
-public sealed record SteamOrderBook(string Currency, ImmutableArray<BidLevel> Bids) {public ImmutableArray<BidLevel> Asks{get;init;}=[];}
+public sealed record SteamOrderBook(string Currency, ImmutableArray<BidLevel> Bids) {public ImmutableArray<BidLevel> Asks{get;init;}=[];public bool SellDepthObserved{get;init;}}
 public enum SteamApprovalChannel { None, Mobile, Email, Unspecified, Either }
 public sealed record SteamSellResponse(SaleState State,string? ListingId,SteamApprovalChannel Approval=SteamApprovalChannel.None);
 
@@ -103,31 +103,38 @@ public static class SteamContract
         }
         return new(null);
     }
-    public static SteamOrderBook OrderBook(string json) => Parse<SteamOrderBook>(json, root =>
+    public static SteamOrderBook OrderBook(string json)
     {
+        string stage="BookEnvelope";
+        try{return Parse<SteamOrderBook>(json, root =>
+        {
         var outer = root.GetProperty("data"); if (!Success(outer)) throw new SteamException(SteamFailure.ContractChanged);
-        var data = outer.GetProperty("data"); var currency = Currency((int)Integer(data.GetProperty("eCurrency")));
-        var flat = data.GetProperty("rgCompactBuyOrders").EnumerateArray().ToArray();
+        var data = outer.GetProperty("data"); stage="BookCurrency";var currency = Currency(checked((int)Integer(data.GetProperty("eCurrency"))));
+        stage="BookBuyDepth";var flat = data.GetProperty("rgCompactBuyOrders").EnumerateArray().ToArray();
         if (flat.Length % 2 != 0 || flat.Length > 20000) throw new SteamException(SteamFailure.ContractChanged);
         var bids = ImmutableArray.CreateBuilder<BidLevel>(); long previous = long.MaxValue;
         for (var i = 0; i < flat.Length; i += 2)
         {
-            var price = FromWire(Integer(flat[i]), currency); var count = checked((int)Integer(flat[i + 1]));
-            if (price <= 0 || count <= 0 || price >= previous) throw new SteamException(SteamFailure.ContractChanged);
+            stage="BookBuyAmount";var price = FromWire(Integer(flat[i]), currency);if(price<=0)throw new SteamException(SteamFailure.ContractChanged);
+            stage="BookBuyQuantity";var count = checked((int)Integer(flat[i + 1]));if(count<=0)throw new SteamException(SteamFailure.ContractChanged);
+            stage="BookBuyConsistency";if(price>=previous)throw new SteamException(SteamFailure.ContractChanged);
             previous = price; bids.Add(new(price, count));
         }
-        if(data.TryGetProperty("amtMaxBuyOrder",out var maxBuy)&&maxBuy.ValueKind!=JsonValueKind.Null&&FromWire(Integer(maxBuy),currency)!=(bids.Count==0?0:bids[0].BuyerPays))throw new SteamException(SteamFailure.ContractChanged);
+        stage="BookBuyConsistency";if(data.TryGetProperty("amtMaxBuyOrder",out var maxBuy)&&maxBuy.ValueKind!=JsonValueKind.Null&&FromWire(Integer(maxBuy),currency)!=(bids.Count==0?0:bids[0].BuyerPays))throw new SteamException(SteamFailure.ContractChanged);
         if(data.TryGetProperty("cBuyOrders",out var buyCount)&&(Integer(buyCount)<0||(Integer(buyCount)==0)!=(bids.Count==0)))throw new SteamException(SteamFailure.ContractChanged);
-        var asks=ImmutableArray.CreateBuilder<BidLevel>();
+        stage="BookSellDepth";var asks=ImmutableArray.CreateBuilder<BidLevel>();
         if(data.TryGetProperty("rgCompactSellOrders",out var rawAsks))
         {
             var sell=rawAsks.EnumerateArray().ToArray();if(sell.Length%2!=0||sell.Length>20000)throw new SteamException(SteamFailure.ContractChanged);
-            long last=0;for(int i=0;i<sell.Length;i+=2){var amount=FromWire(Integer(sell[i]),currency);var quantity=checked((int)Integer(sell[i+1]));if(amount<=last||quantity<=0)throw new SteamException(SteamFailure.ContractChanged);last=amount;asks.Add(new(amount,quantity));}
-            if(data.TryGetProperty("amtMinSellOrder",out var best)&&best.ValueKind!=JsonValueKind.Null&&FromWire(Integer(best),currency)!=(asks.Count==0?0:asks[0].BuyerPays))throw new SteamException(SteamFailure.ContractChanged);
+            long last=0;for(int i=0;i<sell.Length;i+=2){stage="BookSellAmount";var amount=FromWire(Integer(sell[i]),currency);if(amount<=0)throw new SteamException(SteamFailure.ContractChanged);stage="BookSellQuantity";var quantity=checked((int)Integer(sell[i+1]));if(quantity<=0)throw new SteamException(SteamFailure.ContractChanged);stage="BookSellConsistency";if(amount<=last)throw new SteamException(SteamFailure.ContractChanged);last=amount;asks.Add(new(amount,quantity));}
+            stage="BookSellConsistency";if(data.TryGetProperty("amtMinSellOrder",out var best)&&best.ValueKind!=JsonValueKind.Null&&FromWire(Integer(best),currency)!=(asks.Count==0?0:asks[0].BuyerPays))throw new SteamException(SteamFailure.ContractChanged);
         }
         if(data.TryGetProperty("cSellOrders",out var sellCount)&&data.TryGetProperty("rgCompactSellOrders",out _)&&(Integer(sellCount)<0||(Integer(sellCount)==0)!=(asks.Count==0)))throw new SteamException(SteamFailure.ContractChanged);
-        return new(currency, bids.ToImmutable()){Asks=asks.ToImmutable()};
-    });
+        DiagnosticHub.Emit(DiagnosticEvent.ReadContract,DiagnosticArea.Data,reason:data.TryGetProperty("rgCompactSellOrders",out _)?"SellDepthObserved":"SellDepthMissing",endpoint:"Orderbook",count:asks.Count);
+        return new(currency, bids.ToImmutable()){Asks=asks.ToImmutable(),SellDepthObserved=data.TryGetProperty("rgCompactSellOrders",out _)};
+        });}
+        catch(SteamException error){error.ReadStage=stage;if(stage=="BookCurrency")error.Diagnostic=DiagnosticError.Currency;DiagnosticHub.Emit(DiagnosticEvent.ReadContract,DiagnosticArea.Data,DiagnosticOutcome.Failed,LogLevel.Warning,SteamDiagnostics.Classify(error),endpoint:"Orderbook",reason:stage);throw;}
+    }
     public static ImmutableArray<SteamHistoryPoint> History(string json) => Parse(json, root =>
     {
         if (!Success(root)) throw new SteamException(SteamFailure.Restricted);

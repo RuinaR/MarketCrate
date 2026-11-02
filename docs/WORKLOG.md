@@ -1,3 +1,43 @@
+## 0.23.2 최종 진단 전달 회귀
+
+통화 오류가 상위UiFailure에서 일반Validation으로 덮이던 분류를 SteamDiagnostics.Classify(SteamException) 공통 경로로 수정했다. 품목 안에서 처리된 실패(TbhSavePrices)와 전체 작업 중단(UiFailure)은 서로 다른 이벤트다. 중간 추가 검사(value-read-release-regression.txt,487/488)는 이 두 경우를 같은UiFailure로 기대해 실패했고, 시나리오를 나눠 원인 보존을 각각 확인했다.
+
+최종 runtime/value-read-ship-regression.txt: 기능488/488·비표시WPF92/92·배포23/23·의존성6/6 PASS, 경고0/오류0. 안전 정리8/0/1NOT VERIFIED 유지. 위 complete-regression은 중간 근거이며 출하 소스 마감 근거는 ship-regression이다. 기존6503개 사전 행은 그대로이고 공개 유물함382종만 추가됐음을 정적 대조했다. 실계정/실제 창/거래는 실행하지 않았다.
+
+## 0.23.2 값 읽기 검증 마감
+
+| 검증 | 결과 |
+|---|---|
+| 판매호가 필드 누락/명시적 빈 배열/상반된 카운터 | PASS, 누락을 빈 시장으로 바꾸지 않음 |
+| 동일 상품 공유 매수 잔량 소진/실제 빈 매수주문 | PASS, 원인 상태/문구/요약 구분 |
+| 통화 overflow/잘못된 KRW wire/수량/순서/응답 envelope | PASS, 실패한 필드 단계 보존 |
+| 잘못된 잠금 타입·owned/player/material 구조 | PASS, 정상 기본값으로 바꾸지 않고 실패 단계 기록 |
+| 선택 저장 필드 부재와 실제0길이 배열 | PASS, Unknown/null과 Succeeded/0 건수 구분 |
+| 미등록 키/사전 내 상품 연결 없음/정상 매칭 | PASS, 별도 상태·카운터·화면 툴팁 |
+| 공개 Reliquary382종 이름·등급 보완 | PASS, Steam 가격/이미지 연결 임의 생성0 |
+| 지정된 실제 세이브 읽기 전용 재검사 | 관측된 키 모두 사전 식별. 인증/HTTP/거래 성공 증거 아님 |
+| 진단 OperationId/내부 item ID/실패 원인·개인 표식 누출 | PASS, 원문/인증정보 저장0 |
+| 자체 WPF 렌더·행 툴팁 바인딩/상세 상태 | PASS, value-read-missing-versus-empty.png 직접 검토 |
+| 실계정 조회·거래/물리 GUI·Popup·모니터 DPI | NOT VERIFIED, 이번 실행 없음 |
+
+runtime/value-read-complete-regression.txt: **기능488/488·비표시WPF92/92·배포23/23·의존성6/6 PASS**. 빌드 경고0/오류0. 안전 정리8PASS/0FAIL/1NOT VERIFIED(junction 생성 불가). 최종 전체 검사는 선택 필드 shape 진단 보완 후 실행했다. 이전 전체 회귀의487/487 결과는 중간 증거이며 마감 수치는488이다. 원본/운영 Auth/SQLite/저널/진단/이전 ZIP 삭제0.
+
+## 0.23.2 값 읽기 근본 원인 추적 (2026-11-02)
+
+원본 복사/복호화→저장 스키마→공개 아이템 사전→정확한 Steam 상품 연결→HTTP→주문장 필드/통화/wire/수량/정합성→공유 잔량 배분→화면을 대조했다. ‘값 없음’으로 합치던 다음 원인을 실제 코드에서 분리·수정했다.
+
+- **공개 사전 누락**: 기존6503행에 RELIQUARIES가 빠져 있었다. 기존 공개 relicData.js의 key/영문명/grade382종을 대조해6885행으로 보완했다. 지정된 세이브의 읽기 전용 메모리 분석에서 해당 종류의 미등록 키를 관측했다. 사용자 소유 목록/수량/ID/세이브/로그를 Git에 넣지 않았으며 전체 공개382종 사실만 추가했다. 사전 이름 확인과 Steam 가격 매핑 확인은 다르다. 새 행의 MarketHash/ImageHash는 검증 근거가 없어null을 유지한다.
+- **필드 부재와 빈 주문 혼동**: rgCompactSellOrders 누락이 빈 Asks로 바뀌어 ‘판매주문 없음’이 표시됐다. SellDepthObserved/HasSellDepth를 보존해 미수신과 명시적 빈 배열을 구분한다. 정상 매수 자료는 유지하고 누락된 판매 자료를 생성하지 않는다.
+- **공유 잔량 소진과 서버 주문 부재 혼동**: 같은 상품의 앞 행에 배분한 뒤 남은 수량이0인 경우 서버에 매수주문이 없다고 안내했다. SharedDepthExhausted와 NoBuyOrders를 나눠 다른 항목에 이미 배분됐음을 표시한다.
+- **자료형의 조용한 기본값**: IsBlocked/장착 잠금 필드의 잘못된 타입을false로 해석하던 경로를 수정했다. 확인된 boolean만 처리하며 누락된 선택 필드와 잘못된 타입은 구분한다. 후자는 스키마 실패이며 이전 목록 보존 정책을 유지한다.
+- **통화 narrowing overflow**: eCurrency의long→int 변환이 unchecked여서 큰 잘못된 ID가16(KRW)으로 wrap될 수 있었다. checked 변환과 Currency 분류로 차단했다. 실제 서버가 그런 값을 보냈다는 증거는 아니며 합성 재현한 파서 결함이다.
+
+진단은 새TbhReadContract4302 이벤트와 기존OperationId/CorrelationId/내부OperationItemId를 사용한다. SaveDecrypt/SaveCompression/SavePlayerData/SaveOwnedItems/SaveStorageSlots/SaveEquipment/SaveMaterialStorage/SaveCatalogMapping, BookEnvelope/Currency/Buy·SellDepth/Amount/Quantity/Consistency를 구분한다. 응답 원문·가격 검색어·소유 키/위치·개인ID·인증정보는 로그에 넣지 않고 허용된 단계/건수만 기록한다.
+
+화면의 가격 행 툴팁에는 상품 연결·읽기 단계/원인을, ‘자료·조회 상세’에는 원인별 행 수를 표시한다. unknown key/사전 미매핑/위치 불명/미조회/요청 실패/판매호가 미수신/정상 빈 주문/공유 잔량 부족/계산 범위 초과를 구분한다. 상세 카운터는 사용자가 선택한 필터에 대한 것이며 전체 계정이나 전체 시장의 판정이 아니다.
+
+재현 전 실패 증거: runtime/value-read-before.txt(가격20PASS/2FAIL), value-save-before.txt(10PASS/1FAIL), value-narrow-before.txt(25PASS/1FAIL). 실제 세이브를 새로운 서버 성공 증거로 사용하지 않으며 Codex는 인증/장터 계정 조회/거래/실제 창/타 프로세스 조작을 하지 않았다. 원본·Auth·설정·SQLite·저널·진단·이전 ZIP 보존.
+
 ## 0.23.1 portable 마감 (2026-11-02)
 
 소스 **4c46af354ef6a673c35f19e9d2dbf023523be8bf**. `artifacts/releases/MarketCrate-0.23.1-input-audit-4c46af3-win-x64.zip` **68,966,403바이트/421파일**. SHA256 **20CDFAC36A20016E9390D042E7A740865A0117822535ABE83D1C71452C199650**. ZIP 모든 항목이 원본 출력과 해시 일치. x64 self-contained CLR/WPF/SQLite·라이선스·실제 전용 PE/BAML 및 Auth/DB/ES3/로그/테스트/개발 파일 제외 정적 검사 PASS. runtime/publish-0.23.1.txt. 앱/설치/실계정은 실행하지 않았다.

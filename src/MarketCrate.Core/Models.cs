@@ -11,7 +11,7 @@ public record BidLevel(long BuyerPays, int Quantity);
 public record TradeSample(long BuyerPays, int Volume);
 public record PriceSnapshot(string Currency, DateTimeOffset CapturedAt, string Source,
     TimeSpan Window, ImmutableArray<TradeSample> Trades, ImmutableArray<BidLevel> Bids)
-{ public PriceEvidence? Estimate{get;init;} public ImmutableArray<BidLevel> Asks{get;init;}=[]; public bool OwnSellExcluded{get;init;} }
+{ public PriceEvidence? Estimate{get;init;} public ImmutableArray<BidLevel> Asks{get;init;}=[]; public bool OwnSellExcluded{get;init;} public bool SellDepthObserved{get;init;} public bool HasSellDepth=>SellDepthObserved||!Asks.IsEmpty; }
 public record FeePolicy(int SteamBasisPoints = 500, int GameBasisPoints = 1000, long MinimumSteam = 1, long MinimumGame = 1);
 public record FeeQuote(long BuyerPays, long SellerReceives, long SteamFee, long GameFee)
 {

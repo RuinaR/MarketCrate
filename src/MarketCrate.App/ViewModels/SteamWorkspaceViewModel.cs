@@ -425,7 +425,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     {
         LastFailedOperationId=DiagnosticHub.Context?.OperationId??LastOperationId;Raise(nameof(DiagnosticOperationId));
         if(authenticating||error is SteamException{Code:SteamFailure.Authentication or SteamFailure.Expired})PauseSavedLogin();
-        DiagnosticHub.Emit(DiagnosticEvent.UiFailure,DiagnosticArea.UI,DiagnosticOutcome.Failed,LogLevel.Error,error is SteamException se?se.Code switch{SteamFailure.Authentication or SteamFailure.Expired=>DiagnosticError.Authentication,SteamFailure.RateLimited=>DiagnosticError.RateLimited,SteamFailure.Transport=>DiagnosticError.Transport,SteamFailure.ContractChanged=>DiagnosticError.Schema,_=>DiagnosticError.Validation}:DiagnosticError.Validation,endpoint:(error as SteamException)?.Endpoint,reason:(error as SteamException)?.Endpoint,exception:error);
+        DiagnosticHub.Emit(DiagnosticEvent.UiFailure,DiagnosticArea.UI,DiagnosticOutcome.Failed,LogLevel.Error,error is SteamException se?SteamDiagnostics.Classify(se):DiagnosticError.Validation,endpoint:(error as SteamException)?.Endpoint,reason:(error as SteamException)?.ReadStage??(error as SteamException)?.Endpoint,exception:error);
         if(authenticating&&workspace?.Authentication.LastFailureStage==SteamAuthStage.AccountValidation)
         {QrMatrix=null;LoginState=SteamLoginState.ContractFailure;}
         else if(error is SteamException {Code:SteamFailure.Authentication or SteamFailure.Expired})

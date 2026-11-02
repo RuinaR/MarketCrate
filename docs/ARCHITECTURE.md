@@ -1,3 +1,7 @@
+## 0.23.2 읽기 증거 보존
+
+SteamOrderBook→PriceSnapshot은 SellDepthObserved를 전달한다. HasSellDepth는 명시적 빈 배열 관측 또는 실제 비어 있지 않은 depth를 나타내며 필드 누락을 정상 빈 시장으로 바꾸지 않는다. TbhValueReadState는 화면용 읽기 사유이며 판매 상태/SQLite 저널 enum과 별개다. TbhOwnedItem.CatalogKnown은 공개 사전 매칭 여부이며 Steam 상품/보유 자산 검증이 아니다. 저장 파싱은 단계별 안전 이벤트만 남기고 실패를 합성 데이터로 대체하지 않는다. DB 마이그레이션 없음.
+
 ## 0.23.1 입력 경계
 
 Core.UserNumericInput은 화면 원문을 수정하지 않고 수량 ASCII 정수/길이, 가격 허용 문자를 검사한다. NumericStepper와 SteamAssetRow가 같은 수량 검증을 사용하고, SteamReviewRow.ParsePrice를 사용하는 판매·재가격은 같은 가격 검증을 거친다. 숫자 파서의 trailing NUL 허용에 의존하지 않는다. 게임 세이브 표시 계산은 행별 overflow/위치 미확인을 격리하고 전체 합계 getter에서도 범위를 검사한다. Steam 거래 스냅샷/저널 계약과는 별도이며 DB 마이그레이션은 없다.

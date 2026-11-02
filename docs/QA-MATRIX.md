@@ -1,3 +1,27 @@
+## 0.23.2 최종 진단 전달 회귀
+
+통화 오류가 상위UiFailure에서 일반Validation으로 덮이던 분류를 SteamDiagnostics.Classify(SteamException) 공통 경로로 수정했다. 품목 안에서 처리된 실패(TbhSavePrices)와 전체 작업 중단(UiFailure)은 서로 다른 이벤트다. 중간 추가 검사(value-read-release-regression.txt,487/488)는 이 두 경우를 같은UiFailure로 기대해 실패했고, 시나리오를 나눠 원인 보존을 각각 확인했다.
+
+최종 runtime/value-read-ship-regression.txt: 기능488/488·비표시WPF92/92·배포23/23·의존성6/6 PASS, 경고0/오류0. 안전 정리8/0/1NOT VERIFIED 유지. 위 complete-regression은 중간 근거이며 출하 소스 마감 근거는 ship-regression이다. 기존6503개 사전 행은 그대로이고 공개 유물함382종만 추가됐음을 정적 대조했다. 실계정/실제 창/거래는 실행하지 않았다.
+
+## 0.23.2 값 읽기 검증 마감
+
+| 검증 | 결과 |
+|---|---|
+| 판매호가 필드 누락/명시적 빈 배열/상반된 카운터 | PASS, 누락을 빈 시장으로 바꾸지 않음 |
+| 동일 상품 공유 매수 잔량 소진/실제 빈 매수주문 | PASS, 원인 상태/문구/요약 구분 |
+| 통화 overflow/잘못된 KRW wire/수량/순서/응답 envelope | PASS, 실패한 필드 단계 보존 |
+| 잘못된 잠금 타입·owned/player/material 구조 | PASS, 정상 기본값으로 바꾸지 않고 실패 단계 기록 |
+| 선택 저장 필드 부재와 실제0길이 배열 | PASS, Unknown/null과 Succeeded/0 건수 구분 |
+| 미등록 키/사전 내 상품 연결 없음/정상 매칭 | PASS, 별도 상태·카운터·화면 툴팁 |
+| 공개 Reliquary382종 이름·등급 보완 | PASS, Steam 가격/이미지 연결 임의 생성0 |
+| 지정된 실제 세이브 읽기 전용 재검사 | 관측된 키 모두 사전 식별. 인증/HTTP/거래 성공 증거 아님 |
+| 진단 OperationId/내부 item ID/실패 원인·개인 표식 누출 | PASS, 원문/인증정보 저장0 |
+| 자체 WPF 렌더·행 툴팁 바인딩/상세 상태 | PASS, value-read-missing-versus-empty.png 직접 검토 |
+| 실계정 조회·거래/물리 GUI·Popup·모니터 DPI | NOT VERIFIED, 이번 실행 없음 |
+
+runtime/value-read-complete-regression.txt: **기능488/488·비표시WPF92/92·배포23/23·의존성6/6 PASS**. 빌드 경고0/오류0. 안전 정리8PASS/0FAIL/1NOT VERIFIED(junction 생성 불가). 최종 전체 검사는 선택 필드 shape 진단 보완 후 실행했다. 이전 전체 회귀의487/487 결과는 중간 증거이며 마감 수치는488이다. 원본/운영 Auth/SQLite/저널/진단/이전 ZIP 삭제0.
+
 ## 0.23.1 회귀 마감
 
 runtime/audit24-final-regression.txt: 기능 **477/477**, 비표시 WPF **91/91**, 배포 **23/23**, 의존성 검사 **6/6 PASS**, 빌드 경고0/오류0. 안전 정리8PASS/0FAIL/1NOT VERIFIED(junction 생성 불가) 유지. 전체 회귀 첫 시도에서 신규 NUL 입력 검사 실패를 발견했고, 공통 파서/Stepper 수정 후 재실행해 모두 통과했다. RTB 화면과 입력 복구를 직접 확인했다. 실제 서버/실계정/실제 창·물리 입력·모니터 DPI/설치·장시간 안정성은 이번 버전 NOT VERIFIED. 기존 사용자 자료/롤백 삭제0. 75개 요구사항 판정 수는 변경하지 않는다.

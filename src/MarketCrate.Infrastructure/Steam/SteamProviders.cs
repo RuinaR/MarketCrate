@@ -69,7 +69,7 @@ public sealed class SteamMarketDataProvider(SteamHttp http, SteamQrAuthenticatio
         {
             var book = SteamContract.OrderBook(body);
             // History is median buckets, NOT individual trades: keep Trades empty.
-            var snapshot = new PriceSnapshot(book.Currency, DateTimeOffset.UtcNow, "Steam unofficial orderbook; historical VWAP unavailable", TimeSpan.Zero, [], book.Bids){Asks=book.Asks};
+            var snapshot = new PriceSnapshot(book.Currency, DateTimeOffset.UtcNow, "Steam unofficial orderbook; historical VWAP unavailable", TimeSpan.Zero, [], book.Bids){Asks=book.Asks,SellDepthObserved=book.SellDepthObserved};
             if (cache.Count >= 256) cache.Clear();
             cache[(appId, marketHashName)] = snapshot;
             return snapshot;

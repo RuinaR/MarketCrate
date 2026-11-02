@@ -1,3 +1,11 @@
+## 0.23.2 값 읽기 진단
+
+TbhReadContract(EventId4302)은 저장본의 복호화/압축/PlayerData/OwnedItems/StorageSlots/Equipment/MaterialStorage/CatalogMapping 단계별 실패와 CatalogUnknown/Unmapped/Matched 건수를 기록한다. 주문장 실패는 기존ReadContract4202에 BookEnvelope/BookCurrency/BookBuy·SellDepth/Amount/Quantity/Consistency를 남긴다. SteamException.ReadStage가 VM의 원인 안내까지 전달되며 통화 ID overflow도 KRW로 변환하지 않고 Currency 오류다.
+
+같은OperationId의 HTTP/ResponseParsed/ReadContract/UiFailure 및 TbhReadContract를 시간순으로 연결한다. 품목별 요청은 내부OperationItemId/CorrelationId가 있고, 화면 집계 이벤트는 공개 상태명+현재 필터 행 수만 남긴다. SharedDepthExhausted는 서버에 주문이 없다는 뜻이 아니고, SellDepthMissing은 명시적 빈 판매주문과 다르다. CatalogUnknown은 아이템 사전 누락, CatalogUnmapped는 사전은 있으나 정확한 상품 연결이 없는 것이다.
+
+원본 HTML/JSON/ES3/저장 키/소유 수량·위치/Steam 상품 검색어/토큰/쿠키/QR은 기록하지 않는다. 화면 툴팁의 로컬 자료와 내보내기 로그의 화이트리스트를 구별한다. 합성 검사에서 원인 단계·연결ID·상태·개인 표식 누출 부재를 함께 확인한다. 사용자 세이브는 메모리 복사/읽기 외 수정·평문 저장·업로드하지 않는다.
+
 ## 0.23.1 입력 감사와 오류 재현
 
 수량/가격 원문 사전 검증을 추가했다. 기존 UiSelection/InputRejected·PriceEdited/InputRejected 이벤트와 OperationId 경로를 유지하며 잘못된 숫자 원문/NUL 문자열을 로그에 넣지 않는다. 게임 금액 overflow는 화면의 행/합계 오류로 분리하며 getter에서 반복 로그를 생성하지 않는다. 기존 UiCommand/HTTP/저널 실패와 취소 상관관계 검사를 유지한다. 합성 재현 증거는 USER-JOURNEY-QA의 AJ01–05 참조. 사용자 운영 로그/DB/세이브는 이번 검증 입력으로 사용하지 않았다.

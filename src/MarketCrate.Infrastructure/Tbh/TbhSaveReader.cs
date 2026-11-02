@@ -51,6 +51,13 @@ public static class TbhSaveReader
     }
     public static TbhSaveSnapshot ParseEncrypted(byte[] encrypted,DateTimeOffset written)
     {
+        string stage="SaveDecrypt";
+        try{return ParseEncryptedCore(encrypted,written,value=>stage=value);}
+        catch(Exception error)when(stage!="SavePlayerData"&&(error is CryptographicException or InvalidDataException or IOException))
+        {DiagnosticHub.Emit(DiagnosticEvent.TbhReadContract,DiagnosticArea.Data,DiagnosticOutcome.Failed,LogLevel.Warning,error is CryptographicException?DiagnosticError.Parsing:DiagnosticError.Schema,reason:stage,exception:error);throw;}
+    }
+    private static TbhSaveSnapshot ParseEncryptedCore(byte[] encrypted,DateTimeOffset written,Action<string> stage)
+    {
         if(encrypted.Length<32||encrypted.Length>MaximumBytes||(encrypted.Length-16)%16!=0)throw new InvalidDataException("SaveFormat");
         // Public application format password, not a user's credential; never read game binaries for it.
         var key=Rfc2898DeriveBytes.Pbkdf2(Encoding.UTF8.GetBytes("emuMqG3bLYJ938ZDCfieWJ"),encrypted.AsSpan(0,16),100,HashAlgorithmName.SHA1,16);
@@ -61,22 +68,30 @@ public static class TbhSaveReader
             if(plain.Length<2)throw new InvalidDataException("SaveFormat");
             if(plain[0]==31&&plain[1]==139)
             {
-                using var input=new MemoryStream(plain);using var gzip=new GZipStream(input,CompressionMode.Decompress);using var output=new MemoryStream();var block=new byte[8192];
+                stage("SaveCompression");using var input=new MemoryStream(plain);using var gzip=new GZipStream(input,CompressionMode.Decompress);using var output=new MemoryStream();var block=new byte[8192];
                 try{int n;while((n=gzip.Read(block))>0){if(output.Length+n>MaximumBytes)throw new InvalidDataException("SaveExpansion");output.Write(block,0,n);}CryptographicOperations.ZeroMemory(plain);plain=output.ToArray();}
                 finally{CryptographicOperations.ZeroMemory(block);if(output.TryGetBuffer(out var b))CryptographicOperations.ZeroMemory(b.AsSpan());}
             }
-            return ParsePlain(plain,written);
+            stage("SavePlayerData");return ParsePlain(plain,written);
         }
         finally{CryptographicOperations.ZeroMemory(key);if(plain is not null)CryptographicOperations.ZeroMemory(plain);}
     }
     public static TbhSaveSnapshot ParsePlain(ReadOnlyMemory<byte> plain,DateTimeOffset written)
     {
+        string stage="SavePlayerData";
+        try{return ParsePlainCore(plain,written,value=>stage=value);}
+        catch(Exception error)when(error is JsonException or InvalidOperationException or KeyNotFoundException or InvalidDataException or ArgumentException or OverflowException)
+        {DiagnosticHub.Emit(DiagnosticEvent.TbhReadContract,DiagnosticArea.Data,DiagnosticOutcome.Failed,LogLevel.Warning,error is JsonException?DiagnosticError.Parsing:DiagnosticError.Schema,reason:stage,exception:error);throw;}
+    }
+    private static TbhSaveSnapshot ParsePlainCore(ReadOnlyMemory<byte> plain,DateTimeOffset written,Action<string> stage)
+    {
         if(plain.Length>MaximumBytes)throw new InvalidDataException("SaveSize");
         using var root=JsonDocument.Parse(plain,new(){MaxDepth=64});
         // Intentionally ignore AccountSaveData and every unrelated root field.
         using var player=JsonDocument.Parse(root.RootElement.GetProperty("PlayerSaveData").GetProperty("value").GetString()!,new(){MaxDepth=64});
-        var ps=player.RootElement;var items=ReadArray(ps,"itemSaveDatas",true).ToDictionary(x=>Id(x.GetProperty("UniqueId")),StringComparer.Ordinal);
-        var refs=new List<(string Id,JsonElement Slot,string Location,bool Blocked)>();
+        stage("SaveOwnedItems");var ps=player.RootElement;var items=ReadArray(ps,"itemSaveDatas",true).ToDictionary(x=>Id(x.GetProperty("UniqueId")),StringComparer.Ordinal);
+        DiagnosticHub.Emit(DiagnosticEvent.TbhReadContract,DiagnosticArea.Data,reason:"SaveOwnedItems",count:items.Count);
+        stage("SaveStorageSlots");var refs=new List<(string Id,JsonElement Slot,string Location,bool Blocked)>();
         foreach(var (field,label) in new[]{("stashSaveDatas","창고"),("inventorySaveDatas","가방"),("remakeTradingStashSaveDatas","거래 선적"),("tradingStashSaveDatas","거래 선적")})
         {
             if(field=="tradingStashSaveDatas"&&ps.TryGetProperty("remakeTradingStashSaveDatas",out _))continue;
@@ -87,14 +102,19 @@ public static class TbhSaveReader
                 refs.Add((id,slot,where,Flag(slot,"IsBlocked")));
             }
         }
-        foreach(var hero in ReadArray(ps,"heroSaveDatas",false))
+        DiagnosticHub.Emit(DiagnosticEvent.TbhReadContract,DiagnosticArea.Data,reason:"SaveStorageSlots",count:refs.Count);
+        stage("SaveEquipment");var heroes=ReadArray(ps,"heroSaveDatas",false);
+        DiagnosticHub.Emit(DiagnosticEvent.TbhReadContract,DiagnosticArea.Data,ps.TryGetProperty("heroSaveDatas",out _)?DiagnosticOutcome.Succeeded:DiagnosticOutcome.Unknown,reason:"SaveEquipment",count:ps.TryGetProperty("heroSaveDatas",out _)?heroes.Length:null);
+        foreach(var hero in heroes)
         {
             var equip=ReadArray(hero,"equippedItemIds",false);var blocked=ReadArray(hero,"equippedItemBlocked",false);
-            for(int i=0;i<equip.Length;i++){var id=Id(equip[i]);if(id!="0")refs.Add((id,default,$"영웅 {Id(hero.GetProperty("heroKey"))} · 장비 슬롯 {i+1}",i<blocked.Length&&blocked[i].ValueKind==JsonValueKind.True));}
+            for(int i=0;i<equip.Length;i++){var id=Id(equip[i]);if(id!="0")refs.Add((id,default,$"영웅 {Id(hero.GetProperty("heroKey"))} · 장비 슬롯 {i+1}",i<blocked.Length&&BoolFlag(blocked[i])));}
         }
         // New dedicated material storage has no grid Index. Its item key is an
         // additional cross-check, not a replacement for the owned item reference.
-        foreach(var slot in ReadArray(ps,"materialStashSaveDatas",false))
+        stage("SaveMaterialStorage");var materials=ReadArray(ps,"materialStashSaveDatas",false);
+        DiagnosticHub.Emit(DiagnosticEvent.TbhReadContract,DiagnosticArea.Data,ps.TryGetProperty("materialStashSaveDatas",out _)?DiagnosticOutcome.Succeeded:DiagnosticOutcome.Unknown,reason:"SaveMaterialStorage",count:ps.TryGetProperty("materialStashSaveDatas",out _)?materials.Length:null);
+        foreach(var slot in materials)
         {
             var quantity=slot.GetProperty("Quantity").GetInt32();
             if(quantity<0||quantity>1000000000)throw new InvalidDataException("SaveQuantity");
@@ -105,6 +125,7 @@ public static class TbhSaveReader
             refs.Add((id,slot,"재료창고",Flag(slot,"IsBlocked")));
         }
         if(refs.Count>100000)throw new InvalidDataException("SaveRows");var duplicate=refs.GroupBy(x=>x.Id).Where(x=>x.Count()>1).Select(x=>x.Key).ToHashSet();var result=new List<TbhOwnedItem>();int unknown=0;
+        stage("SaveCatalogMapping");int unmapped=0;
         foreach(var row in refs)
         {
             if(!items.TryGetValue(row.Id,out var item))throw new InvalidDataException("MissingItemReference");
@@ -112,8 +133,12 @@ public static class TbhSaveReader
             Catalog.Value.TryGetValue(lookup,out var definition);if(definition is null)unknown++;
             var quantity=row.Slot.ValueKind==JsonValueKind.Object?row.Slot.GetProperty("Quantity").GetInt32():1;if(quantity is <1 or >1000000000)throw new InvalidDataException("SaveQuantity");
             var ambiguous=duplicate.Contains(row.Id)||transferred||row.Location.StartsWith("거래 선적",StringComparison.Ordinal);
-            result.Add(new(key,definition?.Name??"알 수 없는 아이템 "+key,ambiguous?null:definition?.MarketHash,quantity,row.Blocked||Flag(item,"IsBlocked"),row.Location,ambiguous,row.Location.StartsWith("영웅",StringComparison.Ordinal),Enum.TryParse<TbhItemKind>(definition?.Kind,out var kind)?kind:TbhItemKind.Unknown,definition?.Grade??"",definition?.ImageHash));
+            if(definition is not null&&!ambiguous&&definition.MarketHash is null)unmapped++;
+            result.Add(new(key,definition?.Name??"알 수 없는 아이템 "+key,ambiguous?null:definition?.MarketHash,quantity,row.Blocked||Flag(item,"IsBlocked"),row.Location,ambiguous,row.Location.StartsWith("영웅",StringComparison.Ordinal),Enum.TryParse<TbhItemKind>(definition?.Kind,out var kind)?kind:TbhItemKind.Unknown,definition?.Grade??"",definition?.ImageHash,definition is not null));
         }
+        DiagnosticHub.Emit(DiagnosticEvent.TbhReadContract,DiagnosticArea.Data,DiagnosticOutcome.Unknown,reason:"CatalogUnknown",count:unknown);
+        DiagnosticHub.Emit(DiagnosticEvent.TbhReadContract,DiagnosticArea.Data,DiagnosticOutcome.Unknown,reason:"CatalogUnmapped",count:unmapped);
+        DiagnosticHub.Emit(DiagnosticEvent.TbhReadContract,DiagnosticArea.Data,reason:"CatalogMatched",count:result.Count(x=>x.MarketHash is not null));
         return new(DateTimeOffset.UtcNow,written,result,unknown);
     }
     private static JsonElement[] ReadArray(JsonElement obj,string name,bool required)
@@ -122,7 +147,8 @@ public static class TbhSaveReader
         if(value.ValueKind==JsonValueKind.String){using var nested=JsonDocument.Parse(value.GetString()!,new(){MaxDepth=64});return nested.RootElement.EnumerateArray().Select(x=>x.Clone()).ToArray();}
         return value.EnumerateArray().Select(x=>x.Clone()).ToArray();
     }
-    private static bool Flag(JsonElement obj,string name)=>obj.TryGetProperty(name,out var flag)&&flag.ValueKind==JsonValueKind.True;
+    private static bool Flag(JsonElement obj,string name)=>obj.TryGetProperty(name,out var flag)&&BoolFlag(flag);
+    private static bool BoolFlag(JsonElement value)=>value.ValueKind switch{JsonValueKind.True=>true,JsonValueKind.False=>false,_=>throw new InvalidDataException("SaveFlagType")};
     private static string Id(JsonElement value)
     {var s=value.ValueKind==JsonValueKind.String?value.GetString()!:value.GetRawText();if(s.Length is <1 or >30||s.Any(x=>!char.IsAsciiDigit(x)))throw new InvalidDataException("SaveIdentifier");return s;}
 }

@@ -1,3 +1,9 @@
+## 0.23.2 공개 사실 대조 (2026-11-02 KST)
+
+기존에 내려받은 TBHIndex 공개 relicData.js(SHA25613672F5EE1AAE40991B59DCB709A0C748FF7CAA882258B81DB9C48D0EF8FC78A)의 RELIQUARIES382종 key/영문name/grade를 정규식으로 추출해 누락을 보완했다. JS 실행/구현 코드·이미지 복사/의존성 추가 없음. 사이트 코드는 라이선스 미확인이므로 최소 사실만 정규화했다. 새 공개 자료인 것처럼 다운로드 시점을 바꾸지 않는다. 이번 web 도구의 https://tbhindex.com/ko 접근은cache miss였다.
+
+https://github.com/lezards/giba-steam-market/blob/main/tbh-save.mjs 실제 gearMarketHash와 저장 데이터 매칭을 다시 확인했다. 공개 구현의 A suffix 고정값을 모든 게임 아이템에 복사하지 않았으며 기존 C 상품 관측/품목별 계약과 구분했다. 이번 새 소스 도입 없음(기존 MIT 고지 유지). Steam 공개 검색 https://steamcommunity.com/market/search?appid=3678970&l=english 에서는 Contaminated Reliquary 품목을 확인했지만 이를 모든 게임 내 Reliquary의 동일 상품 증거로 취급하지 않았다. 새 서버 계정/거래 조회 없음.
+
 ## 0.23.0 공개 Steam 이미지·주문장 근거 (2026-11-02 KST)
 
 - Steam 공개 `market/search/render/?appid=3678970&norender=1&count=100&start=0&query=Abyss%20Amulet&search_descriptions=0`: 인증/쿠키 없이 exact hash_name/asset_description.appid/market_hash_name/icon_url 확인. 노출된6개 상품을 소유 계정 자료로 취급하지 않았다. 코드는 exact match만 사용하며 검색 가격은 무시한다.

@@ -45,6 +45,7 @@ public sealed class SteamException(SteamFailure code, int? apiResult = null) : I
     DiagnosticError IDiagnosticFailure.Category=>SteamDiagnostics.Classify(this);
     public bool RequestNotSent {get;internal set;}
     public SteamFailure Code { get; } = code;
+    public string? ReadStage {get;internal set;}
     public int? ApiResult { get; } = apiResult;
     public string? Endpoint { get; internal set; }
     public DiagnosticError? Diagnostic { get; internal set; }

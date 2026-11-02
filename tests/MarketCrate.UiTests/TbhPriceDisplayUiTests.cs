@@ -34,6 +34,17 @@ internal static class TbhPriceDisplayUiTests
             Check(vm.TbhSaveRows.Single().Item.Kind==TbhItemKind.Material&&vm.TbhSaveRows.Single().PricedTotal==100,"error blocked independent filter");
             Check(Application.Current.Windows.Count==0,"top-level window occurred");
         });
+        test("판매호가 미수신과 검증된 빈 주문은 화면·행 툴팁·조회 요약에서 구별",()=>
+        {
+            using var vm=new SteamWorkspaceViewModel();var quotes=(Dictionary<string,PriceSnapshot>)typeof(SteamWorkspaceViewModel).GetField("tbhQuotes",System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.Instance)!.GetValue(vm)!;
+            quotes["Missing"]=new("KRW",DateTimeOffset.UtcNow,"synthetic",TimeSpan.Zero,[],[new(100,1)]);
+            quotes["Empty"]=new("KRW",DateTimeOffset.UtcNow,"synthetic",TimeSpan.Zero,[],[]){SellDepthObserved=true};
+            vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,[new("a","Missing","Missing",1,false,"stash"),new("b","Empty","Empty",1,false,"stash")],0));vm.TbhPriceMode=1;vm.WorkPage=6;
+            var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,780,1.25,"value-read-missing-versus-empty.png");
+            Check(vm.TbhSaveRows.Single(x=>x.Name=="Missing").ReadState==TbhValueReadState.SellDepthMissing&&vm.TbhSaveRows.Single(x=>x.Name=="Empty").ReadState==TbhValueReadState.NoSellOrders,"missing and empty conflated");
+            Check(Find<TextBlock>(view).Any(x=>x.DataContext is TbhSaveRow row&&row.ReadState==TbhValueReadState.SellDepthMissing&&x.ToolTip is string detail&&detail.Contains("필드 미수신")),"read evidence tooltip binding missing");
+            Check(vm.TbhReadSummary.Contains("판매호가 필드 미수신")&&vm.TbhReadSummary.Contains("조회한 판매주문 없음"),"read status summary lost reason");
+        });
         test("가시 썸네일의 공개 상품 메타데이터→Steam CDN 실제 PNG 디코딩",()=>
         {
             var root=Path.Combine(Directory.GetCurrentDirectory(),"runtime","icon23-"+Guid.NewGuid().ToString("N"));using var server=new SteamContractServer();using var route=new TbhPriceDisplayTests.Router(server.Connection());using var pixels=new ImageContractServer();SteamExperimentalWorkspace? workspace=null;using var vm=new SteamWorkspaceViewModel(scope=>workspace=new(root,scope.AppId,scope.ContextId,scope.Name,contractHandler:route,clock:server.Clock,imageHandler:pixels),true){RiskAccepted=true,CredentialsAccepted=true};Complete(vm.BeginAsync());server.Clock.Advance();Complete(vm.CheckAsync());var image=new ItemThumbnail{MarketName="Synthetic stack",MetadataLoader=workspace!.MarketImages,Loader=workspace.Images};render(image,76,84,1,"tbh23-image-loading.png");Complete(image.RefreshAsync());Check(image.ImageState=="Ready"&&image.HasPixels&&route.ImageCalls==1,"market metadata did not reach pixels");render(image,76,84,2,"tbh23-image-ready.png");image.Release();Check(!image.HasPixels,"recycled pixels retained");

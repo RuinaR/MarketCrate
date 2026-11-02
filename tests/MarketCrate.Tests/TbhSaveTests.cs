@@ -30,7 +30,12 @@ public static class TbhSaveTests
             ("Save path rejects unrelated names and obeys cancellation",Boundaries),
             ("TBH-only product rejects other game selection without deleting legacy data",()=>Sync(Scope)),
             ("Lock and equipment filters apply independently and search retains source snapshot",()=>Sync(Filters)),
-            ("Save valuation uses real adapter synthetic HTTP and shared bid depth without sales",Prices)
+            ("Save valuation uses real adapter synthetic HTTP and shared bid depth without sales",Prices),
+            ("Malformed item and equipment lock fields cannot silently become unlocked",()=>Sync(InvalidFlags)),
+            ("Save read failures classify player items materials and flags without exposing contents",()=>Sync(ReadStages)),
+            ("Unknown catalogue keys remain visible with distinct unmapped evidence",()=>Sync(UnknownCatalog)),
+            ("Public Reliquary catalogue facts restore names and grades without invented Steam prices",()=>Sync(ReliquaryCatalog)),
+            ("Absent optional storage field remains different from an observed empty array in diagnostics",()=>Sync(StorageFieldEvidence))
         };
         int pass=0,fail=0;foreach(var(name,test)in tests)try{await test();pass++;Console.WriteLine("PASS "+name);}catch(Exception e){fail++;Console.WriteLine("FAIL "+name+": "+e);}return(pass,fail);
     }
@@ -40,6 +45,54 @@ public static class TbhSaveTests
     {
         var dir=Path.Combine(Directory.GetCurrentDirectory(),"runtime","save-contract-"+Guid.NewGuid().ToString("N"));Directory.CreateDirectory(dir);var file=Path.Combine(dir,"SaveFile_Live.es3");var bytes=Encrypt(Plain());await File.WriteAllBytesAsync(file,bytes);
         try{await using var open=new FileStream(file,FileMode.Open,FileAccess.ReadWrite,FileShare.ReadWrite|FileShare.Delete);var result=await TbhSaveReader.ReadAsync(file);await open.DisposeAsync();Check(result.Items.Count==3&&File.ReadAllBytes(file).SequenceEqual(bytes));}finally{File.Delete(file);Directory.Delete(dir);}
+    }
+
+    private static void InvalidFlags()
+    {
+        foreach(var equipment in new[]{false,true})
+        {
+            using var root=JsonDocument.Parse(Plain());var player=root.RootElement.GetProperty("PlayerSaveData").GetProperty("value").GetString()!;
+            player=equipment?player.Replace("[false,false]","[1,false]"):player.Replace("\"IsBlocked\":false","\"IsBlocked\":1");
+            var data=JsonSerializer.SerializeToUtf8Bytes(new{PlayerSaveData=new{value=player}});bool failed=false;
+            try{TbhSaveReader.ParsePlain(data,DateTimeOffset.UtcNow);}catch(InvalidDataException){failed=true;}Check(failed);
+        }
+    }
+
+    private sealed class ReadLog:IDiagnosticLog{public Guid SessionId{get;}=Guid.NewGuid();public List<DiagnosticRecord> Rows{get;}=[];public void Write(DiagnosticRecord row)=>Rows.Add(row);}
+    private static void ReadStages()
+    {
+        using var parsed=JsonDocument.Parse(Plain());var player=parsed.RootElement.GetProperty("PlayerSaveData").GetProperty("value").GetString()!;
+        foreach(var (data,expected) in new[]{(Encoding.UTF8.GetBytes("{}"),"SavePlayerData"),(JsonSerializer.SerializeToUtf8Bytes(new{PlayerSaveData=new{value="{}"}}),"SaveOwnedItems"),(JsonSerializer.SerializeToUtf8Bytes(new{PlayerSaveData=new{value=player.Replace("\"IsBlocked\":false","\"IsBlocked\":1")}}),"SaveStorageSlots")})
+        {
+            var log=new ReadLog();using var scope=DiagnosticHub.Use(log);try{TbhSaveReader.ParsePlain(data,DateTimeOffset.UtcNow);}catch(Exception e)when(e is KeyNotFoundException or InvalidDataException){}
+            Check(log.Rows.Any(x=>x.EventId==(int)DiagnosticEvent.TbhReadContract&&x.Outcome==DiagnosticOutcome.Failed&&x.Reason==expected));Check(!JsonSerializer.Serialize(log.Rows).Contains("18446744073709551615"));
+        }
+        var cryptLog=new ReadLog();using var cryptTrace=DiagnosticHub.Use(cryptLog);try{TbhSaveReader.ParseEncrypted(new byte[4],DateTimeOffset.UtcNow);}catch(InvalidDataException){}Check(cryptLog.Rows.Any(x=>x.Reason=="SaveDecrypt"));
+    }
+    private static void UnknownCatalog()
+    {
+        using var parsed=JsonDocument.Parse(Plain());var player=parsed.RootElement.GetProperty("PlayerSaveData").GetProperty("value").GetString()!.Replace("110001","999999999");var log=new ReadLog();using var scope=DiagnosticHub.Use(log);
+        var snapshot=TbhSaveReader.ParsePlain(JsonSerializer.SerializeToUtf8Bytes(new{PlayerSaveData=new{value=player}}),DateTimeOffset.UtcNow);var unknown=snapshot.Items.Single(x=>!x.CatalogKnown);Check(unknown.MarketHash is null&&snapshot.UnknownKeys==1);
+        using var vm=new SteamWorkspaceViewModel();vm.ApplyTbhSnapshot(snapshot);Check(vm.TbhSaveRows.Single(x=>!x.Item.CatalogKnown).ReadState==TbhValueReadState.UnknownItemKey&&log.Rows.Any(x=>x.Reason=="CatalogUnknown"&&x.Count==1));
+        var json=JsonSerializer.Serialize(log.Rows);Check(!json.Contains("999999999")&&!json.Contains("private-account-marker"));
+    }
+
+    private static void ReliquaryCatalog()
+    {
+        var player=new{itemSaveDatas=new[]{new{UniqueId=1,ItemKey=790001},new{UniqueId=2,ItemKey=799061}},stashSaveDatas=new[]{new{Index=0,ItemUniqueId=1,Quantity=1},new{Index=1,ItemUniqueId=2,Quantity=1}},inventorySaveDatas=Array.Empty<object>()};
+        var data=JsonSerializer.SerializeToUtf8Bytes(new{PlayerSaveData=new{value=JsonSerializer.Serialize(player)}});var snapshot=TbhSaveReader.ParsePlain(data,DateTimeOffset.UtcNow);
+        Check(snapshot.UnknownKeys==0&&snapshot.Items.All(x=>x.CatalogKnown&&x.Kind==TbhItemKind.Other&&x.Grade.Length>0&&x.MarketHash is null)&&snapshot.Items[0].Name=="Relentless Unfinished Reliquary");
+        using var vm=new SteamWorkspaceViewModel();vm.ApplyTbhSnapshot(snapshot);Check(vm.TbhSaveRows.All(x=>x.ReadState==TbhValueReadState.MarketMappingMissing&&x.PricedTotal is null));
+    }
+
+    private static void StorageFieldEvidence()
+    {
+        foreach(var present in new[]{false,true})
+        {
+            var player=new Dictionary<string,object>{["itemSaveDatas"]=Array.Empty<object>(),["stashSaveDatas"]=Array.Empty<object>(),["inventorySaveDatas"]=Array.Empty<object>()};if(present)player["materialStashSaveDatas"]=Array.Empty<object>();
+            var log=new ReadLog();using var trace=DiagnosticHub.Use(log);TbhSaveReader.ParsePlain(JsonSerializer.SerializeToUtf8Bytes(new{PlayerSaveData=new{value=JsonSerializer.Serialize(player)}}),DateTimeOffset.UtcNow);
+            var row=log.Rows.Single(x=>x.Reason=="SaveMaterialStorage");Check(present?row.Count==0&&row.Outcome==DiagnosticOutcome.Succeeded:row.Count is null&&row.Outcome==DiagnosticOutcome.Unknown);
+        }
     }
     private static void Parse(){var s=Snapshot();Check(s.Items.Count==3&&s.Items[0].Location.Contains("3번 창고 · 3열 1행")&&s.Items[1].Locked&&s.Items[2].Equipped&&!s.Items[2].Locked&&s.UnknownKeys==0&&s.Items[0].MarketHash=="Minor Ruby"&&s.Items[0].Kind==TbhItemKind.Material);Check(!JsonSerializer.Serialize(s).Contains("private-account-marker"));}
     private static void Duplicate(){var s=TbhSaveReader.ParseEncrypted(Encrypt(Plain(true)),DateTimeOffset.UtcNow);Check(s.Items.Count==4&&s.Items.Count(x=>x.Ambiguous)==2&&s.Items.Where(x=>x.Ambiguous).All(x=>x.MarketHash is null));}
