@@ -1,3 +1,9 @@
+## 0.24.0 portable 마감 (2026-11-02)
+
+소스 **4607061ece532c9fc7e8a1ebb8fb23e7cd5741a9**. `artifacts/releases/MarketCrate-0.24.0-speed-holds-4607061-win-x64.zip` **68,980,480바이트/421파일**. SHA256 **A78BB4C92AEAFB3BEAF7A7E0B0A34450C0A604192DA5A026A6F7D6655F1AD821**. ZIP 모든 항목의 원본 출력 해시 일치. x64 self-contained CLR/WPF/SQLite·실제 전용 PE/BAML·라이선스·사용자 Auth/DB/ES3/진단/테스트 출하 제외 정적 검사 PASS. runtime/publish-0.24.0.txt. 앱/설치/실계정 실행 없음.
+
+Latest0.24.0/Rollback0.23.3, 이전 모든 배포본/사용자 자료 보존(삭제0). 사용자 최소 확인: 게임 아이콘 잘림→가격 첫조회/반복조회/상세 강제조회→스크롤·필터·합계→Steam 보관함 ‘판매 가능만’ 해제→서버가 제공하는 제한 안내 확인. 구매/해제 시각이 없는 게임 세이브의 남은 시간을 추정하지 않는다. 실제1.2초 간격의 계정 제한/실제 TBH 날짜 형식/물리 GUI는 사용자 단계이며 성공으로 판정하지 않았다.
+
 ## 0.23.3 portable 마감 (2026-11-02)
 
 소스 **949c57aab2c5398e46ebeb98cd9043d5f6461825**. `artifacts/releases/MarketCrate-0.23.3-marketability-949c57a-win-x64.zip` **68,974,864바이트/421파일**. SHA256 **A07719189C4FF90C6B91CBF4967C701B9ED0275A35E1EB27F0D6D960A7DA2BF2**. ZIP 모든 항목 원본 출력 해시 일치, x64 CLR/WPF/SQLite·실제 전용 PE/BAML·라이선스·사용자 Auth/DB/ES3/로그/테스트 출하 제외 정적 검사 PASS. runtime/publish-0.23.3.txt. 앱/계정/거래 실행 없음.
