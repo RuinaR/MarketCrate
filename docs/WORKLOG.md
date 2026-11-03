@@ -1,3 +1,7 @@
+## 0.24.1 portable 배포 (2026-11-03)
+
+소스 eb5c4aaad6ff345b9c0062d57a48c0ce31b602bf. `artifacts/releases/MarketCrate-0.24.1-quote-labels-eb5c4aa-win-x64.zip` 68,980,456바이트/421파일. SHA256 **F60D8123AACA3872F637A8B2B1FB560DCDAC00B879300FBA3C939D167F201D30**. ZIP 전체 항목 원본 해시 일치, x64 self-contained CLR/WPF/SQLite·라이선스·실제 전용 PE/BAML·사용자/인증/테스트/디버그 파일 제외 정적 검사 PASS. runtime/publish-0.24.1.txt. Latest0.24.1/Rollback0.24.0, 이전 배포본·사용자 데이터 모두 보존. 앱·실계정·물리 입력 미실행.
+
 ## 0.24.1 가격 기준 용어 통일 (2026-11-03)
 
 검증: 기능503/503·비표시WPF96/96·배포23/23·의존성6/6 PASS. 정리8PASS/0FAIL/1NOT VERIFIED(junction 생성 불가). 빌드 경고0/오류0. runtime/terminology-final-regression.txt. 과거 한글 표시명→Immediate 설정 호환과 실제 바인딩·하향 옵션·최종 검토를 검사했다. 자체 렌더 lowest-sell-review-125.png의 새 용어/줄바꿈을 직접 확인했다. 물리 입력·실계정 실행 없음. 최초75개 판정 변경 없음.
