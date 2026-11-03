@@ -1,3 +1,7 @@
+## 0.24.2 portable 배포 (2026-11-03)
+
+소스 bc4b0321a0ed6b48c1af66d9ad80085a657f79b9. `artifacts/releases/MarketCrate-0.24.2-price-filter-bc4b032-win-x64.zip` 68,981,119바이트/421파일. SHA256 **AC2ABF38D7A489E216D12515B78AF9E266BD9E3F162B319ED133C00D61DA8285**. ZIP 전체 파일 원본 해시 일치. x64 self-contained CLR/WPF/SQLite·라이선스·실제 전용 PE/BAML·테스트/사용자 Auth/DB/ES3/로그 제외 정적 검사 PASS(runtime/publish-0.24.2.txt). Latest0.24.2/Rollback0.24.1; 기존 배포본/사용자 데이터 삭제0. 앱/설치/실계정 미실행.
+
 ## 0.24.2 게임 아이템 단가30원 필터 (2026-11-03)
 
 검증: 집중 기능32/32·WPF9/9 및 최종 기능504/504·비표시WPF97/97·배포23/23·의존성6/6 PASS. 정리8PASS/0FAIL/1NOT VERIFIED(junction 생성 불가). 경고0/오류0. runtime/thirty-final-regression.txt. KRW/USD·수량합계와단가 구분·공유잔량·가격기준전환·미확인가격·ON/OFF·빈상태를 검사했다. 960px/150% 자체 렌더를 직접 검토했다. 실제 GUI입력/Steam실계정은 미실행이며 최초75개 판정은 유지한다.

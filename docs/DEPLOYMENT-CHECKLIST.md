@@ -1,3 +1,7 @@
+## 0.24.2 portable 배포 (2026-11-03)
+
+소스 bc4b0321a0ed6b48c1af66d9ad80085a657f79b9. `artifacts/releases/MarketCrate-0.24.2-price-filter-bc4b032-win-x64.zip` 68,981,119바이트/421파일. SHA256 **AC2ABF38D7A489E216D12515B78AF9E266BD9E3F162B319ED133C00D61DA8285**. ZIP 전체 파일 원본 해시 일치. x64 self-contained CLR/WPF/SQLite·라이선스·실제 전용 PE/BAML·테스트/사용자 Auth/DB/ES3/로그 제외 정적 검사 PASS(runtime/publish-0.24.2.txt). Latest0.24.2/Rollback0.24.1; 기존 배포본/사용자 데이터 삭제0. 앱/설치/실계정 미실행.
+
 ## 0.24.1 portable 배포 (2026-11-03)
 
 소스 eb5c4aaad6ff345b9c0062d57a48c0ce31b602bf. `artifacts/releases/MarketCrate-0.24.1-quote-labels-eb5c4aa-win-x64.zip` 68,980,456바이트/421파일. SHA256 **F60D8123AACA3872F637A8B2B1FB560DCDAC00B879300FBA3C939D167F201D30**. ZIP 전체 항목 원본 해시 일치, x64 self-contained CLR/WPF/SQLite·라이선스·실제 전용 PE/BAML·사용자/인증/테스트/디버그 파일 제외 정적 검사 PASS. runtime/publish-0.24.1.txt. Latest0.24.1/Rollback0.24.0, 이전 배포본·사용자 데이터 모두 보존. 앱·실계정·물리 입력 미실행.
