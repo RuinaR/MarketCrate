@@ -125,10 +125,10 @@ public static class LowerPriceStepTests
     {
         using var f=new FifthStageTests.Fixture();await f.Login();f.Server.OrderbookOverride=SellBook();f.Vm.PriceTarget=1;await f.Prepare(1);f.EnableTrading();f.Server.OrderbookOverride=SellBook("60000,1");await f.Vm.Submit.ExecuteAsync();Check(f.Server.Sends==0&&f.Server.Cancels==0&&!f.Vm.ReviewOpen&&f.Workspace!.Store.Commands().Count==0);
     }
-    private static async Task SellMissing(){using var f=new FifthStageTests.Fixture();await f.Login();f.Vm.PriceTarget=1;await f.Prepare(1);Check(!f.Vm.ReviewOpen&&f.Server.Sends==0&&f.Vm.Status.Contains("최저 판매호가"));}
+    private static async Task SellMissing(){using var f=new FifthStageTests.Fixture();await f.Login();f.Vm.PriceTarget=1;await f.Prepare(1);Check(!f.Vm.ReviewOpen&&f.Server.Sends==0&&f.Vm.Status.Contains("최저 판매주문호가"));}
     private static async Task SellReprice()
     {
-        using var f=new FifthStageTests.Fixture();f.Server.IncludeOwnSellDepth=true;f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();await f.Vm.Submit.ExecuteAsync();f.Server.Publish=true;await f.Vm.LoadListingsAsync();f.Vm.SelectAllListings.Execute(null);f.Vm.PriceTarget=1;f.Vm.LowerPriceOneStep=true;f.Server.OrderbookOverride=SellBook();await f.Vm.PrepareListingRepriceAsync();Check(f.Vm.ManagementOpen&&f.Vm.ListingPriceStatus.Contains("최저 판매호가"));await f.Vm.ConfirmManagement.ExecuteAsync();Check(f.Server.Cancels==1&&f.Server.Sends==2&&f.Server.SellFields.Last()["price"]==new Money(f.Server.Schedule.LowestSellQuote(575,true).SellerReceives,"KRW").Wire.ToString());
+        using var f=new FifthStageTests.Fixture();f.Server.IncludeOwnSellDepth=true;f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();await f.Vm.Submit.ExecuteAsync();f.Server.Publish=true;await f.Vm.LoadListingsAsync();f.Vm.SelectAllListings.Execute(null);f.Vm.PriceTarget=1;f.Vm.LowerPriceOneStep=true;f.Server.OrderbookOverride=SellBook();await f.Vm.PrepareListingRepriceAsync();Check(f.Vm.ManagementOpen&&f.Vm.ListingPriceStatus.Contains("최저 판매주문호가"));await f.Vm.ConfirmManagement.ExecuteAsync();Check(f.Server.Cancels==1&&f.Server.Sends==2&&f.Server.SellFields.Last()["price"]==new Money(f.Server.Schedule.LowestSellQuote(575,true).SellerReceives,"KRW").Wire.ToString());
     }
     private static async Task SellRepriceChanged()
     {

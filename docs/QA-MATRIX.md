@@ -1,3 +1,9 @@
+## 0.24.1 가격 기준 용어 통일 (2026-11-03)
+
+검증: 기능503/503·비표시WPF96/96·배포23/23·의존성6/6 PASS. 정리8PASS/0FAIL/1NOT VERIFIED(junction 생성 불가). 빌드 경고0/오류0. runtime/terminology-final-regression.txt. 과거 한글 표시명→Immediate 설정 호환과 실제 바인딩·하향 옵션·최종 검토를 검사했다. 자체 렌더 lowest-sell-review-125.png의 새 용어/줄바꿈을 직접 확인했다. 물리 입력·실계정 실행 없음. 최초75개 판정 변경 없음.
+
+사용자 표시를 **구매주문호가 / 최저 판매주문호가**로 통일한다. 구매주문은 높은 호가부터 잔량을 공유해 수량별로 배분하며 실제 체결을 보장하지 않는다. 내부 enum·설정 키·가격 계산·SQLite·거래 저널은 변경하지 않는다. 과거 표시명 설정도 읽어 새 이름으로 표시한다. 과거 문서의 표시명은 당시 기록으로 보존한다.
+
 ## 0.24.0 최종 검증·측정 범위
 
 runtime/speed-hold-paced-final-regression.txt: **기능503/503·비표시WPF96/96·배포23/23·의존성6/6 PASS**, 빌드 경고0/오류0. 정리8PASS/0FAIL/1NOT VERIFIED(junction 생성 불가). 간격 검사는 기존SubmissionTransport.Pacing에1.2/1.5 혼합 경계·쓰기3초를 추가했다. 중간 공유 fixture의 internal API 접근 빌드 오류는 검사를 적절한 기능 테스트로 이동해 수정했고 최종 빌드는 정상이다.

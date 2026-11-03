@@ -19,7 +19,7 @@ public sealed partial class SteamWorkspaceViewModel
             catch(Exception error)when(error is ArgumentException or OverflowException){return false;}
         }
     }
-    public string SubmissionAvailability=>!StackReviewSupported?"스택은 검증된 앱에서 단일 가격·단일 요청으로만 제출할 수 있습니다. 여러 가격으로 분할된 스택은 전송하지 않습니다.":!Connected?"Steam 계정을 연결한 뒤 최신 자료를 확인하세요.":!CanTrade?"실제 판매등록은 꺼져 있습니다. 게임·판매 설정에서 서버 계약과 세션 동의를 확인하세요.":PricingMode==2&&workspace?.Policy.MedianPriceContractSupported!=true?"중앙값 추정 가격의 실거래 계약이 미확인입니다. 즉시거래가능가로 새 검토하세요.":ReviewRows.Count==0||ReviewRows.Any(x=>!x.Valid)?"가격·수수료·시세 신선도를 확인하세요. 유효하지 않은 항목은 전송하지 않습니다.":"전체 판매등록 한 번 승인으로 모든 항목을 제출합니다. 현재 보관함·판매목록을 재확인합니다. 과거 불명 기록이 있으면 새 요청에도 중복 위험이 남으며, 그 기록은 삭제하거나 자동 재전송하지 않습니다.";
+    public string SubmissionAvailability=>!StackReviewSupported?"스택은 검증된 앱에서 단일 가격·단일 요청으로만 제출할 수 있습니다. 여러 가격으로 분할된 스택은 전송하지 않습니다.":!Connected?"Steam 계정을 연결한 뒤 최신 자료를 확인하세요.":!CanTrade?"실제 판매등록은 꺼져 있습니다. 게임·판매 설정에서 서버 계약과 세션 동의를 확인하세요.":PricingMode==2&&workspace?.Policy.MedianPriceContractSupported!=true?"중앙값 추정 가격의 실거래 계약이 미확인입니다. 구매주문호가로 새 검토하세요.":ReviewRows.Count==0||ReviewRows.Any(x=>!x.Valid)?"가격·수수료·시세 신선도를 확인하세요. 유효하지 않은 항목은 전송하지 않습니다.":"전체 판매등록 한 번 승인으로 모든 항목을 제출합니다. 현재 보관함·판매목록을 재확인합니다. 과거 불명 기록이 있으면 새 요청에도 중복 위험이 남으며, 그 기록은 삭제하거나 자동 재전송하지 않습니다.";
     private void InitializeRequestReconciliation()
     {
         RefreshSelectedRequest=new(RefreshSelectedRequestAsync,Error,()=>CanRead&&!Busy&&!AnyReview&&SelectedRequest is not null);

@@ -14,7 +14,7 @@ internal static class TenthStageUiTests
 {
     public static void Run(Action<string,Action> test,Action<FrameworkElement,int,int,double,string> render)
     {
-        test("즉시거래가능가 공통 리소스·Mock 설정·Steam 진입 바인딩",()=>
+        test("구매주문호가 공통 리소스·Mock 설정·Steam 진입 바인딩",()=>
         {
             var folder=Path.Combine(Directory.GetCurrentDirectory(),"runtime","stage10-ui-"+Guid.NewGuid().ToString("N"));
             using(var store=new SqliteDemoStore(folder))using(var vm=new MainViewModel(new(),store))

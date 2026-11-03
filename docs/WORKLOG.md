@@ -1,3 +1,9 @@
+## 0.24.1 가격 기준 용어 통일 (2026-11-03)
+
+검증: 기능503/503·비표시WPF96/96·배포23/23·의존성6/6 PASS. 정리8PASS/0FAIL/1NOT VERIFIED(junction 생성 불가). 빌드 경고0/오류0. runtime/terminology-final-regression.txt. 과거 한글 표시명→Immediate 설정 호환과 실제 바인딩·하향 옵션·최종 검토를 검사했다. 자체 렌더 lowest-sell-review-125.png의 새 용어/줄바꿈을 직접 확인했다. 물리 입력·실계정 실행 없음. 최초75개 판정 변경 없음.
+
+사용자 표시를 **구매주문호가 / 최저 판매주문호가**로 통일한다. 구매주문은 높은 호가부터 잔량을 공유해 수량별로 배분하며 실제 체결을 보장하지 않는다. 내부 enum·설정 키·가격 계산·SQLite·거래 저널은 변경하지 않는다. 과거 표시명 설정도 읽어 새 이름으로 표시한다. 과거 문서의 표시명은 당시 기록으로 보존한다.
+
 ## 0.24.0 portable 마감 (2026-11-02)
 
 소스 **4607061ece532c9fc7e8a1ebb8fb23e7cd5741a9**. `artifacts/releases/MarketCrate-0.24.0-speed-holds-4607061-win-x64.zip` **68,980,480바이트/421파일**. SHA256 **A78BB4C92AEAFB3BEAF7A7E0B0A34450C0A604192DA5A026A6F7D6655F1AD821**. ZIP 모든 항목의 원본 출력 해시 일치. x64 self-contained CLR/WPF/SQLite·실제 전용 PE/BAML·라이선스·사용자 Auth/DB/ES3/진단/테스트 출하 제외 정적 검사 PASS. runtime/publish-0.24.0.txt. 앱/설치/실계정 실행 없음.

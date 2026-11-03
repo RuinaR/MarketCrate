@@ -29,6 +29,8 @@ public static class TenthStageTests
             using(var vm=new MainViewModel(new(),store)){await vm.InitializeAsync();Check(vm.SelectedStrategy==PriceDisplay.Immediate);vm.SelectedStrategy=vm.Strategies[1];Check(store.ReadSetting("strategy")=="ExactAverage");}
             using(var vm=new MainViewModel(new(),store)){await vm.InitializeAsync();Check(vm.SelectedStrategy==PriceDisplay.MockAverage);vm.SelectedStrategy=vm.Strategies[0];Check(store.ReadSetting("strategy")=="Immediate");vm.SelectedStrategy="unknown";Check(vm.SelectedStrategy==PriceDisplay.Immediate);}
             Check(PriceDisplay.Difference(950,1000,"KRW")=="−₩50");
+            Check(PriceDisplay.Immediate=="구매주문호가"&&PriceDisplay.LowestSell=="최저 판매주문호가");
+            foreach(var label in new[]{"Immediate","구매주문호가","즉시거래가능가","구매주문 기반 예상가","즉시판매 예상가","즉시판매가"})Check(PriceDisplay.TryReadSetting(label,out var migrated)&&migrated==PriceBasis.Immediate);
             Check(PriceDisplay.TryReadSetting("즉시판매가",out var basis)&&basis==PriceBasis.Immediate);
             Check(PriceDisplay.ImmediateExplanation=="현재 구매주문 기준 예상 가격이며 실제 즉시 체결을 보장하지 않습니다.");
         }finally{Directory.Delete(path,true);}

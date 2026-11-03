@@ -60,7 +60,7 @@ public sealed partial class SteamWorkspaceViewModel
         if(UseLowestSell&&books.Values.Any(x=>x.Asks.IsEmpty))
         {
             var atMinimum=rows.All(x=>{var schedule=schedules[x.Listing.Asset.AppId];var minimum=schedule.FromSeller(Money.FromWire(schedule.MinimumWire,schedule.Currency).Minor);return x.Listing.SellerReceives==minimum.SellerReceives&&x.Listing.Fees==minimum.Fees;});
-            ListingPriceStatus=atMinimum?"본인 등록을 제외한 판매호가가 없고 선택 전체가 이미 제안 가격의 최저 유효 가격입니다. 기존 등록을 유지하며 취소·재등록하지 않습니다.":"본인 등록을 제외한 최저 판매호가가 없어 전체 재등록 검토를 만들 수 없습니다. 기존 등록은 유지합니다.";return;
+            ListingPriceStatus=atMinimum?"본인 등록을 제외한 판매호가가 없고 선택 전체가 이미 제안 가격의 최저 유효 가격입니다. 기존 등록을 유지하며 취소·재등록하지 않습니다.":"본인 등록을 제외한 최저 판매주문호가가 없어 전체 재등록 검토를 만들 수 없습니다. 기존 등록은 유지합니다.";return;
         }
         var selections=rows.Select(x=>new SaleSelection(ListingAsset(x.Listing),books[(x.Listing.Asset.AppId,x.Listing.HashName)],1));
         var plan=UseLowestSell?SalePlanner.AtLowestSell(selections):SalePlanner.Build(selections,PriceBasis.Immediate);
@@ -85,7 +85,7 @@ public sealed partial class SteamWorkspaceViewModel
         foreach(var schedule in schedules)gameFees[schedule.Key]=schedule.Value;
         fees=schedules.GetValueOrDefault(Game.AppId)??schedules.Values.First();Raise(nameof(CurrencyText));
         Bulk(()=>{foreach(var proposal in proposals)proposal.Row.SetProposedPrice(proposal.Price,proposal.Fees,proposal.Baseline);});
-        BuildManagement(true);ListingPriceStatus=$"{rows.Length}건 가격별 분배 완료 · {(UseLowestSell?"최저 판매호가 기준 · 본인 판매등록 제외":"현재 구매주문 기준")} · 체결 보장 없음 · 검토 전체를 한 번 승인하면 취소/반환 확인 후 직렬 재등록합니다.";
+        BuildManagement(true);ListingPriceStatus=$"{rows.Length}건 가격별 분배 완료 · {(UseLowestSell?"최저 판매주문호가 기준 · 본인 판매등록 제외":"현재 구매주문 기준")} · 체결 보장 없음 · 검토 전체를 한 번 승인하면 취소/반환 확인 후 직렬 재등록합니다.";
         DiagnosticHub.Emit(DiagnosticEvent.PricePlan,DiagnosticArea.Management,requirement:"B10",count:rows.Length,reason:UseLowestSell?"LowestSell":"Immediate");
     });
     private async Task<bool> RefreshRepriceSelectionAsync(SteamListingRow[] rows,CancellationToken token)

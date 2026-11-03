@@ -8,8 +8,8 @@ public sealed partial class SteamWorkspaceViewModel
     public string[] PriceTargets{get;}=[PriceDisplay.Immediate,PriceDisplay.LowestSell];
     public int PriceTarget{get=>priceTarget;set{if(value is <0 or >1||!CanChoosePriceAdjustment||!Set(ref priceTarget,value))return;priceRevision++;listingPlanRevision++;foreach(var row in Listings)row.ClearPriceComparison();ListingPriceStatus="가격 기준 변경 · 시세를 조회하고 새로 검토하세요.";Raise(nameof(UseLowestSell));Raise(nameof(PriceTargetExplanation));Raise(nameof(LowerPriceLabel));Changed();}}
     public bool UseLowestSell=>PriceTarget==1;
-    public string LowerPriceLabel=>UseLowestSell?"최저 판매호가보다 한 단계 낮게":"즉시거래가능가보다 한 단계 낮게";
-    public string PriceTargetExplanation=>UseLowestSell?"본인 판매등록 수량을 제외하고 남은 최저 판매호가에 맞춥니다. 즉시 체결을 보장하지 않습니다.":PriceDisplay.ImmediateExplanation;
+    public string LowerPriceLabel=>(UseLowestSell?PriceDisplay.LowestSell:PriceDisplay.Immediate)+"보다 한 단계 낮게";
+    public string PriceTargetExplanation=>UseLowestSell?"본인 판매등록 수량을 제외하고 남은 최저 판매주문호가에 맞춥니다. 즉시 체결을 보장하지 않습니다.":PriceDisplay.ImmediateExplanation;
     public bool CanChoosePriceAdjustment=>Connected&&!Busy&&!AnyReview;
     public bool LowerPriceOneStep
     {
@@ -24,7 +24,7 @@ public sealed partial class SteamWorkspaceViewModel
             DiagnosticHub.Emit(DiagnosticEvent.PricePlan,DiagnosticArea.Pricing,requirement:"E05",reason:value?"LowerValidStep":"Immediate");
         }
     }
-    public string PriceAdjustmentHint=>LowerPriceOneStep?"각 호가를 유효 가격으로 환산한 뒤 한 단계 더 낮추며, 더 낮출 수 없으면 최저 유효 가격을 유지합니다. 수수료·실수령 감소를 최종 검토하세요. 실제 체결은 보장하지 않습니다.":"기본: 즉시거래가능가 유지. 하향 옵션은 직접 선택해야 적용됩니다.";
+    public string PriceAdjustmentHint=>LowerPriceOneStep?"각 호가를 유효 가격으로 환산한 뒤 한 단계 더 낮추며, 더 낮출 수 없으면 최저 유효 가격을 유지합니다. 수수료·실수령 감소를 최종 검토하세요. 실제 체결은 보장하지 않습니다.":"기본: 선택한 호가 기준 유지. 하향 옵션은 직접 선택해야 적용됩니다.";
     public string ReviewAdjustmentSummary
     {
         get

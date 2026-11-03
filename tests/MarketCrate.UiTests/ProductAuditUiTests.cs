@@ -14,7 +14,7 @@ internal static class ProductAuditUiTests
 {
     public static void Run(Action<string,Action> test,Action<FrameworkElement,int,int,double,string> render)
     {
-        test("실제 가격 기준은 즉시거래가능가·최저 판매호가이며 평균/기간 선택기 없음",()=>
+        test("실제 가격 기준은 구매주문호가·최저 판매주문호가이며 평균/기간 선택기 없음",()=>
         {
             using var vm=new SteamWorkspaceViewModel();vm.WorkPage=1;var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,800,1.25,"options28-immediate-inventory.png");
             Check(vm.PricingModes.SequenceEqual(new[]{PriceDisplay.Immediate})&&vm.ListingPricingModes.SequenceEqual(new[]{PriceDisplay.Immediate}),"retired price option remains");

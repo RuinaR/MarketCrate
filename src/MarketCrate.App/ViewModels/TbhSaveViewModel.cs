@@ -36,7 +36,7 @@ public sealed partial class SteamWorkspaceViewModel
     public AsyncCommand ReadTbhSave{get;private set;}=null!;
     public AsyncCommand RefreshTbhPrices{get;private set;}=null!;
     public AsyncCommand ForceTbhPrices{get;private set;}=null!;
-    public string[] TbhPriceModes{get;}=[PriceDisplay.Immediate,"최저 판매주문호가"];
+    public string[] TbhPriceModes{get;}=[PriceDisplay.Immediate,PriceDisplay.LowestSell];
     public string TbhSaveStatus{get=>tbhSaveStatus;private set=>Set(ref tbhSaveStatus,value);}
     public bool TbhIncludeLocked{get=>includeLocked;set{if(Set(ref includeLocked,value))RebuildTbhRows();}}
     public bool TbhIncludeEquipped{get=>includeEquipped;set{if(Set(ref includeEquipped,value))RebuildTbhRows();}}
@@ -188,9 +188,9 @@ public sealed partial class SteamWorkspaceViewModel
                     {
                         readState=missing>0?TbhValueReadState.PartialDepth:TbhValueReadState.Ready;unit=allocation.Lines[0].BuyerPays;total=allocation.Lines.Sum(x=>checked(x.BuyerPays*x.Quantity));var used=item.Quantity-missing;
                         for(int i=0;i<book.Count&&used>0;i++){var count=Math.Min(used,book[i].Quantity);used-=count;book[i]=book[i] with{Quantity=book[i].Quantity-count};}book.RemoveAll(x=>x.Quantity==0);
-                        message=$"즉시거래가능가 {new Money(unit.Value,currency)}부터 · 가격 확인 {item.Quantity-missing:N0}/{item.Quantity:N0}개 합계 {new Money(total.Value,currency)}{(missing>0?$" · 주문 잔량 부족 {missing:N0}개":"")}";
+                        message=$"구매주문호가 {new Money(unit.Value,currency)}부터 · 가격 확인 {item.Quantity-missing:N0}/{item.Quantity:N0}개 합계 {new Money(total.Value,currency)}{(missing>0?$" · 주문 잔량 부족 {missing:N0}개":"")}";
                     }
-                    else{readState=price.Bids.IsEmpty?TbhValueReadState.NoBuyOrders:TbhValueReadState.SharedDepthExhausted;message=price.Bids.IsEmpty?"이 상품의 현재 매수주문 잔량 없음 · 최저 판매호가도 확인하세요":"같은 상품의 다른 항목에 매수 잔량을 이미 배분했습니다 · 이 행의 추가 수량은 합계 제외";}
+                    else{readState=price.Bids.IsEmpty?TbhValueReadState.NoBuyOrders:TbhValueReadState.SharedDepthExhausted;message=price.Bids.IsEmpty?"이 상품의 현재 매수주문 잔량 없음 · 최저 판매주문호가도 확인하세요":"같은 상품의 다른 항목에 매수 잔량을 이미 배분했습니다 · 이 행의 추가 수량은 합계 제외";}
                 }
                 message+=$" · 수집 {price.CapturedAt.ToLocalTime():HH:mm:ss}{stale}";
             }
