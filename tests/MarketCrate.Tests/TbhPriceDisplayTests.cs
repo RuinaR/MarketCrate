@@ -14,6 +14,7 @@ public static class TbhPriceDisplayTests
     public static async Task<(int Passed,int Failed)> RunAsync()
     {
         var tests=new(string,Func<Task>)[]{
+            ("30KRW filter follows selected side without losing shared depth or unknown/USD rows",()=>Sync(ThirtyWonFilter)),
             ("TBH kind filters and exact variant labels retain unpriced rows without ranking",()=>Sync(Filters)),
             ("Wallet KRW USD zero invalid and missing balance never fabricate zero",()=>Sync(Wallet)),
             ("Sanitized public Steam orderbook fixture preserves actual nonempty buy and sell depth",()=>Sync(PublicBook)),
@@ -50,6 +51,24 @@ public static class TbhPriceDisplayTests
 
     private static Dictionary<string,PriceSnapshot> Quotes(SteamWorkspaceViewModel vm)=>(Dictionary<string,PriceSnapshot>)typeof(SteamWorkspaceViewModel).GetField("tbhQuotes",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(vm)!;
     private static PriceSnapshot Book(long amount,int count=10)=>new("KRW",DateTimeOffset.UtcNow,"synthetic",TimeSpan.Zero,[],[new(amount,count)]){Asks=[new(amount,count)]};
+    public static void ThirtyWonFilter()
+    {
+        using var vm=new SteamWorkspaceViewModel();
+        Quotes(vm)["Low"]=Book(30,2) with{Asks=[new(40,10)]};
+        Quotes(vm)["High"]=Book(40) with{Asks=[new(30,10)]};
+        Quotes(vm)["USD"]=Book(30) with{Currency="USD"};
+        vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,[new("a","Low","Low",2,false,"stash"),new("b","Low second","Low",1,false,"stash"),new("c","High","High",1,false,"stash"),new("d","USD","USD",1,false,"stash"),new("e","Unknown","Unknown",1,false,"stash")],0));
+        Check(!vm.TbhExcludeThirtyWon&&vm.TbhSaveRows.Count==5);
+        vm.TbhExcludeThirtyWon=true;
+        Check(vm.TbhSaveRows.Count==4&&vm.TbhThirtyWonHiddenCount==1&&!vm.TbhSaveRows.Any(x=>x.Item.ItemKey=="a"));
+        Check(vm.TbhSaveRows.Single(x=>x.Item.ItemKey=="b").ReadState==TbhValueReadState.SharedDepthExhausted);
+        Check(vm.TbhValuationText.Contains("₩40")&&!vm.TbhValuationText.Contains("₩100")&&vm.TbhSaveRows.Any(x=>x.Currency=="USD")&&vm.TbhSaveRows.Any(x=>x.Item.ItemKey=="e"));
+        vm.TbhPriceMode=1;
+        Check(vm.TbhThirtyWonHiddenCount==1&&vm.TbhSaveRows.Count==4&&vm.TbhSaveRows.Any(x=>x.Item.ItemKey=="a")&&!vm.TbhSaveRows.Any(x=>x.Item.ItemKey=="c"));
+        vm.TbhExcludeThirtyWon=false;Check(vm.TbhSaveRows.Count==5&&vm.TbhThirtyWonHiddenCount==0);
+        vm.TbhExcludeThirtyWon=true;vm.TbhPriceMode=0;vm.TbhSearch="Low second";Check(vm.TbhEmpty&&vm.TbhThirtyWonHiddenCount==1&&vm.TbhEmptyHint.Contains("30"));
+        vm.TbhSearch="Unknown";Check(vm.TbhSaveRows.Single().UnitPrice is null&&vm.TbhThirtyWonHiddenCount==0);
+    }
     private static void AmbiguousPrices()
     {
         using var vm=new SteamWorkspaceViewModel();Quotes(vm)["Shared"]=Book(100,1);

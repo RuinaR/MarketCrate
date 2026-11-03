@@ -22,7 +22,8 @@ public sealed partial class SteamWorkspaceViewModel
 {
     private TbhSaveSnapshot? tbhSnapshot;
     private readonly Dictionary<string,PriceSnapshot> tbhQuotes=new(StringComparer.Ordinal);
-    private bool includeLocked,includeEquipped;
+    private bool includeLocked,includeEquipped,excludeThirtyWon;
+    private int tbhThirtyWonHiddenCount;
     private int tbhPriceMode,tbhKindFilter;
     private readonly Dictionary<string,(SteamFailure Code,string? Stage)> tbhQuoteErrors=new(StringComparer.Ordinal);
     public string[] TbhKinds{get;}=["전체 아이템","장비 아이템만","재료 아이템만","기타·미분류"];
@@ -40,11 +41,16 @@ public sealed partial class SteamWorkspaceViewModel
     public string TbhSaveStatus{get=>tbhSaveStatus;private set=>Set(ref tbhSaveStatus,value);}
     public bool TbhIncludeLocked{get=>includeLocked;set{if(Set(ref includeLocked,value))RebuildTbhRows();}}
     public bool TbhIncludeEquipped{get=>includeEquipped;set{if(Set(ref includeEquipped,value))RebuildTbhRows();}}
+    public bool TbhExcludeThirtyWon{get=>excludeThirtyWon;set{if(Set(ref excludeThirtyWon,value))RebuildTbhRows();}}
+    public int TbhThirtyWonHiddenCount=>tbhThirtyWonHiddenCount;
+    public string TbhPriceFilterText=>TbhExcludeThirtyWon?$" · 단가 ₩30 제외 {tbhThirtyWonHiddenCount:N0}행":"";
+    public string TbhEmptyTitle=>tbhSnapshot is null?"아직 불러온 아이템이 없습니다":"현재 조건에 맞는 아이템이 없습니다";
+    public string TbhEmptyHint=>tbhSnapshot is null?"세이브 읽기로 시작하세요.":"검색어·종류·잠금·장착·단가 ₩30 제외 조건을 확인하세요.";
     public int TbhPriceMode{get=>tbhPriceMode;set{if(value is >=0 and <=1&&Set(ref tbhPriceMode,value))RebuildTbhRows();}}
     public string TbhSearch{get=>tbhSearch;set{if(Set(ref tbhSearch,value))RebuildTbhRows();}}
     public bool TbhEmpty=>TbhSaveRows.Count==0;
     public string TbhSnapshotText=>tbhSnapshot is {} s?$"파일 저장 {s.FileWrittenAt.ToLocalTime():MM-dd HH:mm:ss} · 복사 확인 {s.CapturedAt.ToLocalTime():HH:mm:ss} · 원본 읽기 전용 · 현재 게임 상태와 시차가 있을 수 있음":"세이브 미조회 · 파일 읽기는 로그인 없이 가능 · 시세 조회는 Steam 연결 필요";
-    public string TbhCountText=>$"{TbhSaveRows.Count:N0}개 항목 · 가격 확인 항목만 단가순 · 미확인 항목은 순위 없음";
+    public string TbhCountText=>$"{TbhSaveRows.Count:N0}개 항목 · 가격 확인 항목만 단가순 · 미확인 항목은 순위 없음{TbhPriceFilterText}";
     public string TbhValuationCoverage=>$"{TbhSaveRows.Count(x=>x.PricedTotal is not null):N0}개 항목 금액만 포함 · 거래불가 {TbhSaveRows.Count(x=>x.ReadState==TbhValueReadState.NonMarketableItem):N0}개 정상 제외 · 미확인 {TbhSaveRows.Count(x=>x.PricedTotal is null&&x.ReadState!=TbhValueReadState.NonMarketableItem):N0}개 항목 제외";
     public string TbhValuationText
     {
@@ -200,7 +206,11 @@ public sealed partial class SteamWorkspaceViewModel
             var icon=item.MarketHash is {} iconHash?imageLookup.GetValueOrDefault(iconHash):null;
             rows.Add(new(item,message,unit,total,currency,missing,icon){ReadState=readState,ReadDetails=$"{TbhSaveRow.ReasonLabel(readState)}\n게임 아이템 사전: {(item.CatalogKnown?"해당 키 확인":"해당 키 미등록")}\n장터 전환 속성: {TradeEvidenceLabel(item)}\nSteam 조회 상품: {(item.CanExchangeMarketable==false?"거래불가로 조회하지 않음":item.MarketHash??"정확한 연결 미확인 · 비슷한 이름의 가격으로 대체하지 않음")}\n{message}"});
         }
-        UpdateTbhRows(rows.OrderBy(x=>x.ReadState==TbhValueReadState.NonMarketableItem?2:x.PricedTotal is not null?0:1).ThenByDescending(x=>x.UnitPrice??-1).ThenByDescending(x=>x.PricedTotal??-1).ThenBy(x=>x.Name,StringComparer.Ordinal).ToArray());
+        // Filter only after quantity allocation: hidden rows must not give their bid depth to another item.
+        tbhThirtyWonHiddenCount=TbhExcludeThirtyWon?rows.Count(x=>x.Currency=="KRW"&&x.UnitPrice==30&&x.PricedTotal is not null):0;
+        var visible=rows.Where(x=>!TbhExcludeThirtyWon||x.Currency!="KRW"||x.UnitPrice!=30||x.PricedTotal is null);
+        UpdateTbhRows(visible.OrderBy(x=>x.ReadState==TbhValueReadState.NonMarketableItem?2:x.PricedTotal is not null?0:1).ThenByDescending(x=>x.UnitPrice??-1).ThenByDescending(x=>x.PricedTotal??-1).ThenBy(x=>x.Name,StringComparer.Ordinal).ToArray());
+        Raise(nameof(TbhThirtyWonHiddenCount));Raise(nameof(TbhPriceFilterText));Raise(nameof(TbhEmptyTitle));Raise(nameof(TbhEmptyHint));
         Raise(nameof(TbhReadSummary));Raise(nameof(TbhSaveSummary));Raise(nameof(TbhCountText));Raise(nameof(TbhValuationText));Raise(nameof(TbhValuationCoverage));Raise(nameof(TbhEmpty));Raise(nameof(TbhNextAction));
     }
 }

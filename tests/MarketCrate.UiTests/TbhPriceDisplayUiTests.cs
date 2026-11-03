@@ -14,6 +14,15 @@ internal static class TbhPriceDisplayUiTests
 {
     public static void Run(Action<string,Action> test,Action<FrameworkElement,int,int,double,string> render)
     {
+        test("30원 제외 체크박스는 기본OFF·바인딩·빈 상태·다양한 폭에서 표시",()=>
+        {
+            TbhPriceDisplayTests.ThirtyWonFilter();
+            using var vm=new SteamWorkspaceViewModel();vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,[new("a","Unknown","Unknown",1,false,"stash")],0));vm.WorkPage=6;
+            var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,780,1,"tbh-thirty-filter.png");
+            var option=Find<CheckBox>(view).Single(x=>System.Windows.Automation.AutomationProperties.GetName(x)=="조회 단가 30원인 항목 제외");
+            Check(option.IsChecked==false,"filter must be opt-in");option.IsChecked=true;Check(vm.TbhExcludeThirtyWon&&vm.TbhSaveRows.Count==1,"unknown price hidden or binding broken");
+            render(view,960,720,1.5,"tbh-thirty-filter-150.png");option.IsChecked=false;Check(!vm.TbhExcludeThirtyWon,"off binding broken");
+        });
         test("48px 아이콘은 원본 네 모서리를 모두 표시하고 프레임 안에 맞춤",()=>
         {
             using var server=new ImageContractServer();var data=new byte[128*128*4];for(int y=0;y<128;y++)for(int x=0;x<128;x++){var i=(y*128+x)*4;data[i]=(byte)(y>=64?255:0);data[i+1]=(byte)(x>=64?255:0);data[i+2]=(byte)(x<64&&y<64?255:0);data[i+3]=255;}
