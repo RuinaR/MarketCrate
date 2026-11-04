@@ -131,7 +131,7 @@ public sealed partial class SteamStateStore : IBatchHistoryJournal, IDisposable
     internal void SaveReprice(SteamRepriceIntent intent)
     {
         var previous = Reprice(intent.Key);
-        if (previous is not null && (previous.Account != intent.Account || previous.Listing != intent.Listing || previous.BuyerPrice != intent.BuyerPrice || previous.OrderbookDigest != intent.OrderbookDigest || previous.CreatedAt != intent.CreatedAt || previous.CancellationKey != intent.CancellationKey || previous.SupersededBy != intent.SupersededBy || previous.State==SteamRepriceState.Superseded))
+        if (previous is not null && (previous.Account != intent.Account || previous.Listing != intent.Listing || previous.BuyerPrice != intent.BuyerPrice || previous.OrderbookDigest != intent.OrderbookDigest || previous.FixedApprovedPrice != intent.FixedApprovedPrice || previous.ApprovedQuote != intent.ApprovedQuote || previous.CreatedAt != intent.CreatedAt || previous.CancellationKey != intent.CancellationKey || previous.SupersededBy != intent.SupersededBy || previous.State==SteamRepriceState.Superseded))
             throw new InvalidDataException("RepriceSnapshotImmutable");
         using var transaction=StorageDiagnostics.Begin(connection);Upsert("reprice",intent.Key,intent,transaction);Audit(intent.Key,SteamAuditAction.Reprice,intent.State.ToString(),transaction);StorageDiagnostics.Commit(transaction);
     }

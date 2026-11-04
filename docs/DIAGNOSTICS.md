@@ -1,3 +1,7 @@
+## 0.25.0 진단 연결
+
+최종검증 FinalValidation/FixedApprovedPrice는 승인 단가 고정·수수료/자산 검사 이후를 나타내며 서버 접수/게시 성공이 아니다. 선택적인 QuickTbhPricesAsync→TbhSavePrices는 동일OperationId를 유지하며 TbhIndex/ReferenceOnlyBRL 또는 ReferenceTransport(안전한HTTP상태)/ReferenceParse/ReferenceContract를 기록한다. 원본 JSON/세이브/쿠키/인증정보/상품 검색어는 기록하지 않는다. TBH Index 오류는 Steam 제한 해제/Steam 재전송을 유발하지 않는다.
+
 ## 0.24.0 요청 간격 판정
 
 사용자 추가 요청으로 연속 주문장 가격GET의 최소 시작 간격을1.5→1.2초로 줄였다. 다른 읽기는1.5초, 쓰기는3초이며 혼합 경계는 앞/뒤 요청의 긴 읽기 간격과 쓰기 제한을 함께 적용한다. 직렬/단일 연결 큐를 유지하고0간격 병렬 요청·자동429 재시도·요청 위장·프록시를 도입하지 않았다. 공개 helper의1.2초 기본값은 응답 뒤 추가 대기라 우리 시작 간격과 처리량이 같지 않으며 공식Steam 한도/실계정 성공 근거도 아니다. 새 간격에서 서버 제한이 안 생긴다고 보장하지 않는다.

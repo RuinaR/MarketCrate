@@ -14,6 +14,13 @@ internal static class TbhPriceDisplayUiTests
 {
     public static void Run(Action<string,Action> test,Action<FrameworkElement,int,int,double,string> render)
     {
+        test("빠른 참고 시세는 상세 옵션이며 기본Steam·독립통화·명령 바인딩 유지",()=>
+        {
+            Complete(TbhPriceDisplayTests.FastReference());
+            using var vm=new SteamWorkspaceViewModel();vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,[new("a","P0","P0",1,false,"stash")],0));vm.WorkPage=6;var view=new SteamWorkspaceView{DataContext=vm};render(view,1100,780,1,"fast-reference-option.png");
+            Check(vm.TbhPriceSource.StartsWith("Steam")&&vm.QuickTbhPrices.CanExecute(null),"default source or explicit option invalid");
+            var detail=Find<Expander>(view).Single(x=>Equals(x.Header,"자료·조회 상세"));detail.IsExpanded=true;render(view,1100,780,1.5,"fast-reference-details.png");Check(Find<Button>(view).Any(x=>ReferenceEquals(x.Command,vm.QuickTbhPrices)),"reference action disconnected");
+        });
         test("30원 제외 체크박스는 기본OFF·바인딩·빈 상태·다양한 폭에서 표시",()=>
         {
             TbhPriceDisplayTests.ThirtyWonFilter();

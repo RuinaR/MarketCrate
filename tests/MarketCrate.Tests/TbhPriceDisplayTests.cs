@@ -14,6 +14,10 @@ public static class TbhPriceDisplayTests
     public static async Task<(int Passed,int Failed)> RunAsync()
     {
         var tests=new(string,Func<Task>)[]{
+            ("Reference access denial sends once preserves Steam default and records safe HTTP cause",IndexDenied),
+            ("Optional batch reference is BRL cache-only separate from Steam quotes and single-call for100 products",FastReference),
+            ("Public TBH Index response excerpt matches price timestamp contract",()=>Sync(()=>{var data=MarketCrate.Infrastructure.Tbh.TbhIndexMarketClient.Parse(File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory,"Fixtures","TbhIndexPublicPrices-20261104.json")));Check(data.Count==5&&data["Abyssal Mucus"].BuyMinor==43&&data["Abyssal Mucus"].SellMinor==70&&data["Abyssal Mucus"].ObservedAt is not null&&data.Values.Count(x=>x.ObservedAt is null)==4);})),
+            ("Reference malformed duplicate or foreign-currency response cannot fabricate executable prices",()=>Sync(IndexParser)),
             ("30KRW filter follows selected side without losing shared depth or unknown/USD rows",()=>Sync(ThirtyWonFilter)),
             ("TBH kind filters and exact variant labels retain unpriced rows without ranking",()=>Sync(Filters)),
             ("Wallet KRW USD zero invalid and missing balance never fabricate zero",()=>Sync(Wallet)),
@@ -51,6 +55,37 @@ public static class TbhPriceDisplayTests
 
     private static Dictionary<string,PriceSnapshot> Quotes(SteamWorkspaceViewModel vm)=>(Dictionary<string,PriceSnapshot>)typeof(SteamWorkspaceViewModel).GetField("tbhQuotes",BindingFlags.NonPublic|BindingFlags.Instance)!.GetValue(vm)!;
     private static PriceSnapshot Book(long amount,int count=10)=>new("KRW",DateTimeOffset.UtcNow,"synthetic",TimeSpan.Zero,[],[new(amount,count)]){Asks=[new(amount,count)]};
+    private static async Task IndexDenied()
+    {
+        var log=new Capture();using var use=DiagnosticHub.Use(log);using var vm=new SteamWorkspaceViewModel();using var server=new IndexHandler{Status=HttpStatusCode.Forbidden};
+        var property=typeof(SteamWorkspaceViewModel).GetProperty("TbhIndexClient",BindingFlags.NonPublic|BindingFlags.Instance)!;((IDisposable)property.GetValue(vm)!).Dispose();property.SetValue(vm,new MarketCrate.Infrastructure.Tbh.TbhIndexMarketClient(server));
+        vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,[new("a","P0","P0",1,false,"stash")],0));await vm.QuickTbhPrices.ExecuteAsync();
+        Check(server.Calls==1&&vm.TbhPriceSource.StartsWith("Steam")&&vm.TbhSaveRows.Single().PricedTotal is null&&log.Rows.Any(x=>x.Endpoint=="TbhIndex"&&x.Reason=="ReferenceTransport"&&x.HttpStatus==403));
+    }
+    private static void IndexParser()
+    {
+        foreach(var json in new[]{"{}","{\"currency\":\"USD\",\"items\":[]}","[{\"market_hash_name\":\"A\"},{\"market_hash_name\":\"A\"}]"}){bool rejected=false;try{MarketCrate.Infrastructure.Tbh.TbhIndexMarketClient.Parse(System.Text.Encoding.UTF8.GetBytes(json));}catch(InvalidDataException){rejected=true;}Check(rejected);}
+        var rows=MarketCrate.Infrastructure.Tbh.TbhIndexMarketClient.Parse(System.Text.Encoding.UTF8.GetBytes("[{\"market_hash_name\":\"A\",\"lowest_sell_order\":0.3,\"highest_buy_order\":null}]"));Check(rows["A"].BuyMinor is null&&rows["A"].SellMinor==30&&rows["A"].ObservedAt is null);
+    }
+    public static async Task FastReference()
+    {
+        using var vm=new SteamWorkspaceViewModel();using var server=new IndexHandler();var property=typeof(SteamWorkspaceViewModel).GetProperty("TbhIndexClient",BindingFlags.NonPublic|BindingFlags.Instance)!;((IDisposable)property.GetValue(vm)!).Dispose();property.SetValue(vm,new MarketCrate.Infrastructure.Tbh.TbhIndexMarketClient(server));
+        vm.ApplyTbhSnapshot(new(DateTimeOffset.UtcNow,DateTimeOffset.UtcNow,Enumerable.Range(0,100).Select(i=>new TbhOwnedItem(i.ToString(),"P"+i,"P"+i,1,false,"stash")).ToArray(),0));
+        Check(vm.TbhPriceSource.Contains("Steam")&&server.Calls==0);
+        await vm.QuickTbhPrices.ExecuteAsync();Check(server.Calls==1&&vm.TbhSaveRows.Count==100&&vm.TbhSaveRows.All(x=>x.Currency=="BRL"&&x.UnitPrice==30)&&vm.TbhValuationText.Contains("30.00")&&Quotes(vm).Count==0&&!vm.Connected);
+        await vm.QuickTbhPrices.ExecuteAsync();Check(server.Calls==1);vm.TbhExcludeThirtyWon=true;Check(vm.TbhSaveRows.Count==100);
+        vm.TbhPriceMode=1;Check(vm.TbhSaveRows.All(x=>x.UnitPrice==40));
+    }
+    private sealed class IndexHandler:HttpMessageHandler
+    {
+        public int Calls;public HttpStatusCode Status=HttpStatusCode.OK;
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,CancellationToken token)
+        {
+            Calls++;Check(request.RequestUri!.Host=="api.tbhindex.com"&&!request.Headers.Contains("Cookie")&&request.Headers.Authorization is null);
+            var json=JsonSerializer.Serialize(Enumerable.Range(0,100).Select(i=>new{market_hash_name="P"+i,highest_buy_order=.30m,lowest_sell_order=.40m,orderbook_updated_at=DateTimeOffset.UtcNow}));
+            return Task.FromResult(new HttpResponseMessage(Status){Content=new StringContent(json)});
+        }
+    }
     public static void ThirtyWonFilter()
     {
         using var vm=new SteamWorkspaceViewModel();

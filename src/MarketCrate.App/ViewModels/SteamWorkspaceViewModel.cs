@@ -339,7 +339,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
     private Task ManageAsync()=>Run(async token=>
     {
         RequireConnection();if(managementReprice?!CanTrade:!CanCancel)throw new SteamException(SteamFailure.Disabled);if(managementReprice&&DateTimeOffset.UtcNow>managementDeadline)throw new SteamException(SteamFailure.StaleReview);
-        if(managementReprice&&revisionSource is null)await workspace!.Executor.ValidateRepriceBatchAsync(management.Select(x=>(x.Listing,x.Price,managementBooks[x.Key])).ToArray(),token);
+        if(managementReprice&&revisionSource is null)await workspace!.Executor.ValidateRepriceBatchAsync(management.Select(x=>(x.Listing,x.Price,managementBooks[x.Key])).ToArray(),token,fixedApprovedPrice:true,approvedQuotes:management.ToDictionary(x=>x.Listing.ListingId,x=>gameFees[x.Listing.Asset.AppId].FromBuyer(x.Price)));
         Results.Clear();foreach(var row in management)Results.Add(new(row.Listing.ListingId,SaleState.Ready,"미전송"));
         if(!managementReprice){var cancelled=await workspace!.Executor.CancelBatchAsync(management.Select(x=>x.Listing).ToArray(),Guid.NewGuid().ToString("N"),token);Results.Clear();foreach(var item in cancelled)Results.Add(item);ManagementOpen=false;RefreshRequests();Status="취소 요청 결과 · 반환 확정 전 재등록 금지";return;}
         for(var index=0;index<management.Length;index++)
@@ -347,7 +347,7 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
             if(DateTimeOffset.UtcNow>managementDeadline)throw new SteamException(SteamFailure.StaleReview);var row=management[index];OperationLabel=$"재등록 처리 {index+1}/{management.Length} · 취소/반환 대조";
             try
             {
-                var intent=revisionSource is null?await workspace!.Executor.RepriceAsync(row.Listing,row.Price,row.Key,token,managementBooks.GetValueOrDefault(row.Key)):await workspace!.Executor.ReviseRepriceAsync(revisionSource,row.Price,row.Key,token,managementBooks.GetValueOrDefault(row.Key));token.ThrowIfCancellationRequested();
+                var intent=revisionSource is null?await workspace!.Executor.RepriceAsync(row.Listing,row.Price,row.Key,token,managementBooks.GetValueOrDefault(row.Key),fixedApprovedPrice:true,approvedQuote:gameFees[row.Listing.Asset.AppId].FromBuyer(row.Price)):await workspace!.Executor.ReviseRepriceAsync(revisionSource,row.Price,row.Key,token,managementBooks.GetValueOrDefault(row.Key),fixedApprovedPrice:true,approvedQuote:gameFees[row.Listing.Asset.AppId].FromBuyer(row.Price));token.ThrowIfCancellationRequested();
                 var state=intent.ReplacementKey is {} replacement?workspace!.Store.ReadCommand(replacement)?.State??SaleState.Unknown:SaleState.Unknown;
                 Results[index]=new(row.Listing.ListingId,state,"재등록 · "+SteamStatusText.Label(state)+" · 취소/반환 근거는 작업 이력에서 확인하세요.");
                 if(Results[index].State==SaleState.Unknown)break;
@@ -462,14 +462,14 @@ public sealed partial class SteamWorkspaceViewModel : Observable, IDisposable
         Raise(nameof(Connected));Raise(nameof(SessionPresent));Raise(nameof(CanRead));Raise(nameof(RequestsBlocked));Raise(nameof(AuthenticationText));Raise(nameof(ConnectionSummary));Raise(nameof(RequestAccessText));Raise(nameof(SelectionSummary));Raise(nameof(SelectionEstimate));Raise(nameof(AnyReview));LoadListings?.Refresh();ShowCurrentListings?.Refresh();LoadFees?.Refresh();LoadWallet?.Refresh();OpenOfficialMarket?.Refresh();
         PrepareTrading?.Refresh();PrepareCancellation?.Refresh();Raise(nameof(CanCancel));Raise(nameof(Totals));Raise(nameof(TradingText));Raise(nameof(TradingModeLabel));Raise(nameof(WalletBalanceLabel));Raise(nameof(WalletBalanceHint));Raise(nameof(CanTrade));Raise(nameof(CanTradeReview));Raise(nameof(PricingContractText));Raise(nameof(SubmissionAvailability));
         BeginLogin?.Refresh();CheckLogin?.Refresh();Load?.Refresh();RefreshPrices?.Refresh();SelectAll?.Refresh();Review?.Refresh();CloseReview?.Refresh();Submit?.Refresh();EnableTrading?.Refresh();Recover?.Refresh();Inspect?.Refresh();MedianHistory?.Refresh();ReviewCancel?.Refresh();ReviewReprice?.Refresh();ConfirmManagement?.Refresh();
-        Raise(nameof(TbhNextAction));ReadTbhSave?.Refresh();RefreshTbhPrices?.Refresh();ForceTbhPrices?.Refresh();ResumeReprice?.Refresh();ReviewStoredReprice?.Refresh();RefreshReviewStatus?.Refresh();ListingMetrics?.Refresh();PrepareListingReprice?.Refresh();
+        Raise(nameof(TbhNextAction));QuickTbhPrices?.Refresh();ReadTbhSave?.Refresh();RefreshTbhPrices?.Refresh();ForceTbhPrices?.Refresh();ResumeReprice?.Refresh();ReviewStoredReprice?.Refresh();RefreshReviewStatus?.Refresh();ListingMetrics?.Refresh();PrepareListingReprice?.Refresh();
         CancelForNewReview?.Refresh();ReviewCancelledTargets?.Refresh();OpenInventory?.Refresh();OpenGameSettings?.Refresh();RefreshSelectedRequest?.Refresh();
         ClearSelection?.Refresh();ClearListings?.Refresh();
         SelectAllListings?.Refresh();ArchiveBatch?.Refresh();
         CancelOperation?.Refresh();AddScope?.Refresh();RemoveScope?.Refresh();Raise(nameof(ScopeSummary));
     }
     private void Bulk(Action action){bulkUpdate=true;try{action();}finally{bulkUpdate=false;Changed();}}
-    public void Dispose()=>EndSession(false);
+    public void Dispose(){EndSession(false);TbhIndexClient.Dispose();}
 }
 
 public sealed class SteamAssetRow(InventoryAsset asset,int available,Action changed):Observable
@@ -520,7 +520,7 @@ public sealed class SteamReviewRow:Observable
     public void RefreshStatus(){Raise(nameof(Valid));Raise(nameof(Amounts));Raise(nameof(PriceWarning));}
     public FeeQuote Quote=>fees.FromBuyer(ParsePrice(text,fees.Currency));
     public string Amounts=>Valid?$"수량 {Quantity} · Steam {new Money(checked(Quote.SteamFee*Quantity),fees.Currency)} · 게임 {new Money(checked(Quote.GameFee*Quantity),fees.Currency)} · 실수령 {new Money(checked(Quote.SellerReceives*Quantity),fees.Currency)} · {CapturedAt:HH:mm:ss} UTC{(Insufficient?" · 매수 잔량 부족/예상 미체결":"")}":"가격/증분/수수료/시세 오류 · 입력 필요";
-    public SaleLineSnapshot Snapshot(int index)=>new("steam-"+index,Asset,Quantity,fees.Currency,Quote,CapturedAt){Evidence=priceEvidence,OrderbookDigest=bookDigest,ManuallyPricedShortage=Insufficient&&priceEvidence is null&&Valid};
+    public SaleLineSnapshot Snapshot(int index)=>new("steam-"+index,Asset,Quantity,fees.Currency,Quote,CapturedAt){Evidence=priceEvidence,OrderbookDigest=bookDigest,ManuallyPricedShortage=Insufficient&&priceEvidence is null&&Valid,FixedApprovedPrice=priceEvidence is null};
     public static string FormatPrice(long minor,string currency)=>currency=="KRW"?minor.ToString(System.Globalization.CultureInfo.InvariantCulture):$"{minor/100}.{minor%100:00}";
     public static long ParsePrice(string text,string currency)
     {if(!UserNumericInput.PriceCharactersValid(text,currency=="USD"))throw new ArgumentException("InvalidPrice");if(currency=="KRW"&&long.TryParse(text,System.Globalization.NumberStyles.None,System.Globalization.CultureInfo.InvariantCulture,out var won))return won;if(currency=="USD"&&decimal.TryParse(text,System.Globalization.NumberStyles.AllowDecimalPoint,System.Globalization.CultureInfo.InvariantCulture,out var usd)&&usd>=0&&usd*100==decimal.Truncate(usd*100))return checked((long)(usd*100));throw new ArgumentException("InvalidPrice");}

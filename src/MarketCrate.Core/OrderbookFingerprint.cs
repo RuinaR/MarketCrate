@@ -7,6 +7,11 @@ namespace MarketCrate.Core;
 // Only immutable price/quantity evidence; never an account or asset identifier.
 public static class OrderbookFingerprint
 {
+    public static bool IsValid(string? digest)
+    {
+        if(digest is null)return false;var hash=IsSell(digest)?digest[4..]:digest;
+        return hash.Length==64&&hash.All(char.IsAsciiHexDigit);
+    }
     public static bool IsSell(string? digest)=>digest?.StartsWith("ASK:",StringComparison.Ordinal)==true;
     public static string For(PriceSnapshot price,string? digest)=>IsSell(digest)?OfAsk(price):Of(price);
     public static string OfAsk(PriceSnapshot price)

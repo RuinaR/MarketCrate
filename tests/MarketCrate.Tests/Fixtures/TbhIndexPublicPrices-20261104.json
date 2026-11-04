@@ -1,0 +1,32 @@
+[
+  {
+    "market_hash_name": "Abyssal Mucus",
+    "highest_buy_order": 0.43,
+    "lowest_sell_order": 0.7,
+    "orderbook_updated_at": "2026-11-04T13:32:56.198Z"
+  },
+  {
+    "market_hash_name": "Abyssal Orb (Arcana) A",
+    "highest_buy_order": null,
+    "lowest_sell_order": null,
+    "orderbook_updated_at": null
+  },
+  {
+    "market_hash_name": "Abyssal Orb (Arcana) B",
+    "highest_buy_order": null,
+    "lowest_sell_order": null,
+    "orderbook_updated_at": null
+  },
+  {
+    "market_hash_name": "Abyssal Orb (Beyond) A",
+    "highest_buy_order": null,
+    "lowest_sell_order": null,
+    "orderbook_updated_at": null
+  },
+  {
+    "market_hash_name": "Abyssal Orb (Beyond) B",
+    "highest_buy_order": null,
+    "lowest_sell_order": null,
+    "orderbook_updated_at": null
+  }
+]

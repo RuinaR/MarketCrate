@@ -8,6 +8,8 @@ public static class LowerPriceStepTests
     public static async Task<(int Passed,int Failed)> RunAsync()
     {
         var tests=new(string,Func<Task>)[]{
+            ("Fixed approval still blocks fee currency and expired review changes",FixedPriceGuards),
+            ("Legacy approval preserves digest checking and does not gain new fixed-price policy",LegacyPriceGuard),
             ("KRW70 to60 valid increment fees and net50 to40",()=>Sync(()=>{var s=new SteamFeeSchedule("KRW",1000,1000,new(50000),new(100000));Check(s.FromBuyer(70)==new FeeQuote(70,50,10,10));Check(s.PreviousValidBuyerPrice(70)==new FeeQuote(60,40,10,10));Reject(()=>s.PreviousValidBuyerPrice(30));})),
             ("USD fee gap23 to21 is one reachable buyer step",()=>Sync(()=>{var s=new SteamFeeSchedule("USD",1,1,new(50000),new(100000));Check(s.PreviousValidBuyerPrice(23).BuyerPays==21);Reject(()=>s.PreviousValidBuyerPrice(22));Reject(()=>s.PreviousValidBuyerPrice(3));})),
             ("Nearest lower valid price property across KRW USD zero and game fees",()=>Sync(Properties)),
@@ -17,9 +19,9 @@ public static class LowerPriceStepTests
             ("Minimum is retained visibly while below-minimum manual input remains rejected",()=>Sync(Minimum)),
             ("Last shortage row accepts a verified manual price and joins the same batch",ManualShortage),
             ("Verified empty orderbook supports an explicit manual limit listing",ManualEmptyBook),
-            ("Orderbook failure or changed bids cannot use the manual empty-book path",ManualBookChanged),
+            ("Explicit manual price survives later bid changes without automatic repricing",ManualBookChanged),
             ("Three minimum-price assets submit once after one unchanged final approval",MinimumBatch),
-            ("Changed orderbook sends no request and a fresh review can submit the whole batch",StaleThenFresh),
+            ("Changed orderbook preserves all approved buyer prices without duplicate sends",StaleThenFresh),
             ("Manual edits refresh comparison and closed review requires a new plan",Manual),
             ("Changed asset state rejects discounted approval without submission",ChangedBook),
             ("Lower option survives neither logout nor restored connection",Reset),
@@ -29,16 +31,32 @@ public static class LowerPriceStepTests
             ("Lowest sell fee minimum clamps and USD fee gaps use one reachable lower price",()=>Sync(SellMoney)),
             ("Inventory lowest sell supports all assets without consuming buy quantity",()=>SellInventory(false)),
             ("Inventory lowest sell lower option sends exact approved prices once",()=>SellInventory(true)),
-            ("Lowest sell change before approval sends neither sell nor cancellation",SellChanged),
+            ("Lowest sell changes after review retain exact approved price",SellChanged),
             ("Missing sell side is not replaced by buy price or zero",SellMissing),
             ("Listing lowest sell uses ask reference through cancel return and replacement",SellReprice),
             ("Lowest sell at KRW30 retains the current minimum without cancellation",SellMinimum),
-            ("Lowest ask change before reprice approval prevents every cancellation",SellRepriceChanged),
+            ("Lowest ask changes retain approved reprice through cancellation and replacement",SellRepriceChanged),
             ("Same best ask with changed quantities preserves an explicit price approval",SellQuantityChanged),
             ("Own sell quantities are subtracted by product price and state before choosing the lowest ask",()=>Sync(OwnSellExcluded)),
             ("Inventory lowest reference skips an existing own cheaper listing",InventoryOwnSell)
         };
         int passed=0,failed=0;foreach(var(name,test)in tests)try{await test();passed++;Console.WriteLine("PASS "+name);}catch(Exception error){failed++;Console.WriteLine("FAIL "+name+": "+error);}return(passed,failed);
+    }
+    private static async Task FixedPriceGuards()
+    {
+        foreach(var change in new[]{"currency","fee","expiry"})
+        {
+            using var f=new FifthStageTests.Fixture();await f.Login();await f.Prepare(1);f.EnableTrading();var line=f.Vm.ReviewRows.Single().Snapshot(0);
+            if(change=="currency")f.Server.Currency="USD";else if(change=="fee")f.Server.KrwIncrement=1000;else line=line with{MarketTime=DateTimeOffset.UtcNow.AddMinutes(-6)};
+            bool rejected=false;try{await f.Workspace!.Executor.ValidateBatchAsync(new(Guid.NewGuid(),f.Workspace.Authentication.SteamId!,DateTimeOffset.UtcNow,[line]),default);}catch(MarketCrate.Infrastructure.Steam.SteamException){rejected=true;}catch(InvalidOperationException){rejected=true;}catch(ArgumentException){rejected=true;}
+            Check(rejected&&f.Server.Sends==0&&f.Workspace!.Store.Commands().Count==0);
+        }
+    }
+    private static async Task LegacyPriceGuard()
+    {
+        using var f=new FifthStageTests.Fixture();await f.Login();await f.Prepare(1);f.EnableTrading();var line=f.Vm.ReviewRows.Single().Snapshot(0) with{FixedApprovedPrice=false};
+        var json=System.Text.Json.JsonSerializer.Serialize(line).Replace(",\"FixedApprovedPrice\":false","");var old=System.Text.Json.JsonSerializer.Deserialize<SaleLineSnapshot>(json)!;Check(!old.FixedApprovedPrice);
+        f.Server.OrderbookOverride=Book("7000,2");bool rejected=false;try{await f.Workspace!.Executor.ValidateBatchAsync(new(Guid.NewGuid(),f.Workspace.Authentication.SteamId!,DateTimeOffset.UtcNow,[old]),default);}catch(MarketCrate.Infrastructure.Steam.SteamException){rejected=true;}Check(rejected&&f.Server.Sends==0);
     }
     private static Task Sync(Action action){action();return Task.CompletedTask;}
     private static void Properties()
@@ -74,7 +92,11 @@ public static class LowerPriceStepTests
     {
         var log=new Capture();using var use=DiagnosticHub.Use(log);
         using var f=new FifthStageTests.Fixture();f.Server.Free=3;f.Server.ManyAssets=3;await f.Login();await f.Vm.LoadAsync();f.Vm.SelectAll.Execute(null);await f.Vm.RefreshPricesAsync();f.Vm.LowerPriceOneStep=true;f.Vm.BuildReview();f.EnableTrading();f.Server.OrderbookOverride="{\"data\":{\"success\":true,\"data\":{\"eCurrency\":16,\"rgCompactBuyOrders\":[11500,2,11300,4,11000,3]}}}";
-        await f.Vm.Submit.ExecuteAsync();Check(f.Server.Sends==0&&f.Workspace!.Store.Commands().Count==0&&!f.Vm.ReviewOpen&&f.Vm.Status.Contains("Steam 승인")&&f.Vm.Status.Contains("호가"));Check(log.Records.Any(x=>x.EventName=="BatchFinished"&&x.Outcome==DiagnosticOutcome.Failed&&x.Error==DiagnosticError.Validation)&&!log.Records.Any(x=>x.Error==DiagnosticError.Storage));await f.Vm.RefreshPrices.ExecuteAsync();f.Vm.Review.Execute(null);Check(f.Vm.ReviewOpen);await f.Vm.Submit.ExecuteAsync();Check(f.Server.Sends==3&&f.Vm.Results.All(x=>x.State==SaleState.AwaitingSteamGuard));
+        var expected=f.Vm.ReviewRows.Select(x=>x.Quote.SellerReceives).ToArray();var bookCalls=f.Server.OrderbookReads;
+        await f.Vm.Submit.ExecuteAsync();Check(f.Server.Sends==3&&f.Vm.Results.All(x=>x.State==SaleState.AwaitingSteamGuard));
+        Check(f.Server.SellFields.Select(x=>long.Parse(x["price"])).SequenceEqual(expected.Select(x=>new Money(x,"KRW").Wire)));
+        Check(log.Records.Any(x=>x.Reason=="FixedApprovedPrice")&&bookCalls==f.Server.OrderbookReads);await f.Vm.Submit.ExecuteAsync();Check(f.Server.Sends==3);
+
     }
     private sealed class Capture:IDiagnosticLog{public Guid SessionId{get;}=Guid.NewGuid();public List<DiagnosticRecord> Records{get;}=[];public void Write(DiagnosticRecord record)=>Records.Add(record);}
     private static async Task ManualShortage()
@@ -88,7 +110,7 @@ public static class LowerPriceStepTests
     }
     private static async Task ManualBookChanged()
     {
-        using var f=new FifthStageTests.Fixture();f.Server.Free=1;f.Server.OrderbookOverride=Book("");await f.Login();f.Vm.LowerPriceOneStep=true;await f.Prepare(1);f.EnableTrading();f.Vm.ReviewRows.Single().PriceText="30";Check(f.Vm.Submit.CanExecute(null));f.Server.OrderbookOverride=Book("300,1");await f.Vm.Submit.ExecuteAsync();Check(f.Server.Sends==0&&f.Workspace!.Store.Commands().Count==0&&!f.Vm.ReviewOpen);
+        using var f=new FifthStageTests.Fixture();f.Server.Free=1;f.Server.OrderbookOverride=Book("");await f.Login();f.Vm.LowerPriceOneStep=true;await f.Prepare(1);f.EnableTrading();f.Vm.ReviewRows.Single().PriceText="30";Check(f.Vm.Submit.CanExecute(null));f.Server.OrderbookOverride=Book("300,1");await f.Vm.Submit.ExecuteAsync();Check(f.Server.Sends==1&&f.Vm.Results.Single().State==SaleState.AwaitingSteamGuard);
     }
     private static async Task Batch()
     {
@@ -123,7 +145,7 @@ public static class LowerPriceStepTests
     }
     private static async Task SellChanged()
     {
-        using var f=new FifthStageTests.Fixture();await f.Login();f.Server.OrderbookOverride=SellBook();f.Vm.PriceTarget=1;await f.Prepare(1);f.EnableTrading();f.Server.OrderbookOverride=SellBook("60000,1");await f.Vm.Submit.ExecuteAsync();Check(f.Server.Sends==0&&f.Server.Cancels==0&&!f.Vm.ReviewOpen&&f.Workspace!.Store.Commands().Count==0);
+        using var f=new FifthStageTests.Fixture();await f.Login();f.Server.OrderbookOverride=SellBook();f.Vm.PriceTarget=1;await f.Prepare(1);f.EnableTrading();f.Server.OrderbookOverride=SellBook("60000,1");await f.Vm.Submit.ExecuteAsync();Check(f.Server.Sends==1&&f.Server.Cancels==0&&f.Server.SellFields.Single()["price"]==new Money(f.Server.Schedule.LowestSellQuote(575,false).SellerReceives,"KRW").Wire.ToString());
     }
     private static async Task SellMissing(){using var f=new FifthStageTests.Fixture();await f.Login();f.Vm.PriceTarget=1;await f.Prepare(1);Check(!f.Vm.ReviewOpen&&f.Server.Sends==0&&f.Vm.Status.Contains("최저 판매주문호가"));}
     private static async Task SellReprice()
@@ -132,7 +154,7 @@ public static class LowerPriceStepTests
     }
     private static async Task SellRepriceChanged()
     {
-        using var f=new FifthStageTests.Fixture();f.Server.IncludeOwnSellDepth=true;f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();await f.Vm.Submit.ExecuteAsync();f.Server.Publish=true;await f.Vm.LoadListingsAsync();f.Vm.SelectAllListings.Execute(null);f.Vm.PriceTarget=1;f.Server.OrderbookOverride=SellBook();await f.Vm.PrepareListingRepriceAsync();Check(f.Vm.ManagementOpen);f.Server.OrderbookOverride=SellBook("60000,1");await f.Vm.ConfirmManagement.ExecuteAsync();Check(f.Server.Cancels==0&&f.Server.Sends==1&&!f.Vm.ManagementOpen);
+        using var f=new FifthStageTests.Fixture();f.Server.IncludeOwnSellDepth=true;f.Server.Free=1;await f.Login();await f.Prepare(1);f.EnableTrading();await f.Vm.Submit.ExecuteAsync();f.Server.Publish=true;await f.Vm.LoadListingsAsync();f.Vm.SelectAllListings.Execute(null);f.Vm.PriceTarget=1;f.Server.OrderbookOverride=SellBook();await f.Vm.PrepareListingRepriceAsync();Check(f.Vm.ManagementOpen);f.Server.OrderbookOverride=SellBook("60000,1");await f.Vm.ConfirmManagement.ExecuteAsync();Check(f.Server.Cancels==1&&f.Server.Sends==2);
     }
     private static async Task SellQuantityChanged()
     {

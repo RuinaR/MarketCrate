@@ -1,3 +1,12 @@
+## 2026-11-04 TBH Index 공개 참고 가격 계약
+
+- https://tbhindex.com/ko/market?page=1&per=48&sort=volume&dir=desc
+- https://tbhindex.com/assets/apiCache-B4y-__iu.js : /api/items 일괄조회·클라이언트30초 재사용. /api/live/items60초와 구별.
+- https://tbhindex.com/assets/constants-BhArml1V.js : BRL rate1이 기준이며 다른 통화 환산값은 앱의 검증된 지갑가격이 아니다. 환산 상수는 도입하지 않았다.
+- https://api.tbhindex.com/api/items : 공개8236품목 관측. market_hash_name/highest_buy_order/lowest_sell_order/orderbook_updated_at5행 화이트리스트 발췌를 Fixtures/TbhIndexPublicPrices-20261104.json에 보존. 값/시각null 품목은 미확인으로 유지. 전체 호가잔량/통화 필드가 없으므로 주문장 대체/실거래 가격으로 사용하지 않는다.
+
+공개JS를 실행/복사·재배포하지 않고 요청/응답 계약만 독립 C#으로 구현했다. 코드 재사용 라이선스는 확인되지 않아 소스 도입 없음. 웹표시용buy부재→sell등의 fallback도 도입하지 않았다. 공개가격1회 읽기만 수행했으며 계정인증/Steam계정조회/등록/취소는 실행하지 않았다. 서버 내부 캐시 갱신 주기나 공식API지원/사용 한도는 미확인이다.
+
 ## 0.24.0 요청 간격 추가 검토 (2026-11-02)
 
 https://github.com/federicogiorgi/SteamMarketHelper 의 실제 기본 requestDelayMs1200/Queue.enqueue(응답 후 추가 대기)를 재확인했다. 우리 시작 간격과 동일한 처리량 보증이 아니며 공식Steam 제한표도 아니다. 사용자 요청으로 가격 연속 GET에만 최소1.2초, 다른 읽기1.5초, 쓰기3초를 사용하고 혼합 경계에는 두 요청의 긴 읽기 간격을 적용했다. 실제 인증된 서버에서 간격 변경을 시험하지 않았다. 원본의 무작위 jitter/429 자동재시도는 채택하지 않았다. 공개 보관 JS의 기본값/코드는 대조만 했으며 새 소스 복사/종속성 도입0.

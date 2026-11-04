@@ -11,7 +11,7 @@ public sealed class SteamContractServer : HttpMessageHandler
     public TestClock Clock {get;}=new();
     public string Currency="KRW";public int Free=10;public bool MissingId,TimeoutSell,TimeoutCancel,HideReturnedAsset,FeeConflict,Denied,HoldLogin,RequireCaptcha,AuthNetworkFailure;
     public List<Dictionary<string,string>> SellFields{get;}=[];
-    public int Sends,Cancels,Calls;public bool Publish;public List<(string Id,int Quantity,long Seller)> Rows {get;}=[];
+    public int Sends,Cancels,Calls,OrderbookReads;public bool Publish;public List<(string Id,int Quantity,long Seller)> Rows {get;}=[];
     private readonly Dictionary<string,long> created=[];
     public string? IconToken;public bool DynamicInventory,UnsupportedInventory,PrivateInventory;public string? HistoryOverride;public bool HidePublisherFee;public int InventoryReads;public TaskCompletionSource? HistoryStarted,HistoryRelease;
     public int ListingAppId=730;public string ListingContext="2";
@@ -58,6 +58,7 @@ public sealed class SteamContractServer : HttpMessageHandler
         else if(path=="/market/ajaxfeestructure/")json="{\"steam_fee\":{\"fee_rate\":\"0.05\",\"fee_cap\":\"0\"},\"publisher_fee\":{\"fee_rate\":\"0.1\",\"fee_cap\":\"0\"}}";
         else if(path=="/market/orderbook")
         {
+            OrderbookReads++;
             json=OrderbookOverride??JsonSerializer.Serialize(new{data=new{success=true,data=new{eCurrency=Currency=="KRW"?16:1,rgCompactBuyOrders=new long[]{new Money(115,Currency).Wire,3,new Money(Currency=="KRW"?113:112,Currency).Wire,4,new Money(110,Currency).Wire,3}}}});
             if(IncludeOwnSellDepth&&Publish)
             {

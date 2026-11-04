@@ -12,4 +12,5 @@
     <MarketCrateProduction>false</MarketCrateProduction>
   </PropertyGroup>
   <ItemGroup><None Update="Fixtures/TbhPublicOrderbook-20261102.json" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
+  <ItemGroup><None Update="Fixtures/TbhIndexPublicPrices-20261104.json" CopyToOutputDirectory="PreserveNewest" /></ItemGroup>
 </Project>
