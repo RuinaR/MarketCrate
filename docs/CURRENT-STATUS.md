@@ -1,3 +1,9 @@
+## 0.25.0 portable 배포 (2026-11-04)
+
+소스 d50c7fecc437734040c2c7e1920cdf9d8b39881a. `artifacts/releases/MarketCrate-0.25.0-fixed-prices-d50c7fe-win-x64.zip` 68,986,309바이트/421파일. SHA256 **BCA094D800F1EA600FBD06E57E0429F982B59B47E180262284235558EB63BDF8**. ZIP 모든 항목 원본 해시 일치. x64 self-contained CLR/WPF/SQLite·라이선스·실제 전용 PE/BAML·테스트/개발/사용자 인증/DB/세이브/로그 제외 정적 검사 PASS(runtime/publish-0.25.0.txt). Latest0.25.0/Rollback0.24.2. 기존 배포본/설정/Auth/SQLite/저널/진단 보존, 삭제0. 실제 앱/설치/계정/거래는 미실행.
+
+최소 사용자 확인: 기존Steam갱신기본→선택한경우만상세의BRL참고시세→Steam보관함에서검토한단가로전체승인→이후경쟁호가가바뀌어도승인단가유지→공식Steam앱수동확인→현재판매목록갱신. 가격고정은체결보장/서버접수보장이아니며수수료/자산/통화/검토만료/서버제한차단은유지한다.
+
 ## 0.25.0 최종 검증 (2026-11-04)
 
 기능510/510·비표시WPF98/98·배포23/23·의존성6/6 PASS. 정리8PASS/0FAIL/1NOT VERIFIED(junction 생성 불가). 빌드 경고0/오류0. runtime/fast-fixed-final-regression.txt.100상품 합성 빠른조회1HTTP/반복0추가HTTP·기본Steam유지·BRL구분·쿠키없음·403단일실패/정제된상태·형식/중복/통화불일치·실제공개5행발췌null보존·호가변동후승인단가다수등록/중복차단·재가격·수수료/통화변경/만료차단·구형승인strict복원을 검사했다. 승인후가격조회0추가를 계측했다. 실제지연배수/Steam제한안전성은 측정하지 않았다.

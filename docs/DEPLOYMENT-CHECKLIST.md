@@ -1,3 +1,9 @@
+## 0.25.0 portable 배포 (2026-11-04)
+
+소스 d50c7fecc437734040c2c7e1920cdf9d8b39881a. `artifacts/releases/MarketCrate-0.25.0-fixed-prices-d50c7fe-win-x64.zip` 68,986,309바이트/421파일. SHA256 **BCA094D800F1EA600FBD06E57E0429F982B59B47E180262284235558EB63BDF8**. ZIP 모든 항목 원본 해시 일치. x64 self-contained CLR/WPF/SQLite·라이선스·실제 전용 PE/BAML·테스트/개발/사용자 인증/DB/세이브/로그 제외 정적 검사 PASS(runtime/publish-0.25.0.txt). Latest0.25.0/Rollback0.24.2. 기존 배포본/설정/Auth/SQLite/저널/진단 보존, 삭제0. 실제 앱/설치/계정/거래는 미실행.
+
+최소 사용자 확인: 기존Steam갱신기본→선택한경우만상세의BRL참고시세→Steam보관함에서검토한단가로전체승인→이후경쟁호가가바뀌어도승인단가유지→공식Steam앱수동확인→현재판매목록갱신. 가격고정은체결보장/서버접수보장이아니며수수료/자산/통화/검토만료/서버제한차단은유지한다.
+
 ## 0.24.2 portable 배포 (2026-11-03)
 
 소스 bc4b0321a0ed6b48c1af66d9ad80085a657f79b9. `artifacts/releases/MarketCrate-0.24.2-price-filter-bc4b032-win-x64.zip` 68,981,119바이트/421파일. SHA256 **AC2ABF38D7A489E216D12515B78AF9E266BD9E3F162B319ED133C00D61DA8285**. ZIP 전체 파일 원본 해시 일치. x64 self-contained CLR/WPF/SQLite·라이선스·실제 전용 PE/BAML·테스트/사용자 Auth/DB/ES3/로그 제외 정적 검사 PASS(runtime/publish-0.24.2.txt). Latest0.24.2/Rollback0.24.1; 기존 배포본/사용자 데이터 삭제0. 앱/설치/실계정 미실행.
