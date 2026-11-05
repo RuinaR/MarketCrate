@@ -1,3 +1,7 @@
+## 0.25.1 portable 배포 (2026-11-05)
+
+소스 bca2ed0387bfbd5abcb4fdbdbd9b2d94f334059d. `artifacts/releases/MarketCrate-0.25.1-fee-context-bca2ed0-win-x64.zip` 68,988,680바이트/421파일. SHA256 **E5F22598232F9B4EB1B9167C10CFF1B8E26E9BDAC9F2E5AD717DC112B22709C3**. ZIP 모든항목 원본해시일치, x64 self-contained CLR/WPF/SQLite·라이선스·실제전용 PE/BAML·테스트/개발/인증/사용자DB/로그 제외 정적검사 PASS(runtime/publish-0.25.1.txt). Latest0.25.1/Rollback0.25.0·기존사용자자료/모든배포본보존. 앱/설치/실계정실행없음. 같은계정의문제해소는판매중갱신→선택→재등록가격계산의사용자재확인이필요하다.
+
 ## 0.25.0 portable 배포 (2026-11-04)
 
 소스 d50c7fecc437734040c2c7e1920cdf9d8b39881a. `artifacts/releases/MarketCrate-0.25.0-fixed-prices-d50c7fe-win-x64.zip` 68,986,309바이트/421파일. SHA256 **BCA094D800F1EA600FBD06E57E0429F982B59B47E180262284235558EB63BDF8**. ZIP 모든 항목 원본 해시 일치. x64 self-contained CLR/WPF/SQLite·라이선스·실제 전용 PE/BAML·테스트/개발/사용자 인증/DB/세이브/로그 제외 정적 검사 PASS(runtime/publish-0.25.0.txt). Latest0.25.0/Rollback0.24.2. 기존 배포본/설정/Auth/SQLite/저널/진단 보존, 삭제0. 실제 앱/설치/계정/거래는 미실행.

@@ -1,3 +1,7 @@
+## 0.25.1 portable 배포 (2026-11-05)
+
+소스 bca2ed0387bfbd5abcb4fdbdbd9b2d94f334059d. `artifacts/releases/MarketCrate-0.25.1-fee-context-bca2ed0-win-x64.zip` 68,988,680바이트/421파일. SHA256 **E5F22598232F9B4EB1B9167C10CFF1B8E26E9BDAC9F2E5AD717DC112B22709C3**. ZIP 모든항목 원본해시일치, x64 self-contained CLR/WPF/SQLite·라이선스·실제전용 PE/BAML·테스트/개발/인증/사용자DB/로그 제외 정적검사 PASS(runtime/publish-0.25.1.txt). Latest0.25.1/Rollback0.25.0·기존사용자자료/모든배포본보존. 앱/설치/실계정실행없음. 같은계정의문제해소는판매중갱신→선택→재등록가격계산의사용자재확인이필요하다.
+
 ## 0.25.1 검증 결과 (2026-11-05)
 
 기능513/513·비표시WPF98/98·배포23/23·의존성6/6 PASS. 정리8PASS/0FAIL/1NOT VERIFIED(junction 생성 불가). 빌드 경고0/오류0. runtime/listing-fee-context-regression.txt. 신규3검사: 인증된판매목록8건의명시적app_data로classic앱문맥보완·zero/누락필드/다른계정/앱/오래된증거/HTML충돌/모드·소유페이지누락차단·잘못된선택적app_data에서정상목록보존을검사했다. 수수료API를추가호출하거나상수로대체하지않았고판매/취소0요청을검사했다. 사용자진단원문/인증정보는커밋하지않는다.
