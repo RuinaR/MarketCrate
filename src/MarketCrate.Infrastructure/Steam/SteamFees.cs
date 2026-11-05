@@ -81,15 +81,16 @@ public static class SteamFees
         var data=ObserveStructure(json);if(data.AdditionalFields)throw new SteamException(SteamFailure.ContractChanged);
         var result=new SteamFeeSchedule(wallet.Currency,wallet.MinimumWire,wallet.IncrementWire,data.Steam,data.Publisher);result.Validate();DiagnosticHub.Emit(DiagnosticEvent.FeeValidated,DiagnosticArea.Pricing,requirement:"D10");return result;
     }
-    public static async Task<SteamFeeSchedule> FetchResolvedAsync(SteamHttp http,SteamQrAuthentication auth,int appId,CancellationToken token,Action<SteamWalletObservation>? observed=null,bool requireWalletIdentity=false)
+    public static async Task<SteamFeeSchedule> FetchResolvedAsync(SteamHttp http,SteamQrAuthentication auth,int appId,CancellationToken token,Action<SteamWalletObservation>? observed=null,bool requireWalletIdentity=false,SteamAppFeeEvidence? listingApp=null)
     {
         if(!auth.Connected||auth.SteamId is not {} account)throw new SteamException(SteamFailure.Authentication);
+        if(listingApp is not null&&(listingApp.Account!=account||listingApp.AppId!=appId||listingApp.ObservedAt>DateTimeOffset.UtcNow.AddSeconds(5)||DateTimeOffset.UtcNow-listingApp.ObservedAt>TimeSpan.FromMinutes(5)))listingApp=null;
         using var correlation=DiagnosticHub.Scope(correlation:true);
         using var request=new HttpRequestMessage(HttpMethod.Get,"https://steamcommunity.com/market/");
         var html=await http.SendAsync(request,token,true);var wallet=requireWalletIdentity?ObserveTradingWallet(html,account):ObserveWallet(html);
         if(wallet.LoggedIn==false){http.BlockFeature("Wallet");throw new SteamException(SteamFailure.Authorization){Endpoint="Wallet"};}
         observed?.Invoke(wallet);
-        var evidence=FeeContractResolver.Observe(html,appId,wallet);
+        var evidence=FeeContractResolver.Observe(html,appId,wallet,listingApp);
         if(evidence.Mode==FeeContractMode.Unverified&&evidence.Reason=="ModeMissing")
         {
             using var profile=new HttpRequestMessage(HttpMethod.Get,$"https://steamcommunity.com/profiles/{account}/inventory/");
@@ -98,7 +99,7 @@ public static class SteamFees
             {DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Pricing,DiagnosticOutcome.Blocked,LogLevel.Warning,DiagnosticError.Authorization,endpoint:"FeeContext",reason:"OwnerPageMissing");http.BlockFeature("FeeContext");throw new SteamException(SteamFailure.Authorization){Endpoint="FeeContext"};}
             var identity=Regex.Match(html,@"\bg_steamID\s*=\s*['"" ]?([0-9]{17})['""]?\s*;",RegexOptions.CultureInvariant,TimeSpan.FromMilliseconds(100));
             if(!identity.Success||identity.Groups[1].Value!=account){http.BlockFeature("FeeContext");DiagnosticHub.Emit(DiagnosticEvent.FinalValidation,DiagnosticArea.Pricing,DiagnosticOutcome.Blocked,LogLevel.Warning,DiagnosticError.Authorization,endpoint:"FeeContext",reason:"AccountMismatch");throw new SteamException(SteamFailure.Authorization){Endpoint="FeeContext"};}
-            evidence=FeeContractResolver.Observe(html,appId,wallet);
+            evidence=FeeContractResolver.Observe(html,appId,wallet,listingApp);
             if(evidence.Mode is FeeContractMode.VerifiedLegacy or FeeContractMode.VerifiedNew)http.RememberFeeContext(profile);
         }
         if(!auth.Connected||auth.SteamId!=account)throw new SteamException(SteamFailure.Authentication);
@@ -109,7 +110,7 @@ public static class SteamFees
             FeeContractMode.Restricted=>throw new SteamException(SteamFailure.Authorization){Endpoint="Fees"},
             _=>throw new SteamException(SteamFailure.Unsupported){Endpoint="Fees",FeeContractReason=evidence.Reason}
         };
-        return evidence.Reason=="ClassicInventoryContext"?schedule with{PublisherFallbackAppId=appId}:schedule;
+        return evidence.Reason is "ClassicInventoryContext" or "ClassicMarketAppContext"?schedule with{PublisherFallbackAppId=appId}:schedule;
     }
     public static async Task<SteamWalletObservation> FetchWalletObservationAsync(SteamHttp http,CancellationToken token)
     {

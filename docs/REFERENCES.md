@@ -1,3 +1,11 @@
+## 2026-11-05 앱 문맥 공식 소스 재확인
+
+- https://community.fastly.steamstatic.com/public/javascript/market.js : LoadRecentListings의response.app_data→MergeWithAppDataArray→g_rgAppContextData 경로(1440/1479행). 자체mylistings에항상필드가있다고확대해석하지않고있는경우만지원한다.
+- https://community.fastly.steamstatic.com/public/javascript/economy_v2.js : GetPublisherFeeRate(4578행)는현재앱market_pubfee_rate,없으면wallet_publisher_fee_percent_default를사용한다. 실제앱객체가없는경우도기본값을쓰는것으로해석하지않는다.
+- https://community.fastly.steamstatic.com/public/javascript/economy_common.js : GetTotalWithFees/CalculateFee/ToValidMarketPrice. 기존KRW정수계산을변경하지않았다.
+
+공개정적코드만확인했으며원문코드복사/실계정조회는없다. 첨부진단은AppContextMissing확인에만사용했으며개인ZIP/이벤트원문은저장소에복사하거나배포하지않는다.
+
 ## 2026-11-04 TBH Index 공개 참고 가격 계약
 
 - https://tbhindex.com/ko/market?page=1&per=48&sort=volume&dir=desc

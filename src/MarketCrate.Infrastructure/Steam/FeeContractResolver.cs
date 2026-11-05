@@ -12,10 +12,12 @@ public sealed record FeeContractEvidence(FeeContractMode Mode, SteamWalletObserv
 // React receives newFeeRates/walletInfo in data-props. The classic inventory selects
 // SellItemDialog with explicit g_bReactSellDialog=false and the same current economy_common formula.
 // The obsolete wallet_fee_base formula is not that branch. No failure-driven fallback is allowed.
+public sealed record SteamAppFeeEvidence(int AppId,string Account,DateTimeOffset ObservedAt,long? PublisherMillionths);
+
 public static class FeeContractResolver
 {
     private static readonly TimeSpan Timeout=TimeSpan.FromMilliseconds(100);
-    public static FeeContractEvidence Observe(string html, int appId, SteamWalletObservation wallet)
+    public static FeeContractEvidence Observe(string html, int appId, SteamWalletObservation wallet,SteamAppFeeEvidence? listingApp=null)
     {
         FeeContractEvidence Result(FeeContractMode mode,string reason,long? publisher=null)
         {
@@ -77,10 +79,28 @@ public static class FeeContractResolver
             // cannot silently be interpreted with either old or new arithmetic.
             if(old.BaseWire!=0||old.MinimumWire>wallet.MinimumWire||old.Enabled==false&&old.SteamMillionths!=0)
                 return Result(FeeContractMode.Unsupported,"LegacyFormulaConflict");
+            if(listingApp is not null)
+            {
+                var owner=Regex.Match(html,@"\bg_steamID\s*=\s*['"" ]?([0-9]{17})['""]?\s*;",RegexOptions.CultureInvariant,Timeout);
+                if(!owner.Success||owner.Groups[1].Value!=listingApp.Account||listingApp.AppId!=appId||listingApp.ObservedAt>DateTimeOffset.UtcNow.AddSeconds(5)||DateTimeOffset.UtcNow-listingApp.ObservedAt>TimeSpan.FromMinutes(5))listingApp=null;
+            }
             var app=ReadAssignedObject(html,"g_rgAppContextData");
-            if(app is not {} apps||!apps.TryGetProperty(appId.ToString(System.Globalization.CultureInfo.InvariantCulture),out var context))
-                return Result(FeeContractMode.Unverified,"AppContextMissing");
-            var publisher=context.TryGetProperty("market_pubfee_rate",out var rate)&&rate.ValueKind!=JsonValueKind.Null?Rate(rate):old.DefaultPublisherMillionths;
+            DiagnosticHub.Emit(DiagnosticEvent.FeeValidated,DiagnosticArea.Pricing,DiagnosticOutcome.Completed,requirement:"D10",endpoint:"Fees",reason:"AppContextSources",from:app is null?"AppContextObjectUnavailable":"AppContextObjectObserved",to:listingApp is null?"ListingAppContextUnavailable":"ListingAppContextObserved",count:app?.EnumerateObject().Count()??0);
+            var hasContext=app is {} apps&&apps.TryGetProperty(appId.ToString(System.Globalization.CultureInfo.InvariantCulture),out _);
+            long? publisher;
+            if(hasContext)
+            {
+                var context=app!.Value.GetProperty(appId.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                publisher=context.TryGetProperty("market_pubfee_rate",out var rate)&&rate.ValueKind!=JsonValueKind.Null?Rate(rate):old.DefaultPublisherMillionths;
+                if(listingApp is not null&&(listingApp.PublisherMillionths??old.DefaultPublisherMillionths)!=publisher)return Result(FeeContractMode.Unverified,"AppContextConflict");
+            }
+            else
+            {
+                if(!classic||listingApp is null||listingApp.AppId!=appId||listingApp.ObservedAt>DateTimeOffset.UtcNow.AddSeconds(5)||DateTimeOffset.UtcNow-listingApp.ObservedAt>TimeSpan.FromMinutes(5))return Result(FeeContractMode.Unverified,"AppContextMissing");
+                publisher=listingApp.PublisherMillionths??old.DefaultPublisherMillionths;
+                if(publisher is <0 or >1_000_000)return Result(FeeContractMode.Unverified,"PublisherMissing");
+                return publisher is null?Result(FeeContractMode.Unverified,"PublisherMissing"):Result(FeeContractMode.VerifiedLegacy,"ClassicMarketAppContext",publisher);
+            }
             if(publisher is null)return Result(FeeContractMode.Unverified,"PublisherMissing");
             return Result(FeeContractMode.VerifiedLegacy,classic?"ClassicInventoryContext":"WalletAndAppContext",publisher);
         }

@@ -1,3 +1,9 @@
+## 0.25.1 판매목록 앱 수수료 문맥 보완 (2026-11-05)
+
+사용자0.25.0 진단의 재등록계산은 Listings/Wallet/FeeContext HTTP200 이후 ClassicUiSelected→AppContextMissing에서 중단됐다. 판매/취소요청은 없다. 원본HTML/JSON이 없어 실제앱설정생략과파서불일치는 미확정이다. 공식market.js는 response.app_data를 MergeWithAppDataArray로 앱문맥에합친다. 이 경로를 별도로 수집해 현재계정·5분내·완료한전체판매목록에서명시된앱기록이있을때만 classic소유페이지의빠진앱문맥을보완한다. 명시적market_pubfee_rate를우선하고 실제앱기록안에서필드가없는경우만동일지갑의검증된기본값을사용한다. 앱기록자체가없으면기본값으로추정하지않는다.
+
+로그인/소유페이지/명시적classic모드/동일지갑/통화/수수료계산검증은유지한다. 오래됨·다른계정/앱·페이지별충돌·HTML과JSON수수료충돌·잘못된필드는견적근거로사용하지않는다. 선택적app_data오류는판매목록자체를실패시키지않고수수료근거만해제한다. ListingAppContextObserved/Unavailable/Invalid·AppContextSources·ClassicMarketAppContext로출처와부족단계를기록하며원문/앱이름/계정은기록하지않는다. 사용자Auth/DB/저널/진단보존·타프로세스비간섭·승인단가고정은유지한다. 실계정정상화는사용자재확인이필요하다.
+
 ## 0.21.0 TBH 전용 평가
 
 공개 TBHIndex 및 MIT giba-steam-market의 파일 포맷/사실 메타데이터를 대조하고 제한된 C# 읽기 전용 분석기로 구현했다. 게임 파일의 소유/잠금/장착은 Steam inventory assets/marketable과 다르다. 세이브는 판매 승인이나 거래 계약의 근거가 아니며 시세 조회에 기존 인증/통화/제한 규칙을 그대로 사용한다. 새 버전의 실제 Steam 서버·물리 입력·판매 검증은 수행하지 않았다. 참고 프로젝트의 동작이 Valve의 허가나 제재 위험 제거를 뜻하지 않는다.

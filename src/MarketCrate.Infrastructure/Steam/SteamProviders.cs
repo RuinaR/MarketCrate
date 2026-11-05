@@ -123,6 +123,11 @@ public sealed class SteamMarketDataProvider(SteamHttp http, SteamQrAuthenticatio
 public sealed class SteamOrdersProvider(SteamHttp http, SteamQrAuthentication auth) : IMarketOrderProvider
 {
     private ImmutableArray<SteamListing> cache = [];
+    private ImmutableDictionary<int,long?> appPublisherRates=ImmutableDictionary<int,long?>.Empty;
+    private string? observedAccount;
+    private DateTimeOffset observedAt;
+    public SteamAppFeeEvidence? FeeEvidence(int appId)=>auth.Connected&&auth.SteamId==observedAccount&&http.Halted is null&&DateTimeOffset.UtcNow-observedAt<=TimeSpan.FromMinutes(5)&&appPublisherRates.TryGetValue(appId,out var rate)?new(appId,observedAccount!,observedAt,rate):null;
+
     public Dictionary<string,ItemImageReference> Images{get;}=[];
     public ImmutableArray<SteamListingPresence> Presence{get;private set;}=[];
     public int UnpricedCount{get{var ids=cache.Select(x=>x.ListingId).ToHashSet();return Presence.Count(x=>x.ListingId is null||!ids.Contains(x.ListingId));}}
@@ -132,12 +137,14 @@ public sealed class SteamOrdersProvider(SteamHttp http, SteamQrAuthentication au
     {
         using var operation=DiagnosticHub.Operation(DiagnosticEvent.ListingsLoaded,DiagnosticArea.Data,"B01");
         if (!auth.Connected) throw new SteamException(SteamFailure.Authentication);
+        var account=auth.SteamId;var appRates=new Dictionary<int,long?>();var invalidAppRates=false;
         var images=new Dictionary<string,ItemImageReference>();
         var all = new Dictionary<string, SteamListing>();var membership=new Dictionary<(AssetKey,string?),SteamListingPresence>();var listingIdentities=new Dictionary<string,SteamListingPresence>(); int? total = null; var active = 0;
         for (var start = 0; start < 10000; start += 100)
         {
             var page=await PageAsync(start,token);
             if(page.Images is {} pageImages)foreach(var image in pageImages)images[image.Key]=image.Value;
+            invalidAppRates|=page.AppContextInvalid;foreach(var context in page.AppPublisherRates){if(appRates.TryGetValue(context.Key,out var prior)&&prior!=context.Value)invalidAppRates=true;appRates[context.Key]=context.Value;}
             total ??= page.TotalActive;
             if (total != page.TotalActive) break; // Unstable pagination is not a complete authoritative snapshot.
             foreach(var observed in page.Presence)
@@ -154,7 +161,7 @@ public sealed class SteamOrdersProvider(SteamHttp http, SteamQrAuthentication au
                 all.TryAdd(row.ListingId,row);
             }
             if(active>total)throw new SteamException(SteamFailure.ContractChanged);
-            if (active == total) { Images.Clear();foreach(var image in images)Images.Add(image.Key,image.Value);cache = all.Values.ToImmutableArray();var explicitAssets=membership.Values.Where(x=>x.State!=SaleState.Unknown).Select(x=>x.Asset).ToHashSet();Presence=membership.Values.Where(x=>x.State!=SaleState.Unknown||!explicitAssets.Contains(x.Asset)).ToImmutableArray();DiagnosticHub.Emit(DiagnosticEvent.ListingsLoaded,DiagnosticArea.Data,count:UnpricedCount,reason:"ListingMetadataUnavailable",requirement:"B04"); return cache; }
+            if (active == total) { if(!auth.Connected||auth.SteamId!=account)throw new SteamException(SteamFailure.Authentication);appPublisherRates=invalidAppRates?ImmutableDictionary<int,long?>.Empty:appRates.ToImmutableDictionary();observedAccount=account;observedAt=DateTimeOffset.UtcNow;DiagnosticHub.Emit(DiagnosticEvent.FeeValidated,DiagnosticArea.Data,reason:invalidAppRates?"ListingAppContextInvalid":appRates.Count>0?"ListingAppContextObserved":"ListingAppContextUnavailable",count:appPublisherRates.Count,endpoint:"Listings");Images.Clear();foreach(var image in images)Images.Add(image.Key,image.Value);cache = all.Values.ToImmutableArray();var explicitAssets=membership.Values.Where(x=>x.State!=SaleState.Unknown).Select(x=>x.Asset).ToHashSet();Presence=membership.Values.Where(x=>x.State!=SaleState.Unknown||!explicitAssets.Contains(x.Asset)).ToImmutableArray();DiagnosticHub.Emit(DiagnosticEvent.ListingsLoaded,DiagnosticArea.Data,count:UnpricedCount,reason:"ListingMetadataUnavailable",requirement:"B04"); return cache; }
             if (page.Presence.Count(x => x.State == SaleState.Listed) == 0) break;
         }
         throw new SteamException(SteamFailure.ContractChanged);

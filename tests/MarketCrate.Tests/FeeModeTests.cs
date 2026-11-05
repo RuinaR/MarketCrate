@@ -13,6 +13,9 @@ public static class FeeModeTests
     public static async Task<(int Passed,int Failed)> RunAsync()
     {
         var tests=new(string,Func<Task>)[]{
+            ("Current authenticated listing app_data supplies missing classic app context without constants or fee API",ListingAppContext),
+            ("Supplemented fee context rejects stale foreign account game and mode conflicts",()=>Sync(ListingEvidenceGuards)),
+            ("Malformed optional app_data preserves listings but cannot provide a fee contract",()=>Sync(ListingAppInvalid)),
             ("Verified legacy mode never sends fee API even when endpoint would return Market HTML",LegacyRead),
             ("Explicit new mode uses JSON and cannot fall back on HTML failure",NewRead),
             ("No mode evidence never selects legacy from five wallet fields or API failure",Missing),
@@ -93,6 +96,35 @@ public static class FeeModeTests
         var schedule=await f.Workspace!.FeesAsync(730);Check(schedule.PublisherMatches(730,null)&&!schedule.PublisherMatches(570,null)&&!schedule.PublisherMatches(730,2000)&&!(schedule with{PublisherFallbackAppId=null}).PublisherMatches(730,null));
         f.Vm.TradeAccepted=true;await f.Workspace!.EnableUserTradingAsync(730,"2","Counter-Strike 2",true,true,default);await f.Vm.SubmitAsync();
         Check(f.Server.Sends==1&&f.Vm.Results.Single().State==SaleState.AwaitingSteamGuard);
+    }
+    private static string ClassicMissingApp()=>Classic().Replace("g_rgAppContextData={\"730\":{\"market_pubfee_rate\":0.1}};","g_rgAppContextData={};");
+    private static void ListingEvidenceGuards()
+    {
+        var html=ClassicMissingApp();var wallet=SteamFees.ObserveWallet(WalletOnly);
+        var evidence=new SteamAppFeeEvidence(730,"76561198000000001",DateTimeOffset.UtcNow,100000);
+        Check(FeeContractResolver.Observe(html,730,wallet).Reason=="AppContextMissing");
+        var result=FeeContractResolver.Observe(html,730,wallet,evidence);Check(result.Reason=="ClassicMarketAppContext"&&FeeContractResolver.Legacy(result).FromSeller(1000)==new FeeQuote(1150,1000,50,100));
+        Check(FeeContractResolver.Legacy(FeeContractResolver.Observe(html,730,wallet,evidence with{PublisherMillionths=0})).FromSeller(1000).GameFee==0);
+        Check(FeeContractResolver.Observe(html,730,wallet,evidence with{PublisherMillionths=null}).PublisherMillionths==wallet.LegacyFees!.DefaultPublisherMillionths);
+        foreach(var bad in new[]{evidence with{Account="76561198000000002"},evidence with{AppId=570},evidence with{ObservedAt=DateTimeOffset.UtcNow.AddMinutes(-6)}})Check(FeeContractResolver.Observe(html,730,wallet,bad).Mode==FeeContractMode.Unverified);
+        Check(FeeContractResolver.Observe(Classic(),730,wallet,evidence with{PublisherMillionths=0}).Reason=="AppContextConflict");
+        Check(FeeContractResolver.Observe(html.Replace("g_bReactSellDialog=false;",""),730,wallet,evidence).Mode!=FeeContractMode.VerifiedLegacy);
+        Check(FeeContractResolver.Observe(html.Replace("g_bViewingOwnProfile=true;",""),730,wallet,evidence).Mode!=FeeContractMode.VerifiedLegacy);
+    }
+    private static void ListingAppInvalid()
+    {
+        var json="{\"success\":true,\"listings\":[],\"listings_on_hold\":[],\"pending_listings\":[],\"total_count\":0,\"assets\":{},\"app_data\":{\"730\":{\"market_pubfee_rate\":\"bad\"}}}";
+        var page=SteamContract.Listings(json);Check(page.Listings.IsEmpty&&page.AppContextInvalid&&page.AppPublisherRates.Count==0);
+        page=SteamContract.Listings(json.Replace("\"bad\"","0"));Check(!page.AppContextInvalid&&page.AppPublisherRates[730]==0);
+    }
+    private static async Task ListingAppContext()
+    {
+        using var f=new ThirteenthStageTests.Fixture();await f.Login();f.Server.Publish=true;for(int i=0;i<8;i++)f.Server.Rows.Add(((900+i).ToString(),1,100));
+        var json=System.Text.Json.Nodes.JsonNode.Parse(f.Server.ListingsJson())!;json["app_data"]=System.Text.Json.Nodes.JsonNode.Parse("{\"730\":{\"appid\":730,\"market_pubfee_rate\":\"0.10\"}}");
+        f.Route=p=>p=="/market/"?Response(WalletOnly):p.StartsWith("/profiles/")?Response(ClassicMissingApp()):p=="/market/mylistings/render/"?Response(json.ToJsonString()):null;
+        var listings=await f.Workspace!.Orders.RefreshAsync();Check(listings.Length==8&&f.Workspace.Orders.FeeEvidence(730)is not null);
+        var fee=await f.Workspace.FeesAsync(730);Check(fee.FromSeller(1000)==new FeeQuote(1150,1000,50,100)&&fee.PublisherFallbackAppId==730&&!f.Reads.Any(x=>x.Path.Contains("ajaxfee"))&&f.Server.Sends==0&&f.Server.Cancels==0);
+        f.Vm.Logout.Execute(null);Check(f.Workspace.Orders.FeeEvidence(730)is null);
     }
     private static async Task<SteamException> Fail(Func<Task> action){try{await action();}catch(SteamException error){return error;}throw new Exception("expected safe failure");}
     private static Task Sync(Action action){action();return Task.CompletedTask;}

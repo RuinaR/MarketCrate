@@ -1,3 +1,15 @@
+## 0.25.1 검증 결과 (2026-11-05)
+
+기능513/513·비표시WPF98/98·배포23/23·의존성6/6 PASS. 정리8PASS/0FAIL/1NOT VERIFIED(junction 생성 불가). 빌드 경고0/오류0. runtime/listing-fee-context-regression.txt. 신규3검사: 인증된판매목록8건의명시적app_data로classic앱문맥보완·zero/누락필드/다른계정/앱/오래된증거/HTML충돌/모드·소유페이지누락차단·잘못된선택적app_data에서정상목록보존을검사했다. 수수료API를추가호출하거나상수로대체하지않았고판매/취소0요청을검사했다. 사용자진단원문/인증정보는커밋하지않는다.
+
+첨부진단은AppContextMissing을확인하지만실제app_data존재여부는알수없다. 새경로는공식공개JS와합성응답으로검증했으며이사용자의실서버오류해소/실제등록/설치는미검증이다. 다음사용자확인:판매중갱신→선택→재등록가격계산. 여전히차단되면새진단의ListingAppContextUnavailable/Invalid와AppContextSources로부족한근거를구분할수있다. 최초75개판정은유지한다.
+
+## 0.25.1 판매목록 앱 수수료 문맥 보완 (2026-11-05)
+
+사용자0.25.0 진단의 재등록계산은 Listings/Wallet/FeeContext HTTP200 이후 ClassicUiSelected→AppContextMissing에서 중단됐다. 판매/취소요청은 없다. 원본HTML/JSON이 없어 실제앱설정생략과파서불일치는 미확정이다. 공식market.js는 response.app_data를 MergeWithAppDataArray로 앱문맥에합친다. 이 경로를 별도로 수집해 현재계정·5분내·완료한전체판매목록에서명시된앱기록이있을때만 classic소유페이지의빠진앱문맥을보완한다. 명시적market_pubfee_rate를우선하고 실제앱기록안에서필드가없는경우만동일지갑의검증된기본값을사용한다. 앱기록자체가없으면기본값으로추정하지않는다.
+
+로그인/소유페이지/명시적classic모드/동일지갑/통화/수수료계산검증은유지한다. 오래됨·다른계정/앱·페이지별충돌·HTML과JSON수수료충돌·잘못된필드는견적근거로사용하지않는다. 선택적app_data오류는판매목록자체를실패시키지않고수수료근거만해제한다. ListingAppContextObserved/Unavailable/Invalid·AppContextSources·ClassicMarketAppContext로출처와부족단계를기록하며원문/앱이름/계정은기록하지않는다. 사용자Auth/DB/저널/진단보존·타프로세스비간섭·승인단가고정은유지한다. 실계정정상화는사용자재확인이필요하다.
+
 ## 0.25.0 최종 검증 (2026-11-04)
 
 기능510/510·비표시WPF98/98·배포23/23·의존성6/6 PASS. 정리8PASS/0FAIL/1NOT VERIFIED(junction 생성 불가). 빌드 경고0/오류0. runtime/fast-fixed-final-regression.txt.100상품 합성 빠른조회1HTTP/반복0추가HTTP·기본Steam유지·BRL구분·쿠키없음·403단일실패/정제된상태·형식/중복/통화불일치·실제공개5행발췌null보존·호가변동후승인단가다수등록/중복차단·재가격·수수료/통화변경/만료차단·구형승인strict복원을 검사했다. 승인후가격조회0추가를 계측했다. 실제지연배수/Steam제한안전성은 측정하지 않았다.

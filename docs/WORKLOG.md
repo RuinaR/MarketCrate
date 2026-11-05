@@ -1,3 +1,15 @@
+## 0.25.1 검증 결과 (2026-11-05)
+
+기능513/513·비표시WPF98/98·배포23/23·의존성6/6 PASS. 정리8PASS/0FAIL/1NOT VERIFIED(junction 생성 불가). 빌드 경고0/오류0. runtime/listing-fee-context-regression.txt. 신규3검사: 인증된판매목록8건의명시적app_data로classic앱문맥보완·zero/누락필드/다른계정/앱/오래된증거/HTML충돌/모드·소유페이지누락차단·잘못된선택적app_data에서정상목록보존을검사했다. 수수료API를추가호출하거나상수로대체하지않았고판매/취소0요청을검사했다. 사용자진단원문/인증정보는커밋하지않는다.
+
+첨부진단은AppContextMissing을확인하지만실제app_data존재여부는알수없다. 새경로는공식공개JS와합성응답으로검증했으며이사용자의실서버오류해소/실제등록/설치는미검증이다. 다음사용자확인:판매중갱신→선택→재등록가격계산. 여전히차단되면새진단의ListingAppContextUnavailable/Invalid와AppContextSources로부족한근거를구분할수있다. 최초75개판정은유지한다.
+
+## 0.25.1 판매목록 앱 수수료 문맥 보완 (2026-11-05)
+
+사용자0.25.0 진단의 재등록계산은 Listings/Wallet/FeeContext HTTP200 이후 ClassicUiSelected→AppContextMissing에서 중단됐다. 판매/취소요청은 없다. 원본HTML/JSON이 없어 실제앱설정생략과파서불일치는 미확정이다. 공식market.js는 response.app_data를 MergeWithAppDataArray로 앱문맥에합친다. 이 경로를 별도로 수집해 현재계정·5분내·완료한전체판매목록에서명시된앱기록이있을때만 classic소유페이지의빠진앱문맥을보완한다. 명시적market_pubfee_rate를우선하고 실제앱기록안에서필드가없는경우만동일지갑의검증된기본값을사용한다. 앱기록자체가없으면기본값으로추정하지않는다.
+
+로그인/소유페이지/명시적classic모드/동일지갑/통화/수수료계산검증은유지한다. 오래됨·다른계정/앱·페이지별충돌·HTML과JSON수수료충돌·잘못된필드는견적근거로사용하지않는다. 선택적app_data오류는판매목록자체를실패시키지않고수수료근거만해제한다. ListingAppContextObserved/Unavailable/Invalid·AppContextSources·ClassicMarketAppContext로출처와부족단계를기록하며원문/앱이름/계정은기록하지않는다. 사용자Auth/DB/저널/진단보존·타프로세스비간섭·승인단가고정은유지한다. 실계정정상화는사용자재확인이필요하다.
+
 ## 0.25.0 portable 배포 (2026-11-04)
 
 소스 d50c7fecc437734040c2c7e1920cdf9d8b39881a. `artifacts/releases/MarketCrate-0.25.0-fixed-prices-d50c7fe-win-x64.zip` 68,986,309바이트/421파일. SHA256 **BCA094D800F1EA600FBD06E57E0429F982B59B47E180262284235558EB63BDF8**. ZIP 모든 항목 원본 해시 일치. x64 self-contained CLR/WPF/SQLite·라이선스·실제 전용 PE/BAML·테스트/개발/사용자 인증/DB/세이브/로그 제외 정적 검사 PASS(runtime/publish-0.25.0.txt). Latest0.25.0/Rollback0.24.2. 기존 배포본/설정/Auth/SQLite/저널/진단 보존, 삭제0. 실제 앱/설치/계정/거래는 미실행.

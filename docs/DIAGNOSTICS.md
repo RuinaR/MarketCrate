@@ -1,3 +1,9 @@
+## 0.25.1 판매목록 앱 수수료 문맥 보완 (2026-11-05)
+
+사용자0.25.0 진단의 재등록계산은 Listings/Wallet/FeeContext HTTP200 이후 ClassicUiSelected→AppContextMissing에서 중단됐다. 판매/취소요청은 없다. 원본HTML/JSON이 없어 실제앱설정생략과파서불일치는 미확정이다. 공식market.js는 response.app_data를 MergeWithAppDataArray로 앱문맥에합친다. 이 경로를 별도로 수집해 현재계정·5분내·완료한전체판매목록에서명시된앱기록이있을때만 classic소유페이지의빠진앱문맥을보완한다. 명시적market_pubfee_rate를우선하고 실제앱기록안에서필드가없는경우만동일지갑의검증된기본값을사용한다. 앱기록자체가없으면기본값으로추정하지않는다.
+
+로그인/소유페이지/명시적classic모드/동일지갑/통화/수수료계산검증은유지한다. 오래됨·다른계정/앱·페이지별충돌·HTML과JSON수수료충돌·잘못된필드는견적근거로사용하지않는다. 선택적app_data오류는판매목록자체를실패시키지않고수수료근거만해제한다. ListingAppContextObserved/Unavailable/Invalid·AppContextSources·ClassicMarketAppContext로출처와부족단계를기록하며원문/앱이름/계정은기록하지않는다. 사용자Auth/DB/저널/진단보존·타프로세스비간섭·승인단가고정은유지한다. 실계정정상화는사용자재확인이필요하다.
+
 ## 0.25.0 진단 연결
 
 최종검증 FinalValidation/FixedApprovedPrice는 승인 단가 고정·수수료/자산 검사 이후를 나타내며 서버 접수/게시 성공이 아니다. 선택적인 QuickTbhPricesAsync→TbhSavePrices는 동일OperationId를 유지하며 TbhIndex/ReferenceOnlyBRL 또는 ReferenceTransport(안전한HTTP상태)/ReferenceParse/ReferenceContract를 기록한다. 원본 JSON/세이브/쿠키/인증정보/상품 검색어는 기록하지 않는다. TBH Index 오류는 Steam 제한 해제/Steam 재전송을 유발하지 않는다.

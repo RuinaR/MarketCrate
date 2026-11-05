@@ -9,7 +9,7 @@ public sealed record SteamInventoryPage(ImmutableArray<InventoryAsset> Assets, s
 {public ImmutableDictionary<AssetKey,SteamItemHoldInfo> Holds{get;init;}=ImmutableDictionary<AssetKey,SteamItemHoldInfo>.Empty;public bool VerifiedEmpty{get;init;}public int? ReportedTotal{get;init;}}
 public sealed record SteamListing(string ListingId, AssetKey Asset, string HashName, int Quantity, string Currency, long SellerReceives, long Fees, SaleState State, DateTimeOffset? CreatedAt = null);
 public sealed record SteamListingsPage(ImmutableArray<SteamListing> Listings, int TotalActive, ImmutableDictionary<string,ItemImageReference>? Images=null)
-{public ImmutableArray<SteamListingPresence> Presence{get;init;}=[];}
+{public ImmutableArray<SteamListingPresence> Presence{get;init;}=[];public bool AppContextInvalid{get;init;} public ImmutableDictionary<int,long?> AppPublisherRates{get;init;}=ImmutableDictionary<int,long?>.Empty;}
 public sealed record SteamHistoryPoint(DateTimeOffset At, decimal MedianMajor, int Volume);
 public sealed record SteamOrderBook(string Currency, ImmutableArray<BidLevel> Bids) {public ImmutableArray<BidLevel> Asks{get;init;}=[];public bool SellDepthObserved{get;init;}}
 public enum SteamApprovalChannel { None, Mobile, Email, Unspecified, Either }
@@ -185,8 +185,31 @@ public static class SteamContract
         }
         var total = checked((int)Integer(root.GetProperty("total_count")));
         if (total < 0 || rows.Select(x => x.ListingId).Distinct().Count() != rows.Count) throw new SteamException(SteamFailure.ContractChanged);
-        return new(rows.ToImmutable(), total,images.ToImmutable()){Presence=presence};
+        var rates=ReadAppPublisherRates(root,out var invalidContext);return new(rows.ToImmutable(), total,images.ToImmutable()){Presence=presence,AppPublisherRates=rates,AppContextInvalid=invalidContext};
     });
+    private static ImmutableDictionary<int,long?> ReadAppPublisherRates(JsonElement root,out bool invalid)
+    {
+        invalid=false;
+        try{return ParseAppPublisherRates(root);}
+        catch(Exception error)when(error is SteamException or FormatException or OverflowException or InvalidOperationException)
+        {invalid=true;return ImmutableDictionary<int,long?>.Empty;}
+    }
+    private static ImmutableDictionary<int,long?> ParseAppPublisherRates(JsonElement root)
+    {
+        if(!root.TryGetProperty("app_data",out var data))return ImmutableDictionary<int,long?>.Empty;
+        if(data.ValueKind==JsonValueKind.Array&&data.GetArrayLength()==0)return ImmutableDictionary<int,long?>.Empty;
+        if(data.ValueKind!=JsonValueKind.Object)throw new SteamException(SteamFailure.ContractChanged){ReadStage="ListingAppContext"};
+        var result=ImmutableDictionary.CreateBuilder<int,long?>();
+        foreach(var item in data.EnumerateObject())
+        {
+            if(!int.TryParse(item.Name,NumberStyles.None,CultureInfo.InvariantCulture,out var app)||app<1||item.Value.ValueKind!=JsonValueKind.Object||result.ContainsKey(app))throw new SteamException(SteamFailure.ContractChanged){ReadStage="ListingAppContext"};
+            if(item.Value.TryGetProperty("appid",out var own)&&Integer(own)!=app)throw new SteamException(SteamFailure.ContractChanged){ReadStage="ListingAppContext"};
+            var rates=item.Value.EnumerateObject().Where(x=>x.Name=="market_pubfee_rate").ToArray();
+            if(rates.Length>1)throw new SteamException(SteamFailure.ContractChanged){ReadStage="ListingAppContext"};
+            result.Add(app,rates.Length==1&&rates[0].Value.ValueKind!=JsonValueKind.Null?FeeContractResolver.Rate(rates[0].Value):null);
+        }
+        return result.ToImmutable();
+    }
     public static SteamSellResponse Sell(string json) => Parse<SteamSellResponse>(json, root =>
     {
         if (!Success(root)) return new(SaleState.Unknown,null); // No side-effect inference from success:false.
